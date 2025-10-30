@@ -2055,6 +2055,21 @@ body {
     margin-top: 0;
 }
 
+/* 모바일 강제 하단 고정 (iOS Safari 포함) */
+@media (max-width: 768px) {
+    .mobile-nav-tabs {
+        position: fixed !important;
+        top: auto !important;
+        bottom: env(safe-area-inset-bottom, 0);
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .tab-contents {
+        padding-bottom: 160px; /* 작은 기기에서 여유 더 확보 */
+    }
+}
+
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
 .tab-contents,
 .reservations-container,
