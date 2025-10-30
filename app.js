@@ -520,15 +520,7 @@ async function saveSystemSettings(settings) {
             lastUpdated: new Date()
         };
         
-        console.log('Firestore에 저장할 데이터:', dataToSave);
-        
         await db.collection('settings').doc('system').set(dataToSave);
-        
-        console.log('시스템 설정 저장 완료');
-        
-        // 저장 후 즉시 확인
-        const savedDoc = await db.collection('settings').doc('system').get();
-        console.log('저장 후 Firestore에서 확인:', savedDoc.data());
         
     } catch (error) {
         console.error('시스템 설정 저장 오류:', error);
@@ -775,24 +767,36 @@ async function handleDuprEdit() {
 async function openAdminSettingsModal() {
     const modal = document.getElementById('admin-settings-modal');
     if (modal) {
+        // UI 완전 초기화
+        document.getElementById('court-count').value = '';
+        document.getElementById('closing-time').value = '';
+        
+        // 시간 슬롯 컨테이너 완전 초기화
+        const container = document.getElementById('time-slots-container');
+        container.innerHTML = '';
+        
         // 현재 설정 로드
         const settings = await getSystemSettings();
-        console.log('모달 열기 - 로드된 설정:', settings);
         
         if (settings) {
-            document.getElementById('court-count').value = settings.courtCount;
-            document.getElementById('closing-time').value = settings.closingTime;
+            // 설정값을 UI에 반영
+            document.getElementById('court-count').value = settings.courtCount || 2;
+            document.getElementById('closing-time').value = settings.closingTime || 60;
             
             // 시간 슬롯 로드
-            const container = document.getElementById('time-slots-container');
-            container.innerHTML = '';
-            
-            console.log('시간 슬롯 로드:', settings.timeSlots);
-            
-            settings.timeSlots.forEach(slot => {
-                console.log('시간 슬롯 추가:', slot);
-                addTimeSlotItem(slot.start, slot.end);
-            });
+            if (settings.timeSlots && settings.timeSlots.length > 0) {
+                settings.timeSlots.forEach(slot => {
+                    addTimeSlotItem(slot.start, slot.end);
+                });
+            } else {
+                // 기본 시간 슬롯 추가
+                addTimeSlotItem('09:00', '10:00');
+            }
+        } else {
+            // 설정이 없으면 기본값으로 초기화
+            document.getElementById('court-count').value = 2;
+            document.getElementById('closing-time').value = 60;
+            addTimeSlotItem('09:00', '10:00');
         }
         
         // 관리자 목록 로드
@@ -914,20 +918,14 @@ async function handleAdminSettings() {
     const timeSlots = [];
     const timeSlotItems = document.querySelectorAll('.time-slot-item');
     
-    console.log('수집된 시간 슬롯 아이템 수:', timeSlotItems.length);
-    
     for (let item of timeSlotItems) {
         const start = item.querySelector('.time-start').value;
         const end = item.querySelector('.time-end').value;
-        
-        console.log('시간 슬롯:', { start, end });
         
         if (start && end) {
             timeSlots.push({ start, end });
         }
     }
-    
-    console.log('최종 시간 슬롯 배열:', timeSlots);
     
     if (timeSlots.length === 0) {
         showToast('최소 하나의 시간 슬롯을 설정해주세요.', 'error');
@@ -945,13 +943,10 @@ async function handleAdminSettings() {
             gamesPerHour: 4
         };
         
-        console.log('저장할 설정:', settings);
-        
         await saveSystemSettings(settings);
         
-        // 저장 후 확인
-        const savedSettings = await getSystemSettings();
-        console.log('저장된 설정 확인:', savedSettings);
+        // UI 새로고침
+        await refreshUIAfterSettingsUpdate();
         
         showToast('관리자 설정이 저장되었습니다!', 'success');
         closeAdminSettingsModal();
@@ -961,6 +956,26 @@ async function handleAdminSettings() {
         showToast('설정 저장 중 오류가 발생했습니다.', 'error');
     } finally {
         hideLoading();
+    }
+}
+
+// 설정 업데이트 후 UI 새로고침
+async function refreshUIAfterSettingsUpdate() {
+    try {
+        // 시간 슬롯 옵션 새로고침
+        await loadTimeSlots();
+        
+        // 코트 옵션 새로고침
+        await loadCourtOptions();
+        
+        // 예약 현황 새로고침 (관리자 대시보드가 열려있다면)
+        const adminDashboard = document.getElementById('admin-dashboard-tab');
+        if (adminDashboard && adminDashboard.classList.contains('active')) {
+            await loadReservationsDashboard();
+        }
+        
+    } catch (error) {
+        console.error('UI 새로고침 오류:', error);
     }
 }
 
