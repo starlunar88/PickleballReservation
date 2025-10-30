@@ -1988,6 +1988,7 @@ body {
     padding: 6px 0; /* 더 작은 패딩 */
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .mobile-tab-btn {
@@ -2048,7 +2049,7 @@ body {
 /* 탭 컨텐츠 */
 .tab-contents {
     padding: 0 20px 100px 20px;
-    margin-top: 0; /* 상단 패딩에서 여백 처리 */
+    margin-top: 64px; /* 고정된 탭 높이만큼 추가 여백으로 겹침 방지 */
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
@@ -2411,6 +2412,22 @@ body {
     .time-end {
         font-size: 0.8rem;
     }
+    /* 모바일 컴팩트 사이징 */
+    .nav-container { height: 52px; }
+    .nav-logo { font-size: 0.9rem; }
+    .nav-logo i { font-size: 1.05rem; }
+    .mobile-nav-tabs { padding: 4px 0; }
+    .mobile-tab-btn { padding: 4px 2px; font-size: 0.55rem; }
+    .mobile-tab-btn i { font-size: 0.9rem; margin-bottom: 2px; }
+    .reservations-board { margin: 0 6px; }
+    .reservations-timeline { padding: 14px; }
+    .section-header { padding: 12px 14px; margin-bottom: 16px; }
+    .section-header h2 { font-size: 1.1rem; }
+    .date-navigation { gap: 8px; }
+    .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
+    .player-item { font-size: 0.7rem; padding: 4px 8px; }
+    .timeline-reserve-btn, .timeline-cancel-btn { padding: 6px 10px; font-size: 0.65rem; border-radius: 12px; }
+    .filter-btn { padding: 6px 10px; font-size: 0.8rem; border-radius: 16px; }
 }
 
 /* 타임라인 스타일 */
