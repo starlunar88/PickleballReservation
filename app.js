@@ -1,3 +1,19 @@
+// Firebase 전역 변수
+let auth, db;
+
+// Firebase 초기화 확인 및 전역 변수 설정
+function initializeFirebase() {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+        auth = firebase.auth();
+        db = firebase.firestore();
+        console.log('✅ Firebase 전역 변수 설정 완료');
+        return true;
+    } else {
+        console.error('❌ Firebase가 초기화되지 않았습니다');
+        return false;
+    }
+}
+
 // DOM 요소 참조
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
@@ -1363,23 +1379,8 @@ async function loadReservationsTimeline() {
     timeline.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>예약 현황을 불러오는 중...</p></div>';
     
     try {
-        // Firebase 초기화 대기 (더 강력하게)
-        let firebaseReady = false;
-        let attempts = 0;
-        const maxAttempts = 15; // 시도 횟수 증가
-        
-        while (!firebaseReady && attempts < maxAttempts) {
-            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-                firebaseReady = true;
-                console.log('✅ Firebase 초기화 완료 (시도 ' + (attempts + 1) + ')');
-            } else {
-                console.log(`⏳ Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts})`);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-            }
-        }
-        
-        if (!firebaseReady) {
+        // Firebase 초기화 확인
+        if (!initializeFirebase()) {
             console.error('❌ Firebase 초기화 실패');
             timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Firebase 초기화 실패</p></div>';
             return;
@@ -3050,6 +3051,20 @@ async function updateReservationStatus() {
 // DOM 로드 시 즉시 예약 현황 로딩
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM 로드 완료 - 예약 현황 로드 시작');
+    
+    // Firebase 초기화 확인
+    if (!initializeFirebase()) {
+        console.error('Firebase 초기화 실패 - 2초 후 재시도');
+        setTimeout(() => {
+            if (initializeFirebase()) {
+                loadReservationsTimeline();
+            } else {
+                console.error('Firebase 초기화 재시도 실패');
+            }
+        }, 2000);
+        return;
+    }
+    
     if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
     
     // 모바일에서 여러 번 재시도 (더 강화된 재시도 로직)
@@ -3058,6 +3073,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const tryLoadReservations = async () => {
         try {
+            console.log(`=== 재시도 ${retryCount + 1}/${maxRetries} ===`);
+            console.log('네트워크 상태:', navigator.onLine ? '온라인' : '오프라인');
+            console.log('Firebase 상태:', typeof firebase !== 'undefined' ? '로드됨' : '로드 안됨');
+            console.log('DB 상태:', db ? '초기화됨' : '초기화 안됨');
+            console.log('Auth 상태:', auth ? '초기화됨' : '초기화 안됨');
+            
             // 네트워크 상태 확인
             if (!navigator.onLine) {
                 throw new Error('인터넷 연결을 확인해주세요');
@@ -3065,21 +3086,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Firebase 연결 상태 확인
             if (!db) {
-                throw new Error('Firebase 데이터베이스가 초기화되지 않았습니다');
+                // Firebase 재초기화 시도
+                if (!initializeFirebase()) {
+                    throw new Error('Firebase 데이터베이스가 초기화되지 않았습니다');
+                }
             }
             
             await loadReservationsTimeline();
-            console.log(`예약 현황 로드 성공 (시도 ${retryCount + 1})`);
+            console.log(`✅ 예약 현황 로드 성공 (시도 ${retryCount + 1})`);
         } catch (error) {
-            console.error(`예약 현황 로드 실패 (시도 ${retryCount + 1}):`, error);
+            console.error(`❌ 예약 현황 로드 실패 (시도 ${retryCount + 1}):`, error);
+            console.error('오류 상세:', error.message);
+            console.error('오류 스택:', error.stack);
             retryCount++;
             
             if (retryCount < maxRetries) {
                 const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // 지수 백오프, 최대 5초
-                console.log(`${delay}ms 후 재시도...`);
+                console.log(`⏳ ${delay}ms 후 재시도...`);
                 setTimeout(tryLoadReservations, delay);
             } else {
-                console.error('최대 재시도 횟수 초과');
+                console.error('❌ 최대 재시도 횟수 초과');
                 // 사용자에게 수동 새로고침 안내
                 if (!navigator.onLine) {
                     showToast('인터넷 연결을 확인하고 새로고침 버튼을 눌러주세요.', 'error');

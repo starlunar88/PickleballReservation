@@ -10,6 +10,32 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase 설정 -->
+    <script>
+        // Firebase 설정 (실제 설정으로 교체 필요)
+        const firebaseConfig = {
+            // Firebase Console > 프로젝트 설정 > 일반 > 웹 앱에서 설정 복사
+            apiKey: "AIzaSyDfErowlP_mfHpTfrdkLogGWxKckfj-LFs",
+  authDomain: "pickleballreservation-58bcb.firebaseapp.com",
+  projectId: "pickleballreservation-58bcb",
+  storageBucket: "pickleballreservation-58bcb.firebasestorage.app",
+  messagingSenderId: "1000923785177",
+  appId: "1:1000923785177:web:3ebd3e9528f6e5e6725bc8"
+        };
+        
+        // Firebase 초기화
+        if (typeof firebase !== 'undefined') {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                console.log('✅ Firebase 초기화 완료');
+            } catch (error) {
+                console.error('❌ Firebase 초기화 오류:', error);
+            }
+        } else {
+            console.error('❌ Firebase SDK가 로드되지 않았습니다');
+        }
+    </script>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
