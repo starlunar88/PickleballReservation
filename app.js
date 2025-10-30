@@ -897,6 +897,14 @@ document.addEventListener('DOMContentLoaded', function() {
             addTimeSlotItem();
         });
     }
+    
+    // 랭킹 탭 버튼들
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
 });
 
 // 페이지 로드 시 이메일 링크 확인
@@ -1015,6 +1023,351 @@ async function addToWaitlist(date, timeSlot) {
     }
 }
 
+// 내부 랭킹 시스템 함수들
+
+// 사용자 내부 랭킹 가져오기
+async function getUserInternalRating(userId) {
+    try {
+        const ratingDoc = await db.collection('userRatings').doc(userId).get();
+        if (ratingDoc.exists) {
+            return ratingDoc.data();
+        }
+        // 기본 랭킹 생성
+        const defaultRating = {
+            userId: userId,
+            internalRating: 1000, // 기본 점수 1000
+            gamesPlayed: 0,
+            gamesWon: 0,
+            winRate: 0,
+            lastUpdated: new Date()
+        };
+        await db.collection('userRatings').doc(userId).set(defaultRating);
+        return defaultRating;
+    } catch (error) {
+        console.error('내부 랭킹 가져오기 오류:', error);
+        return null;
+    }
+}
+
+// 게임 결과 기록
+async function recordGameResult(teamId, gameResult) {
+    try {
+        const gameData = {
+            teamId: teamId,
+            date: gameResult.date,
+            timeSlot: gameResult.timeSlot,
+            courtNumber: gameResult.courtNumber,
+            gameNumber: gameResult.gameNumber,
+            players: gameResult.players,
+            winners: gameResult.winners, // 승자 팀의 플레이어 ID 배열
+            losers: gameResult.losers,   // 패자 팀의 플레이어 ID 배열
+            score: gameResult.score,     // 예: "11-9, 11-7"
+            recordedAt: new Date(),
+            recordedBy: auth.currentUser.uid
+        };
+        
+        // 게임 결과 저장
+        await db.collection('gameResults').add(gameData);
+        
+        // 각 플레이어의 랭킹 업데이트
+        await updatePlayerRatings(gameResult.winners, gameResult.losers);
+        
+        showToast('게임 결과가 기록되었습니다!', 'success');
+        
+    } catch (error) {
+        console.error('게임 결과 기록 오류:', error);
+        showToast('게임 결과 기록 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 플레이어 랭킹 업데이트
+async function updatePlayerRatings(winners, losers) {
+    try {
+        // 승자들의 랭킹 업데이트
+        for (const winnerId of winners) {
+            await updatePlayerRating(winnerId, true);
+        }
+        
+        // 패자들의 랭킹 업데이트
+        for (const loserId of losers) {
+            await updatePlayerRating(loserId, false);
+        }
+        
+    } catch (error) {
+        console.error('플레이어 랭킹 업데이트 오류:', error);
+    }
+}
+
+// 개별 플레이어 랭킹 업데이트
+async function updatePlayerRating(userId, won) {
+    try {
+        const ratingRef = db.collection('userRatings').doc(userId);
+        
+        await db.runTransaction(async (transaction) => {
+            const ratingDoc = await transaction.get(ratingRef);
+            
+            if (!ratingDoc.exists) {
+                // 새로운 플레이어
+                const newRating = {
+                    userId: userId,
+                    internalRating: 1000,
+                    gamesPlayed: 1,
+                    gamesWon: won ? 1 : 0,
+                    winRate: won ? 100 : 0,
+                    lastUpdated: new Date()
+                };
+                transaction.set(ratingRef, newRating);
+            } else {
+                // 기존 플레이어
+                const currentData = ratingDoc.data();
+                const newGamesPlayed = currentData.gamesPlayed + 1;
+                const newGamesWon = currentData.gamesWon + (won ? 1 : 0);
+                const newWinRate = (newGamesWon / newGamesPlayed) * 100;
+                
+                // ELO 시스템 기반 점수 계산
+                const ratingChange = calculateRatingChange(currentData.internalRating, won);
+                const newInternalRating = Math.max(500, Math.min(2000, currentData.internalRating + ratingChange));
+                
+                const updatedRating = {
+                    ...currentData,
+                    internalRating: newInternalRating,
+                    gamesPlayed: newGamesPlayed,
+                    gamesWon: newGamesWon,
+                    winRate: newWinRate,
+                    lastUpdated: new Date()
+                };
+                
+                transaction.update(ratingRef, updatedRating);
+            }
+        });
+        
+    } catch (error) {
+        console.error('개별 플레이어 랭킹 업데이트 오류:', error);
+    }
+}
+
+// ELO 시스템 기반 점수 변화 계산
+function calculateRatingChange(currentRating, won) {
+    const K = 32; // K-팩터 (점수 변화량 조절)
+    const expectedScore = 1 / (1 + Math.pow(10, (1000 - currentRating) / 400));
+    const actualScore = won ? 1 : 0;
+    
+    return Math.round(K * (actualScore - expectedScore));
+}
+
+// 랭킹 순위 가져오기
+async function getRankings(limit = 50) {
+    try {
+        const rankingsSnapshot = await db.collection('userRatings')
+            .orderBy('internalRating', 'desc')
+            .limit(limit)
+            .get();
+        
+        const rankings = [];
+        rankingsSnapshot.forEach((doc, index) => {
+            const data = doc.data();
+            rankings.push({
+                rank: index + 1,
+                userId: data.userId,
+                internalRating: data.internalRating,
+                gamesPlayed: data.gamesPlayed,
+                gamesWon: data.gamesWon,
+                winRate: data.winRate
+            });
+        });
+        
+        return rankings;
+    } catch (error) {
+        console.error('랭킹 가져오기 오류:', error);
+        return [];
+    }
+}
+
+// 사용자별 상세 통계 가져오기
+async function getUserStats(userId) {
+    try {
+        const rating = await getUserInternalRating(userId);
+        if (!rating) return null;
+        
+        // 최근 게임 결과 가져오기
+        const recentGamesSnapshot = await db.collection('gameResults')
+            .where('players', 'array-contains', userId)
+            .orderBy('recordedAt', 'desc')
+            .limit(10)
+            .get();
+        
+        const recentGames = [];
+        recentGamesSnapshot.forEach(doc => {
+            const game = doc.data();
+            const isWinner = game.winners.includes(userId);
+            recentGames.push({
+                date: game.date,
+                timeSlot: game.timeSlot,
+                courtNumber: game.courtNumber,
+                won: isWinner,
+                score: game.score
+            });
+        });
+        
+        return {
+            ...rating,
+            recentGames: recentGames
+        };
+        
+    } catch (error) {
+        console.error('사용자 통계 가져오기 오류:', error);
+        return null;
+    }
+}
+
+// 랭킹 UI 관련 함수들
+
+// 전체 랭킹 로드
+async function loadOverallRankings() {
+    try {
+        const rankingsList = document.getElementById('rankings-list');
+        if (!rankingsList) return;
+        
+        rankingsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>랭킹을 불러오는 중...</p></div>';
+        
+        const rankings = await getRankings(20);
+        
+        if (rankings.length === 0) {
+            rankingsList.innerHTML = '<div class="empty-state"><i class="fas fa-trophy"></i><p>아직 랭킹 데이터가 없습니다</p></div>';
+            return;
+        }
+        
+        rankingsList.innerHTML = '';
+        
+        for (let i = 0; i < rankings.length; i++) {
+            const ranking = rankings[i];
+            const rankingItem = createRankingItem(ranking, i + 1);
+            rankingsList.appendChild(rankingItem);
+        }
+        
+    } catch (error) {
+        console.error('랭킹 로드 오류:', error);
+        const rankingsList = document.getElementById('rankings-list');
+        if (rankingsList) {
+            rankingsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>랭킹을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 랭킹 아이템 생성
+function createRankingItem(ranking, rank) {
+    const div = document.createElement('div');
+    div.className = `ranking-item ${rank <= 3 ? 'top-3' : ''}`;
+    
+    // 사용자 이름 가져오기 (실제로는 사용자 정보를 가져와야 함)
+    const playerName = `플레이어 ${ranking.userId.substring(0, 8)}`;
+    
+    div.innerHTML = `
+        <div class="rank-number">${rank}</div>
+        <div class="player-info">
+            <div class="player-name">${playerName}</div>
+            <div class="player-stats">
+                ${ranking.gamesPlayed}게임 | 승률 ${ranking.winRate.toFixed(1)}%
+            </div>
+        </div>
+        <div class="rating-score">${ranking.internalRating}</div>
+    `;
+    
+    return div;
+}
+
+// 내 통계 로드
+async function loadMyStats() {
+    try {
+        const myStatsContent = document.getElementById('my-stats-content');
+        if (!myStatsContent) return;
+        
+        const user = auth.currentUser;
+        if (!user) {
+            myStatsContent.innerHTML = '<div class="empty-state"><i class="fas fa-user-times"></i><p>로그인이 필요합니다</p></div>';
+            return;
+        }
+        
+        myStatsContent.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>통계를 불러오는 중...</p></div>';
+        
+        const stats = await getUserStats(user.uid);
+        
+        if (!stats) {
+            myStatsContent.innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>통계 데이터가 없습니다</p></div>';
+            return;
+        }
+        
+        myStatsContent.innerHTML = createMyStatsHTML(stats);
+        
+    } catch (error) {
+        console.error('내 통계 로드 오류:', error);
+        const myStatsContent = document.getElementById('my-stats-content');
+        if (myStatsContent) {
+            myStatsContent.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>통계를 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 내 통계 HTML 생성
+function createMyStatsHTML(stats) {
+    return `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${stats.internalRating}</div>
+                <div class="stat-label">내부 랭킹</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${stats.gamesPlayed}</div>
+                <div class="stat-label">총 게임 수</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${stats.gamesWon}</div>
+                <div class="stat-label">승리</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${stats.winRate.toFixed(1)}%</div>
+                <div class="stat-label">승률</div>
+            </div>
+        </div>
+        
+        <div class="recent-games">
+            <h3>최근 게임 결과</h3>
+            ${stats.recentGames.length > 0 ? 
+                stats.recentGames.map(game => `
+                    <div class="game-item">
+                        <div class="game-info">
+                            <div class="game-date">${game.date} ${game.timeSlot}</div>
+                            <div class="game-details">코트 ${game.courtNumber} | ${game.score}</div>
+                        </div>
+                        <div class="game-result ${game.won ? 'won' : 'lost'}">
+                            ${game.won ? '승리' : '패배'}
+                        </div>
+                    </div>
+                `).join('') :
+                '<p>최근 게임 결과가 없습니다</p>'
+            }
+        </div>
+    `;
+}
+
+// 탭 전환
+function switchTab(tabName) {
+    // 모든 탭 버튼과 콘텐츠 비활성화
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // 선택된 탭 활성화
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`${tabName}-rankings`).classList.add('active');
+    
+    // 해당 탭 데이터 로드
+    if (tabName === 'overall') {
+        loadOverallRankings();
+    } else if (tabName === 'my-stats') {
+        loadMyStats();
+    }
+}
+
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
     const elements = document.querySelectorAll('.reservation-card');
@@ -1029,7 +1382,7 @@ window.addEventListener('load', function() {
     loadCourtOptions();
 });
 
-// 스크롤 시 네비게이션 스타일 변경
+// 스크롤 시 네비게이션 스타일 변경 및 랭킹 로드
 window.addEventListener('scroll', function() {
     const navbar = document.querySelector('.navbar');
     if (window.scrollY > 50) {
@@ -1038,6 +1391,19 @@ window.addEventListener('scroll', function() {
     } else {
         navbar.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         navbar.style.backdropFilter = 'none';
+    }
+    
+    // 랭킹 섹션이 보이면 랭킹 로드
+    const rankingsSection = document.getElementById('rankings');
+    if (rankingsSection) {
+        const rect = rankingsSection.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+            // 랭킹 섹션이 화면에 보이면 전체 랭킹 로드
+            const activeTab = document.querySelector('.tab-btn.active');
+            if (activeTab && activeTab.getAttribute('data-tab') === 'overall') {
+                loadOverallRankings();
+            }
+        }
     }
 });
 

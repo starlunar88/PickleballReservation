@@ -24,6 +24,7 @@
                 <a href="#home" class="nav-link">홈</a>
                 <a href="#reservation" class="nav-link">예약하기</a>
                 <a href="#my-reservations" class="nav-link">내 예약</a>
+                <a href="#rankings" class="nav-link">랭킹</a>
                 <div class="auth-buttons" id="auth-buttons">
                     <button class="btn btn-outline" id="login-btn">로그인</button>
                     <button class="btn btn-primary" id="signup-btn">회원가입</button>
@@ -104,6 +105,37 @@
                     <div class="empty-state">
                         <i class="fas fa-calendar-times"></i>
                         <p>예약 내역이 없습니다</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rankings Section -->
+        <section id="rankings" class="rankings-section">
+            <div class="container">
+                <h2 class="section-title">랭킹</h2>
+                <div class="rankings-container">
+                    <div class="rankings-tabs">
+                        <button class="tab-btn active" data-tab="overall">전체 랭킹</button>
+                        <button class="tab-btn" data-tab="my-stats">내 통계</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="overall-rankings">
+                        <div class="rankings-list" id="rankings-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>랭킹을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="my-stats">
+                        <div class="my-stats" id="my-stats-content">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>통계를 불러오는 중...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
