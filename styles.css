@@ -1985,7 +1985,8 @@ body {
     background: white;
     border-top: 1px solid #e9ecef;
     border-bottom: 1px solid #f1f3f5;
-    padding: 6px 0; /* 더 작은 패딩 */
+    padding: 8px 0; /* 탭 영역 높이 보장 */
+    min-height: 56px; /* 고정 높이 확보로 겹침 방지 */
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
@@ -2049,7 +2050,7 @@ body {
 /* 탭 컨텐츠 */
 .tab-contents {
     padding: 0 20px 100px 20px;
-    margin-top: 64px; /* 고정된 탭 높이만큼 추가 여백으로 겹침 방지 */
+    margin-top: 84px; /* 탭 높이+그림자 여백만큼 확보 */
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
