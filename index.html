@@ -51,77 +51,118 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Hero Section -->
-        <section id="home" class="hero">
-            <div class="hero-content">
-                <h1 class="hero-title">피클볼 예약 시스템</h1>
-                <p class="hero-subtitle">편리하게 코트를 예약하고 피클볼을 즐기세요!</p>
-                <button class="btn btn-primary btn-large" id="get-started-btn">시작하기</button>
-            </div>
-            <div class="hero-image">
-                <i class="fas fa-table-tennis hero-icon"></i>
-            </div>
-        </section>
+    <main class="main-container">
+        <!-- Mobile Navigation Tabs -->
+        <div class="mobile-nav-tabs">
+            <button class="mobile-tab-btn active" data-tab="reservations">
+                <i class="fas fa-calendar-alt"></i>
+                <span>예약</span>
+            </button>
+            <button class="mobile-tab-btn" data-tab="rankings">
+                <i class="fas fa-trophy"></i>
+                <span>랭킹</span>
+            </button>
+            <button class="mobile-tab-btn" data-tab="stats">
+                <i class="fas fa-chart-line"></i>
+                <span>통계</span>
+            </button>
+            <button class="mobile-tab-btn admin-only" data-tab="admin" style="display: none;">
+                <i class="fas fa-cog"></i>
+                <span>관리</span>
+            </button>
+        </div>
 
+        <!-- Desktop Navigation Tabs -->
+        <div class="desktop-nav-tabs">
+            <button class="desktop-tab-btn active" data-tab="reservations">
+                <i class="fas fa-calendar-alt"></i>
+                <span>예약 현황판</span>
+            </button>
+            <button class="desktop-tab-btn" data-tab="rankings">
+                <i class="fas fa-trophy"></i>
+                <span>랭킹 시스템</span>
+            </button>
+            <button class="desktop-tab-btn" data-tab="stats">
+                <i class="fas fa-chart-line"></i>
+                <span>승률 그래프</span>
+            </button>
+            <button class="desktop-tab-btn admin-only" data-tab="admin" style="display: none;">
+                <i class="fas fa-cog"></i>
+                <span>관리자</span>
+            </button>
+        </div>
 
-        <!-- Reservation Section -->
-        <section id="reservation" class="reservation-section">
-            <div class="container">
-                <h2 class="section-title">코트 예약</h2>
-                <div class="reservation-card">
-                    <div class="reservation-form">
-                        <div class="form-group">
-                            <label for="court-select">코트 선택</label>
-                            <select id="court-select" class="form-control">
-                                <option value="">코트를 선택하세요</option>
-                                <option value="court1">코트 1</option>
-                                <option value="court2">코트 2</option>
-                                <option value="court3">코트 3</option>
-                                <option value="court4">코트 4</option>
-                            </select>
+        <!-- Tab Contents -->
+        <div class="tab-contents">
+            <!-- 1. 예약 현황판 탭 -->
+            <div class="tab-content active" id="reservations-tab">
+                <div class="reservations-container">
+                    <!-- 예약 폼 -->
+                    <div class="reservation-form-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-calendar-plus"></i> 코트 예약</h2>
                         </div>
-                        <div class="form-group">
-                            <label for="date-select">날짜 선택</label>
-                            <input type="date" id="date-select" class="form-control">
+                        <div class="reservation-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="court-select">코트</label>
+                                    <select id="court-select" class="form-control">
+                                        <option value="">코트 선택</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="date-select">날짜</label>
+                                    <input type="date" id="date-select" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="time-select">시간</label>
+                                    <select id="time-select" class="form-control">
+                                        <option value="">시간 선택</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary" id="reserve-btn">
+                                    <i class="fas fa-plus"></i> 예약하기
+                                </button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="time-select">시간 선택</label>
-                            <select id="time-select" class="form-control">
-                                <option value="">시간을 선택하세요</option>
-                                <!-- 동적으로 로드됨 -->
-                            </select>
+                    </div>
+
+                    <!-- 예약 현황 (기차표 스타일) -->
+                    <div class="reservations-board">
+                        <div class="section-header">
+                            <h2><i class="fas fa-train"></i> 예약 현황</h2>
+                            <div class="date-navigation">
+                                <button class="btn btn-outline" id="prev-day">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span id="current-date-display">오늘</span>
+                                <button class="btn btn-outline" id="next-day">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
-                        <button class="btn btn-primary btn-full" id="reserve-btn">예약하기</button>
+                        <div class="reservations-timeline" id="reservations-timeline">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>예약 현황을 불러오는 중...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- My Reservations Section -->
-        <section id="my-reservations" class="my-reservations">
-            <div class="container">
-                <h2 class="section-title">내 예약 내역</h2>
-                <div class="reservations-list" id="reservations-list">
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-times"></i>
-                        <p>예약 내역이 없습니다</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Rankings Section -->
-        <section id="rankings" class="rankings-section">
-            <div class="container">
-                <h2 class="section-title">랭킹</h2>
+            <!-- 2. 랭킹 시스템 탭 -->
+            <div class="tab-content" id="rankings-tab">
                 <div class="rankings-container">
-                    <div class="rankings-tabs">
-                        <button class="tab-btn active" data-tab="overall">전체 랭킹</button>
-                        <button class="tab-btn" data-tab="my-stats">내 통계</button>
+                    <div class="section-header">
+                        <h2><i class="fas fa-trophy"></i> 랭킹 시스템</h2>
+                        <div class="ranking-filters">
+                            <button class="filter-btn active" data-filter="overall">전체</button>
+                            <button class="filter-btn" data-filter="monthly">이번 달</button>
+                            <button class="filter-btn" data-filter="weekly">이번 주</button>
+                        </div>
                     </div>
-                    
-                    <div class="tab-content active" id="overall-rankings">
+                    <div class="rankings-content">
                         <div class="rankings-list" id="rankings-list">
                             <div class="loading-state">
                                 <i class="fas fa-spinner fa-spin"></i>
@@ -129,9 +170,21 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="tab-content" id="my-stats">
-                        <div class="my-stats" id="my-stats-content">
+                </div>
+            </div>
+
+            <!-- 3. 승률 그래프 탭 -->
+            <div class="tab-content" id="stats-tab">
+                <div class="stats-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-chart-line"></i> 승률 그래프</h2>
+                        <div class="stats-filters">
+                            <button class="filter-btn active" data-type="personal">개인별</button>
+                            <button class="filter-btn" data-type="team">팀별</button>
+                        </div>
+                    </div>
+                    <div class="stats-content">
+                        <div class="stats-charts" id="stats-charts">
                             <div class="loading-state">
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <p>통계를 불러오는 중...</p>
@@ -140,70 +193,56 @@
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Dashboard Section (Admin Only) -->
-        <section id="dashboard" class="dashboard-section" style="display: none;">
-            <div class="container">
-                <h2 class="section-title">관리자 대시보드</h2>
-                <div class="dashboard-container">
-                    <div class="dashboard-stats">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-day"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="today-reservations">0</div>
-                                <div class="stat-label">오늘 예약</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="today-players">0</div>
-                                <div class="stat-label">오늘 플레이어</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-trophy"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-value" id="today-teams">0</div>
-                                <div class="stat-label">배정된 팀</div>
-                            </div>
-                        </div>
+            <!-- 4. 관리자 탭 -->
+            <div class="tab-content admin-only" id="admin-tab">
+                <div class="admin-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-cog"></i> 관리자</h2>
+                        <button class="btn btn-primary" id="admin-settings-btn">
+                            <i class="fas fa-settings"></i> 설정
+                        </button>
                     </div>
-                    
-                    <div class="dashboard-content">
-                        <div class="dashboard-tabs">
-                            <button class="tab-btn active" data-tab="reservations">예약 현황</button>
-                            <button class="tab-btn" data-tab="teams">팀 배정</button>
-                        </div>
-                        
-                        <div class="tab-content active" id="reservations-dashboard">
-                            <div class="reservations-dashboard" id="reservations-dashboard-content">
-                                <div class="loading-state">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>데이터를 불러오는 중...</p>
+                    <div class="admin-content">
+                        <div class="admin-stats-grid">
+                            <div class="admin-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-day"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="admin-today-reservations">0</div>
+                                    <div class="stat-label">오늘 예약</div>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="admin-total-users">0</div>
+                                    <div class="stat-label">총 사용자</div>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <div class="stat-value" id="admin-total-games">0</div>
+                                    <div class="stat-label">총 게임</div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="tab-content" id="teams-dashboard">
-                            <div class="teams-dashboard" id="teams-dashboard-content">
-                                <div class="loading-state">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>데이터를 불러오는 중...</p>
-                                </div>
+                        <div class="admin-dashboard-content" id="admin-dashboard-content">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>관리자 데이터를 불러오는 중...</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
 
     <!-- Login Modal -->

@@ -1182,9 +1182,295 @@ function closeAllModals() {
     document.body.style.overflow = 'auto';
 }
 
+// 탭 전환 기능
+function switchMainTab(tabName) {
+    // 모든 탭 버튼 비활성화
+    document.querySelectorAll('.mobile-tab-btn, .desktop-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // 모든 탭 컨텐츠 숨기기
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 선택된 탭 활성화
+    document.querySelectorAll(`[data-tab="${tabName}"]`).forEach(btn => {
+        btn.classList.add('active');
+    });
+    
+    // 선택된 탭 컨텐츠 표시
+    const targetContent = document.getElementById(`${tabName}-tab`);
+    if (targetContent) {
+        targetContent.classList.add('active');
+    }
+    
+    // 탭별 데이터 로드
+    loadTabData(tabName);
+}
+
+// 탭별 데이터 로드
+async function loadTabData(tabName) {
+    switch(tabName) {
+        case 'reservations':
+            await loadReservationsData();
+            break;
+        case 'rankings':
+            await loadRankingsData();
+            break;
+        case 'stats':
+            await loadStatsData();
+            break;
+        case 'admin':
+            await loadAdminData();
+            break;
+    }
+}
+
+// 예약 데이터 로드
+async function loadReservationsData() {
+    try {
+        // 시간 슬롯과 코트 옵션 로드
+        await loadTimeSlots();
+        await loadCourtOptions();
+        
+        // 예약 현황 로드
+        await loadReservationsTimeline();
+        
+    } catch (error) {
+        console.error('예약 데이터 로드 오류:', error);
+    }
+}
+
+// 랭킹 데이터 로드
+async function loadRankingsData() {
+    try {
+        await loadOverallRankings();
+    } catch (error) {
+        console.error('랭킹 데이터 로드 오류:', error);
+    }
+}
+
+// 통계 데이터 로드
+async function loadStatsData() {
+    try {
+        await loadStatsCharts();
+    } catch (error) {
+        console.error('통계 데이터 로드 오류:', error);
+    }
+}
+
+// 관리자 데이터 로드
+async function loadAdminData() {
+    try {
+        await loadAdminStats();
+        await loadAdminDashboard();
+    } catch (error) {
+        console.error('관리자 데이터 로드 오류:', error);
+    }
+}
+
+// 예약 현황 타임라인 로드
+async function loadReservationsTimeline() {
+    const timeline = document.getElementById('reservations-timeline');
+    if (!timeline) return;
+    
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        const settings = await getSystemSettings();
+        
+        if (!settings) {
+            timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>설정을 불러올 수 없습니다</p></div>';
+            return;
+        }
+        
+        let timelineHTML = '';
+        
+        for (const timeSlot of settings.timeSlots) {
+            const slotKey = `${timeSlot.start}-${timeSlot.end}`;
+            
+            // 예약 수 확인
+            const reservationsSnapshot = await db.collection('reservations')
+                .where('date', '==', today)
+                .where('timeSlot', '==', slotKey)
+                .where('status', 'in', ['pending', 'confirmed'])
+                .get();
+            
+            const reservations = [];
+            reservationsSnapshot.forEach(doc => {
+                reservations.push({ id: doc.id, ...doc.data() });
+            });
+            
+            const isFull = reservations.length >= 4;
+            const statusClass = isFull ? 'full' : reservations.length > 0 ? 'partial' : 'empty';
+            
+            timelineHTML += `
+                <div class="timeline-item ${statusClass}">
+                    <div class="timeline-time">
+                        <div class="time-start">${timeSlot.start}</div>
+                        <div class="time-end">${timeSlot.end}</div>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-status">
+                            <span class="status-badge ${statusClass}">
+                                ${isFull ? '만석' : reservations.length > 0 ? `${reservations.length}/4명` : '예약 가능'}
+                            </span>
+                        </div>
+                        <div class="timeline-players">
+                            ${reservations.map(res => `
+                                <div class="player-item">
+                                    <span class="player-name">${res.userName || '익명'}</span>
+                                    ${res.userDupr ? `<span class="player-dupr">DUPR: ${res.userDupr}</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        timeline.innerHTML = timelineHTML || '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>예약 현황이 없습니다</p></div>';
+        
+    } catch (error) {
+        console.error('예약 현황 로드 오류:', error);
+        timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+    }
+}
+
+// 통계 차트 로드
+async function loadStatsCharts() {
+    const chartsContainer = document.getElementById('stats-charts');
+    if (!chartsContainer) return;
+    
+    try {
+        // 간단한 통계 차트 HTML 생성 (실제로는 Chart.js 등을 사용할 수 있음)
+        chartsContainer.innerHTML = `
+            <div class="stats-grid">
+                <div class="stat-chart">
+                    <h3>개인 승률</h3>
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-pie"></i>
+                        <p>승률 차트가 여기에 표시됩니다</p>
+                    </div>
+                </div>
+                <div class="stat-chart">
+                    <h3>팀 승률</h3>
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>팀별 승률 차트가 여기에 표시됩니다</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('통계 차트 로드 오류:', error);
+    }
+}
+
+// 관리자 통계 로드
+async function loadAdminStats() {
+    try {
+        // 오늘 예약 수
+        const today = new Date().toISOString().slice(0, 10);
+        const todayReservations = await db.collection('reservations')
+            .where('date', '==', today)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+        
+        // 총 사용자 수
+        const totalUsers = await db.collection('users').get();
+        
+        // 총 게임 수
+        const totalGames = await db.collection('gameResults').get();
+        
+        // UI 업데이트
+        const todayReservationsEl = document.getElementById('admin-today-reservations');
+        const totalUsersEl = document.getElementById('admin-total-users');
+        const totalGamesEl = document.getElementById('admin-total-games');
+        
+        if (todayReservationsEl) todayReservationsEl.textContent = todayReservations.size;
+        if (totalUsersEl) totalUsersEl.textContent = totalUsers.size;
+        if (totalGamesEl) totalGamesEl.textContent = totalGames.size;
+        
+    } catch (error) {
+        console.error('관리자 통계 로드 오류:', error);
+    }
+}
+
+// 관리자 대시보드 로드
+async function loadAdminDashboard() {
+    const dashboardContent = document.getElementById('admin-dashboard-content');
+    if (!dashboardContent) return;
+    
+    try {
+        dashboardContent.innerHTML = `
+            <div class="admin-dashboard-grid">
+                <div class="dashboard-card">
+                    <h3>최근 예약</h3>
+                    <div class="recent-reservations">
+                        <p>최근 예약 내역이 여기에 표시됩니다</p>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h3>시스템 상태</h3>
+                    <div class="system-status">
+                        <div class="status-item">
+                            <span class="status-label">데이터베이스</span>
+                            <span class="status-value success">정상</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">인증 시스템</span>
+                            <span class="status-value success">정상</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('관리자 대시보드 로드 오류:', error);
+    }
+}
+
 // 페이지 로드 시 이메일 링크 확인
 document.addEventListener('DOMContentLoaded', function() {
     handleEmailLinkSignIn();
+    
+    // 탭 버튼 이벤트 리스너
+    document.querySelectorAll('.mobile-tab-btn, .desktop-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.currentTarget.getAttribute('data-tab');
+            switchMainTab(tabName);
+        });
+    });
+    
+    // 필터 버튼 이벤트 리스너
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const parent = e.currentTarget.closest('.ranking-filters, .stats-filters');
+            if (parent) {
+                parent.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            }
+        });
+    });
+    
+    // 날짜 네비게이션 이벤트 리스너
+    const prevDayBtn = document.getElementById('prev-day');
+    const nextDayBtn = document.getElementById('next-day');
+    
+    if (prevDayBtn) {
+        prevDayBtn.addEventListener('click', () => {
+            // 이전 날짜 로직
+            console.log('이전 날짜');
+        });
+    }
+    
+    if (nextDayBtn) {
+        nextDayBtn.addEventListener('click', () => {
+            // 다음 날짜 로직
+            console.log('다음 날짜');
+        });
+    }
 });
 
 // 시간 슬롯 로드
