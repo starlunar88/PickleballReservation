@@ -29,7 +29,7 @@ if (logoutBtn) {
 }
 
 if (closeLogin) {
-    closeLogin.addEventListener('click', () => closeModal('login'));
+    closeLogin.addEventListener('click', closeLoginModal);
 }
 
 if (closeSignup) {
@@ -60,7 +60,7 @@ if (hamburger && navMenu) {
     });
 }
 
-// 모달 외부 클릭 시 닫기 (회원가입만, 로그인은 X버튼으로만 닫기)
+// 모달 외부 클릭 시 닫기 (회원가입과 DUPR 수정만)
 window.addEventListener('click', (e) => {
     if (e.target === signupModal) {
         closeModal('signup');
@@ -68,6 +68,7 @@ window.addEventListener('click', (e) => {
     if (e.target === document.getElementById('dupr-edit-modal')) {
         closeDuprEditModal();
     }
+    // 로그인 모달은 외부 클릭으로 닫지 않음
 });
 
 // 로그인 폼 제출
@@ -116,6 +117,14 @@ function closeModal(type) {
     }
 }
 
+// 로그인 모달만 닫기 (X 버튼용)
+function closeLoginModal() {
+    if (loginModal) {
+        loginModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
 // 로그인 처리 (이메일/비밀번호 방식)
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
@@ -148,7 +157,7 @@ async function handleLogin() {
         }
         
         showToast('로그인되었습니다!', 'success');
-        closeModal('login');
+        closeLoginModal();
         loginForm.reset();
     } catch (error) {
         console.error('로그인 오류:', error);
