@@ -1368,6 +1368,420 @@ function switchTab(tabName) {
     }
 }
 
+// 팀 짜기 알고리즘 함수들
+
+// 팀 짜기 모드 열거형
+const TEAM_MODE = {
+    RANDOM: 'random',
+    BALANCED: 'balanced',
+    GROUPED: 'grouped'
+};
+
+// 플레이어 정보 구조
+class Player {
+    constructor(userId, userName, dupr, internalRating) {
+        this.userId = userId;
+        this.userName = userName;
+        this.dupr = dupr || 0;
+        this.internalRating = internalRating || 1000;
+        this.combinedScore = this.calculateCombinedScore();
+    }
+    
+    calculateCombinedScore() {
+        // DUPR과 내부 랭킹을 결합한 점수 (가중평균)
+        const duprWeight = 0.6; // DUPR 가중치
+        const internalWeight = 0.4; // 내부 랭킹 가중치
+        
+        // DUPR을 0-1000 스케일로 변환 (2.0-8.0 -> 0-1000)
+        const duprScore = ((this.dupr - 2.0) / 6.0) * 1000;
+        
+        // 내부 랭킹을 0-1000 스케일로 변환 (500-2000 -> 0-1000)
+        const internalScore = ((this.internalRating - 500) / 1500) * 1000;
+        
+        return (duprScore * duprWeight) + (internalScore * internalWeight);
+    }
+}
+
+// 팀 정보 구조
+class Team {
+    constructor(players = []) {
+        this.players = players;
+        this.averageScore = this.calculateAverageScore();
+        this.totalScore = this.calculateTotalScore();
+    }
+    
+    calculateAverageScore() {
+        if (this.players.length === 0) return 0;
+        return this.players.reduce((sum, player) => sum + player.combinedScore, 0) / this.players.length;
+    }
+    
+    calculateTotalScore() {
+        return this.players.reduce((sum, player) => sum + player.combinedScore, 0);
+    }
+    
+    addPlayer(player) {
+        this.players.push(player);
+        this.averageScore = this.calculateAverageScore();
+        this.totalScore = this.calculateTotalScore();
+    }
+}
+
+// 팀 짜기 메인 함수
+async function createTeams(reservations, mode = TEAM_MODE.BALANCED) {
+    try {
+        // 플레이어 정보 수집
+        const players = await collectPlayerInfo(reservations);
+        
+        if (players.length < 4) {
+            throw new Error('최소 4명의 플레이어가 필요합니다.');
+        }
+        
+        // 팀 짜기 모드에 따른 처리
+        let teams;
+        switch (mode) {
+            case TEAM_MODE.RANDOM:
+                teams = createRandomTeams(players);
+                break;
+            case TEAM_MODE.BALANCED:
+                teams = createBalancedTeams(players);
+                break;
+            case TEAM_MODE.GROUPED:
+                teams = createGroupedTeams(players);
+                break;
+            default:
+                teams = createBalancedTeams(players);
+        }
+        
+        return teams;
+        
+    } catch (error) {
+        console.error('팀 짜기 오류:', error);
+        throw error;
+    }
+}
+
+// 플레이어 정보 수집
+async function collectPlayerInfo(reservations) {
+    const players = [];
+    
+    for (const reservation of reservations) {
+        try {
+            // 사용자 정보 가져오기
+            const userDoc = await db.collection('users').doc(reservation.userId).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+            
+            // 내부 랭킹 가져오기
+            const internalRating = await getUserInternalRating(reservation.userId);
+            
+            const player = new Player(
+                reservation.userId,
+                reservation.userName,
+                reservation.userDupr || userData.dupr,
+                internalRating ? internalRating.internalRating : 1000
+            );
+            
+            players.push(player);
+            
+        } catch (error) {
+            console.error(`플레이어 정보 수집 오류 (${reservation.userId}):`, error);
+        }
+    }
+    
+    return players;
+}
+
+// 1. 랜덤 모드 팀 짜기
+function createRandomTeams(players) {
+    const shuffled = [...players].sort(() => Math.random() - 0.5);
+    const teams = [];
+    
+    for (let i = 0; i < shuffled.length; i += 4) {
+        const teamPlayers = shuffled.slice(i, i + 4);
+        if (teamPlayers.length === 4) {
+            teams.push(new Team(teamPlayers));
+        }
+    }
+    
+    return teams;
+}
+
+// 2. 밸런스 모드 팀 짜기 (균형 맞추기)
+function createBalancedTeams(players) {
+    // 플레이어를 점수 순으로 정렬
+    const sortedPlayers = [...players].sort((a, b) => b.combinedScore - a.combinedScore);
+    
+    const teams = [];
+    const teamCount = Math.floor(sortedPlayers.length / 4);
+    
+    // 팀 초기화
+    for (let i = 0; i < teamCount; i++) {
+        teams.push(new Team());
+    }
+    
+    // 스네이크 드래프트 방식으로 팀 배정
+    for (let round = 0; round < 4; round++) {
+        for (let i = 0; i < teamCount; i++) {
+            const playerIndex = round * teamCount + i;
+            if (playerIndex < sortedPlayers.length) {
+                // 짝수 라운드는 순방향, 홀수 라운드는 역방향
+                const teamIndex = round % 2 === 0 ? i : teamCount - 1 - i;
+                teams[teamIndex].addPlayer(sortedPlayers[playerIndex]);
+            }
+        }
+    }
+    
+    return teams;
+}
+
+// 3. 그룹별 모드 팀 짜기 (상위/하위 그룹)
+function createGroupedTeams(players) {
+    // 플레이어를 점수 순으로 정렬
+    const sortedPlayers = [...players].sort((a, b) => b.combinedScore - a.combinedScore);
+    
+    const teams = [];
+    const totalPlayers = sortedPlayers.length;
+    const teamCount = Math.floor(totalPlayers / 4);
+    
+    // 상위 그룹과 하위 그룹으로 나누기
+    const midPoint = Math.floor(totalPlayers / 2);
+    const upperGroup = sortedPlayers.slice(0, midPoint);
+    const lowerGroup = sortedPlayers.slice(midPoint);
+    
+    // 각 그룹 내에서 팀 짜기
+    const upperTeams = createTeamsFromGroup(upperGroup, Math.ceil(teamCount / 2));
+    const lowerTeams = createTeamsFromGroup(lowerGroup, Math.floor(teamCount / 2));
+    
+    // 팀들을 합치기
+    teams.push(...upperTeams, ...lowerTeams);
+    
+    return teams;
+}
+
+// 그룹 내에서 팀 생성
+function createTeamsFromGroup(players, teamCount) {
+    const teams = [];
+    
+    // 팀 초기화
+    for (let i = 0; i < teamCount; i++) {
+        teams.push(new Team());
+    }
+    
+    // 스네이크 드래프트 방식으로 팀 배정
+    for (let round = 0; round < Math.ceil(players.length / teamCount); round++) {
+        for (let i = 0; i < teamCount; i++) {
+            const playerIndex = round * teamCount + i;
+            if (playerIndex < players.length) {
+                // 짝수 라운드는 순방향, 홀수 라운드는 역방향
+                const teamIndex = round % 2 === 0 ? i : teamCount - 1 - i;
+                teams[teamIndex].addPlayer(players[playerIndex]);
+            }
+        }
+    }
+    
+    return teams.filter(team => team.players.length > 0);
+}
+
+// 팀 밸런스 점수 계산
+function calculateTeamBalance(teams) {
+    if (teams.length < 2) return 0;
+    
+    const averages = teams.map(team => team.averageScore);
+    const maxAvg = Math.max(...averages);
+    const minAvg = Math.min(...averages);
+    
+    // 밸런스 점수 (낮을수록 균형이 좋음)
+    return maxAvg - minAvg;
+}
+
+// 팀 짜기 결과 검증
+function validateTeamCreation(teams, originalPlayerCount) {
+    const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
+    
+    if (totalPlayers !== originalPlayerCount) {
+        throw new Error('팀 생성 후 플레이어 수가 일치하지 않습니다.');
+    }
+    
+    // 모든 팀이 4명인지 확인
+    const invalidTeams = teams.filter(team => team.players.length !== 4);
+    if (invalidTeams.length > 0) {
+        console.warn(`${invalidTeams.length}개 팀이 4명이 아닙니다.`);
+    }
+    
+    return true;
+}
+
+// 최적 팀 조합 찾기 (밸런스 모드 개선)
+function findOptimalTeams(players, maxIterations = 100) {
+    let bestTeams = null;
+    let bestBalance = Infinity;
+    
+    for (let i = 0; i < maxIterations; i++) {
+        const teams = createBalancedTeams(players);
+        const balance = calculateTeamBalance(teams);
+        
+        if (balance < bestBalance) {
+            bestBalance = balance;
+            bestTeams = teams;
+        }
+    }
+    
+    return bestTeams || createBalancedTeams(players);
+}
+
+// 팀 배정 결과 저장
+async function saveTeamAssignments(date, timeSlot, teams, mode) {
+    try {
+        const batch = db.batch();
+        
+        for (let i = 0; i < teams.length; i++) {
+            const team = teams[i];
+            const teamId = `${date}_${timeSlot}_team_${i + 1}`;
+            
+            // 팀 정보 저장
+            const teamData = {
+                teamId: teamId,
+                date: date,
+                timeSlot: timeSlot,
+                courtNumber: i + 1,
+                gameNumber: 1, // 첫 번째 게임
+                players: team.players.map(player => ({
+                    userId: player.userId,
+                    userName: player.userName,
+                    dupr: player.dupr,
+                    internalRating: player.internalRating,
+                    combinedScore: player.combinedScore
+                })),
+                averageScore: team.averageScore,
+                totalScore: team.totalScore,
+                mode: mode,
+                createdAt: new Date(),
+                status: 'active'
+            };
+            
+            const teamRef = db.collection('teams').doc(teamId);
+            batch.set(teamRef, teamData);
+            
+            // 각 플레이어의 예약 상태를 'confirmed'로 업데이트
+            for (const player of team.players) {
+                const reservationQuery = await db.collection('reservations')
+                    .where('userId', '==', player.userId)
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .where('status', '==', 'pending')
+                    .get();
+                
+                reservationQuery.forEach(doc => {
+                    batch.update(doc.ref, {
+                        status: 'confirmed',
+                        teamId: teamId,
+                        gameNumber: 1,
+                        assignedAt: new Date()
+                    });
+                });
+            }
+        }
+        
+        await batch.commit();
+        console.log('팀 배정 결과 저장 완료:', teams.length, '개 팀');
+        
+    } catch (error) {
+        console.error('팀 배정 결과 저장 오류:', error);
+        throw error;
+    }
+}
+
+// 팀 배정 결과 가져오기
+async function getTeamAssignments(date, timeSlot) {
+    try {
+        const teamsSnapshot = await db.collection('teams')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .orderBy('courtNumber')
+            .get();
+        
+        const teams = [];
+        teamsSnapshot.forEach(doc => {
+            teams.push({ id: doc.id, ...doc.data() });
+        });
+        
+        return teams;
+        
+    } catch (error) {
+        console.error('팀 배정 결과 가져오기 오류:', error);
+        return [];
+    }
+}
+
+// 팀 배정 UI 생성
+function createTeamAssignmentUI(teams) {
+    const container = document.createElement('div');
+    container.className = 'team-assignments';
+    
+    teams.forEach((team, index) => {
+        const teamElement = document.createElement('div');
+        teamElement.className = 'team-card';
+        teamElement.innerHTML = `
+            <div class="team-header">
+                <h3>코트 ${team.courtNumber}</h3>
+                <div class="team-stats">
+                    <span class="team-score">평균 점수: ${team.averageScore.toFixed(1)}</span>
+                </div>
+            </div>
+            <div class="team-players">
+                ${team.players.map(player => `
+                    <div class="player-card">
+                        <div class="player-name">${player.userName}</div>
+                        <div class="player-scores">
+                            <span class="dupr">DUPR: ${player.dupr || 'N/A'}</span>
+                            <span class="internal">내부: ${player.internalRating}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(teamElement);
+    });
+    
+    return container;
+}
+
+// 팀 배정 모드 선택 UI
+function createTeamModeSelector() {
+    const container = document.createElement('div');
+    container.className = 'team-mode-selector';
+    container.innerHTML = `
+        <h3>팀 짜기 모드 선택</h3>
+        <div class="mode-options">
+            <label class="mode-option">
+                <input type="radio" name="teamMode" value="random" checked>
+                <div class="mode-card">
+                    <i class="fas fa-random"></i>
+                    <h4>랜덤 모드</h4>
+                    <p>완전 무작위로 팀을 구성합니다</p>
+                </div>
+            </label>
+            <label class="mode-option">
+                <input type="radio" name="teamMode" value="balanced">
+                <div class="mode-card">
+                    <i class="fas fa-balance-scale"></i>
+                    <h4>밸런스 모드</h4>
+                    <p>DUPR과 내부 랭킹을 고려하여 균형을 맞춥니다</p>
+                </div>
+            </label>
+            <label class="mode-option">
+                <input type="radio" name="teamMode" value="grouped">
+                <div class="mode-card">
+                    <i class="fas fa-layer-group"></i>
+                    <h4>그룹별 모드</h4>
+                    <p>상위/하위 그룹으로 나누어 팀을 구성합니다</p>
+                </div>
+            </label>
+        </div>
+    `;
+    
+    return container;
+}
+
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
     const elements = document.querySelectorAll('.reservation-card');
