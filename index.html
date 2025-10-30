@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>피클볼 예약 시스템</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-table-tennis"></i>
+                <span>피클볼 예약</span>
+            </div>
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link">홈</a>
+                <a href="#reservation" class="nav-link">예약하기</a>
+                <a href="#my-reservations" class="nav-link">내 예약</a>
+                <div class="auth-buttons" id="auth-buttons">
+                    <button class="btn btn-outline" id="login-btn">로그인</button>
+                    <button class="btn btn-primary" id="signup-btn">회원가입</button>
+                </div>
+                <div class="user-menu" id="user-menu" style="display: none;">
+                    <span class="user-name" id="user-name"></span>
+                    <button class="btn btn-outline" id="logout-btn">로그아웃</button>
+                </div>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">피클볼 예약 시스템</h1>
+                <p class="hero-subtitle">편리하게 코트를 예약하고 피클볼을 즐기세요!</p>
+                <button class="btn btn-primary btn-large" id="get-started-btn">시작하기</button>
+            </div>
+            <div class="hero-image">
+                <i class="fas fa-table-tennis hero-icon"></i>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features">
+            <div class="container">
+                <h2 class="section-title">주요 기능</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h3>간편한 예약</h3>
+                        <p>원하는 날짜와 시간을 선택하여 쉽게 예약하세요</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>모바일 최적화</h3>
+                        <p>모든 기기에서 완벽하게 작동하는 반응형 디자인</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h3>알림 서비스</h3>
+                        <p>예약 확인 및 리마인더 알림을 받아보세요</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reservation Section -->
+        <section id="reservation" class="reservation-section">
+            <div class="container">
+                <h2 class="section-title">코트 예약</h2>
+                <div class="reservation-card">
+                    <div class="reservation-form">
+                        <div class="form-group">
+                            <label for="court-select">코트 선택</label>
+                            <select id="court-select" class="form-control">
+                                <option value="">코트를 선택하세요</option>
+                                <option value="court1">코트 1</option>
+                                <option value="court2">코트 2</option>
+                                <option value="court3">코트 3</option>
+                                <option value="court4">코트 4</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="date-select">날짜 선택</label>
+                            <input type="date" id="date-select" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="time-select">시간 선택</label>
+                            <select id="time-select" class="form-control">
+                                <option value="">시간을 선택하세요</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-full" id="reserve-btn">예약하기</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Reservations Section -->
+        <section id="my-reservations" class="my-reservations">
+            <div class="container">
+                <h2 class="section-title">내 예약 내역</h2>
+                <div class="reservations-list" id="reservations-list">
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>예약 내역이 없습니다</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>로그인</h2>
+                <span class="close" id="close-login">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">이메일</label>
+                        <input type="email" id="login-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">비밀번호</label>
+                        <input type="password" id="login-password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">로그인</button>
+                </form>
+                <div class="modal-footer">
+                    <p>계정이 없으신가요? <a href="#" id="switch-to-signup">회원가입</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>회원가입</h2>
+                <span class="close" id="close-signup">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label for="signup-name">이름</label>
+                        <input type="text" id="signup-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">이메일</label>
+                        <input type="email" id="signup-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">비밀번호</label>
+                        <input type="password" id="signup-password" class="form-control" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-confirm-password">비밀번호 확인</label>
+                        <input type="password" id="signup-confirm-password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">회원가입</button>
+                </form>
+                <div class="modal-footer">
+                    <p>이미 계정이 있으신가요? <a href="#" id="switch-to-login">로그인</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
