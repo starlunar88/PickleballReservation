@@ -995,6 +995,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // 상태 탭 전환
+    document.querySelectorAll('.status-tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-tab');
+            switchStatusTab(tabName);
+        });
+    });
+    
     // 관리자 추가 버튼
     const addAdminBtn = document.getElementById('add-admin-btn');
     if (addAdminBtn) {

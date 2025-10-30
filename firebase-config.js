@@ -25,6 +25,35 @@ const db = firebase.firestore();
 console.log('Firebase Auth 객체:', auth);
 console.log('Firebase Firestore 객체:', db);
 
+// 관리자 여부 확인
+async function isAdmin(user) {
+    try {
+        // Firestore에서 관리자 목록 확인
+        const adminDoc = await db.collection('admins').doc(user.uid).get();
+        if (adminDoc.exists) {
+            return adminDoc.data().isAdmin === true;
+        }
+        
+        // 기본 관리자 이메일 (초기 설정용)
+        const defaultAdminEmails = ['admin@pickleball.com', 'starlunar88@gmail.com'];
+        if (defaultAdminEmails.includes(user.email)) {
+            // 기본 관리자를 Firestore에 등록
+            await db.collection('admins').doc(user.uid).set({
+                email: user.email,
+                isAdmin: true,
+                addedAt: new Date(),
+                addedBy: 'system'
+            });
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('관리자 확인 오류:', error);
+        return false;
+    }
+}
+
 // 인증 상태 변경 감지
 auth.onAuthStateChanged((user) => {
     if (user) {
