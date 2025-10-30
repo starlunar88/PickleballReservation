@@ -218,54 +218,12 @@ body {
     color: white;
 }
 
-/* Features Section */
-.features {
-    padding: 100px 0;
-    background: white;
-}
-
+/* Section Title */
 .section-title {
     text-align: center;
     font-size: 2.5rem;
     margin-bottom: 60px;
     color: #333;
-}
-
-.features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 40px;
-    margin-top: 60px;
-}
-
-.feature-card {
-    text-align: center;
-    padding: 40px 20px;
-    border-radius: 15px;
-    background: #f8f9fa;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-}
-
-.feature-icon {
-    font-size: 3rem;
-    color: #667eea;
-    margin-bottom: 20px;
-}
-
-.feature-card h3 {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.feature-card p {
-    color: #666;
-    line-height: 1.6;
 }
 
 /* Reservation Section */

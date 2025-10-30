@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
-    const elements = document.querySelectorAll('.feature-card, .reservation-card');
+    const elements = document.querySelectorAll('.reservation-card');
     elements.forEach((element, index) => {
         setTimeout(() => {
             element.classList.add('fade-in');
