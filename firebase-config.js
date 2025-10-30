@@ -44,6 +44,7 @@ async function showUserMenu(user) {
     const userMenu = document.getElementById('user-menu');
     const userName = document.getElementById('user-name');
     const userDupr = document.getElementById('user-dupr');
+    const adminSettingsBtn = document.getElementById('admin-settings-btn');
     
     if (authButtons && userMenu && userName) {
         authButtons.style.display = 'none';
@@ -57,6 +58,13 @@ async function showUserMenu(user) {
             userDupr.style.display = 'block';
         } else if (userDupr) {
             userDupr.style.display = 'none';
+        }
+        
+        // 관리자 버튼 표시
+        if (isAdmin(user) && adminSettingsBtn) {
+            adminSettingsBtn.style.display = 'inline-block';
+        } else if (adminSettingsBtn) {
+            adminSettingsBtn.style.display = 'none';
         }
     }
 }

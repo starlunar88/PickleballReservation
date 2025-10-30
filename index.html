@@ -33,10 +33,11 @@
                         <span class="user-name" id="user-name"></span>
                         <span class="user-dupr" id="user-dupr" style="display: none;"></span>
                     </div>
-                    <div class="user-actions">
-                        <button class="btn btn-outline btn-small" id="edit-dupr-btn">DUPR 수정</button>
-                        <button class="btn btn-outline" id="logout-btn">로그아웃</button>
-                    </div>
+                <div class="user-actions">
+                    <button class="btn btn-outline btn-small" id="edit-dupr-btn">DUPR 수정</button>
+                    <button class="btn btn-outline btn-small" id="admin-settings-btn" style="display: none;">관리자 설정</button>
+                    <button class="btn btn-outline" id="logout-btn">로그아웃</button>
+                </div>
                 </div>
             </div>
             <div class="hamburger" id="hamburger">
@@ -223,6 +224,50 @@
                 </form>
                 <div class="dupr-info">
                     <p><i class="fas fa-info-circle"></i> DUPR은 2.0에서 8.0까지 소수점 첫째 자리까지 입력할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Settings Modal -->
+    <div id="admin-settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>관리자 설정</h2>
+                <span class="close" id="close-admin-settings">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="admin-settings-form">
+                    <div class="form-group">
+                        <label for="court-count">코트 개수</label>
+                        <input type="number" id="court-count" class="form-control" min="1" max="10" value="2">
+                        <small class="form-text">운영할 코트의 개수를 설정하세요 (1-10개)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="time-slots">운영 시간</label>
+                        <div id="time-slots-container">
+                            <div class="time-slot-item">
+                                <input type="time" class="form-control time-start" value="09:00">
+                                <span>~</span>
+                                <input type="time" class="form-control time-end" value="10:00">
+                                <button type="button" class="btn btn-outline btn-small remove-time-slot">삭제</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline btn-small" id="add-time-slot">시간 추가</button>
+                        <small class="form-text">운영할 시간대를 설정하세요</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="closing-time">예약 마감 시간 (분)</label>
+                        <input type="number" id="closing-time" class="form-control" min="30" max="120" value="60">
+                        <small class="form-text">게임 시작 몇 분 전에 예약을 마감할지 설정하세요</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full">설정 저장</button>
+                </form>
+                <div class="admin-info">
+                    <p><i class="fas fa-info-circle"></i> 설정 변경 시 기존 예약에 영향을 줄 수 있습니다.</p>
                 </div>
             </div>
         </div>

@@ -495,6 +495,65 @@ body {
     color: #28a745;
 }
 
+/* 관리자 설정 모달 스타일 */
+.admin-info {
+    margin-top: 15px;
+    padding: 12px;
+    background: #fff3cd;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+}
+
+.admin-info p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-info i {
+    color: #ffc107;
+}
+
+/* 시간 슬롯 설정 스타일 */
+.time-slot-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.time-slot-item .time-start,
+.time-slot-item .time-end {
+    flex: 1;
+    min-width: 120px;
+}
+
+.time-slot-item span {
+    font-weight: 500;
+    color: #666;
+}
+
+.remove-time-slot {
+    background: #dc3545;
+    color: white;
+    border: none;
+}
+
+.remove-time-slot:hover {
+    background: #c82333;
+}
+
+#add-time-slot {
+    margin-top: 10px;
+    width: 100%;
+}
+
 .form-text {
     color: #6c757d;
     font-size: 0.8rem;

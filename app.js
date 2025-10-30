@@ -429,6 +429,60 @@ async function getUserDUPR(userId) {
     }
 }
 
+// 관리자 여부 확인
+function isAdmin(user) {
+    // 임시로 특정 이메일을 관리자로 설정 (나중에 Firestore에서 관리)
+    const adminEmails = ['admin@pickleball.com', 'starlunar88@gmail.com'];
+    return adminEmails.includes(user.email);
+}
+
+// 시스템 설정 가져오기
+async function getSystemSettings() {
+    try {
+        const settingsDoc = await db.collection('settings').doc('system').get();
+        if (settingsDoc.exists) {
+            return settingsDoc.data();
+        }
+        // 기본 설정 반환
+        return {
+            courtCount: 2,
+            timeSlots: [
+                { start: "09:00", end: "10:00" },
+                { start: "10:00", end: "11:00" },
+                { start: "11:00", end: "12:00" },
+                { start: "12:00", end: "13:00" },
+                { start: "13:00", end: "14:00" },
+                { start: "14:00", end: "15:00" },
+                { start: "15:00", end: "16:00" },
+                { start: "16:00", end: "17:00" },
+                { start: "17:00", end: "18:00" },
+                { start: "18:00", end: "19:00" },
+                { start: "19:00", end: "20:00" }
+            ],
+            closingTime: 60,
+            playersPerCourt: 4,
+            gamesPerHour: 4
+        };
+    } catch (error) {
+        console.error('시스템 설정 가져오기 오류:', error);
+        return null;
+    }
+}
+
+// 시스템 설정 저장
+async function saveSystemSettings(settings) {
+    try {
+        await db.collection('settings').doc('system').set({
+            ...settings,
+            lastUpdated: new Date()
+        });
+        console.log('시스템 설정 저장 완료:', settings);
+    } catch (error) {
+        console.error('시스템 설정 저장 오류:', error);
+        throw error;
+    }
+}
+
 // 이메일 링크 확인 및 로그인 처리
 function handleEmailLinkSignIn() {
     // URL에서 이메일 링크 확인
@@ -664,6 +718,105 @@ async function handleDuprEdit() {
     }
 }
 
+// 관리자 설정 모달 열기
+async function openAdminSettingsModal() {
+    const modal = document.getElementById('admin-settings-modal');
+    if (modal) {
+        // 현재 설정 로드
+        const settings = await getSystemSettings();
+        if (settings) {
+            document.getElementById('court-count').value = settings.courtCount;
+            document.getElementById('closing-time').value = settings.closingTime;
+            
+            // 시간 슬롯 로드
+            const container = document.getElementById('time-slots-container');
+            container.innerHTML = '';
+            
+            settings.timeSlots.forEach(slot => {
+                addTimeSlotItem(slot.start, slot.end);
+            });
+        }
+        
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// 관리자 설정 모달 닫기
+function closeAdminSettingsModal() {
+    const modal = document.getElementById('admin-settings-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 시간 슬롯 아이템 추가
+function addTimeSlotItem(start = '09:00', end = '10:00') {
+    const container = document.getElementById('time-slots-container');
+    const item = document.createElement('div');
+    item.className = 'time-slot-item';
+    item.innerHTML = `
+        <input type="time" class="form-control time-start" value="${start}">
+        <span>~</span>
+        <input type="time" class="form-control time-end" value="${end}">
+        <button type="button" class="btn btn-outline btn-small remove-time-slot">삭제</button>
+    `;
+    
+    // 삭제 버튼 이벤트
+    item.querySelector('.remove-time-slot').addEventListener('click', () => {
+        item.remove();
+    });
+    
+    container.appendChild(item);
+}
+
+// 관리자 설정 저장
+async function handleAdminSettings() {
+    const courtCount = parseInt(document.getElementById('court-count').value);
+    const closingTime = parseInt(document.getElementById('closing-time').value);
+    
+    // 시간 슬롯 수집
+    const timeSlots = [];
+    const timeSlotItems = document.querySelectorAll('.time-slot-item');
+    
+    for (let item of timeSlotItems) {
+        const start = item.querySelector('.time-start').value;
+        const end = item.querySelector('.time-end').value;
+        
+        if (start && end) {
+            timeSlots.push({ start, end });
+        }
+    }
+    
+    if (timeSlots.length === 0) {
+        showToast('최소 하나의 시간 슬롯을 설정해주세요.', 'error');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const settings = {
+            courtCount,
+            timeSlots,
+            closingTime,
+            playersPerCourt: 4,
+            gamesPerHour: 4
+        };
+        
+        await saveSystemSettings(settings);
+        showToast('관리자 설정이 저장되었습니다!', 'success');
+        closeAdminSettingsModal();
+        
+    } catch (error) {
+        console.error('관리자 설정 저장 오류:', error);
+        showToast('설정 저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
 // 비밀번호 설정 폼 이벤트 리스너
 document.addEventListener('DOMContentLoaded', function() {
     const passwordSetupForm = document.getElementById('password-setup-form');
@@ -693,6 +846,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeDuprEdit = document.getElementById('close-dupr-edit');
     if (closeDuprEdit) {
         closeDuprEdit.addEventListener('click', closeDuprEditModal);
+    }
+    
+    // 관리자 설정 버튼
+    const adminSettingsBtn = document.getElementById('admin-settings-btn');
+    if (adminSettingsBtn) {
+        adminSettingsBtn.addEventListener('click', openAdminSettingsModal);
+    }
+    
+    // 관리자 설정 모달 닫기 버튼
+    const closeAdminSettings = document.getElementById('close-admin-settings');
+    if (closeAdminSettings) {
+        closeAdminSettings.addEventListener('click', closeAdminSettingsModal);
+    }
+    
+    // 관리자 설정 폼
+    const adminSettingsForm = document.getElementById('admin-settings-form');
+    if (adminSettingsForm) {
+        adminSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleAdminSettings();
+        });
+    }
+    
+    // 시간 슬롯 추가 버튼
+    const addTimeSlotBtn = document.getElementById('add-time-slot');
+    if (addTimeSlotBtn) {
+        addTimeSlotBtn.addEventListener('click', () => {
+            addTimeSlotItem();
+        });
     }
 });
 
