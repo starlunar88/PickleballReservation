@@ -800,21 +800,94 @@ function closeAdminSettingsModal() {
 // 시간 슬롯 아이템 추가
 function addTimeSlotItem(start = '09:00', end = '10:00') {
     const container = document.getElementById('time-slots-container');
+    
+    // 다음 시간으로 자동 설정 (마지막 시간 슬롯의 종료 시간을 시작 시간으로)
+    const lastItem = container.lastElementChild;
+    if (lastItem && lastItem.classList.contains('time-slot-item')) {
+        const lastEndTime = lastItem.querySelector('.time-end').value;
+        if (lastEndTime) {
+            start = lastEndTime;
+            // 1시간 후로 종료 시간 설정
+            const [hours, minutes] = lastEndTime.split(':').map(Number);
+            const endTime = new Date();
+            endTime.setHours(hours, minutes);
+            endTime.setHours(endTime.getHours() + 1);
+            end = endTime.toTimeString().slice(0, 5);
+        }
+    }
+    
     const item = document.createElement('div');
     item.className = 'time-slot-item';
     item.innerHTML = `
-        <input type="time" class="form-control time-start" value="${start}">
-        <span>~</span>
-        <input type="time" class="form-control time-end" value="${end}">
-        <button type="button" class="btn btn-outline btn-small remove-time-slot">삭제</button>
+        <div class="time-slot-inputs">
+            <input type="time" class="form-control time-start" value="${start}" onchange="validateTimeSlot(this)">
+            <span class="time-separator">~</span>
+            <input type="time" class="form-control time-end" value="${end}" onchange="validateTimeSlot(this)">
+        </div>
+        <button type="button" class="btn btn-outline btn-small remove-time-slot" title="이 시간대 삭제">
+            <i class="fas fa-trash"></i>
+        </button>
     `;
     
+    container.appendChild(item);
+    
     // 삭제 버튼 이벤트
-    item.querySelector('.remove-time-slot').addEventListener('click', () => {
-        item.remove();
+    const removeBtn = item.querySelector('.remove-time-slot');
+    removeBtn.addEventListener('click', () => {
+        if (container.children.length > 1) {
+            item.remove();
+            showToast('시간대가 삭제되었습니다.', 'info');
+        } else {
+            showToast('최소 1개의 시간대는 유지해야 합니다.', 'warning');
+        }
     });
     
-    container.appendChild(item);
+    // 시간 유효성 검사
+    validateTimeSlot(item.querySelector('.time-start'));
+    validateTimeSlot(item.querySelector('.time-end'));
+    
+    showToast('새 시간대가 추가되었습니다.', 'success');
+}
+
+// 시간 슬롯 유효성 검사
+function validateTimeSlot(input) {
+    const timeSlotItem = input.closest('.time-slot-item');
+    const startInput = timeSlotItem.querySelector('.time-start');
+    const endInput = timeSlotItem.querySelector('.time-end');
+    
+    const startTime = startInput.value;
+    const endTime = endInput.value;
+    
+    if (startTime && endTime) {
+        if (startTime >= endTime) {
+            showToast('종료 시간은 시작 시간보다 늦어야 합니다.', 'warning');
+            endInput.value = '';
+            endInput.focus();
+            return false;
+        }
+        
+        // 시간 겹침 검사
+        const container = document.getElementById('time-slots-container');
+        const allItems = container.querySelectorAll('.time-slot-item');
+        
+        for (let item of allItems) {
+            if (item === timeSlotItem) continue;
+            
+            const otherStart = item.querySelector('.time-start').value;
+            const otherEnd = item.querySelector('.time-end').value;
+            
+            if (otherStart && otherEnd) {
+                if ((startTime < otherEnd && endTime > otherStart)) {
+                    showToast('시간대가 겹치지 않도록 설정해주세요.', 'warning');
+                    input.value = '';
+                    input.focus();
+                    return false;
+                }
+            }
+        }
+    }
+    
+    return true;
 }
 
 // 관리자 설정 저장
