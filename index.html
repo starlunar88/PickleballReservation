@@ -156,11 +156,12 @@
                         <label for="login-email">이메일</label>
                         <input type="email" id="login-email" class="form-control" required placeholder="이메일 주소를 입력하세요">
                     </div>
-                    <button type="submit" class="btn btn-primary btn-full">로그인 링크 전송</button>
+                    <div class="form-group">
+                        <label for="login-password">비밀번호</label>
+                        <input type="password" id="login-password" class="form-control" required placeholder="비밀번호를 입력하세요">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">로그인</button>
                 </form>
-                <div class="login-info">
-                    <p><i class="fas fa-info-circle"></i> 입력하신 이메일로 로그인 링크가 전송됩니다.</p>
-                </div>
                 <div class="modal-footer">
                     <p>계정이 없으신가요? <a href="#" id="switch-to-signup">회원가입</a></p>
                 </div>
@@ -192,6 +193,31 @@
                 </div>
                 <div class="modal-footer">
                     <p>이미 계정이 있으신가요? <a href="#" id="switch-to-login">로그인</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Setup Modal -->
+    <div id="password-setup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>비밀번호 설정</h2>
+            </div>
+            <div class="modal-body">
+                <form id="password-setup-form">
+                    <div class="form-group">
+                        <label for="setup-password">비밀번호</label>
+                        <input type="password" id="setup-password" class="form-control" required placeholder="비밀번호를 입력하세요" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="setup-confirm-password">비밀번호 확인</label>
+                        <input type="password" id="setup-confirm-password" class="form-control" required placeholder="비밀번호를 다시 입력하세요">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">비밀번호 설정 완료</button>
+                </form>
+                <div class="password-info">
+                    <p><i class="fas fa-info-circle"></i> 비밀번호는 6자 이상이어야 합니다.</p>
                 </div>
             </div>
         </div>

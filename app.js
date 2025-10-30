@@ -116,12 +116,13 @@ function closeModal(type) {
     }
 }
 
-// 로그인 처리 (이메일 링크 방식)
+// 로그인 처리 (이메일/비밀번호 방식)
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
     
-    if (!email) {
-        showToast('이메일을 입력해주세요.', 'error');
+    if (!email || !password) {
+        showToast('이메일과 비밀번호를 입력해주세요.', 'error');
         return;
     }
     
@@ -132,30 +133,24 @@ async function handleLogin() {
     
     try {
         showLoading();
-        
-        // 이메일 링크 전송
-        const actionCodeSettings = {
-            url: window.location.origin + window.location.pathname,
-            handleCodeInApp: true,
-        };
-        
-        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
-        
-        // 이메일을 localStorage에 저장
-        localStorage.setItem('emailForSignIn', email);
-        
-        showToast('로그인 링크가 이메일로 전송되었습니다! 이메일을 확인해주세요.', 'success');
+        await auth.signInWithEmailAndPassword(email, password);
+        showToast('로그인되었습니다!', 'success');
         closeModal('login');
         loginForm.reset();
-        
     } catch (error) {
-        console.error('로그인 링크 전송 오류:', error);
+        console.error('로그인 오류:', error);
         console.error('오류 코드:', error.code);
         console.error('오류 메시지:', error.message);
         
-        let errorMessage = '로그인 링크 전송 중 오류가 발생했습니다.';
+        let errorMessage = '로그인 중 오류가 발생했습니다.';
         
         switch (error.code) {
+            case 'auth/user-not-found':
+                errorMessage = '등록되지 않은 이메일입니다.';
+                break;
+            case 'auth/wrong-password':
+                errorMessage = '비밀번호가 올바르지 않습니다.';
+                break;
             case 'auth/invalid-email':
                 errorMessage = '유효하지 않은 이메일입니다.';
                 break;
@@ -163,7 +158,7 @@ async function handleLogin() {
                 errorMessage = '비활성화된 계정입니다.';
                 break;
             case 'auth/operation-not-allowed':
-                errorMessage = '이메일 링크 인증이 비활성화되어 있습니다.';
+                errorMessage = '이메일/비밀번호 인증이 비활성화되어 있습니다.';
                 break;
             case 'auth/network-request-failed':
                 errorMessage = '네트워크 오류가 발생했습니다.';
@@ -186,24 +181,8 @@ async function handleLogin() {
 
 // 회원가입 처리 (이메일 링크 방식)
 async function handleSignup() {
-    console.log('handleSignup 함수 시작');
-    
-    const nameElement = document.getElementById('signup-name');
-    const emailElement = document.getElementById('signup-email');
-    
-    console.log('nameElement:', nameElement);
-    console.log('emailElement:', emailElement);
-    
-    if (!nameElement || !emailElement) {
-        console.error('필수 요소를 찾을 수 없습니다:', { nameElement, emailElement });
-        showToast('폼 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.', 'error');
-        return;
-    }
-    
-    const name = nameElement.value;
-    const email = emailElement.value;
-    
-    console.log('입력된 값:', { name, email });
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
     
     if (!name || !email) {
         showToast('이름과 이메일을 입력해주세요.', 'error');
@@ -218,9 +197,9 @@ async function handleSignup() {
     try {
         showLoading();
         
-        // 이메일 링크 전송
+        // 이메일 링크 전송 (회원가입용)
         const actionCodeSettings = {
-            url: window.location.origin + window.location.pathname,
+            url: window.location.origin + window.location.pathname + '?mode=signup',
             handleCodeInApp: true,
         };
         
@@ -229,6 +208,7 @@ async function handleSignup() {
         // 사용자 정보를 localStorage에 저장
         localStorage.setItem('emailForSignIn', email);
         localStorage.setItem('userNameForSignIn', name);
+        localStorage.setItem('isSignup', 'true');
         
         showToast('회원가입 링크가 이메일로 전송되었습니다! 이메일을 확인해주세요.', 'success');
         closeModal('signup');
@@ -381,6 +361,7 @@ function handleEmailLinkSignIn() {
     if (auth.isSignInWithEmailLink(window.location.href)) {
         let email = localStorage.getItem('emailForSignIn');
         let userName = localStorage.getItem('userNameForSignIn');
+        let isSignup = localStorage.getItem('isSignup') === 'true';
         
         if (!email) {
             // 이메일이 localStorage에 없는 경우 사용자에게 입력 요청
@@ -394,17 +375,29 @@ function handleEmailLinkSignIn() {
                 .then((result) => {
                     console.log('이메일 링크 로그인 성공:', result);
                     
-                    // 회원가입인 경우 사용자 이름 설정
-                    if (userName && !result.user.displayName) {
-                        return result.user.updateProfile({
-                            displayName: userName
-                        });
+                    if (isSignup) {
+                        // 회원가입인 경우 사용자 이름 설정
+                        if (userName && !result.user.displayName) {
+                            return result.user.updateProfile({
+                                displayName: userName
+                            });
+                        }
                     }
                 })
                 .then(() => {
-                    showToast('로그인되었습니다!', 'success');
+                    if (isSignup) {
+                        // 회원가입인 경우 비밀번호 설정 모달 표시
+                        showPasswordSetupModal(email);
+                        showToast('회원가입이 완료되었습니다! 비밀번호를 설정해주세요.', 'success');
+                    } else {
+                        // 로그인인 경우
+                        showToast('로그인되었습니다!', 'success');
+                    }
+                    
+                    // localStorage 정리
                     localStorage.removeItem('emailForSignIn');
                     localStorage.removeItem('userNameForSignIn');
+                    localStorage.removeItem('isSignup');
                     
                     // URL에서 이메일 링크 파라미터 제거
                     window.history.replaceState({}, document.title, window.location.pathname);
@@ -438,6 +431,101 @@ function handleEmailLinkSignIn() {
         }
     }
 }
+
+// 비밀번호 설정 모달 표시
+function showPasswordSetupModal(email) {
+    const modal = document.getElementById('password-setup-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // 이메일 정보 표시
+        const modalBody = modal.querySelector('.modal-body');
+        const emailInfo = document.createElement('div');
+        emailInfo.className = 'password-info';
+        emailInfo.innerHTML = `<p><i class="fas fa-envelope"></i> ${email}로 회원가입이 완료되었습니다.</p>`;
+        modalBody.insertBefore(emailInfo, modalBody.firstChild);
+    }
+}
+
+// 비밀번호 설정 모달 닫기
+function closePasswordSetupModal() {
+    const modal = document.getElementById('password-setup-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 비밀번호 설정 처리
+async function handlePasswordSetup() {
+    const password = document.getElementById('setup-password').value;
+    const confirmPassword = document.getElementById('setup-confirm-password').value;
+    
+    if (!password || !confirmPassword) {
+        showToast('비밀번호를 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showToast('비밀번호가 일치하지 않습니다.', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('비밀번호는 6자 이상이어야 합니다.', 'error');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('사용자 정보를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        // 비밀번호 설정
+        await user.updatePassword(password);
+        
+        showToast('비밀번호가 설정되었습니다! 이제 이메일과 비밀번호로 로그인할 수 있습니다.', 'success');
+        closePasswordSetupModal();
+        
+        // 폼 초기화
+        document.getElementById('password-setup-form').reset();
+        
+    } catch (error) {
+        console.error('비밀번호 설정 오류:', error);
+        let errorMessage = '비밀번호 설정 중 오류가 발생했습니다.';
+        
+        switch (error.code) {
+            case 'auth/weak-password':
+                errorMessage = '비밀번호가 너무 약합니다.';
+                break;
+            case 'auth/requires-recent-login':
+                errorMessage = '보안을 위해 다시 로그인해주세요.';
+                break;
+            default:
+                errorMessage = `오류: ${error.message}`;
+        }
+        
+        showToast(errorMessage, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 비밀번호 설정 폼 이벤트 리스너
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordSetupForm = document.getElementById('password-setup-form');
+    if (passwordSetupForm) {
+        passwordSetupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handlePasswordSetup();
+        });
+    }
+});
 
 // 페이지 로드 시 이메일 링크 확인
 document.addEventListener('DOMContentLoaded', function() {

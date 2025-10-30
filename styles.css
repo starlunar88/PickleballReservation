@@ -451,6 +451,28 @@ body {
     color: #2196f3;
 }
 
+/* 비밀번호 설정 모달 */
+.password-info {
+    margin-top: 15px;
+    padding: 12px;
+    background: #fff3cd;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+}
+
+.password-info p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.password-info i {
+    color: #ffc107;
+}
+
 /* Loading Spinner */
 .loading {
     position: fixed;
