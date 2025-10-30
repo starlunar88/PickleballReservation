@@ -1975,12 +1975,13 @@ body {
 /* 모바일 네비게이션 탭 - 모든 화면에서 표시 */
 .mobile-nav-tabs {
     display: flex; /* 모든 화면에서 표시 */
-    position: sticky; /* 메뉴바 바로 아래에 고정 */
-    top: 72px; /* nav-container 높이(60px) + 상단 여백(8px) + 약간의 간격 */
-    z-index: 900; /* 컨텐츠 위로 */
+    position: fixed; /* 메뉴바 바로 아래 고정 (부모 overflow 영향 제거) */
+    top: 72px; /* nav-container 높이(60px) + 상단 여백 */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100; /* 메뉴/콘텐츠 위로 안전하게 */
     width: 100%;
     max-width: 400px; /* 모바일 폭과 동일 */
-    margin: 0 auto; /* 중앙 정렬 */
     background: white;
     border-top: 1px solid #e9ecef;
     border-bottom: 1px solid #f1f3f5;
@@ -2047,6 +2048,7 @@ body {
 /* 탭 컨텐츠 */
 .tab-contents {
     padding: 0 20px 100px 20px;
+    margin-top: 56px; /* 고정된 탭 높이만큼 여백 확보 (겹침 방지) */
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
