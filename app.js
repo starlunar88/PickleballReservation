@@ -3227,16 +3227,21 @@ function addTestButtonEventListeners() {
                 // 강제 대진표 생성 (마감 여부 무시)
                 await generateMatchSchedule(date, timeSlot);
                 
-                // 대진표 표시
+                // 대진표 표시 (인덱스 오류 방지를 위해 단순화)
                 const existingMatches = await db.collection('matches')
                     .where('date', '==', date)
                     .where('timeSlot', '==', timeSlot)
-                    .orderBy('roundNumber')
-                    .orderBy('courtNumber')
                     .get();
                 
                 if (!existingMatches.empty) {
-                    await renderMatchSchedule(existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })), date, timeSlot);
+                    const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    matches.sort((a, b) => {
+                        if (a.roundNumber !== b.roundNumber) {
+                            return a.roundNumber - b.roundNumber;
+                        }
+                        return a.courtNumber - b.courtNumber;
+                    });
+                    await renderMatchSchedule(matches, date, timeSlot);
                 }
             } catch (error) {
                 console.error('강제 대진표 생성 오류:', error);
@@ -3296,20 +3301,25 @@ async function checkAndShowMatchSchedule() {
             return;
         }
         
-        // 기존 대진표 확인
+        // 기존 대진표 확인 (인덱스 오류 방지를 위해 단순화)
         const existingMatches = await db.collection('matches')
             .where('date', '==', currentDate)
             .where('timeSlot', '==', selectedTimeSlot)
-            .orderBy('roundNumber')
-            .orderBy('courtNumber')
             .get();
         
         if (existingMatches.empty) {
             // 대진표가 없으면 생성
             await generateMatchSchedule(currentDate, selectedTimeSlot);
         } else {
-            // 기존 대진표 표시
-            await renderMatchSchedule(existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })), currentDate, selectedTimeSlot);
+            // 기존 대진표 표시 (클라이언트에서 정렬)
+            const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            matches.sort((a, b) => {
+                if (a.roundNumber !== b.roundNumber) {
+                    return a.roundNumber - b.roundNumber;
+                }
+                return a.courtNumber - b.courtNumber;
+            });
+            await renderMatchSchedule(matches, currentDate, selectedTimeSlot);
         }
         
     } catch (error) {
@@ -3479,6 +3489,9 @@ async function renderMatchSchedule(matches, date, timeSlot) {
                 const scoreB = match.scoreB ?? '';
                 const isCompleted = match.status === 'completed';
                 
+                // 안전한 ID 생성 (콜론을 언더스코어로 변경)
+                const safeId = match.id.replace(/:/g, '_');
+                
                 matchDiv.innerHTML = `
                     <div class="match-teams">
                         <div class="team">${teamALabel}</div>
@@ -3486,10 +3499,10 @@ async function renderMatchSchedule(matches, date, timeSlot) {
                         <div class="team">${teamBLabel}</div>
                     </div>
                     <div class="match-score">
-                        <input type="number" class="score-input" min="0" id="scoreA-${match.id}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                        <input type="number" class="score-input" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
                         <span class="score-separator">:</span>
-                        <input type="number" class="score-input" min="0" id="scoreB-${match.id}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
-                        <button class="save-score-btn" id="save-${match.id}" ${isCompleted ? 'disabled' : ''}>
+                        <input type="number" class="score-input" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                        <button class="save-score-btn" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                             ${isCompleted ? '완료' : '저장'}
                         </button>
                         <span class="match-status ${isCompleted ? 'completed' : 'pending'}">
@@ -3501,11 +3514,11 @@ async function renderMatchSchedule(matches, date, timeSlot) {
                 roundMatchesContainer.appendChild(matchDiv);
                 
                 // 저장 버튼 이벤트
-                const saveBtn = matchDiv.querySelector(`#save-${match.id}`);
+                const saveBtn = matchDiv.querySelector(`#save-${safeId}`);
                 if (saveBtn && !isCompleted) {
                     saveBtn.addEventListener('click', async () => {
-                        const scoreA = Number(document.getElementById(`scoreA-${match.id}`).value || 0);
-                        const scoreB = Number(document.getElementById(`scoreB-${match.id}`).value || 0);
+                        const scoreA = Number(document.getElementById(`scoreA-${safeId}`).value || 0);
+                        const scoreB = Number(document.getElementById(`scoreB-${safeId}`).value || 0);
                         await saveMatchScore(match, scoreA, scoreB);
                     });
                 }
