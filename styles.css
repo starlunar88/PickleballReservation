@@ -1975,11 +1975,18 @@ body {
 /* 모바일 네비게이션 탭 - 모든 화면에서 표시 */
 .mobile-nav-tabs {
     display: flex; /* 모든 화면에서 표시 */
-    position: static; /* 고정 해제: 컨테이너 흐름에 포함 */
-    width: 100%; /* 컨테이너 너비에 맞춤 */
+    position: sticky; /* 메뉴바 바로 아래에 고정 */
+    top: 72px; /* nav-container 높이(60px) + 상단 여백(8px) + 약간의 간격 */
+    z-index: 900; /* 컨텐츠 위로 */
+    width: 100%;
+    max-width: 400px; /* 모바일 폭과 동일 */
+    margin: 0 auto; /* 중앙 정렬 */
     background: white;
     border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #f1f3f5;
     padding: 6px 0; /* 더 작은 패딩 */
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
 }
 
 .mobile-tab-btn {
