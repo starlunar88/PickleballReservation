@@ -134,6 +134,9 @@ async function handleLogin() {
         loginForm.reset();
     } catch (error) {
         console.error('로그인 오류:', error);
+        console.error('오류 코드:', error.code);
+        console.error('오류 메시지:', error.message);
+        
         let errorMessage = '로그인 중 오류가 발생했습니다.';
         
         switch (error.code) {
@@ -149,6 +152,20 @@ async function handleLogin() {
             case 'auth/user-disabled':
                 errorMessage = '비활성화된 계정입니다.';
                 break;
+            case 'auth/operation-not-allowed':
+                errorMessage = '이메일/비밀번호 인증이 비활성화되어 있습니다.';
+                break;
+            case 'auth/network-request-failed':
+                errorMessage = '네트워크 오류가 발생했습니다.';
+                break;
+            case 'auth/invalid-api-key':
+                errorMessage = 'Firebase API 키가 올바르지 않습니다.';
+                break;
+            case 'auth/project-not-found':
+                errorMessage = 'Firebase 프로젝트를 찾을 수 없습니다.';
+                break;
+            default:
+                errorMessage = `오류: ${error.message} (코드: ${error.code})`;
         }
         
         showToast(errorMessage, 'error');
@@ -193,6 +210,9 @@ async function handleSignup() {
         signupForm.reset();
     } catch (error) {
         console.error('회원가입 오류:', error);
+        console.error('오류 코드:', error.code);
+        console.error('오류 메시지:', error.message);
+        
         let errorMessage = '회원가입 중 오류가 발생했습니다.';
         
         switch (error.code) {
@@ -205,6 +225,20 @@ async function handleSignup() {
             case 'auth/weak-password':
                 errorMessage = '비밀번호가 너무 약합니다.';
                 break;
+            case 'auth/operation-not-allowed':
+                errorMessage = '이메일/비밀번호 인증이 비활성화되어 있습니다.';
+                break;
+            case 'auth/network-request-failed':
+                errorMessage = '네트워크 오류가 발생했습니다.';
+                break;
+            case 'auth/invalid-api-key':
+                errorMessage = 'Firebase API 키가 올바르지 않습니다.';
+                break;
+            case 'auth/project-not-found':
+                errorMessage = 'Firebase 프로젝트를 찾을 수 없습니다.';
+                break;
+            default:
+                errorMessage = `오류: ${error.message} (코드: ${error.code})`;
         }
         
         showToast(errorMessage, 'error');
