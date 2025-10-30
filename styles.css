@@ -2055,21 +2055,6 @@ body {
     margin-top: 0;
 }
 
-/* 모바일 강제 하단 고정 (iOS Safari 포함) */
-@media (max-width: 768px) {
-    .mobile-nav-tabs {
-        position: fixed !important;
-        top: auto !important;
-        bottom: env(safe-area-inset-bottom, 0);
-        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    .tab-contents {
-        padding-bottom: 160px; /* 작은 기기에서 여유 더 확보 */
-    }
-}
-
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
 .tab-contents,
 .reservations-container,
@@ -2124,11 +2109,13 @@ body {
 
 /* 예약 현황판 (기차표 스타일) - 모든 화면 모바일 기준 */
 .reservations-board {
-    background: rgba(255,255,255,0.9);
-    border-radius: 12px; /* 더 작은 둥근 모서리 */
-    box-shadow: 0 3px 10px rgba(0,0,0,0.1); /* 더 작은 그림자 */
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: saturate(160%) blur(8px);
+    -webkit-backdrop-filter: saturate(160%) blur(8px);
+    border-radius: 14px; /* iOS 느낌의 둥근 모서리 */
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
     overflow: hidden;
-    margin: 0 8px; /* 더 작은 여백 */
+    margin: 0 8px;
 }
 
 /* 선택된 정보 카드 */
@@ -2163,7 +2150,7 @@ body {
 .date-navigation {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .date-navigation span {
@@ -2177,19 +2164,24 @@ body {
     background: #667eea;
     border: 2px solid #667eea;
     color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 1rem;
-    opacity: 1;
+    transition: all 0.2s ease;
 }
 
 .date-navigation button:hover {
     background: #5a6fd8;
     border-color: #5a6fd8;
-    transform: scale(1.05);
+    transform: translateY(-1px);
 }
+
+.date-navigation button i { font-size: 16px; }
 
 .reservations-timeline {
     padding: 20px;
@@ -2452,19 +2444,17 @@ body {
 .timeline-item {
     display: flex;
     align-items: center;
-    padding: 15px;
+    padding: 12px 14px;
     margin-bottom: 10px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border-left: 4px solid #e9ecef;
-    transition: all 0.3s ease;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #eef0f4;
+    box-shadow: 0 4px 12px rgba(17,17,26,0.05);
+    transition: all 0.2s ease;
     position: relative;
 }
 
-.timeline-item:hover {
-    background: #e9ecef;
-    transform: translateX(5px);
-}
+.timeline-item:hover { box-shadow: 0 6px 16px rgba(17,17,26,0.08); transform: translateY(-2px); }
 
 .timeline-item.full {
     border-left-color: #dc3545;
@@ -2481,26 +2471,16 @@ body {
     background: #f0fff4;
 }
 
-.timeline-time {
-    min-width: 80px;
-    text-align: center;
-    margin-right: 20px;
-}
+.timeline-time { min-width: 68px; text-align: left; margin-right: 12px; }
 
 .time-start, .time-end {
     font-weight: 600;
     color: #333;
 }
 
-.time-start {
-    font-size: 1.1rem;
-    margin-bottom: 2px;
-}
+.time-start { font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
 
-.time-end {
-    font-size: 0.9rem;
-    color: #666;
-}
+.time-end { font-size: 0.8rem; color: #8a8f98; }
 
 .timeline-content {
     flex: 1;
@@ -2510,32 +2490,15 @@ body {
     margin-bottom: 10px;
 }
 
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
+.status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
 
-.status-badge.full {
-    background: #dc3545;
-    color: white;
-}
+.status-badge.full { background: #ffe5e7; color: #c0392b; }
 
-.status-badge.partial {
-    background: #ffc107;
-    color: #333;
-}
+.status-badge.partial { background: #fff3cd; color: #7a5d00; }
 
-.status-badge.empty {
-    background: #28a745;
-    color: white;
-}
+.status-badge.empty { background: #e7f6ef; color: #1e7e34; }
 
-.status-badge.closed {
-    background: #6c757d;
-    color: white;
-}
+.status-badge.closed { background: #eceff3; color: #6c757d; }
 
 .timeline-players {
     display: flex;
@@ -2547,20 +2510,16 @@ body {
 .player-item {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 10px;
-    background: rgba(255,255,255,0.8);
-    border-radius: 15px;
-    font-size: 0.8rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #f6f7fb;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: #2d3748;
+    transition: all 0.2s ease;
 }
 
-.player-item:hover {
-    background: rgba(255,255,255,0.9);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
+.player-item:hover { background: #eef1f6; transform: translateY(-1px); }
 
 /* 관리자 예약 스타일 */
 .player-item.admin-reservation {
@@ -2598,22 +2557,18 @@ body {
 }
 
 .timeline-reserve-btn {
-    padding: 6px 12px; /* 더 작은 버튼 */
-    background: #667eea;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #6f7aea 0%, #5b67d6 100%);
     color: white;
     border: none;
-    border-radius: 15px; /* 더 작은 둥근 모서리 */
-    font-size: 0.7rem; /* 더 작은 폰트 */
-    font-weight: 600;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
-    opacity: 1; /* 항상 표시 */
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.timeline-reserve-btn:hover {
-    background: #5a6fd8;
-    transform: none; /* 호버 효과 제거 */
-}
+.timeline-reserve-btn:hover { box-shadow: 0 6px 14px rgba(102, 126, 234, 0.35); transform: translateY(-1px); }
 
 .timeline-reserve-btn:disabled {
     background: #ccc;
@@ -2622,22 +2577,18 @@ body {
 
 /* 타임라인 취소 버튼 */
 .timeline-cancel-btn {
-    padding: 6px 12px; /* 더 작은 버튼 */
-    background: #dc3545;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #ff6b6b 0%, #e15252 100%);
     color: white;
     border: none;
-    border-radius: 15px; /* 더 작은 둥근 모서리 */
-    font-size: 0.7rem; /* 더 작은 폰트 */
-    font-weight: 600;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
-    opacity: 1; /* 항상 표시 */
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.timeline-cancel-btn:hover {
-    background: #c82333;
-    transform: none; /* 호버 효과 제거 */
-}
+.timeline-cancel-btn:hover { box-shadow: 0 6px 14px rgba(220, 53, 69, 0.25); transform: translateY(-1px); }
 
 /* 예약/취소 버튼 영역 - 완전 제거됨 (타임라인에 통합) */
 
