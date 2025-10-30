@@ -1992,6 +1992,11 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
+/* Spacer under fixed mobile tabs so content starts below tabs */
+.mobile-nav-tabs-spacer {
+    height: 64px; /* tabs height + shadow allowance */
+}
+
 .mobile-tab-btn {
     flex: 1;
     display: flex;
