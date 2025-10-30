@@ -39,15 +39,25 @@ auth.onAuthStateChanged((user) => {
 });
 
 // 사용자 메뉴 표시
-function showUserMenu(user) {
+async function showUserMenu(user) {
     const authButtons = document.getElementById('auth-buttons');
     const userMenu = document.getElementById('user-menu');
     const userName = document.getElementById('user-name');
+    const userDupr = document.getElementById('user-dupr');
     
     if (authButtons && userMenu && userName) {
         authButtons.style.display = 'none';
         userMenu.style.display = 'flex';
         userName.textContent = user.displayName || user.email;
+        
+        // DUPR 정보 가져오기
+        const dupr = await getUserDUPR(user.uid);
+        if (dupr && userDupr) {
+            userDupr.textContent = `DUPR: ${dupr}`;
+            userDupr.style.display = 'block';
+        } else if (userDupr) {
+            userDupr.style.display = 'none';
+        }
     }
 }
 

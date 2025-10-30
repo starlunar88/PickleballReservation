@@ -80,8 +80,35 @@ body {
     color: white;
 }
 
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
 .user-name {
     font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.user-dupr {
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.user-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    min-width: auto;
 }
 
 .hamburger {
@@ -471,6 +498,52 @@ body {
 
 .password-info i {
     color: #ffc107;
+}
+
+/* DUPR 관련 스타일 */
+.dupr-info {
+    margin-top: 15px;
+    padding: 12px;
+    background: #e8f5e8;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.dupr-info p {
+    margin: 0;
+    color: #155724;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dupr-info i {
+    color: #28a745;
+}
+
+.form-text {
+    color: #6c757d;
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+/* 모바일에서 사용자 메뉴 스타일 */
+@media (max-width: 768px) {
+    .user-menu {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .user-info {
+        align-items: center;
+    }
+    
+    .user-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
 }
 
 /* Loading Spinner */

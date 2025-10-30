@@ -120,6 +120,7 @@ function closeModal(type) {
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
+    const dupr = document.getElementById('login-dupr').value;
     
     if (!email || !password) {
         showToast('이메일과 비밀번호를 입력해주세요.', 'error');
@@ -131,9 +132,21 @@ async function handleLogin() {
         return;
     }
     
+    // DUPR 유효성 검사
+    if (dupr && !isValidDUPR(dupr)) {
+        showToast('DUPR은 2.0에서 8.0 사이의 값이어야 합니다.', 'error');
+        return;
+    }
+    
     try {
         showLoading();
-        await auth.signInWithEmailAndPassword(email, password);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        
+        // DUPR이 입력된 경우 Firestore에 저장
+        if (dupr) {
+            await updateUserDUPR(userCredential.user.uid, parseFloat(dupr));
+        }
+        
         showToast('로그인되었습니다!', 'success');
         closeModal('login');
         loginForm.reset();
@@ -355,6 +368,40 @@ function isValidEmail(email) {
     return emailRegex.test(email);
 }
 
+// DUPR 유효성 검사
+function isValidDUPR(dupr) {
+    const duprValue = parseFloat(dupr);
+    return !isNaN(duprValue) && duprValue >= 2.0 && duprValue <= 8.0;
+}
+
+// 사용자 DUPR 업데이트
+async function updateUserDUPR(userId, dupr) {
+    try {
+        await db.collection('users').doc(userId).set({
+            dupr: dupr,
+            updatedAt: new Date()
+        }, { merge: true });
+        console.log('DUPR 업데이트 성공:', dupr);
+    } catch (error) {
+        console.error('DUPR 업데이트 오류:', error);
+        throw error;
+    }
+}
+
+// 사용자 DUPR 가져오기
+async function getUserDUPR(userId) {
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            return userDoc.data().dupr;
+        }
+        return null;
+    } catch (error) {
+        console.error('DUPR 가져오기 오류:', error);
+        return null;
+    }
+}
+
 // 이메일 링크 확인 및 로그인 처리
 function handleEmailLinkSignIn() {
     // URL에서 이메일 링크 확인
@@ -516,6 +563,80 @@ async function handlePasswordSetup() {
     }
 }
 
+// DUPR 수정 모달 열기
+function openDuprEditModal() {
+    const modal = document.getElementById('dupr-edit-modal');
+    const currentDuprSpan = document.getElementById('current-dupr');
+    const editDuprInput = document.getElementById('edit-dupr');
+    
+    if (modal && currentDuprSpan && editDuprInput) {
+        // 현재 사용자의 DUPR 가져오기
+        const user = auth.currentUser;
+        if (user) {
+            getUserDUPR(user.uid).then(dupr => {
+                if (dupr) {
+                    currentDuprSpan.textContent = dupr;
+                    editDuprInput.value = dupr;
+                } else {
+                    currentDuprSpan.textContent = '설정되지 않음';
+                    editDuprInput.value = '';
+                }
+            });
+        }
+        
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// DUPR 수정 모달 닫기
+function closeDuprEditModal() {
+    const modal = document.getElementById('dupr-edit-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// DUPR 수정 처리
+async function handleDuprEdit() {
+    const dupr = document.getElementById('edit-dupr').value;
+    
+    if (!dupr) {
+        showToast('DUPR을 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (!isValidDUPR(dupr)) {
+        showToast('DUPR은 2.0에서 8.0 사이의 값이어야 합니다.', 'error');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('사용자 정보를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        await updateUserDUPR(user.uid, parseFloat(dupr));
+        
+        // 사용자 메뉴 업데이트
+        await showUserMenu(user);
+        
+        showToast('DUPR이 업데이트되었습니다!', 'success');
+        closeDuprEditModal();
+        
+    } catch (error) {
+        console.error('DUPR 수정 오류:', error);
+        showToast('DUPR 업데이트 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
 // 비밀번호 설정 폼 이벤트 리스너
 document.addEventListener('DOMContentLoaded', function() {
     const passwordSetupForm = document.getElementById('password-setup-form');
@@ -524,6 +645,27 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             await handlePasswordSetup();
         });
+    }
+    
+    // DUPR 수정 모달 이벤트 리스너
+    const duprEditForm = document.getElementById('dupr-edit-form');
+    if (duprEditForm) {
+        duprEditForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleDuprEdit();
+        });
+    }
+    
+    // DUPR 수정 버튼 이벤트 리스너
+    const editDuprBtn = document.getElementById('edit-dupr-btn');
+    if (editDuprBtn) {
+        editDuprBtn.addEventListener('click', openDuprEditModal);
+    }
+    
+    // DUPR 수정 모달 닫기 버튼
+    const closeDuprEdit = document.getElementById('close-dupr-edit');
+    if (closeDuprEdit) {
+        closeDuprEdit.addEventListener('click', closeDuprEditModal);
     }
 });
 
