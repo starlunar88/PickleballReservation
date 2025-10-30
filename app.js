@@ -1320,7 +1320,7 @@ async function loadReservationsTimeline() {
             
             console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
             
-            const isFull = reservations.length >= 4;
+            const isFull = reservations.length >= 8; // 코트 2개 = 최대 8명
             
             // 20분 전 마감 체크
             const now = new Date();
@@ -1341,7 +1341,7 @@ async function loadReservationsTimeline() {
                 statusText = '만석';
             } else if (reservations.length > 0) {
                 statusClass = 'partial';
-                statusText = `${reservations.length}/4명`;
+                statusText = `${reservations.length}/8명`;
             } else {
                 statusClass = 'empty';
                 statusText = '예약 가능';
@@ -1442,6 +1442,19 @@ async function handleTimelineReservation(timeSlot, date) {
             return;
         }
         
+        // 중복 예약 방지 - 같은 사용자가 같은 시간대에 이미 예약했는지 확인
+        const existingReservation = await db.collection('reservations')
+            .where('userId', '==', user.uid)
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+            
+        if (!existingReservation.empty) {
+            showToast('이미 해당 시간대에 예약하셨습니다.', 'warning');
+            return;
+        }
+        
         // 사용자 정보 가져오기
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userData = userDoc.exists ? userDoc.data() : {};
@@ -1472,9 +1485,93 @@ async function handleTimelineReservation(timeSlot, date) {
         // 타임라인 새로고침
         await loadReservationsTimeline();
         
+        // 버튼 상태 업데이트
+        updateReservationButtons(timeSlot, date);
+        
     } catch (error) {
         console.error('타임라인 예약 오류:', error);
         showToast('예약 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 예약 취소 처리
+async function handleCancelReservation(timeSlot, date) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 사용자의 예약 찾기
+        const reservationSnapshot = await db.collection('reservations')
+            .where('userId', '==', user.uid)
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+            
+        if (reservationSnapshot.empty) {
+            showToast('취소할 예약이 없습니다.', 'warning');
+            return;
+        }
+        
+        // 예약 취소
+        const batch = db.batch();
+        reservationSnapshot.forEach(doc => {
+            batch.update(doc.ref, {
+                status: 'cancelled',
+                cancelledAt: new Date()
+            });
+        });
+        
+        await batch.commit();
+        
+        showToast('예약이 취소되었습니다.', 'success');
+        
+        // 타임라인 새로고침
+        await loadReservationsTimeline();
+        
+        // 버튼 상태 업데이트
+        updateReservationButtons(timeSlot, date);
+        
+    } catch (error) {
+        console.error('예약 취소 오류:', error);
+        showToast('취소 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 예약 버튼 상태 업데이트
+async function updateReservationButtons(timeSlot, date) {
+    const user = auth.currentUser;
+    const makeReservationBtn = document.getElementById('make-reservation-btn');
+    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
+    const reservationActions = document.getElementById('reservation-actions');
+    
+    if (!user || !makeReservationBtn || !cancelReservationBtn || !reservationActions) return;
+    
+    try {
+        // 사용자의 예약 확인
+        const reservationSnapshot = await db.collection('reservations')
+            .where('userId', '==', user.uid)
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+            
+        const hasReservation = !reservationSnapshot.empty;
+        
+        if (hasReservation) {
+            makeReservationBtn.style.display = 'none';
+            cancelReservationBtn.style.display = 'block';
+            reservationActions.style.display = 'flex';
+        } else {
+            makeReservationBtn.style.display = 'block';
+            cancelReservationBtn.style.display = 'none';
+            reservationActions.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('버튼 상태 업데이트 오류:', error);
     }
 }
 
@@ -1645,8 +1742,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 날짜 표시
     updateCurrentDateDisplay();
     
-    // 예약 버튼 이벤트 리스너
+    // 예약/취소 버튼 이벤트 리스너
     const makeReservationBtn = document.getElementById('make-reservation-btn');
+    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
     
     if (makeReservationBtn) {
         makeReservationBtn.addEventListener('click', async () => {
@@ -1656,6 +1754,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectedTimeSlot && selectedDate) {
                 const timeSlot = selectedTimeSlot.replace(' - ', '-');
                 await handleTimelineReservation(timeSlot, selectedDate);
+            } else {
+                showToast('시간을 선택해주세요.', 'warning');
+            }
+        });
+    }
+    
+    if (cancelReservationBtn) {
+        cancelReservationBtn.addEventListener('click', async () => {
+            const selectedTimeSlot = document.getElementById('selected-time')?.textContent;
+            const selectedDate = window.currentDate;
+            
+            if (selectedTimeSlot && selectedDate) {
+                const timeSlot = selectedTimeSlot.replace(' - ', '-');
+                await handleCancelReservation(timeSlot, selectedDate);
             } else {
                 showToast('시간을 선택해주세요.', 'warning');
             }
@@ -1727,7 +1839,7 @@ async function checkReservationAvailability(date, timeSlot) {
             .get();
         
         const currentReservations = reservationsSnapshot.size;
-        const maxReservations = settings.courtCount * settings.playersPerCourt;
+        const maxReservations = 8; // 코트 2개 * 4명 = 8명 고정
         
         if (currentReservations >= maxReservations) {
             return { 

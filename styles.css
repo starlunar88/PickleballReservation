@@ -2221,17 +2221,77 @@ body {
     }
     
     .main-container {
-        padding-bottom: 80px; /* 모바일 탭 공간 확보 */
+        padding-bottom: 60px; /* 모바일 탭 공간 축소 */
         max-width: 100%;
         margin: 0;
     }
     
     .reservations-board {
-        margin: 0 15px; /* 모바일에서 좌우 여백 조정 */
+        margin: 0 10px; /* 모바일에서 좌우 여백 축소 */
     }
     
     .tab-contents {
-        padding: 0 15px 100px 15px;
+        padding: 0 10px 60px 10px; /* 여백 축소 */
+    }
+    
+    /* 모바일 컴팩트 UI */
+    .section-header {
+        padding: 15px 20px; /* 헤더 패딩 축소 */
+    }
+    
+    .section-header h2 {
+        font-size: 1.3rem; /* 제목 크기 축소 */
+    }
+    
+    .date-navigation {
+        gap: 10px; /* 날짜 네비게이션 간격 축소 */
+    }
+    
+    .date-navigation button {
+        padding: 6px 10px; /* 버튼 크기 축소 */
+        font-size: 0.9rem;
+    }
+    
+    .timeline-item {
+        padding: 12px 15px; /* 타임라인 아이템 패딩 축소 */
+        margin-bottom: 8px; /* 간격 축소 */
+    }
+    
+    .timeline-time {
+        min-width: 80px; /* 시간 영역 축소 */
+    }
+    
+    .time-start, .time-end {
+        font-size: 0.9rem; /* 시간 텍스트 크기 축소 */
+    }
+    
+    .status-badge {
+        font-size: 0.8rem; /* 상태 배지 크기 축소 */
+        padding: 4px 8px;
+    }
+    
+    .player-item {
+        padding: 4px 8px; /* 플레이어 아이템 패딩 축소 */
+        font-size: 0.75rem; /* 플레이어 텍스트 크기 축소 */
+    }
+    
+    .player-dupr {
+        display: none; /* 모바일에서 DUPR 숨김 */
+    }
+    
+    .timeline-reserve-btn {
+        padding: 6px 12px; /* 예약 버튼 크기 축소 */
+        font-size: 0.8rem;
+    }
+    
+    .reservation-actions {
+        padding: 15px; /* 예약 액션 패딩 축소 */
+        gap: 10px;
+    }
+    
+    .reservation-actions .btn {
+        padding: 10px 16px; /* 버튼 크기 축소 */
+        font-size: 0.9rem;
     }
     
     .section-header {
