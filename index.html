@@ -375,6 +375,25 @@
                 </form>
                 
                 <div class="admin-section">
+                    <h3>관리자 관리</h3>
+                    <div class="admin-management">
+                        <div class="form-group">
+                            <label for="admin-email">관리자 이메일 추가</label>
+                            <div class="input-group">
+                                <input type="email" id="admin-email" class="form-control" placeholder="이메일 주소를 입력하세요">
+                                <button type="button" class="btn btn-primary" id="add-admin-btn">추가</button>
+                            </div>
+                        </div>
+                        <div class="admin-list" id="admin-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>관리자 목록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="admin-section">
                     <h3>팀 배정 관리</h3>
                     <div class="team-assignment-controls">
                         <div class="form-group">

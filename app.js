@@ -451,10 +451,32 @@ async function getUserDUPR(userId) {
 }
 
 // 관리자 여부 확인
-function isAdmin(user) {
-    // 임시로 특정 이메일을 관리자로 설정 (나중에 Firestore에서 관리)
-    const adminEmails = ['admin@pickleball.com', 'starlunar88@gmail.com'];
-    return adminEmails.includes(user.email);
+async function isAdmin(user) {
+    try {
+        // Firestore에서 관리자 목록 확인
+        const adminDoc = await db.collection('admins').doc(user.uid).get();
+        if (adminDoc.exists) {
+            return adminDoc.data().isAdmin === true;
+        }
+        
+        // 기본 관리자 이메일 (초기 설정용)
+        const defaultAdminEmails = ['admin@pickleball.com', 'starlunar88@gmail.com'];
+        if (defaultAdminEmails.includes(user.email)) {
+            // 기본 관리자를 Firestore에 등록
+            await db.collection('admins').doc(user.uid).set({
+                email: user.email,
+                isAdmin: true,
+                addedAt: new Date(),
+                addedBy: 'system'
+            });
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('관리자 확인 오류:', error);
+        return false;
+    }
 }
 
 // 시스템 설정 가져오기
@@ -758,6 +780,9 @@ async function openAdminSettingsModal() {
             });
         }
         
+        // 관리자 목록 로드
+        await loadAdminList();
+        
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
     }
@@ -969,6 +994,22 @@ document.addEventListener('DOMContentLoaded', function() {
             switchDashboardTab(tabName);
         });
     });
+    
+    // 관리자 추가 버튼
+    const addAdminBtn = document.getElementById('add-admin-btn');
+    if (addAdminBtn) {
+        addAdminBtn.addEventListener('click', addAdmin);
+    }
+    
+    // 관리자 이메일 입력 엔터키
+    const adminEmailInput = document.getElementById('admin-email');
+    if (adminEmailInput) {
+        adminEmailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addAdmin();
+            }
+        });
+    }
 });
 
 // 페이지 로드 시 이메일 링크 확인
@@ -2721,3 +2762,151 @@ document.querySelectorAll('input, select').forEach(input => {
         }
     });
 });
+
+// 관리자 관리 함수들
+
+// 관리자 목록 로드
+async function loadAdminList() {
+    try {
+        const adminList = document.getElementById('admin-list');
+        if (!adminList) return;
+        
+        adminList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>관리자 목록을 불러오는 중...</p></div>';
+        
+        const adminsSnapshot = await db.collection('admins')
+            .orderBy('addedAt', 'desc')
+            .get();
+        
+        if (adminsSnapshot.empty) {
+            adminList.innerHTML = '<div class="empty-state"><i class="fas fa-user-shield"></i><p>등록된 관리자가 없습니다</p></div>';
+            return;
+        }
+        
+        const admins = [];
+        adminsSnapshot.forEach(doc => {
+            admins.push({ id: doc.id, ...doc.data() });
+        });
+        
+        adminList.innerHTML = '';
+        admins.forEach(admin => {
+            const adminElement = createAdminElement(admin);
+            adminList.appendChild(adminElement);
+        });
+        
+    } catch (error) {
+        console.error('관리자 목록 로드 오류:', error);
+        const adminList = document.getElementById('admin-list');
+        if (adminList) {
+            adminList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>관리자 목록을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 관리자 요소 생성
+function createAdminElement(admin) {
+    const div = document.createElement('div');
+    div.className = 'admin-item';
+    
+    const addedDate = admin.addedAt ? admin.addedAt.toDate().toLocaleDateString() : '알 수 없음';
+    const addedBy = admin.addedBy === 'system' ? '시스템' : admin.addedBy;
+    
+    div.innerHTML = `
+        <div class="admin-info">
+            <div class="admin-email">${admin.email}</div>
+            <div class="admin-meta">추가일: ${addedDate} | 추가자: ${addedBy}</div>
+        </div>
+        <div class="admin-actions">
+            <span class="admin-status ${admin.isAdmin ? 'active' : 'inactive'}">
+                ${admin.isAdmin ? '활성' : '비활성'}
+            </span>
+            <button class="remove-admin-btn" onclick="removeAdmin('${admin.id}', '${admin.email}')">
+                <i class="fas fa-trash"></i> 제거
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// 관리자 추가
+async function addAdmin() {
+    try {
+        const emailInput = document.getElementById('admin-email');
+        const email = emailInput.value.trim();
+        
+        if (!email) {
+            showToast('이메일 주소를 입력해주세요.', 'error');
+            return;
+        }
+        
+        if (!isValidEmail(email)) {
+            showToast('유효한 이메일 주소를 입력해주세요.', 'error');
+            return;
+        }
+        
+        // 사용자 ID 찾기 (이메일로)
+        const usersSnapshot = await db.collection('users')
+            .where('email', '==', email)
+            .get();
+        
+        if (usersSnapshot.empty) {
+            showToast('해당 이메일로 가입된 사용자가 없습니다.', 'error');
+            return;
+        }
+        
+        const userDoc = usersSnapshot.docs[0];
+        const userId = userDoc.id;
+        
+        // 이미 관리자인지 확인
+        const adminDoc = await db.collection('admins').doc(userId).get();
+        if (adminDoc.exists) {
+            showToast('이미 관리자로 등록된 사용자입니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 추가
+        const currentUser = auth.currentUser;
+        await db.collection('admins').doc(userId).set({
+            email: email,
+            isAdmin: true,
+            addedAt: new Date(),
+            addedBy: currentUser ? currentUser.email : 'unknown'
+        });
+        
+        showToast('관리자가 추가되었습니다.', 'success');
+        emailInput.value = '';
+        
+        // 관리자 목록 새로고침
+        await loadAdminList();
+        
+    } catch (error) {
+        console.error('관리자 추가 오류:', error);
+        showToast('관리자 추가 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 관리자 제거
+async function removeAdmin(adminId, email) {
+    try {
+        if (!confirm(`정말로 ${email}의 관리자 권한을 제거하시겠습니까?`)) {
+            return;
+        }
+        
+        await db.collection('admins').doc(adminId).delete();
+        
+        showToast('관리자 권한이 제거되었습니다.', 'success');
+        
+        // 관리자 목록 새로고침
+        await loadAdminList();
+        
+    } catch (error) {
+        console.error('관리자 제거 오류:', error);
+        showToast('관리자 제거 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 이메일 유효성 검사
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
