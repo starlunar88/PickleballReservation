@@ -897,7 +897,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 관리자 설정 버튼
     const adminSettingsBtn = document.getElementById('admin-settings-btn');
     if (adminSettingsBtn) {
-        adminSettingsBtn.addEventListener('click', openAdminSettingsModal);
+        adminSettingsBtn.addEventListener('click', async () => {
+            await openAdminSettingsModal();
+            await loadAssignmentTimeOptions();
+        });
     }
     
     // 관리자 설정 모달 닫기 버튼

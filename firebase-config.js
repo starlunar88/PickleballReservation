@@ -25,6 +25,21 @@ const db = firebase.firestore();
 console.log('Firebase Auth 객체:', auth);
 console.log('Firebase Firestore 객체:', db);
 
+// 사용자 DUPR 가져오기
+async function getUserDUPR(userId) {
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return userData.dupr || null;
+        }
+        return null;
+    } catch (error) {
+        console.error('DUPR 가져오기 오류:', error);
+        return null;
+    }
+}
+
 // 관리자 여부 확인
 async function isAdmin(user) {
     try {
@@ -51,21 +66,6 @@ async function isAdmin(user) {
     } catch (error) {
         console.error('관리자 확인 오류:', error);
         return false;
-    }
-}
-
-// 사용자 DUPR 가져오기
-async function getUserDUPR(userId) {
-    try {
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-            const userData = userDoc.data();
-            return userData.dupr || null;
-        }
-        return null;
-    } catch (error) {
-        console.error('DUPR 가져오기 오류:', error);
-        return null;
     }
 }
 
