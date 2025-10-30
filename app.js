@@ -1249,7 +1249,13 @@ function switchMainTab(tabName) {
 async function loadTabData(tabName) {
     switch(tabName) {
         case 'reservations':
+            console.log('📱 예약 탭 데이터 로드 시작');
             await loadReservationsData();
+            // 추가로 타임라인 강제 로드
+            setTimeout(async () => {
+                console.log('📱 예약 탭 추가 로드');
+                await loadReservationsTimeline();
+            }, 500);
             break;
         case 'rankings':
             await loadRankingsData();
@@ -1304,27 +1310,75 @@ async function loadAdminData() {
 
 // 예약 현황 타임라인 로드
 async function loadReservationsTimeline() {
-    console.log('예약 현황 로드 시작');
+    console.log('=== 예약 현황 로드 시작 ===');
+    console.log('현재 시간:', new Date().toLocaleString());
+    console.log('User Agent:', navigator.userAgent);
+    console.log('화면 크기:', window.innerWidth + 'x' + window.innerHeight);
+    console.log('디바이스 픽셀 비율:', window.devicePixelRatio);
     
     const timeline = document.getElementById('reservations-timeline');
     if (!timeline) {
-        console.error('타임라인 요소를 찾을 수 없습니다');
+        console.error('❌ 타임라인 요소를 찾을 수 없습니다');
+        console.log('사용 가능한 요소들:', document.querySelectorAll('[id*="reservation"]'));
         return;
     }
+    console.log('✅ 타임라인 요소 찾음');
+    
+    // 로딩 상태 표시
+    timeline.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>예약 현황을 불러오는 중...</p></div>';
     
     try {
-        // Firebase 초기화 대기
-        if (typeof firebase === 'undefined' || !firebase.apps.length) {
-            console.log('Firebase 초기화 대기 중...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        // Firebase 초기화 대기 (더 강력하게)
+        let firebaseReady = false;
+        let attempts = 0;
+        const maxAttempts = 15; // 시도 횟수 증가
+        
+        while (!firebaseReady && attempts < maxAttempts) {
+            if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+                firebaseReady = true;
+                console.log('✅ Firebase 초기화 완료 (시도 ' + (attempts + 1) + ')');
+            } else {
+                console.log(`⏳ Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+        }
+        
+        if (!firebaseReady) {
+            console.error('❌ Firebase 초기화 실패');
+            timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Firebase 초기화 실패</p></div>';
+            return;
         }
         
         // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨)
         const targetDate = window.currentDate || new Date().toISOString().slice(0, 10);
-        console.log('대상 날짜:', targetDate);
+        console.log('📅 대상 날짜:', targetDate);
         
-        const settings = await getSystemSettings();
-        console.log('시스템 설정 로드 완료:', settings ? '성공' : '실패');
+        // 시스템 설정 로드 (재시도 포함)
+        let settings = null;
+        let settingsAttempts = 0;
+        const maxSettingsAttempts = 5;
+        
+        while (!settings && settingsAttempts < maxSettingsAttempts) {
+            try {
+                settings = await getSystemSettings();
+                if (settings) {
+                    console.log('✅ 시스템 설정 로드 성공 (시도 ' + (settingsAttempts + 1) + ')');
+                } else {
+                    console.log('⚠️ 시스템 설정이 null (시도 ' + (settingsAttempts + 1) + ')');
+                }
+            } catch (error) {
+                console.error('❌ 시스템 설정 로드 오류 (시도 ' + (settingsAttempts + 1) + '):', error);
+            }
+            
+            if (!settings) {
+                settingsAttempts++;
+                if (settingsAttempts < maxSettingsAttempts) {
+                    console.log('⏳ 시스템 설정 재시도 중... (' + settingsAttempts + '/' + maxSettingsAttempts + ')');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
         
         // 현재 선택된 날짜 표시
         updateSelectedInfo(targetDate, null);
@@ -1334,31 +1388,36 @@ async function loadReservationsTimeline() {
             return;
         }
         
+        console.log('📋 시간 슬롯 수:', settings.timeSlots.length);
         let timelineHTML = '';
         
         for (const timeSlot of settings.timeSlots) {
             const slotKey = `${timeSlot.start}-${timeSlot.end}`;
             
             // 예약 수 확인
-            console.log(`예약 조회 중: ${targetDate}, ${slotKey}`);
+            console.log(`🔍 예약 조회 중: ${targetDate}, ${slotKey}`);
             let reservations = [];
             
             try {
+                console.log('📡 Firestore 쿼리 시작...');
                 const reservationsSnapshot = await db.collection('reservations')
                     .where('date', '==', targetDate)
                     .where('timeSlot', '==', slotKey)
                     .where('status', 'in', ['pending', 'confirmed'])
                     .get();
                 
+                console.log('📡 Firestore 쿼리 완료, 문서 수:', reservationsSnapshot.size);
+                
                 reservationsSnapshot.forEach(doc => {
                     const data = doc.data();
-                    console.log(`예약 발견: ${data.userName} (${data.status})`);
+                    console.log(`👤 예약 발견: ${data.userName} (${data.status})`);
                     reservations.push({ id: doc.id, ...data });
                 });
                 
-                console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
+                console.log(`✅ ${slotKey} 시간대 예약 수: ${reservations.length}`);
             } catch (error) {
-                console.error(`${slotKey} 시간대 예약 조회 오류:`, error);
+                console.error(`❌ ${slotKey} 시간대 예약 조회 오류:`, error);
+                console.error('에러 상세:', error.message);
                 // 에러가 발생해도 빈 배열로 계속 진행
                 reservations = [];
             }
@@ -1434,7 +1493,14 @@ async function loadReservationsTimeline() {
             `;
         }
         
+        console.log('🎨 타임라인 HTML 생성 완료, 길이:', timelineHTML.length);
+        console.log('📝 생성된 HTML 미리보기:', timelineHTML.substring(0, 200) + '...');
+        
         timeline.innerHTML = timelineHTML || '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>예약 현황이 없습니다</p></div>';
+        
+        console.log('✅ 타임라인 DOM 업데이트 완료');
+        console.log('🔘 예약 버튼 수:', timeline.querySelectorAll('.timeline-reserve-btn').length);
+        console.log('🔘 취소 버튼 수:', timeline.querySelectorAll('.timeline-cancel-btn').length);
         
         // 타임라인 예약 버튼 이벤트 리스너 추가
         timeline.querySelectorAll('.timeline-reserve-btn').forEach(btn => {
@@ -1617,40 +1683,7 @@ async function handleCancelReservation(timeSlot, date) {
     }
 }
 
-// 예약 버튼 상태 업데이트
-async function updateReservationButtons(timeSlot, date) {
-    const user = auth.currentUser;
-    const makeReservationBtn = document.getElementById('make-reservation-btn');
-    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
-    const reservationActions = document.getElementById('reservation-actions');
-    
-    if (!user || !makeReservationBtn || !cancelReservationBtn || !reservationActions) return;
-    
-    try {
-        // 사용자의 예약 확인
-        const reservationSnapshot = await db.collection('reservations')
-            .where('userId', '==', user.uid)
-            .where('date', '==', date)
-            .where('timeSlot', '==', timeSlot)
-            .where('status', 'in', ['pending', 'confirmed'])
-            .get();
-            
-        const hasReservation = !reservationSnapshot.empty;
-        
-        if (hasReservation) {
-            makeReservationBtn.style.display = 'none';
-            cancelReservationBtn.style.display = 'block';
-        } else {
-            makeReservationBtn.style.display = 'block';
-            cancelReservationBtn.style.display = 'none';
-        }
-        
-        // 버튼 영역 항상 표시
-        reservationActions.style.display = 'flex';
-    } catch (error) {
-        console.error('버튼 상태 업데이트 오류:', error);
-    }
-}
+// 예약 버튼 상태 업데이트 - 제거됨 (타임라인에 통합)
 
 // 통계 차트 로드
 async function loadStatsCharts() {
@@ -1824,50 +1857,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 날짜 표시
     updateCurrentDateDisplay();
     
-    // 초기 버튼 상태 설정 - 강제 표시
-    const reservationActions = document.getElementById('reservation-actions');
-    const makeReservationBtn = document.getElementById('make-reservation-btn');
-    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
+    // 하단 버튼 초기화 코드 제거됨 (타임라인에 통합)
     
-    if (reservationActions) {
-        reservationActions.style.display = 'flex';
-    }
-    if (makeReservationBtn) {
-        makeReservationBtn.style.display = 'block';
-    }
-    if (cancelReservationBtn) {
-        cancelReservationBtn.style.display = 'none';
-    }
-    
-    // 예약/취소 버튼 이벤트 리스너 (이미 위에서 선언됨)
-    
-    if (makeReservationBtn) {
-        makeReservationBtn.addEventListener('click', async () => {
-            const selectedTimeSlot = document.getElementById('selected-time')?.textContent;
-            const selectedDate = window.currentDate;
-            
-            if (selectedTimeSlot && selectedDate) {
-                const timeSlot = selectedTimeSlot.replace(' - ', '-');
-                await handleTimelineReservation(timeSlot, selectedDate);
-            } else {
-                showToast('시간을 선택해주세요.', 'warning');
-            }
-        });
-    }
-    
-    if (cancelReservationBtn) {
-        cancelReservationBtn.addEventListener('click', async () => {
-            const selectedTimeSlot = document.getElementById('selected-time')?.textContent;
-            const selectedDate = window.currentDate;
-            
-            if (selectedTimeSlot && selectedDate) {
-                const timeSlot = selectedTimeSlot.replace(' - ', '-');
-                await handleCancelReservation(timeSlot, selectedDate);
-            } else {
-                showToast('시간을 선택해주세요.', 'warning');
-            }
-        });
-    }
+    // 하단 버튼 이벤트 리스너 제거됨 (타임라인에 통합)
 });
 
 // 시간 슬롯 로드
@@ -3019,8 +3011,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 페이지 가시성 변경 시 재로딩
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+        console.log('📱 페이지 가시성 변경 - 예약 현황 재로드');
         loadReservationsTimeline();
     }
+});
+
+// 모바일에서 포커스 이벤트로 재로딩
+window.addEventListener('focus', () => {
+    console.log('📱 윈도우 포커스 - 예약 현황 재로드');
+    loadReservationsTimeline();
+});
+
+// 모바일에서 스크롤 이벤트로 재로딩 (스크롤 시)
+let scrollTimeout;
+window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+        console.log('📱 스크롤 이벤트 - 예약 현황 재로드');
+        loadReservationsTimeline();
+    }, 1000);
 });
 
 // 페이지 로드 시 애니메이션

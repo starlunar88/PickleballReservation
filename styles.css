@@ -74,7 +74,7 @@ body {
 }
 
 .nav-menu {
-    display: flex;
+    display: none; /* 모든 화면에서 숨김 - 햄버거 메뉴 사용 */
     align-items: center;
     gap: 15px; /* 모바일 기준으로 축소 */
 }
@@ -97,15 +97,16 @@ body {
 
 .user-menu {
     display: flex;
+    flex-direction: column; /* 모든 화면에서 세로 배치 */
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     color: white;
 }
 
 .user-info {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center; /* 중앙 정렬 */
     font-size: 0.8rem; /* 모바일 기준으로 축소 */
 }
 
@@ -136,7 +137,7 @@ body {
 }
 
 .hamburger {
-    display: none;
+    display: flex; /* 모든 화면에서 표시 */
     flex-direction: column;
     cursor: pointer;
 }
@@ -1849,39 +1850,39 @@ body {
     }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .hamburger {
-        display: flex;
-    }
+/* 모든 화면에서 모바일 스타일 적용 */
+.nav-menu {
+    position: fixed;
+    left: -100%;
+    top: 70px;
+    flex-direction: column;
+    background-color: rgba(102, 126, 234, 0.95);
+    width: 100%;
+    max-width: 480px; /* 모바일 기준 너비 제한 */
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    transition: 0.3s;
+    padding: 20px 0;
+    backdrop-filter: blur(10px);
+    z-index: 999;
+}
 
-    .nav-menu {
-        position: fixed;
-        left: -100%;
-        top: 70px;
-        flex-direction: column;
-        background-color: rgba(102, 126, 234, 0.95);
-        width: 100%;
-        text-align: center;
-        transition: 0.3s;
-        padding: 20px 0;
-        backdrop-filter: blur(10px);
-    }
+.nav-menu.active {
+    left: 50%;
+    transform: translateX(-50%);
+}
 
-    .nav-menu.active {
-        left: 0;
-    }
+.nav-menu .nav-link {
+    margin: 10px 0;
+    font-size: 1.1rem;
+}
 
-    .nav-menu .nav-link {
-        margin: 10px 0;
-        font-size: 1.1rem;
-    }
-
-    .auth-buttons {
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 20px;
-    }
+.auth-buttons {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
 
     .hero {
         flex-direction: column;
@@ -2587,27 +2588,9 @@ body {
     transform: none; /* 호버 효과 제거 */
 }
 
-/* 예약/취소 버튼 영역 - 숨김 (타임라인에 통합) */
-.reservation-actions {
-    display: none; /* 타임라인에 통합했으므로 숨김 */
-}
+/* 예약/취소 버튼 영역 - 완전 제거됨 (타임라인에 통합) */
 
-.reservation-actions .btn {
-    min-width: 120px;
-    padding: 12px 20px;
-    font-weight: 600;
-}
-
-@media (max-width: 768px) {
-    .reservation-actions {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .reservation-actions .btn {
-        width: 100%;
-    }
-}
+/* 모바일 미디어 쿼리에서 reservation-actions 제거됨 */
 
 .timeline-reserve-btn:hover {
     background: #5a6fd8;
