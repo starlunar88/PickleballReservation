@@ -1324,7 +1324,10 @@ async function loadReservationsTimeline() {
             
             // 20분 전 마감 체크
             const now = new Date();
-            const [startTime] = timeSlot.split('-');
+            
+            // timeSlot 객체에서 직접 시작 시간 가져오기
+            const startTime = timeSlot.start || '00:00';
+            
             const gameStartTime = new Date(`${targetDate}T${startTime}:00`);
             const closingTime = new Date(gameStartTime.getTime() - 20 * 60 * 1000); // 20분 전
             const isClosed = now > closingTime;
