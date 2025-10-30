@@ -2568,15 +2568,28 @@ body {
     cursor: not-allowed;
 }
 
-/* 예약/취소 버튼 영역 */
+/* 타임라인 취소 버튼 */
+.timeline-cancel-btn {
+    padding: 8px 16px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 1; /* 항상 표시 */
+}
+
+.timeline-cancel-btn:hover {
+    background: #c82333;
+    transform: none; /* 호버 효과 제거 */
+}
+
+/* 예약/취소 버튼 영역 - 숨김 (타임라인에 통합) */
 .reservation-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    padding: 20px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 10px;
-    margin-top: 20px;
+    display: none; /* 타임라인에 통합했으므로 숨김 */
 }
 
 .reservation-actions .btn {

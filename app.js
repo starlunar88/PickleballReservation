@@ -1223,14 +1223,21 @@ function switchMainTab(tabName) {
         // 예약 탭으로 전환 시 강제로 예약 현황 로드
         if (tabName === 'reservations') {
             console.log('예약 탭 전환 - 예약 현황 강제 로드');
-            setTimeout(async () => {
+            
+            // 모바일에서 여러 번 시도
+            const tryLoadOnTabSwitch = async (attempt = 1) => {
                 try {
                     await loadReservationsTimeline();
-                    console.log('탭 전환 시 예약 현황 로드 완료');
+                    console.log(`탭 전환 시 예약 현황 로드 완료 (시도 ${attempt})`);
                 } catch (error) {
-                    console.error('탭 전환 시 예약 현황 로드 실패:', error);
+                    console.error(`탭 전환 시 예약 현황 로드 실패 (시도 ${attempt}):`, error);
+                    if (attempt < 3) {
+                        setTimeout(() => tryLoadOnTabSwitch(attempt + 1), 500 * attempt);
+                    }
                 }
-            }, 100);
+            };
+            
+            setTimeout(() => tryLoadOnTabSwitch(), 100);
         }
     }
     
@@ -1297,13 +1304,27 @@ async function loadAdminData() {
 
 // 예약 현황 타임라인 로드
 async function loadReservationsTimeline() {
+    console.log('예약 현황 로드 시작');
+    
     const timeline = document.getElementById('reservations-timeline');
-    if (!timeline) return;
+    if (!timeline) {
+        console.error('타임라인 요소를 찾을 수 없습니다');
+        return;
+    }
     
     try {
+        // Firebase 초기화 대기
+        if (typeof firebase === 'undefined' || !firebase.apps.length) {
+            console.log('Firebase 초기화 대기 중...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
         // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨)
         const targetDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        console.log('대상 날짜:', targetDate);
+        
         const settings = await getSystemSettings();
+        console.log('시스템 설정 로드 완료:', settings ? '성공' : '실패');
         
         // 현재 선택된 날짜 표시
         updateSelectedInfo(targetDate, null);
@@ -1320,20 +1341,27 @@ async function loadReservationsTimeline() {
             
             // 예약 수 확인
             console.log(`예약 조회 중: ${targetDate}, ${slotKey}`);
-            const reservationsSnapshot = await db.collection('reservations')
-                .where('date', '==', targetDate)
-                .where('timeSlot', '==', slotKey)
-                .where('status', 'in', ['pending', 'confirmed'])
-                .get();
+            let reservations = [];
             
-            const reservations = [];
-            reservationsSnapshot.forEach(doc => {
-                const data = doc.data();
-                console.log(`예약 발견: ${data.userName} (${data.status})`);
-                reservations.push({ id: doc.id, ...data });
-            });
-            
-            console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
+            try {
+                const reservationsSnapshot = await db.collection('reservations')
+                    .where('date', '==', targetDate)
+                    .where('timeSlot', '==', slotKey)
+                    .where('status', 'in', ['pending', 'confirmed'])
+                    .get();
+                
+                reservationsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    console.log(`예약 발견: ${data.userName} (${data.status})`);
+                    reservations.push({ id: doc.id, ...data });
+                });
+                
+                console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
+            } catch (error) {
+                console.error(`${slotKey} 시간대 예약 조회 오류:`, error);
+                // 에러가 발생해도 빈 배열로 계속 진행
+                reservations = [];
+            }
             
             // 만석 상태 제거 - 항상 예약 가능
             
@@ -1380,12 +1408,26 @@ async function loadReservationsTimeline() {
                             `).join('')}
                         </div>
                         <div class="timeline-actions">
-                            <button class="timeline-reserve-btn" 
-                                    data-time-slot="${slotKey}" 
-                                    data-date="${targetDate}"
-                                    ${isClosed ? 'disabled' : ''}>
-                                ${isClosed ? '마감' : '예약하기'}
-                            </button>
+                            ${(() => {
+                                const currentUser = firebase.auth().currentUser;
+                                const userReservation = reservations.find(res => res.userId === currentUser?.uid);
+                                
+                                if (isClosed) {
+                                    return `<button class="timeline-reserve-btn" disabled>마감</button>`;
+                                } else if (userReservation) {
+                                    return `<button class="timeline-cancel-btn" 
+                                                   data-time-slot="${slotKey}" 
+                                                   data-date="${targetDate}">
+                                                취소하기
+                                            </button>`;
+                                } else {
+                                    return `<button class="timeline-reserve-btn" 
+                                                   data-time-slot="${slotKey}" 
+                                                   data-date="${targetDate}">
+                                                예약하기
+                                            </button>`;
+                                }
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -1400,6 +1442,15 @@ async function loadReservationsTimeline() {
                 const timeSlot = e.target.getAttribute('data-time-slot');
                 const date = e.target.getAttribute('data-date');
                 await handleTimelineReservation(timeSlot, date);
+            });
+        });
+        
+        // 타임라인 취소 버튼 이벤트 리스너 추가
+        timeline.querySelectorAll('.timeline-cancel-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const timeSlot = e.target.getAttribute('data-time-slot');
+                const date = e.target.getAttribute('data-date');
+                await handleCancelReservation(timeSlot, date);
             });
         });
         
@@ -2941,21 +2992,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM 로드 완료 - 예약 현황 로드 시작');
     if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
     
-    try {
-        await loadReservationsTimeline();
-        console.log('DOM 로드 시 예약 현황 로드 완료');
-    } catch (error) {
-        console.error('DOM 로드 시 예약 현황 로드 실패:', error);
-        // 1초 후 재시도
-        setTimeout(async () => {
-            try {
-                await loadReservationsTimeline();
-                console.log('DOM 로드 재시도 완료');
-            } catch (retryError) {
-                console.error('DOM 로드 재시도 실패:', retryError);
+    // 모바일에서 여러 번 재시도
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const tryLoadReservations = async () => {
+        try {
+            await loadReservationsTimeline();
+            console.log(`예약 현황 로드 성공 (시도 ${retryCount + 1})`);
+        } catch (error) {
+            console.error(`예약 현황 로드 실패 (시도 ${retryCount + 1}):`, error);
+            retryCount++;
+            
+            if (retryCount < maxRetries) {
+                console.log(`${1000 * retryCount}ms 후 재시도...`);
+                setTimeout(tryLoadReservations, 1000 * retryCount);
+            } else {
+                console.error('최대 재시도 횟수 초과');
             }
-        }, 1000);
-    }
+        }
+    };
+    
+    tryLoadReservations();
 });
 
 // 페이지 가시성 변경 시 재로딩
