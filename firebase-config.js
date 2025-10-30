@@ -60,16 +60,28 @@ async function showUserMenu(user) {
             userDupr.style.display = 'none';
         }
         
+        // 관리자 버튼 표시 (async 처리)
+        checkAdminStatus(user);
+    }
+}
+
+// 관리자 상태 확인
+async function checkAdminStatus(user) {
+    try {
+        const adminSettingsBtn = document.getElementById('admin-settings-btn');
+        const adminMenuItems = document.querySelectorAll('.admin-only');
+        
+        const isUserAdmin = await isAdmin(user);
+        
         // 관리자 버튼 표시
-        if (isAdmin(user) && adminSettingsBtn) {
+        if (isUserAdmin && adminSettingsBtn) {
             adminSettingsBtn.style.display = 'inline-block';
         } else if (adminSettingsBtn) {
             adminSettingsBtn.style.display = 'none';
         }
         
         // 관리자 메뉴 표시
-        const adminMenuItems = document.querySelectorAll('.admin-only');
-        if (isAdmin(user)) {
+        if (isUserAdmin) {
             adminMenuItems.forEach(item => {
                 item.style.display = 'block';
             });
@@ -78,6 +90,9 @@ async function showUserMenu(user) {
                 item.style.display = 'none';
             });
         }
+        
+    } catch (error) {
+        console.error('관리자 상태 확인 오류:', error);
     }
 }
 
