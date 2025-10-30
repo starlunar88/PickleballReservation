@@ -2167,15 +2167,56 @@ body {
     background: #667eea;
     border: 2px solid #667eea;
     color: white;
-    width: 36px;
+    min-width: 36px;
     height: 36px;
-    padding: 0;
+    padding: 6px 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 테스트 버튼 컨테이너 */
+.test-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.test-time-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    padding: 8px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.test-time-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 2px;
+}
+
+.test-time-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.test-time-buttons .btn {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    height: 28px;
+    min-width: 60px;
 }
 
 .date-navigation button:hover {
@@ -2440,6 +2481,28 @@ body {
     .player-item { font-size: 0.7rem; padding: 4px 8px; }
     .timeline-reserve-btn, .timeline-cancel-btn { padding: 6px 10px; font-size: 0.65rem; border-radius: 12px; }
     .filter-btn { padding: 6px 10px; font-size: 0.8rem; border-radius: 16px; }
+    
+    .test-buttons-container {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .test-time-group {
+        width: 100%;
+        padding: 6px;
+    }
+    
+    .test-time-buttons {
+        justify-content: center;
+    }
+    
+    .test-time-buttons .btn {
+        font-size: 0.6rem;
+        padding: 3px 6px;
+        height: 26px;
+        min-width: 50px;
+    }
 }
 
 /* 타임라인 스타일 */

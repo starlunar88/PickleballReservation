@@ -1121,60 +1121,8 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationsBtn.addEventListener('click', openNotificationsModal);
     }
 
-    // 테스트용 시간대 선택 옵션 로드
-    await loadTestTimeOptions();
-
-    // 테스트 버튼: 무작위 예약자 추가
-    const addRandomBtn = document.getElementById('add-random-player-btn');
-    if (addRandomBtn) {
-        addRandomBtn.addEventListener('click', async () => {
-            try {
-                const date = window.currentDate || new Date().toISOString().slice(0, 10);
-                const timeSlot = getSelectedTestTime();
-                if (!timeSlot) {
-                    showToast('시간대를 먼저 선택하세요.', 'warning');
-                    return;
-                }
-                await addRandomReservation(date, timeSlot);
-                await loadReservationsTimeline();
-                await checkAndShowMatchSchedule();
-            } catch (e) {
-                console.error('무작위 예약자 추가 오류:', e);
-                showToast('무작위 예약 추가 중 오류', 'error');
-            }
-        });
-    }
-
-    // 테스트 버튼: 대진표 강제 생성
-    const forceGenerateBtn = document.getElementById('force-generate-matches-btn');
-    if (forceGenerateBtn) {
-        forceGenerateBtn.addEventListener('click', async () => {
-            try {
-                const date = window.currentDate || new Date().toISOString().slice(0, 10);
-                const timeSlot = getSelectedTestTime();
-                if (!timeSlot) {
-                    showToast('시간대를 먼저 선택하세요.', 'warning');
-                    return;
-                }
-                // 강제 대진표 생성 (마감 여부 무시)
-                await generateMatchSchedule(date, timeSlot);
-                // 대진표 표시
-                const existingMatches = await db.collection('matches')
-                    .where('date', '==', date)
-                    .where('timeSlot', '==', timeSlot)
-                    .orderBy('roundNumber')
-                    .orderBy('courtNumber')
-                    .get();
-                
-                if (!existingMatches.empty) {
-                    await renderMatchSchedule(existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })), date, timeSlot);
-                }
-            } catch (e) {
-                console.error('강제 대진표 생성 오류:', e);
-                showToast('대진표 생성 중 오류', 'error');
-            }
-        });
-    }
+    // 테스트용 시간대별 버튼 생성
+    await createTestButtons();
     
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
@@ -3211,31 +3159,91 @@ function isPastClosing(date, timeSlot, closingMinutes = 20) {
     }
 }
 
-// 테스트용 시간대 선택 옵션 로드
-async function loadTestTimeOptions() {
+// 테스트용 시간대별 버튼 생성
+async function createTestButtons() {
     try {
         const settings = await getSystemSettings();
         if (!settings) return;
         
-        const timeSelect = document.getElementById('test-time-select');
-        if (!timeSelect) return;
+        const container = document.getElementById('test-buttons-container');
+        if (!container) return;
         
-        timeSelect.innerHTML = '<option value="">시간대 선택</option>';
+        container.innerHTML = '';
+        
         settings.timeSlots.forEach(slot => {
-            const option = document.createElement('option');
-            option.value = `${slot.start}-${slot.end}`;
-            option.textContent = `${slot.start} - ${slot.end}`;
-            timeSelect.appendChild(option);
+            const timeSlot = `${slot.start}-${slot.end}`;
+            const timeGroup = document.createElement('div');
+            timeGroup.className = 'test-time-group';
+            
+            timeGroup.innerHTML = `
+                <div class="test-time-label">${slot.start}-${slot.end}</div>
+                <div class="test-time-buttons">
+                    <button class="btn btn-outline add-random-btn" data-time-slot="${timeSlot}" title="무작위 예약자 추가">
+                        무작위 추가
+                    </button>
+                    <button class="btn btn-primary force-generate-btn" data-time-slot="${timeSlot}" title="강제 대진표 생성">
+                        대진표 생성
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(timeGroup);
         });
+        
+        // 이벤트 리스너 추가
+        addTestButtonEventListeners();
+        
     } catch (error) {
-        console.error('테스트 시간대 옵션 로드 오류:', error);
+        console.error('테스트 버튼 생성 오류:', error);
     }
 }
 
-// 선택된 테스트 시간대 가져오기
-function getSelectedTestTime() {
-    const timeSelect = document.getElementById('test-time-select');
-    return timeSelect ? timeSelect.value : null;
+// 테스트 버튼 이벤트 리스너 추가
+function addTestButtonEventListeners() {
+    // 무작위 추가 버튼들
+    document.querySelectorAll('.add-random-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            try {
+                const timeSlot = e.target.getAttribute('data-time-slot');
+                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                
+                await addRandomReservation(date, timeSlot);
+                await loadReservationsTimeline();
+                await checkAndShowMatchSchedule();
+            } catch (error) {
+                console.error('무작위 예약자 추가 오류:', error);
+                showToast('무작위 예약 추가 중 오류', 'error');
+            }
+        });
+    });
+    
+    // 대진표 강제 생성 버튼들
+    document.querySelectorAll('.force-generate-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            try {
+                const timeSlot = e.target.getAttribute('data-time-slot');
+                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                
+                // 강제 대진표 생성 (마감 여부 무시)
+                await generateMatchSchedule(date, timeSlot);
+                
+                // 대진표 표시
+                const existingMatches = await db.collection('matches')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .orderBy('roundNumber')
+                    .orderBy('courtNumber')
+                    .get();
+                
+                if (!existingMatches.empty) {
+                    await renderMatchSchedule(existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })), date, timeSlot);
+                }
+            } catch (error) {
+                console.error('강제 대진표 생성 오류:', error);
+                showToast('대진표 생성 중 오류', 'error');
+            }
+        });
+    });
 }
 
 // 무작위 한국어 이름 생성 (간단 버전)
