@@ -1964,7 +1964,7 @@ body {
 .main-container {
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding-top: 80px;
+    padding-top: 140px;
     width: 100%;
     max-width: 400px; /* 더 작은 모바일 크기로 제한 */
     margin: 0 auto; /* 중앙 정렬 */
@@ -1976,10 +1976,10 @@ body {
 .mobile-nav-tabs {
     display: flex; /* 모든 화면에서 표시 */
     position: fixed; /* 메뉴바 바로 아래 고정 (부모 overflow 영향 제거) */
-    top: 72px; /* nav-container 높이(60px) + 상단 여백 */
+    top: 88px; /* nav-container 높이(60px) + 외곽 여백 보정 */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1100; /* 메뉴/콘텐츠 위로 안전하게 */
+    z-index: 2000; /* 메뉴/콘텐츠 및 기타 요소 위로 */
     width: 100%;
     max-width: 400px; /* 모바일 폭과 동일 */
     background: white;
@@ -2048,7 +2048,7 @@ body {
 /* 탭 컨텐츠 */
 .tab-contents {
     padding: 0 20px 100px 20px;
-    margin-top: 56px; /* 고정된 탭 높이만큼 여백 확보 (겹침 방지) */
+    margin-top: 0; /* 상단 패딩에서 여백 처리 */
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
