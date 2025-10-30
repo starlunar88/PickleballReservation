@@ -949,6 +949,26 @@ document.addEventListener('DOMContentLoaded', function() {
             await loadAssignmentTimeOptions();
         });
     }
+    
+    // 알림 버튼
+    const notificationsBtn = document.getElementById('notifications-btn');
+    if (notificationsBtn) {
+        notificationsBtn.addEventListener('click', openNotificationsModal);
+    }
+    
+    // 알림 모달 닫기
+    const closeNotifications = document.getElementById('close-notifications');
+    if (closeNotifications) {
+        closeNotifications.addEventListener('click', closeNotificationsModal);
+    }
+    
+    // 대시보드 탭 전환
+    document.querySelectorAll('.dashboard-tabs .tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-tab');
+            switchDashboardTab(tabName);
+        });
+    });
 });
 
 // 페이지 로드 시 이메일 링크 확인
@@ -2314,6 +2334,293 @@ async function getReservationDashboard(date) {
     }
 }
 
+// 알림 시스템 함수들
+
+// 알림 모달 열기
+async function openNotificationsModal() {
+    const modal = document.getElementById('notifications-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // 알림 로드
+        await loadNotifications();
+    }
+}
+
+// 알림 모달 닫기
+function closeNotificationsModal() {
+    const modal = document.getElementById('notifications-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 알림 로드
+async function loadNotifications() {
+    try {
+        const user = auth.currentUser;
+        if (!user) return;
+        
+        const notificationsList = document.getElementById('notifications-list');
+        if (!notificationsList) return;
+        
+        notificationsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>알림을 불러오는 중...</p></div>';
+        
+        // 사용자 알림 가져오기
+        const notificationsSnapshot = await db.collection('notifications')
+            .where('userId', '==', user.uid)
+            .orderBy('createdAt', 'desc')
+            .limit(50)
+            .get();
+        
+        if (notificationsSnapshot.empty) {
+            notificationsList.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>알림이 없습니다</p></div>';
+            return;
+        }
+        
+        const notifications = [];
+        notificationsSnapshot.forEach(doc => {
+            notifications.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // 알림 UI 생성
+        notificationsList.innerHTML = '';
+        notifications.forEach(notification => {
+            const notificationElement = createNotificationElement(notification);
+            notificationsList.appendChild(notificationElement);
+        });
+        
+        // 알림 카운트 업데이트
+        updateNotificationCount(notifications.filter(n => !n.read).length);
+        
+    } catch (error) {
+        console.error('알림 로드 오류:', error);
+        const notificationsList = document.getElementById('notifications-list');
+        if (notificationsList) {
+            notificationsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>알림을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 알림 요소 생성
+function createNotificationElement(notification) {
+    const div = document.createElement('div');
+    div.className = `notification-item ${notification.read ? '' : 'unread'}`;
+    
+    const iconClass = getNotificationIcon(notification.type);
+    const timeAgo = getTimeAgo(notification.createdAt.toDate());
+    
+    div.innerHTML = `
+        <div class="notification-icon">
+            <i class="${iconClass}"></i>
+        </div>
+        <div class="notification-content">
+            <div class="notification-title">${notification.title}</div>
+            <div class="notification-message">${notification.message}</div>
+            <div class="notification-time">${timeAgo}</div>
+        </div>
+        <div class="notification-actions">
+            ${!notification.read ? '<button onclick="markAsRead(\'' + notification.id + '\')" title="읽음 처리"><i class="fas fa-check"></i></button>' : ''}
+            <button onclick="deleteNotification(\'' + notification.id + '\')" title="삭제"><i class="fas fa-trash"></i></button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// 알림 타입별 아이콘
+function getNotificationIcon(type) {
+    switch (type) {
+        case 'team_assignment':
+            return 'fas fa-users';
+        case 'reservation_cancelled':
+            return 'fas fa-times-circle';
+        case 'reservation_confirmed':
+            return 'fas fa-check-circle';
+        default:
+            return 'fas fa-bell';
+    }
+}
+
+// 시간 경과 표시
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return '방금 전';
+    if (minutes < 60) return `${minutes}분 전`;
+    if (hours < 24) return `${hours}시간 전`;
+    return `${days}일 전`;
+}
+
+// 알림 읽음 처리
+async function markAsRead(notificationId) {
+    try {
+        await db.collection('notifications').doc(notificationId).update({
+            read: true,
+            readAt: new Date()
+        });
+        
+        // UI 업데이트
+        await loadNotifications();
+        
+    } catch (error) {
+        console.error('알림 읽음 처리 오류:', error);
+    }
+}
+
+// 알림 삭제
+async function deleteNotification(notificationId) {
+    try {
+        await db.collection('notifications').doc(notificationId).delete();
+        
+        // UI 업데이트
+        await loadNotifications();
+        
+    } catch (error) {
+        console.error('알림 삭제 오류:', error);
+    }
+}
+
+// 알림 카운트 업데이트
+function updateNotificationCount(count) {
+    const badge = document.getElementById('notification-count');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+// 대시보드 관련 함수들
+
+// 대시보드 탭 전환
+function switchDashboardTab(tabName) {
+    // 모든 탭 버튼과 콘텐츠 비활성화
+    document.querySelectorAll('.dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.dashboard-content .tab-content').forEach(content => content.classList.remove('active'));
+    
+    // 선택된 탭 활성화
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`${tabName}-dashboard`).classList.add('active');
+    
+    // 해당 탭 데이터 로드
+    if (tabName === 'reservations') {
+        loadReservationsDashboard();
+    } else if (tabName === 'teams') {
+        loadTeamsDashboard();
+    }
+}
+
+// 예약 현황 대시보드 로드
+async function loadReservationsDashboard() {
+    try {
+        const content = document.getElementById('reservations-dashboard-content');
+        if (!content) return;
+        
+        content.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>데이터를 불러오는 중...</p></div>';
+        
+        const today = new Date().toISOString().slice(0, 10);
+        const dashboard = await getReservationDashboard(today);
+        
+        if (!dashboard) {
+            content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+            return;
+        }
+        
+        // 통계 업데이트
+        document.getElementById('today-reservations').textContent = dashboard.totalReservations;
+        document.getElementById('today-players').textContent = dashboard.totalPlayers;
+        document.getElementById('today-teams').textContent = dashboard.assignedTeams;
+        
+        // 시간 슬롯별 현황 표시
+        content.innerHTML = dashboard.timeSlots.map(slot => `
+            <div class="time-slot-card ${slot.status}">
+                <div class="time-slot-header">
+                    <div class="time-slot-title">${slot.timeSlot}</div>
+                    <div class="time-slot-status ${slot.status}">
+                        ${slot.status === 'ready' ? '준비완료' : '예약자 부족'}
+                    </div>
+                </div>
+                <div class="time-slot-stats">
+                    <div class="time-slot-stat">
+                        <div class="time-slot-stat-value">${slot.reservations}</div>
+                        <div class="time-slot-stat-label">예약</div>
+                    </div>
+                    <div class="time-slot-stat">
+                        <div class="time-slot-stat-value">${slot.players}</div>
+                        <div class="time-slot-stat-label">플레이어</div>
+                    </div>
+                    <div class="time-slot-stat">
+                        <div class="time-slot-stat-value">${slot.teams}</div>
+                        <div class="time-slot-stat-label">팀</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('예약 현황 대시보드 로드 오류:', error);
+        const content = document.getElementById('reservations-dashboard-content');
+        if (content) {
+            content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 팀 배정 대시보드 로드
+async function loadTeamsDashboard() {
+    try {
+        const content = document.getElementById('teams-dashboard-content');
+        if (!content) return;
+        
+        content.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>데이터를 불러오는 중...</p></div>';
+        
+        const today = new Date().toISOString().slice(0, 10);
+        const settings = await getSystemSettings();
+        
+        if (!settings) {
+            content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>설정을 불러올 수 없습니다</p></div>';
+            return;
+        }
+        
+        // 오늘의 모든 팀 배정 가져오기
+        const teamsSnapshot = await db.collection('teams')
+            .where('date', '==', today)
+            .orderBy('timeSlot')
+            .get();
+        
+        if (teamsSnapshot.empty) {
+            content.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>오늘 배정된 팀이 없습니다</p></div>';
+            return;
+        }
+        
+        const teams = [];
+        teamsSnapshot.forEach(doc => {
+            teams.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // 팀 배정 결과 표시
+        const teamAssignmentsUI = createTeamAssignmentUI(teams);
+        content.innerHTML = teamAssignmentsUI.outerHTML;
+        
+    } catch (error) {
+        console.error('팀 배정 대시보드 로드 오류:', error);
+        const content = document.getElementById('teams-dashboard-content');
+        if (content) {
+            content.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
 // 스크롤 시 네비게이션 스타일 변경 및 랭킹 로드
 window.addEventListener('scroll', function() {
     const navbar = document.querySelector('.navbar');
@@ -2334,6 +2641,19 @@ window.addEventListener('scroll', function() {
             const activeTab = document.querySelector('.tab-btn.active');
             if (activeTab && activeTab.getAttribute('data-tab') === 'overall') {
                 loadOverallRankings();
+            }
+        }
+    }
+    
+    // 대시보드 섹션이 보이면 대시보드 로드
+    const dashboardSection = document.getElementById('dashboard');
+    if (dashboardSection && dashboardSection.style.display !== 'none') {
+        const rect = dashboardSection.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+            // 대시보드 섹션이 화면에 보이면 예약 현황 로드
+            const activeTab = document.querySelector('.dashboard-tabs .tab-btn.active');
+            if (activeTab && activeTab.getAttribute('data-tab') === 'reservations') {
+                loadReservationsDashboard();
             }
         }
     }

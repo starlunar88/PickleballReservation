@@ -66,6 +66,18 @@ async function showUserMenu(user) {
         } else if (adminSettingsBtn) {
             adminSettingsBtn.style.display = 'none';
         }
+        
+        // 관리자 메뉴 표시
+        const adminMenuItems = document.querySelectorAll('.admin-only');
+        if (isAdmin(user)) {
+            adminMenuItems.forEach(item => {
+                item.style.display = 'block';
+            });
+        } else {
+            adminMenuItems.forEach(item => {
+                item.style.display = 'none';
+            });
+        }
     }
 }
 
