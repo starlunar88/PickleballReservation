@@ -1964,7 +1964,7 @@ body {
 .main-container {
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding-top: 140px;
+    padding-top: 96px; /* 고정 네비게이션 높이만큼만 확보 */
     width: 100%;
     max-width: 400px; /* 더 작은 모바일 크기로 제한 */
     margin: 0 auto; /* 중앙 정렬 */
@@ -1975,27 +1975,24 @@ body {
 /* 모바일 네비게이션 탭 - 모든 화면에서 표시 */
 .mobile-nav-tabs {
     display: flex; /* 모든 화면에서 표시 */
-    position: fixed; /* 메뉴바 바로 아래 고정 (부모 overflow 영향 제거) */
-    top: 88px; /* nav-container 높이(60px) + 외곽 여백 보정 */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2000; /* 메뉴/콘텐츠 및 기타 요소 위로 */
+    position: sticky; /* 메뉴바 아래에 붙도록 */
+    top: 76px; /* 네비게이션 높이만큼 아래에서 sticky */
+    z-index: 2000;
     width: 100%;
-    max-width: 400px; /* 모바일 폭과 동일 */
+    max-width: 400px;
+    margin: 0 auto; /* 가운데 정렬 */
     background: white;
     border-top: 1px solid #e9ecef;
     border-bottom: 1px solid #f1f3f5;
-    padding: 8px 0; /* 탭 영역 높이 보장 */
-    min-height: 56px; /* 고정 높이 확보로 겹침 방지 */
+    padding: 8px 0;
+    min-height: 56px;
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 /* Spacer under fixed mobile tabs so content starts below tabs */
-.mobile-nav-tabs-spacer {
-    height: 64px; /* tabs height + shadow allowance */
-}
+.mobile-nav-tabs-spacer { height: 0; display: none; }
 
 .mobile-tab-btn {
     flex: 1;
@@ -2055,7 +2052,7 @@ body {
 /* 탭 컨텐츠 */
 .tab-contents {
     padding: 0 20px 100px 20px;
-    margin-top: 84px; /* 탭 높이+그림자 여백만큼 확보 */
+    margin-top: 0; /* sticky 탭은 흐름에 포함되어 별도 여백 불필요 */
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
