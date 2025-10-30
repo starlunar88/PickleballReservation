@@ -66,6 +66,10 @@
                 <i class="fas fa-chart-line"></i>
                 <span>통계</span>
             </button>
+            <button class="mobile-tab-btn" data-tab="matches">
+                <i class="fas fa-users"></i>
+                <span>경기</span>
+            </button>
         </div>
         <!-- Fixed tabs spacer to reserve vertical space under fixed tabs -->
         <div class="mobile-nav-tabs-spacer"></div>
@@ -83,6 +87,10 @@
             <button class="desktop-tab-btn" data-tab="stats">
                 <i class="fas fa-chart-line"></i>
                 <span>승률 그래프</span>
+            </button>
+            <button class="desktop-tab-btn" data-tab="matches">
+                <i class="fas fa-users"></i>
+                <span>경기 편성</span>
             </button>
         </div>
 
@@ -177,6 +185,37 @@
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <p>통계를 불러오는 중...</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 경기 편성/점수 기록 탭 -->
+            <div class="tab-content" id="matches-tab">
+                <div class="matches-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users"></i> 경기 편성 및 점수 기록</h2>
+                        <div class="team-assignment-controls">
+                            <div class="form-group">
+                                <label for="matches-date">날짜</label>
+                                <input type="date" id="matches-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="matches-time">시간</label>
+                                <select id="matches-time" class="form-control">
+                                    <option value="">시간을 선택하세요</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-primary" id="generate-schedule-btn">스케줄 생성</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="matches-content" id="matches-list">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>경기를 불러오는 중...</p>
                         </div>
                     </div>
                 </div>
@@ -344,7 +383,8 @@
                         <label for="closing-time">예약 마감 시간 (분)</label>
                         <input type="number" id="closing-time" class="form-control" min="30" max="120" value="60">
                         <small class="form-text">게임 시작 몇 분 전에 예약을 마감할지 설정하세요</small>
-                    </div>
+                    <
+                    /div>
                     
                     <button type="submit" class="btn btn-primary btn-full">설정 저장</button>
                 </form>

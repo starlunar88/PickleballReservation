@@ -1263,6 +1263,9 @@ async function loadTabData(tabName) {
         case 'stats':
             await loadStatsData();
             break;
+        case 'matches':
+            await loadMatchesData();
+            break;
         case 'admin':
             await loadAdminData();
             break;
@@ -3133,6 +3136,282 @@ async function loadAssignmentTimeOptions() {
         
     } catch (error) {
         console.error('배정 시간 옵션 로드 오류:', error);
+    }
+}
+
+// 경기 탭: 시간 옵션 로드
+async function loadMatchesTimeOptions() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        const matchesTime = document.getElementById('matches-time');
+        if (!matchesTime) return;
+        matchesTime.innerHTML = '<option value="">시간을 선택하세요</option>';
+        settings.timeSlots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = `${slot.start}-${slot.end}`;
+            option.textContent = `${slot.start} - ${slot.end}`;
+            matchesTime.appendChild(option);
+        });
+        const matchesDate = document.getElementById('matches-date');
+        if (matchesDate) {
+            const today = new Date().toISOString().slice(0, 10);
+            matchesDate.value = today;
+        }
+    } catch (error) {
+        console.error('경기 시간 옵션 로드 오류:', error);
+    }
+}
+
+// 경기 탭 데이터 로드
+async function loadMatchesData() {
+    try {
+        await loadMatchesTimeOptions();
+        const generateBtn = document.getElementById('generate-schedule-btn');
+        const dateInput = document.getElementById('matches-date');
+        const timeSelect = document.getElementById('matches-time');
+        if (generateBtn && dateInput && timeSelect) {
+            generateBtn.onclick = async () => {
+                const date = dateInput.value;
+                const timeSlot = timeSelect.value;
+                if (!date || !timeSlot) {
+                    showToast('날짜와 시간을 선택해주세요.', 'error');
+                    return;
+                }
+                await generateMatchSchedule(date, timeSlot);
+                await renderMatches(date, timeSlot);
+            };
+            // 최초 로드 시 목록 표시 (이미 생성된 스케줄 있으면)
+            timeSelect.onchange = async () => {
+                if (dateInput.value && timeSelect.value) {
+                    await renderMatches(dateInput.value, timeSelect.value);
+                }
+            };
+            dateInput.onchange = async () => {
+                if (dateInput.value && timeSelect.value) {
+                    await renderMatches(dateInput.value, timeSelect.value);
+                }
+            };
+        }
+    } catch (error) {
+        console.error('경기 탭 데이터 로드 오류:', error);
+    }
+}
+
+// 예약 마감 확인 (요청: 20분 전 마감)
+function isPastClosing(date, timeSlot, closingMinutes = 20) {
+    try {
+        const [start] = timeSlot.split('-');
+        const target = new Date(`${date}T${start}:00`);
+        const cutoff = new Date(target.getTime() - closingMinutes * 60000);
+        return new Date() >= cutoff;
+    } catch (e) {
+        return true;
+    }
+}
+
+// 스케줄 생성
+async function generateMatchSchedule(date, timeSlot) {
+    try {
+        showLoading();
+        // 예약 수집
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+        if (reservationsSnapshot.empty) {
+            showToast('해당 시간에 예약된 인원이 없습니다.', 'warning');
+            return;
+        }
+        const reservations = [];
+        reservationsSnapshot.forEach(doc => reservations.push({ id: doc.id, ...doc.data() }));
+        const players = reservations.map(r => ({ userId: r.userId, userName: r.userName }));
+        if (players.length < 4) {
+            showToast('최소 4명이 필요합니다.', 'error');
+            return;
+        }
+        const settings = await getSystemSettings();
+        const courtCount = Math.max(1, settings?.courtCount || 2);
+        const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
+
+        // 이미 스케줄이 있으면 건너뜀
+        const existing = await db.collection('matches')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .limit(1)
+            .get();
+        if (!existing.empty) {
+            showToast('이미 생성된 스케줄이 있습니다.', 'info');
+            return;
+        }
+
+        // 마감 확인: 20분 전 이후만 생성 허용
+        if (!isPastClosing(date, timeSlot, 20)) {
+            showToast('경기 20분 전부터 스케줄을 생성할 수 있습니다.', 'warning');
+            return;
+        }
+
+        const schedule = buildMatchSchedule(players, courtCount, rounds);
+
+        const batch = db.batch();
+        schedule.forEach(match => {
+            const matchId = `${date}_${timeSlot}_R${match.round}_C${match.court}`;
+            const ref = db.collection('matches').doc(matchId);
+            batch.set(ref, {
+                matchId,
+                date,
+                timeSlot,
+                roundNumber: match.round,
+                courtNumber: match.court,
+                teamA: match.teamA,
+                teamB: match.teamB,
+                scoreA: null,
+                scoreB: null,
+                status: 'scheduled',
+                createdAt: new Date()
+            });
+        });
+        await batch.commit();
+        showToast('경기 스케줄이 생성되었습니다.', 'success');
+    } catch (error) {
+        console.error('스케줄 생성 오류:', error);
+        showToast('스케줄 생성 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 4명 내 조합 패턴 (4라운드)
+const pairingPatterns = [
+    [0,1,2,3], // 1,2 vs 3,4
+    [0,2,1,3], // 1,3 vs 2,4
+    [0,3,1,2], // 1,4 vs 2,3
+    [1,2,0,3]  // 2,3 vs 1,4 (변형)
+];
+
+// 매치 스케줄 빌드 (간단 로테이션, 2코트 지원)
+function buildMatchSchedule(players, courtCount, rounds) {
+    const shuffled = [...players].sort(() => Math.random() - 0.5);
+    const queue = [...shuffled];
+    const schedule = [];
+    for (let r = 1; r <= rounds; r++) {
+        for (let c = 1; c <= courtCount; c++) {
+            if (queue.length < 4) break;
+            const group = queue.splice(0, 4);
+            // 사용된 인원은 맨 뒤로 이동하여 다음 라운드에 로테이션
+            queue.push(...group);
+            const p = pairingPatterns[(r - 1) % pairingPatterns.length];
+            const teamA = [group[p[0]], group[p[1]]];
+            const teamB = [group[p[2]], group[p[3]]];
+            schedule.push({ round: r, court: c, teamA, teamB });
+        }
+    }
+    return schedule;
+}
+
+// 매치 불러와서 렌더링
+async function renderMatches(date, timeSlot) {
+    try {
+        showLoading();
+        const list = document.getElementById('matches-list');
+        if (!list) return;
+        const snapshot = await db.collection('matches')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .orderBy('roundNumber')
+            .orderBy('courtNumber')
+            .get();
+        if (snapshot.empty) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>스케줄이 없습니다. 스케줄을 생성해주세요.</p>
+                </div>
+            `;
+            return;
+        }
+        const matches = [];
+        snapshot.forEach(doc => matches.push({ id: doc.id, ...doc.data() }));
+        list.innerHTML = '';
+        let currentRound = 0;
+        matches.forEach(match => {
+            if (match.roundNumber !== currentRound) {
+                currentRound = match.roundNumber;
+                const roundHeader = document.createElement('h3');
+                roundHeader.textContent = `${currentRound}경기 (15분)`;
+                list.appendChild(roundHeader);
+            }
+            const card = document.createElement('div');
+            card.className = 'match-card';
+            const teamALabel = match.teamA.map(p => p.userName).join(', ');
+            const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+            const scoreA = match.scoreA ?? '';
+            const scoreB = match.scoreB ?? '';
+            card.innerHTML = `
+                <div class="match-row">
+                    <div class="match-meta">코트 ${match.courtNumber} | R${match.roundNumber}</div>
+                    <div class="teams">
+                        <span class="team">${teamALabel}</span>
+                        <span class="vs">vs</span>
+                        <span class="team">${teamBLabel}</span>
+                    </div>
+                    <div class="score-inputs">
+                        <input type="number" class="form-control" min="0" id="scoreA-${match.id}" placeholder="A" value="${scoreA}">
+                        <span>:</span>
+                        <input type="number" class="form-control" min="0" id="scoreB-${match.id}" placeholder="B" value="${scoreB}">
+                        <button class="btn btn-outline btn-small" id="save-${match.id}">저장</button>
+                    </div>
+                </div>
+            `;
+            list.appendChild(card);
+            const btn = card.querySelector(`#save-${match.id}`);
+            if (btn) {
+                btn.addEventListener('click', async () => {
+                    const a = Number((document.getElementById(`scoreA-${match.id}`) || {}).value || 0);
+                    const b = Number((document.getElementById(`scoreB-${match.id}`) || {}).value || 0);
+                    await saveMatchScore(match, a, b);
+                });
+            }
+        });
+    } catch (error) {
+        console.error('경기 렌더링 오류:', error);
+        showToast('경기를 불러오는 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 점수 저장 및 결과 기록
+async function saveMatchScore(match, scoreA, scoreB) {
+    try {
+        if (Number.isNaN(scoreA) || Number.isNaN(scoreB)) {
+            showToast('점수를 올바르게 입력하세요.', 'error');
+            return;
+        }
+        const ref = db.collection('matches').doc(match.id);
+        await ref.update({ scoreA, scoreB, status: 'completed', recordedAt: new Date() });
+
+        // 승패 판정 및 개인 기록 저장
+        const aWins = scoreA > scoreB;
+        const winners = aWins ? match.teamA : match.teamB;
+        const losers = aWins ? match.teamB : match.teamA;
+
+        // 기존 recordGameResult API 재사용 (teamId는 match 기반 가짜 아이디)
+        await recordGameResult(`${match.id}_A`, {
+            date: match.date,
+            timeSlot: match.timeSlot,
+            courtNumber: match.courtNumber,
+            winners: winners.map(p => p.userId),
+            losers: losers.map(p => p.userId),
+            score: `${scoreA}-${scoreB}`,
+            players: [...match.teamA, ...match.teamB].map(p => p.userId)
+        });
+
+        showToast('점수가 저장되었습니다.', 'success');
+    } catch (error) {
+        console.error('점수 저장 오류:', error);
+        showToast('점수 저장 중 오류가 발생했습니다.', 'error');
     }
 }
 
