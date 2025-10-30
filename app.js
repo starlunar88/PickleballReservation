@@ -1198,6 +1198,8 @@ function closeAllModals() {
 
 // 탭 전환 기능
 function switchMainTab(tabName) {
+    console.log('메인 탭 전환:', tabName);
+    
     // 모든 탭 버튼 비활성화
     document.querySelectorAll('.mobile-tab-btn, .desktop-tab-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -1217,6 +1219,19 @@ function switchMainTab(tabName) {
     const targetContent = document.getElementById(`${tabName}-tab`);
     if (targetContent) {
         targetContent.classList.add('active');
+        
+        // 예약 탭으로 전환 시 강제로 예약 현황 로드
+        if (tabName === 'reservations') {
+            console.log('예약 탭 전환 - 예약 현황 강제 로드');
+            setTimeout(async () => {
+                try {
+                    await loadReservationsTimeline();
+                    console.log('탭 전환 시 예약 현황 로드 완료');
+                } catch (error) {
+                    console.error('탭 전환 시 예약 현황 로드 실패:', error);
+                }
+            }, 100);
+        }
     }
     
     // 탭별 데이터 로드
@@ -1361,17 +1376,18 @@ async function loadReservationsTimeline() {
                                 <div class="player-item ${res.isAdminReservation ? 'admin-reservation' : ''}">
                                     <span class="player-name">${res.userName || '익명'}</span>
                                     ${res.isAdminReservation ? '<span class="admin-badge">관리자</span>' : ''}
-                                    ${res.userDupr ? `<span class="player-dupr">DUPR: ${res.userDupr}</span>` : ''}
                                 </div>
                             `).join('')}
                         </div>
+                        <div class="timeline-actions">
+                            <button class="timeline-reserve-btn" 
+                                    data-time-slot="${slotKey}" 
+                                    data-date="${targetDate}"
+                                    ${isClosed ? 'disabled' : ''}>
+                                ${isClosed ? '마감' : '예약하기'}
+                            </button>
+                        </div>
                     </div>
-                    <button class="timeline-reserve-btn" 
-                            data-time-slot="${slotKey}" 
-                            data-date="${targetDate}"
-                            ${isClosed ? 'disabled' : ''}>
-                        ${isClosed ? '마감' : '예약하기'}
-                    </button>
                 </div>
             `;
         }
@@ -2921,9 +2937,25 @@ async function updateReservationStatus() {
 }
 
 // DOM 로드 시 즉시 예약 현황 로딩
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM 로드 완료 - 예약 현황 로드 시작');
     if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
-    loadReservationsTimeline();
+    
+    try {
+        await loadReservationsTimeline();
+        console.log('DOM 로드 시 예약 현황 로드 완료');
+    } catch (error) {
+        console.error('DOM 로드 시 예약 현황 로드 실패:', error);
+        // 1초 후 재시도
+        setTimeout(async () => {
+            try {
+                await loadReservationsTimeline();
+                console.log('DOM 로드 재시도 완료');
+            } catch (retryError) {
+                console.error('DOM 로드 재시도 실패:', retryError);
+            }
+        }, 1000);
+    }
 });
 
 // 페이지 가시성 변경 시 재로딩
