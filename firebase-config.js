@@ -114,13 +114,27 @@ function loadUserReservations(userId) {
 function createReservationElement(id, reservation) {
     const div = document.createElement('div');
     div.className = 'reservation-item';
+    
+    // 상태에 따른 스타일 클래스
+    const statusClass = reservation.status === 'confirmed' ? 'confirmed' : 
+                       reservation.status === 'pending' ? 'pending' : 'cancelled';
+    
+    // 상태 텍스트
+    const statusText = reservation.status === 'confirmed' ? '확정' :
+                      reservation.status === 'pending' ? '대기중' : '취소됨';
+    
     div.innerHTML = `
         <div class="reservation-info">
-            <h4>${reservation.court} - ${reservation.date}</h4>
-            <p>시간: ${reservation.time} | 예약일: ${new Date(reservation.createdAt).toLocaleDateString()}</p>
+            <h4>${reservation.courtName || reservation.court} - ${reservation.date}</h4>
+            <p>시간: ${reservation.timeSlot || reservation.time} | 예약일: ${new Date(reservation.createdAt).toLocaleDateString()}</p>
+            <p class="reservation-status ${statusClass}">상태: ${statusText}</p>
+            ${reservation.userDupr ? `<p class="reservation-dupr">DUPR: ${reservation.userDupr}</p>` : ''}
         </div>
         <div class="reservation-actions">
-            <button class="btn btn-danger" onclick="cancelReservation('${id}')">취소</button>
+            ${reservation.status !== 'cancelled' ? 
+                `<button class="btn btn-danger" onclick="cancelReservation('${id}')">취소</button>` : 
+                '<span class="cancelled-text">취소됨</span>'
+            }
         </div>
     `;
     return div;
@@ -165,8 +179,9 @@ function createReservation(reservationData) {
         ...reservationData,
         userId: user.uid,
         userName: user.displayName || user.email,
+        userDupr: reservationData.userDupr || null,
         createdAt: new Date(),
-        status: 'confirmed'
+        status: 'pending' // 대기 상태로 시작
     };
     
     return db.collection('reservations').add(reservation);

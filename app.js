@@ -284,9 +284,9 @@ async function logout() {
 async function handleReservation() {
     const court = document.getElementById('court-select').value;
     const date = document.getElementById('date-select').value;
-    const time = document.getElementById('time-select').value;
+    const timeSlot = document.getElementById('time-select').value;
     
-    if (!court || !date || !time) {
+    if (!court || !date || !timeSlot) {
         showToast('모든 필드를 선택해주세요.', 'error');
         return;
     }
@@ -304,18 +304,18 @@ async function handleReservation() {
     try {
         showLoading();
         
-        // 중복 예약 확인
         const user = auth.currentUser;
         if (!user) {
             showToast('로그인이 필요합니다.', 'warning');
             return;
         }
         
+        // 중복 예약 확인
         const existingReservation = await db.collection('reservations')
             .where('userId', '==', user.uid)
-            .where('court', '==', court)
             .where('date', '==', date)
-            .where('time', '==', time)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
             .get();
         
         if (!existingReservation.empty) {
@@ -323,16 +323,37 @@ async function handleReservation() {
             return;
         }
         
+        // 예약 가능 여부 확인
+        const availability = await checkReservationAvailability(date, timeSlot);
+        
+        if (!availability.available) {
+            if (availability.isFull) {
+                // 대기열에 추가할지 확인
+                const addToWaitlistConfirm = confirm(
+                    `${availability.reason}\n\n대기열에 추가하시겠습니까?`
+                );
+                
+                if (addToWaitlistConfirm) {
+                    await addToWaitlist(date, timeSlot);
+                }
+            } else {
+                showToast(availability.reason, 'error');
+            }
+            return;
+        }
+        
         // 예약 생성
+        const userDupr = await getUserDUPR(user.uid);
         const reservationData = {
             court: court,
             date: date,
-            time: time,
-            courtName: `코트 ${court.replace('court', '')}`
+            timeSlot: timeSlot,
+            courtName: `코트 ${court.replace('court', '')}`,
+            userDupr: userDupr
         };
         
         await createReservation(reservationData);
-        showToast('예약이 완료되었습니다!', 'success');
+        showToast(`예약이 완료되었습니다! (${availability.current + 1}/${availability.max})`, 'success');
         
         // 폼 초기화
         document.getElementById('court-select').value = '';
@@ -883,6 +904,117 @@ document.addEventListener('DOMContentLoaded', function() {
     handleEmailLinkSignIn();
 });
 
+// 시간 슬롯 로드
+async function loadTimeSlots() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        
+        const timeSelect = document.getElementById('time-select');
+        if (!timeSelect) return;
+        
+        // 기존 옵션 제거 (첫 번째 옵션 제외)
+        timeSelect.innerHTML = '<option value="">시간을 선택하세요</option>';
+        
+        // 시간 슬롯 추가
+        settings.timeSlots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = `${slot.start}-${slot.end}`;
+            option.textContent = `${slot.start} - ${slot.end}`;
+            timeSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('시간 슬롯 로드 오류:', error);
+    }
+}
+
+// 코트 옵션 로드
+async function loadCourtOptions() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        
+        const courtSelect = document.getElementById('court-select');
+        if (!courtSelect) return;
+        
+        // 기존 옵션 제거 (첫 번째 옵션 제외)
+        courtSelect.innerHTML = '<option value="">코트를 선택하세요</option>';
+        
+        // 코트 옵션 추가
+        for (let i = 1; i <= settings.courtCount; i++) {
+            const option = document.createElement('option');
+            option.value = `court${i}`;
+            option.textContent = `코트 ${i}`;
+            courtSelect.appendChild(option);
+        }
+        
+    } catch (error) {
+        console.error('코트 옵션 로드 오류:', error);
+    }
+}
+
+// 예약 가능 여부 확인
+async function checkReservationAvailability(date, timeSlot) {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return { available: false, reason: '설정을 불러올 수 없습니다.' };
+        
+        // 해당 시간대의 예약 수 확인
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+        
+        const currentReservations = reservationsSnapshot.size;
+        const maxReservations = settings.courtCount * settings.playersPerCourt;
+        
+        if (currentReservations >= maxReservations) {
+            return { 
+                available: false, 
+                reason: `이 시간대는 만석입니다. (${currentReservations}/${maxReservations})`,
+                isFull: true
+            };
+        }
+        
+        return { 
+            available: true, 
+            current: currentReservations, 
+            max: maxReservations 
+        };
+        
+    } catch (error) {
+        console.error('예약 가능 여부 확인 오류:', error);
+        return { available: false, reason: '확인 중 오류가 발생했습니다.' };
+    }
+}
+
+// 대기열에 추가
+async function addToWaitlist(date, timeSlot) {
+    try {
+        const user = auth.currentUser;
+        if (!user) return;
+        
+        const waitlistData = {
+            userId: user.uid,
+            userName: user.displayName || user.email,
+            userDupr: await getUserDUPR(user.uid),
+            date: date,
+            timeSlot: timeSlot,
+            status: 'waitlist',
+            createdAt: new Date()
+        };
+        
+        await db.collection('waitlist').add(waitlistData);
+        showToast('대기열에 추가되었습니다. 자리가 나면 알려드리겠습니다.', 'info');
+        
+    } catch (error) {
+        console.error('대기열 추가 오류:', error);
+        showToast('대기열 추가 중 오류가 발생했습니다.', 'error');
+    }
+}
+
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
     const elements = document.querySelectorAll('.reservation-card');
@@ -891,6 +1023,10 @@ window.addEventListener('load', function() {
             element.classList.add('fade-in');
         }, index * 100);
     });
+    
+    // 시간 슬롯과 코트 옵션 로드
+    loadTimeSlots();
+    loadCourtOptions();
 });
 
 // 스크롤 시 네비게이션 스타일 변경

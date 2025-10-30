@@ -309,6 +309,19 @@ body {
     border-left: 4px solid #667eea;
 }
 
+.reservation-item.pending {
+    border-left-color: #ffc107;
+}
+
+.reservation-item.confirmed {
+    border-left-color: #28a745;
+}
+
+.reservation-item.cancelled {
+    border-left-color: #dc3545;
+    opacity: 0.7;
+}
+
 .reservation-info h4 {
     color: #333;
     margin-bottom: 5px;
@@ -317,6 +330,40 @@ body {
 .reservation-info p {
     color: #666;
     font-size: 0.9rem;
+    margin: 2px 0;
+}
+
+.reservation-status {
+    font-weight: 500;
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.reservation-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.reservation-status.confirmed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.reservation-status.cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.reservation-dupr {
+    color: #667eea;
+    font-weight: 500;
+}
+
+.cancelled-text {
+    color: #dc3545;
+    font-style: italic;
 }
 
 .reservation-actions {
