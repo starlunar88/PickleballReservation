@@ -1124,6 +1124,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 테스트용 시간대별 버튼 생성
     createTestButtons();
     
+    // 새로고침 버튼 이벤트 리스너
+    const refreshBtn = document.getElementById('refresh-timeline');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            try {
+                showToast('데이터를 새로고침하는 중...', 'info');
+                await loadReservationsTimeline();
+                await checkAndShowMatchSchedule();
+                showToast('새로고침 완료!', 'success');
+            } catch (error) {
+                console.error('새로고침 오류:', error);
+                showToast('새로고침에 실패했습니다. 다시 시도해주세요.', 'error');
+            }
+        });
+    }
+    
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
     if (closeNotifications) {
@@ -1834,7 +1850,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 예약 현황 탭으로 전환 시 강제 재로딩
             if (tabName === 'reservations') {
-                loadReservationsTimeline();
+                // 모바일에서 안정적인 로딩을 위해 약간의 지연
+                setTimeout(async () => {
+                    try {
+                        await loadReservationsTimeline();
+                        await checkAndShowMatchSchedule();
+                    } catch (error) {
+                        console.error('탭 전환 시 예약 현황 로드 오류:', error);
+                        showToast('데이터 로드에 실패했습니다. 새로고침 버튼을 눌러주세요.', 'error');
+                    }
+                }, 50);
             }
         });
     });
@@ -3027,12 +3052,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM 로드 완료 - 예약 현황 로드 시작');
     if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
     
-    // 모바일에서 여러 번 재시도
+    // 모바일에서 여러 번 재시도 (더 강화된 재시도 로직)
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5;
     
     const tryLoadReservations = async () => {
         try {
+            // 네트워크 상태 확인
+            if (!navigator.onLine) {
+                throw new Error('인터넷 연결을 확인해주세요');
+            }
+            
+            // Firebase 연결 상태 확인
+            if (!db) {
+                throw new Error('Firebase 데이터베이스가 초기화되지 않았습니다');
+            }
+            
             await loadReservationsTimeline();
             console.log(`예약 현황 로드 성공 (시도 ${retryCount + 1})`);
         } catch (error) {
@@ -3040,15 +3075,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             retryCount++;
             
             if (retryCount < maxRetries) {
-                console.log(`${1000 * retryCount}ms 후 재시도...`);
-                setTimeout(tryLoadReservations, 1000 * retryCount);
+                const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // 지수 백오프, 최대 5초
+                console.log(`${delay}ms 후 재시도...`);
+                setTimeout(tryLoadReservations, delay);
             } else {
                 console.error('최대 재시도 횟수 초과');
+                // 사용자에게 수동 새로고침 안내
+                if (!navigator.onLine) {
+                    showToast('인터넷 연결을 확인하고 새로고침 버튼을 눌러주세요.', 'error');
+                } else {
+                    showToast('데이터 로드에 실패했습니다. 새로고침 버튼을 눌러주세요.', 'error');
+                }
             }
         }
     };
     
-    tryLoadReservations();
+    // 약간의 지연 후 시작 (모바일에서 DOM이 완전히 준비될 때까지)
+    setTimeout(tryLoadReservations, 100);
+});
+
+// 네트워크 상태 변화 감지
+window.addEventListener('online', () => {
+    console.log('네트워크 연결됨 - 예약 현황 재로드');
+    showToast('인터넷 연결이 복구되었습니다.', 'success');
+    loadReservationsTimeline();
+});
+
+window.addEventListener('offline', () => {
+    console.log('네트워크 연결 끊김');
+    showToast('인터넷 연결이 끊어졌습니다.', 'warning');
 });
 
 // 자동 갱신 제거 - 새로고침 버튼으로만 갱신
