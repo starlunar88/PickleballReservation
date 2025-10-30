@@ -2337,7 +2337,9 @@ body {
     }
     
     .reservations-timeline {
-        max-height: 50vh;
+        min-height: 40vh;
+        max-height: 60vh;
+        overflow-y: auto;
     }
     
     .timeline-reserve-btn {

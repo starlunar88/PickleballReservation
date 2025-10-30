@@ -1685,6 +1685,11 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', (e) => {
             const tabName = e.currentTarget.getAttribute('data-tab');
             switchMainTab(tabName);
+            
+            // 예약 현황 탭으로 전환 시 강제 재로딩
+            if (tabName === 'reservations') {
+                loadReservationsTimeline();
+            }
         });
     });
     
@@ -2905,6 +2910,19 @@ async function updateReservationStatus() {
     console.log('예약 상태 확인 완료 (자동 취소 비활성화)');
 }
 
+// DOM 로드 시 즉시 예약 현황 로딩
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
+    loadReservationsTimeline();
+});
+
+// 페이지 가시성 변경 시 재로딩
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        loadReservationsTimeline();
+    }
+});
+
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
     const elements = document.querySelectorAll('.reservation-card');
@@ -2944,6 +2962,16 @@ document.addEventListener('touchend', function (event) {
     }
     lastTouchEnd = now;
 }, false);
+
+// 멀티터치 핀치줌 방지 (iOS)
+document.addEventListener('touchstart', function (e) {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+// Ctrl+Wheel 줌 방지 (Desktop/Android Chrome)
+document.addEventListener('wheel', function (e) {
+    if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
 
 // 자동 예약 처리 시작
 function startAutoProcessing() {
