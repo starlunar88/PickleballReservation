@@ -1120,6 +1120,47 @@ document.addEventListener('DOMContentLoaded', function() {
     if (notificationsBtn) {
         notificationsBtn.addEventListener('click', openNotificationsModal);
     }
+
+    // 테스트 버튼: 무작위 예약자 추가
+    const addRandomBtn = document.getElementById('add-random-player-btn');
+    if (addRandomBtn) {
+        addRandomBtn.addEventListener('click', async () => {
+            try {
+                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                const timeSlot = window.selectedTimeSlot;
+                if (!timeSlot) {
+                    showToast('시간대를 먼저 선택하세요. (타임라인 항목을 탭)', 'warning');
+                    return;
+                }
+                await addRandomReservation(date, timeSlot);
+                await loadReservationsTimeline();
+                await checkAndShowMatchSchedule();
+            } catch (e) {
+                console.error('무작위 예약자 추가 오류:', e);
+                showToast('무작위 예약 추가 중 오류', 'error');
+            }
+        });
+    }
+
+    // 테스트 버튼: 대진표 강제 생성
+    const forceGenerateBtn = document.getElementById('force-generate-matches-btn');
+    if (forceGenerateBtn) {
+        forceGenerateBtn.addEventListener('click', async () => {
+            try {
+                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                const timeSlot = window.selectedTimeSlot;
+                if (!timeSlot) {
+                    showToast('시간대를 먼저 선택하세요. (타임라인 항목을 탭)', 'warning');
+                    return;
+                }
+                await generateMatchSchedule(date, timeSlot); // 마감 여부 무시하고 생성
+                await checkAndShowMatchSchedule();
+            } catch (e) {
+                console.error('강제 대진표 생성 오류:', e);
+                showToast('대진표 생성 중 오류', 'error');
+            }
+        });
+    }
     
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
@@ -3186,6 +3227,41 @@ function isPastClosing(date, timeSlot, closingMinutes = 20) {
         return new Date() >= cutoff;
     } catch (e) {
         return true;
+    }
+}
+
+// 무작위 한국어 이름 생성 (간단 버전)
+function generateRandomKoreanName() {
+    const lastNames = ['김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권'];
+    const first1 = ['도','서','예','지','하','민','준','유','시','아','태','윤','수','해','나'];
+    const first2 = ['현','연','원','린','빈','후','율','라','진','솔','우','온','별','원','라'];
+    const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const fn = first1[Math.floor(Math.random() * first1.length)] + first2[Math.floor(Math.random() * first2.length)];
+    return ln + fn;
+}
+
+// 테스트용: 무작위 예약 추가 (로그인 필요 없음, 테스트 플래그 포함)
+async function addRandomReservation(date, timeSlot) {
+    const randomId = 'test_' + Math.random().toString(36).slice(2, 10);
+    const name = generateRandomKoreanName();
+    const dupr = Number((2 + Math.random() * 6).toFixed(1));
+    const reservation = {
+        userId: randomId,
+        userName: name,
+        userDupr: dupr,
+        date,
+        timeSlot,
+        status: 'pending',
+        createdAt: new Date(),
+        isAdminReservation: true,
+        isTestData: true
+    };
+    try {
+        await db.collection('reservations').add(reservation);
+        showToast(`무작위 예약자 추가: ${name} (DUPR ${dupr})`, 'success');
+    } catch (error) {
+        console.error('테스트 예약 추가 오류:', error);
+        showToast('테스트 예약 추가 실패', 'error');
     }
 }
 
