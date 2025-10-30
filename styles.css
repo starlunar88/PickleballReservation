@@ -51,9 +51,9 @@ body {
 }
 
 .nav-container {
-    max-width: 1200px;
+    max-width: 480px; /* 모바일 기준으로 제한 */
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 15px; /* 모바일 기준 패딩 */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -64,19 +64,19 @@ body {
     display: flex;
     align-items: center;
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.2rem; /* 모바일 기준으로 축소 */
     font-weight: bold;
 }
 
 .nav-logo i {
-    margin-right: 10px;
-    font-size: 1.8rem;
+    margin-right: 8px; /* 모바일 기준으로 축소 */
+    font-size: 1.4rem; /* 모바일 기준으로 축소 */
 }
 
 .nav-menu {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 15px; /* 모바일 기준으로 축소 */
 }
 
 .nav-link {
@@ -106,11 +106,13 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    font-size: 0.8rem; /* 모바일 기준으로 축소 */
 }
 
 .user-name {
     font-weight: 500;
     margin-bottom: 2px;
+    font-size: 0.8rem; /* 모바일 기준으로 축소 */
 }
 
 .user-dupr {
@@ -128,8 +130,8 @@ body {
 }
 
 .btn-small {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    padding: 4px 8px; /* 모바일 기준으로 축소 */
+    font-size: 0.7rem; /* 모바일 기준으로 축소 */
     min-width: auto;
 }
 
@@ -1765,22 +1767,20 @@ body {
     margin-top: 5px;
 }
 
-/* 모바일에서 사용자 메뉴 스타일 */
-@media (max-width: 768px) {
-    .user-menu {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-    }
-    
-    .user-info {
-        align-items: center;
-    }
-    
-    .user-actions {
-        flex-direction: column;
-        gap: 8px;
-    }
+/* 모든 화면에서 모바일 기준 사용자 메뉴 스타일 적용 */
+.user-menu {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+}
+
+.user-info {
+    align-items: center;
+}
+
+.user-actions {
+    flex-direction: column;
+    gap: 8px;
 }
 
 /* Loading Spinner */
