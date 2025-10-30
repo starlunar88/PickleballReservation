@@ -1,14 +1,13 @@
 // Firebase 설정
 // 실제 Firebase 프로젝트 설정으로 교체하세요
 const firebaseConfig = {
-    apiKey: "your-api-key-here",
-    authDomain: "your-project-id.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project-id.appspot.com",
-    messagingSenderId: "your-sender-id",
-    appId: "your-app-id"
+  apiKey: "AIzaSyDfErowlP_mfHpTfrdkLogGWxKckfj-LFs",
+  authDomain: "pickleballreservation-58bcb.firebaseapp.com",
+  projectId: "pickleballreservation-58bcb",
+  storageBucket: "pickleballreservation-58bcb.firebasestorage.app",
+  messagingSenderId: "1000923785177",
+  appId: "1:1000923785177:web:3ebd3e9528f6e5e6725bc8"
 };
-
 // Firebase 초기화
 firebase.initializeApp(firebaseConfig);
 
