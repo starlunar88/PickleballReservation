@@ -2916,6 +2916,29 @@ window.addEventListener('load', function() {
     startAutoProcessing();
 });
 
+// 모바일 확대/축소 방지
+document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+});
+
+document.addEventListener('gesturechange', function (e) {
+    e.preventDefault();
+});
+
+document.addEventListener('gestureend', function (e) {
+    e.preventDefault();
+});
+
+// 더블탭 줌 방지
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
 // 자동 예약 처리 시작
 function startAutoProcessing() {
     // 페이지 로드 시 즉시 한 번 실행
