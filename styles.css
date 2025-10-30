@@ -2524,6 +2524,23 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
+/* 관리자 예약 스타일 */
+.player-item.admin-reservation {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    color: white;
+    border: 2px solid #ff4757;
+}
+
+.admin-badge {
+    background: #ff4757;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
 .player-name {
     font-weight: 500;
     color: #333;

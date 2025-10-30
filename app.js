@@ -1358,8 +1358,9 @@ async function loadReservationsTimeline() {
                         </div>
                         <div class="timeline-players">
                             ${reservations.map(res => `
-                                <div class="player-item">
+                                <div class="player-item ${res.isAdminReservation ? 'admin-reservation' : ''}">
                                     <span class="player-name">${res.userName || '익명'}</span>
+                                    ${res.isAdminReservation ? '<span class="admin-badge">관리자</span>' : ''}
                                     ${res.userDupr ? `<span class="player-dupr">DUPR: ${res.userDupr}</span>` : ''}
                                 </div>
                             `).join('')}
@@ -1439,17 +1440,22 @@ async function handleTimelineReservation(timeSlot, date) {
             return;
         }
         
-        // 중복 예약 방지 - 같은 사용자가 같은 시간대에 이미 예약했는지 확인
-        const existingReservation = await db.collection('reservations')
-            .where('userId', '==', user.uid)
-            .where('date', '==', date)
-            .where('timeSlot', '==', timeSlot)
-            .where('status', 'in', ['pending', 'confirmed'])
-            .get();
-            
-        if (!existingReservation.empty) {
-            showToast('이미 해당 시간대에 예약하셨습니다.', 'warning');
-            return;
+        // 관리자가 아닌 경우에만 중복 예약 방지
+        const isAdminUser = await isAdmin(user);
+        if (!isAdminUser) {
+            const existingReservation = await db.collection('reservations')
+                .where('userId', '==', user.uid)
+                .where('date', '==', date)
+                .where('timeSlot', '==', timeSlot)
+                .where('status', 'in', ['pending', 'confirmed'])
+                .get();
+                
+            if (!existingReservation.empty) {
+                showToast('이미 해당 시간대에 예약하셨습니다.', 'warning');
+                return;
+            }
+        } else {
+            console.log('관리자 예약 - 중복 예약 허용');
         }
         
         // 사용자 정보 가져오기
@@ -1466,7 +1472,8 @@ async function handleTimelineReservation(timeSlot, date) {
             date: date,
             timeSlot: timeSlot,
             status: 'pending',
-            createdAt: new Date()
+            createdAt: new Date(),
+            isAdminReservation: isAdminUser // 관리자 예약 여부 표시
         };
         
         // 예약 생성
@@ -1474,7 +1481,12 @@ async function handleTimelineReservation(timeSlot, date) {
         const reservationId = await createReservation(reservationData);
         console.log('예약 생성 완료, ID:', reservationId);
         
-        showToast('예약이 완료되었습니다!', 'success');
+        // 관리자 예약 시 다른 메시지 표시
+        if (isAdminUser) {
+            showToast('관리자 예약이 완료되었습니다! (중복 허용)', 'success');
+        } else {
+            showToast('예약이 완료되었습니다!', 'success');
+        }
         
         // 선택된 정보 업데이트
         updateSelectedInfo(date, timeSlot);
