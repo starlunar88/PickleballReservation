@@ -1122,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 테스트용 시간대별 버튼 생성
-    await createTestButtons();
+    createTestButtons();
     
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
