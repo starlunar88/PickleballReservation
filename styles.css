@@ -1868,11 +1868,13 @@ body {
     padding: 20px 0;
     backdrop-filter: blur(10px);
     z-index: 999;
+    display: none; /* 기본 숨김 */
 }
 
 .nav-menu.active {
     left: 50%;
     transform: translateX(-50%);
+    display: flex; /* 햄버거 클릭 시 표시 */
 }
 
 .nav-menu .nav-link {
