@@ -784,13 +784,15 @@ async function openAdminSettingsModal() {
             document.getElementById('closing-time').value = settings.closingTime || 60;
             
             // 시간 슬롯 로드
+            console.log('로드할 시간 슬롯:', settings.timeSlots);
             if (settings.timeSlots && settings.timeSlots.length > 0) {
-                settings.timeSlots.forEach(slot => {
-                    addTimeSlotItem(slot.start, slot.end);
+                settings.timeSlots.forEach((slot, index) => {
+                    console.log(`시간 슬롯 ${index + 1} 추가:`, slot);
+                    addTimeSlotItem(slot.start, slot.end, true); // isFromData = true
                 });
             } else {
                 // 기본 시간 슬롯 추가
-                addTimeSlotItem('09:00', '10:00');
+                addTimeSlotItem('09:00', '10:00', true);
             }
         } else {
             // 설정이 없으면 기본값으로 초기화
@@ -817,23 +819,31 @@ function closeAdminSettingsModal() {
 }
 
 // 시간 슬롯 아이템 추가
-function addTimeSlotItem(start = '09:00', end = '10:00') {
+function addTimeSlotItem(start = '09:00', end = '10:00', isFromData = false) {
     const container = document.getElementById('time-slots-container');
     
-    // 다음 시간으로 자동 설정 (마지막 시간 슬롯의 종료 시간을 시작 시간으로)
-    const lastItem = container.lastElementChild;
-    if (lastItem && lastItem.classList.contains('time-slot-item')) {
-        const lastEndTime = lastItem.querySelector('.time-end').value;
-        if (lastEndTime) {
-            start = lastEndTime;
-            // 1시간 후로 종료 시간 설정
-            const [hours, minutes] = lastEndTime.split(':').map(Number);
-            const endTime = new Date();
-            endTime.setHours(hours, minutes);
-            endTime.setHours(endTime.getHours() + 1);
-            end = endTime.toTimeString().slice(0, 5);
+    console.log(`addTimeSlotItem 호출: start=${start}, end=${end}, isFromData=${isFromData}`);
+    
+    // 데이터에서 로드하는 경우가 아니고, 컨테이너가 비어있지 않은 경우에만 자동 연속 설정
+    if (!isFromData && container.children.length > 0) {
+        const lastItem = container.lastElementChild;
+        if (lastItem && lastItem.classList.contains('time-slot-item')) {
+            const lastEndTime = lastItem.querySelector('.time-end').value;
+            if (lastEndTime) {
+                console.log(`자동 연속 설정: 마지막 종료시간=${lastEndTime}`);
+                start = lastEndTime;
+                // 1시간 후로 종료 시간 설정
+                const [hours, minutes] = lastEndTime.split(':').map(Number);
+                const endTime = new Date();
+                endTime.setHours(hours, minutes);
+                endTime.setHours(endTime.getHours() + 1);
+                end = endTime.toTimeString().slice(0, 5);
+                console.log(`자동 연속 설정 결과: start=${start}, end=${end}`);
+            }
         }
     }
+    
+    console.log(`최종 시간 슬롯 생성: start=${start}, end=${end}`);
     
     const item = document.createElement('div');
     item.className = 'time-slot-item';
@@ -855,7 +865,9 @@ function addTimeSlotItem(start = '09:00', end = '10:00') {
     removeBtn.addEventListener('click', () => {
         if (container.children.length > 1) {
             item.remove();
-            showToast('시간대가 삭제되었습니다.', 'info');
+            if (!isFromData) {
+                showToast('시간대가 삭제되었습니다.', 'info');
+            }
         } else {
             showToast('최소 1개의 시간대는 유지해야 합니다.', 'warning');
         }
@@ -865,7 +877,9 @@ function addTimeSlotItem(start = '09:00', end = '10:00') {
     validateTimeSlot(item.querySelector('.time-start'));
     validateTimeSlot(item.querySelector('.time-end'));
     
-    showToast('새 시간대가 추가되었습니다.', 'success');
+    if (!isFromData) {
+        showToast('새 시간대가 추가되었습니다.', 'success');
+    }
 }
 
 // 시간 슬롯 유효성 검사
@@ -1230,10 +1244,6 @@ async function loadTabData(tabName) {
 // 예약 데이터 로드
 async function loadReservationsData() {
     try {
-        // 시간 슬롯과 코트 옵션 로드
-        await loadTimeSlots();
-        await loadCourtOptions();
-        
         // 예약 현황 로드
         await loadReservationsTimeline();
         
@@ -1325,15 +1335,81 @@ async function loadReservationsTimeline() {
                             `).join('')}
                         </div>
                     </div>
+                    <button class="timeline-reserve-btn" 
+                            data-time-slot="${slotKey}" 
+                            data-date="${today}"
+                            ${isFull ? 'disabled' : ''}>
+                        ${isFull ? '만석' : '예약하기'}
+                    </button>
                 </div>
             `;
         }
         
         timeline.innerHTML = timelineHTML || '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>예약 현황이 없습니다</p></div>';
         
+        // 타임라인 예약 버튼 이벤트 리스너 추가
+        timeline.querySelectorAll('.timeline-reserve-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const timeSlot = e.target.getAttribute('data-time-slot');
+                const date = e.target.getAttribute('data-date');
+                await handleTimelineReservation(timeSlot, date);
+            });
+        });
+        
     } catch (error) {
         console.error('예약 현황 로드 오류:', error);
         timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+    }
+}
+
+// 타임라인 예약 처리
+async function handleTimelineReservation(timeSlot, date) {
+    try {
+        // 사용자 로그인 확인
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 코트 선택 (기본적으로 코트 1)
+        const courtId = 'court1';
+        
+        // 예약 가능 여부 확인
+        const availability = await checkReservationAvailability(date, timeSlot);
+        if (!availability.available) {
+            showToast(availability.reason, 'warning');
+            return;
+        }
+        
+        // 사용자 정보 가져오기
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        
+        // 예약 데이터 생성
+        const reservationData = {
+            userId: user.uid,
+            userName: userData.name || user.displayName || '익명',
+            userEmail: user.email,
+            userDupr: userData.dupr || null,
+            courtId: courtId,
+            date: date,
+            timeSlot: timeSlot,
+            status: 'pending',
+            createdAt: new Date()
+        };
+        
+        // 예약 생성
+        await createReservation(reservationData);
+        
+        showToast('예약이 완료되었습니다!', 'success');
+        
+        // 타임라인 새로고침
+        await loadReservationsTimeline();
+        
+    } catch (error) {
+        console.error('타임라인 예약 오류:', error);
+        showToast('예약 중 오류가 발생했습니다.', 'error');
     }
 }
 
