@@ -1286,8 +1286,12 @@ async function loadReservationsTimeline() {
     if (!timeline) return;
     
     try {
-        const today = new Date().toISOString().slice(0, 10);
+        // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨)
+        const targetDate = window.currentDate || new Date().toISOString().slice(0, 10);
         const settings = await getSystemSettings();
+        
+        // 현재 선택된 날짜 표시
+        updateSelectedInfo(targetDate, null);
         
         if (!settings) {
             timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>설정을 불러올 수 없습니다</p></div>';
@@ -1301,7 +1305,7 @@ async function loadReservationsTimeline() {
             
             // 예약 수 확인
             const reservationsSnapshot = await db.collection('reservations')
-                .where('date', '==', today)
+                .where('date', '==', targetDate)
                 .where('timeSlot', '==', slotKey)
                 .where('status', 'in', ['pending', 'confirmed'])
                 .get();
@@ -1337,7 +1341,7 @@ async function loadReservationsTimeline() {
                     </div>
                     <button class="timeline-reserve-btn" 
                             data-time-slot="${slotKey}" 
-                            data-date="${today}"
+                            data-date="${targetDate}"
                             ${isFull ? 'disabled' : ''}>
                         ${isFull ? '만석' : '예약하기'}
                     </button>
@@ -1359,6 +1363,33 @@ async function loadReservationsTimeline() {
     } catch (error) {
         console.error('예약 현황 로드 오류:', error);
         timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+    }
+}
+
+// 선택된 정보 업데이트
+function updateSelectedInfo(date, timeSlot) {
+    const selectedInfo = document.getElementById('selected-info');
+    const selectedDate = document.getElementById('selected-date');
+    const selectedTime = document.getElementById('selected-time');
+    
+    if (selectedInfo && selectedDate) {
+        // 날짜 포맷팅
+        const dateObj = new Date(date);
+        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            weekday: 'short'
+        });
+        
+        selectedDate.textContent = formattedDate;
+        
+        if (timeSlot) {
+            selectedTime.textContent = timeSlot.replace('-', ' - ');
+            selectedInfo.style.display = 'block';
+        } else {
+            selectedInfo.style.display = 'none';
+        }
     }
 }
 
@@ -1403,6 +1434,9 @@ async function handleTimelineReservation(timeSlot, date) {
         await createReservation(reservationData);
         
         showToast('예약이 완료되었습니다!', 'success');
+        
+        // 선택된 정보 업데이트
+        updateSelectedInfo(date, timeSlot);
         
         // 타임라인 새로고침
         await loadReservationsTimeline();
@@ -1533,20 +1567,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // 날짜 네비게이션 이벤트 리스너
     const prevDayBtn = document.getElementById('prev-day');
     const nextDayBtn = document.getElementById('next-day');
+    const currentDateDisplay = document.getElementById('current-date-display');
+    
+    // 전역 currentDate 변수 설정
+    window.currentDate = new Date().toISOString().slice(0, 10);
+    
+    // 현재 날짜 표시 업데이트
+    function updateCurrentDateDisplay() {
+        const dateObj = new Date(window.currentDate);
+        const today = new Date();
+        const isToday = dateObj.toDateString() === today.toDateString();
+        
+        if (isToday) {
+            currentDateDisplay.textContent = '오늘';
+        } else {
+            currentDateDisplay.textContent = dateObj.toLocaleDateString('ko-KR', {
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short'
+            });
+        }
+        
+        // 타임라인 새로고침
+        loadReservationsTimeline();
+    }
     
     if (prevDayBtn) {
         prevDayBtn.addEventListener('click', () => {
-            // 이전 날짜 로직
-            console.log('이전 날짜');
+            const dateObj = new Date(window.currentDate);
+            dateObj.setDate(dateObj.getDate() - 1);
+            window.currentDate = dateObj.toISOString().slice(0, 10);
+            updateCurrentDateDisplay();
         });
     }
     
     if (nextDayBtn) {
         nextDayBtn.addEventListener('click', () => {
-            // 다음 날짜 로직
-            console.log('다음 날짜');
+            const dateObj = new Date(window.currentDate);
+            dateObj.setDate(dateObj.getDate() + 1);
+            window.currentDate = dateObj.toISOString().slice(0, 10);
+            updateCurrentDateDisplay();
         });
     }
+    
+    // 초기 날짜 표시
+    updateCurrentDateDisplay();
 });
 
 // 시간 슬롯 로드
