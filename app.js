@@ -515,11 +515,21 @@ async function getSystemSettings() {
 // 시스템 설정 저장
 async function saveSystemSettings(settings) {
     try {
-        await db.collection('settings').doc('system').set({
+        const dataToSave = {
             ...settings,
             lastUpdated: new Date()
-        });
-        console.log('시스템 설정 저장 완료:', settings);
+        };
+        
+        console.log('Firestore에 저장할 데이터:', dataToSave);
+        
+        await db.collection('settings').doc('system').set(dataToSave);
+        
+        console.log('시스템 설정 저장 완료');
+        
+        // 저장 후 즉시 확인
+        const savedDoc = await db.collection('settings').doc('system').get();
+        console.log('저장 후 Firestore에서 확인:', savedDoc.data());
+        
     } catch (error) {
         console.error('시스템 설정 저장 오류:', error);
         throw error;
@@ -767,6 +777,8 @@ async function openAdminSettingsModal() {
     if (modal) {
         // 현재 설정 로드
         const settings = await getSystemSettings();
+        console.log('모달 열기 - 로드된 설정:', settings);
+        
         if (settings) {
             document.getElementById('court-count').value = settings.courtCount;
             document.getElementById('closing-time').value = settings.closingTime;
@@ -775,7 +787,10 @@ async function openAdminSettingsModal() {
             const container = document.getElementById('time-slots-container');
             container.innerHTML = '';
             
+            console.log('시간 슬롯 로드:', settings.timeSlots);
+            
             settings.timeSlots.forEach(slot => {
+                console.log('시간 슬롯 추가:', slot);
                 addTimeSlotItem(slot.start, slot.end);
             });
         }
@@ -899,14 +914,20 @@ async function handleAdminSettings() {
     const timeSlots = [];
     const timeSlotItems = document.querySelectorAll('.time-slot-item');
     
+    console.log('수집된 시간 슬롯 아이템 수:', timeSlotItems.length);
+    
     for (let item of timeSlotItems) {
         const start = item.querySelector('.time-start').value;
         const end = item.querySelector('.time-end').value;
+        
+        console.log('시간 슬롯:', { start, end });
         
         if (start && end) {
             timeSlots.push({ start, end });
         }
     }
+    
+    console.log('최종 시간 슬롯 배열:', timeSlots);
     
     if (timeSlots.length === 0) {
         showToast('최소 하나의 시간 슬롯을 설정해주세요.', 'error');
@@ -924,7 +945,14 @@ async function handleAdminSettings() {
             gamesPerHour: 4
         };
         
+        console.log('저장할 설정:', settings);
+        
         await saveSystemSettings(settings);
+        
+        // 저장 후 확인
+        const savedSettings = await getSystemSettings();
+        console.log('저장된 설정 확인:', savedSettings);
+        
         showToast('관리자 설정이 저장되었습니다!', 'success');
         closeAdminSettingsModal();
         
