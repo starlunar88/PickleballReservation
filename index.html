@@ -94,7 +94,7 @@
                     <!-- 예약 현황 (기차표 스타일) -->
                     <div class="reservations-board">
                         <div class="section-header">
-                            <h2><i class="fas fa-train"></i> 예약 현황</h2>
+                            <h2>예약 현황</h2>
                             <div class="date-navigation">
                                 <button class="btn btn-outline" id="prev-day">
                                     <i class="fas fa-chevron-left"></i>
@@ -106,7 +106,10 @@
                                 <button class="btn btn-outline" id="refresh-timeline" title="새로고침">
                                     <i class="fas fa-rotate-right"></i>
                                 </button>
-                                <!-- 테스트용: 무작위 추가 / 강제 대진표 생성 -->
+                                <!-- 테스트용: 시간대 선택 및 액션 -->
+                                <select id="test-time-select" class="form-control" style="min-width: 120px; height: 36px; font-size: 0.8rem;">
+                                    <option value="">시간대 선택</option>
+                                </select>
                                 <button class="btn btn-outline" id="add-random-player-btn" title="무작위 예약자 추가">
                                     무작위 추가
                                 </button>

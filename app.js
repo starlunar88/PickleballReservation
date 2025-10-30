@@ -1121,15 +1121,18 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationsBtn.addEventListener('click', openNotificationsModal);
     }
 
+    // 테스트용 시간대 선택 옵션 로드
+    await loadTestTimeOptions();
+
     // 테스트 버튼: 무작위 예약자 추가
     const addRandomBtn = document.getElementById('add-random-player-btn');
     if (addRandomBtn) {
         addRandomBtn.addEventListener('click', async () => {
             try {
                 const date = window.currentDate || new Date().toISOString().slice(0, 10);
-                const timeSlot = window.selectedTimeSlot;
+                const timeSlot = getSelectedTestTime();
                 if (!timeSlot) {
-                    showToast('시간대를 먼저 선택하세요. (타임라인 항목을 탭)', 'warning');
+                    showToast('시간대를 먼저 선택하세요.', 'warning');
                     return;
                 }
                 await addRandomReservation(date, timeSlot);
@@ -1148,13 +1151,24 @@ document.addEventListener('DOMContentLoaded', function() {
         forceGenerateBtn.addEventListener('click', async () => {
             try {
                 const date = window.currentDate || new Date().toISOString().slice(0, 10);
-                const timeSlot = window.selectedTimeSlot;
+                const timeSlot = getSelectedTestTime();
                 if (!timeSlot) {
-                    showToast('시간대를 먼저 선택하세요. (타임라인 항목을 탭)', 'warning');
+                    showToast('시간대를 먼저 선택하세요.', 'warning');
                     return;
                 }
-                await generateMatchSchedule(date, timeSlot); // 마감 여부 무시하고 생성
-                await checkAndShowMatchSchedule();
+                // 강제 대진표 생성 (마감 여부 무시)
+                await generateMatchSchedule(date, timeSlot);
+                // 대진표 표시
+                const existingMatches = await db.collection('matches')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .orderBy('roundNumber')
+                    .orderBy('courtNumber')
+                    .get();
+                
+                if (!existingMatches.empty) {
+                    await renderMatchSchedule(existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })), date, timeSlot);
+                }
             } catch (e) {
                 console.error('강제 대진표 생성 오류:', e);
                 showToast('대진표 생성 중 오류', 'error');
@@ -3089,29 +3103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tryLoadReservations();
 });
 
-// 페이지 가시성 변경 시 재로딩
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        console.log('📱 페이지 가시성 변경 - 예약 현황 재로드');
-        loadReservationsTimeline();
-    }
-});
-
-// 모바일에서 포커스 이벤트로 재로딩
-window.addEventListener('focus', () => {
-    console.log('📱 윈도우 포커스 - 예약 현황 재로드');
-    loadReservationsTimeline();
-});
-
-// 모바일에서 스크롤 이벤트로 재로딩 (스크롤 시)
-let scrollTimeout;
-window.addEventListener('scroll', () => {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-        console.log('📱 스크롤 이벤트 - 예약 현황 재로드');
-        loadReservationsTimeline();
-    }, 1000);
-});
+// 자동 갱신 제거 - 새로고침 버튼으로만 갱신
 
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
@@ -3163,24 +3155,13 @@ document.addEventListener('wheel', function (e) {
     if (e.ctrlKey) e.preventDefault();
 }, { passive: false });
 
-// 자동 예약 처리 시작
+// 자동 예약 처리 시작 (수동 갱신으로 변경)
 function startAutoProcessing() {
     // 페이지 로드 시 즉시 한 번 실행
     checkAndProcessReservations();
     updateReservationStatus();
     
-    // 5분마다 예약 상태 확인 및 처리
-    setInterval(() => {
-        checkAndProcessReservations();
-        updateReservationStatus();
-    }, 5 * 60 * 1000); // 5분 = 5 * 60 * 1000ms
-    
-    // 1분마다 예약 상태 업데이트 (더 자주 체크)
-    setInterval(() => {
-        updateReservationStatus();
-    }, 1 * 60 * 1000); // 1분 = 1 * 60 * 1000ms
-    
-    console.log('자동 예약 처리 시스템이 시작되었습니다.');
+    console.log('수동 갱신 모드로 설정되었습니다. 새로고침 버튼을 사용하세요.');
 }
 
 // 관리자용 팀 배정 관리 함수들
@@ -3230,6 +3211,33 @@ function isPastClosing(date, timeSlot, closingMinutes = 20) {
     }
 }
 
+// 테스트용 시간대 선택 옵션 로드
+async function loadTestTimeOptions() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        
+        const timeSelect = document.getElementById('test-time-select');
+        if (!timeSelect) return;
+        
+        timeSelect.innerHTML = '<option value="">시간대 선택</option>';
+        settings.timeSlots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = `${slot.start}-${slot.end}`;
+            option.textContent = `${slot.start} - ${slot.end}`;
+            timeSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('테스트 시간대 옵션 로드 오류:', error);
+    }
+}
+
+// 선택된 테스트 시간대 가져오기
+function getSelectedTestTime() {
+    const timeSelect = document.getElementById('test-time-select');
+    return timeSelect ? timeSelect.value : null;
+}
+
 // 무작위 한국어 이름 생성 (간단 버전)
 function generateRandomKoreanName() {
     const lastNames = ['김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권'];
@@ -3273,8 +3281,9 @@ async function checkAndShowMatchSchedule() {
         
         if (!selectedTimeSlot) return;
         
-        // 20분 전 마감 확인
-        if (!isPastClosing(currentDate, selectedTimeSlot, 20)) {
+        // 20분 전 마감 확인 (테스트 모드에서는 무시)
+        const isTestMode = document.getElementById('test-time-select')?.value;
+        if (!isTestMode && !isPastClosing(currentDate, selectedTimeSlot, 20)) {
             hideMatchSchedule();
             return;
         }
