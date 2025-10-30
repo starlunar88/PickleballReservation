@@ -1320,7 +1320,7 @@ async function loadReservationsTimeline() {
             
             console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
             
-            const isFull = reservations.length >= 8; // 코트 2개 = 최대 8명
+            // 만석 상태 제거 - 항상 예약 가능
             
             // 20분 전 마감 체크
             const now = new Date();
@@ -1336,9 +1336,6 @@ async function loadReservationsTimeline() {
             if (isClosed) {
                 statusClass = 'closed';
                 statusText = '마감';
-            } else if (isFull) {
-                statusClass = 'full';
-                statusText = '만석';
             } else if (reservations.length > 0) {
                 statusClass = 'partial';
                 statusText = `${reservations.length}/8명`;
@@ -1371,8 +1368,8 @@ async function loadReservationsTimeline() {
                     <button class="timeline-reserve-btn" 
                             data-time-slot="${slotKey}" 
                             data-date="${targetDate}"
-                            ${isClosed || isFull ? 'disabled' : ''}>
-                        ${isClosed ? '마감' : isFull ? '만석' : '예약하기'}
+                            ${isClosed ? 'disabled' : ''}>
+                        ${isClosed ? '마감' : '예약하기'}
                     </button>
                 </div>
             `;
@@ -1564,11 +1561,9 @@ async function updateReservationButtons(timeSlot, date) {
         if (hasReservation) {
             makeReservationBtn.style.display = 'none';
             cancelReservationBtn.style.display = 'block';
-            reservationActions.style.display = 'flex';
         } else {
             makeReservationBtn.style.display = 'block';
             cancelReservationBtn.style.display = 'none';
-            reservationActions.style.display = 'flex';
         }
     } catch (error) {
         console.error('버튼 상태 업데이트 오류:', error);
@@ -1742,6 +1737,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 날짜 표시
     updateCurrentDateDisplay();
     
+    // 초기 버튼 상태 설정
+    const reservationActions = document.getElementById('reservation-actions');
+    if (reservationActions) {
+        reservationActions.style.display = 'flex';
+    }
+    
     // 예약/취소 버튼 이벤트 리스너
     const makeReservationBtn = document.getElementById('make-reservation-btn');
     const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
@@ -1839,20 +1840,13 @@ async function checkReservationAvailability(date, timeSlot) {
             .get();
         
         const currentReservations = reservationsSnapshot.size;
-        const maxReservations = 8; // 코트 2개 * 4명 = 8명 고정
         
-        if (currentReservations >= maxReservations) {
-            return { 
-                available: false, 
-                reason: `이 시간대는 만석입니다. (${currentReservations}/${maxReservations})`,
-                isFull: true
-            };
-        }
+        // 만석 체크 제거 - 항상 예약 가능
         
         return { 
             available: true, 
             current: currentReservations, 
-            max: maxReservations 
+            max: 8 
         };
         
     } catch (error) {
