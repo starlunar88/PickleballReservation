@@ -60,13 +60,13 @@ if (hamburger && navMenu) {
     });
 }
 
-// 모달 외부 클릭 시 닫기
+// 모달 외부 클릭 시 닫기 (회원가입만, 로그인은 X버튼으로만 닫기)
 window.addEventListener('click', (e) => {
-    if (e.target === loginModal) {
-        closeModal('login');
-    }
     if (e.target === signupModal) {
         closeModal('signup');
+    }
+    if (e.target === document.getElementById('dupr-edit-modal')) {
+        closeDuprEditModal();
     }
 });
 
@@ -372,6 +372,24 @@ function isValidEmail(email) {
 function isValidDUPR(dupr) {
     const duprValue = parseFloat(dupr);
     return !isNaN(duprValue) && duprValue >= 2.0 && duprValue <= 8.0;
+}
+
+// DUPR 입력 실시간 유효성 검사
+function validateDUPRInput(input) {
+    const value = parseFloat(input.value);
+    
+    if (input.value === '') {
+        input.style.borderColor = '#e9ecef';
+        return;
+    }
+    
+    if (isNaN(value) || value < 2.0 || value > 8.0) {
+        input.style.borderColor = '#dc3545';
+        input.setCustomValidity('DUPR은 2.0에서 8.0 사이의 값이어야 합니다.');
+    } else {
+        input.style.borderColor = '#28a745';
+        input.setCustomValidity('');
+    }
 }
 
 // 사용자 DUPR 업데이트
@@ -713,14 +731,14 @@ document.querySelectorAll('.nav-link').forEach(link => {
     });
 });
 
-// ESC 키로 모달 닫기
+// ESC 키로 모달 닫기 (로그인 모달 제외)
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        if (loginModal.style.display === 'block') {
-            closeModal('login');
-        }
         if (signupModal.style.display === 'block') {
             closeModal('signup');
+        }
+        if (document.getElementById('dupr-edit-modal').style.display === 'block') {
+            closeDuprEditModal();
         }
     }
 });
