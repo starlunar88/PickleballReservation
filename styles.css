@@ -1948,14 +1948,14 @@ body {
 .mobile-nav-tabs {
     display: none;
     position: fixed;
-    bottom: 0;
+    top: 70px;
     left: 0;
     right: 0;
     background: white;
-    border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #e9ecef;
     padding: 8px 0;
     z-index: 1000;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .mobile-tab-btn {
@@ -2202,7 +2202,8 @@ body {
     }
     
     .main-container {
-        padding-bottom: 80px;
+        padding-top: 120px; /* 모바일 탭 공간 확보 */
+        padding-bottom: 20px;
         max-width: 100%;
         margin: 0;
     }
@@ -2444,6 +2445,34 @@ body {
 
 .timeline-item:hover .timeline-reserve-btn {
     opacity: 1;
+}
+
+/* 예약/취소 버튼 영역 */
+.reservation-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.reservation-actions .btn {
+    min-width: 120px;
+    padding: 12px 20px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .reservation-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .reservation-actions .btn {
+        width: 100%;
+    }
 }
 
 .timeline-reserve-btn:hover {

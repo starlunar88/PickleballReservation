@@ -1304,6 +1304,7 @@ async function loadReservationsTimeline() {
             const slotKey = `${timeSlot.start}-${timeSlot.end}`;
             
             // 예약 수 확인
+            console.log(`예약 조회 중: ${targetDate}, ${slotKey}`);
             const reservationsSnapshot = await db.collection('reservations')
                 .where('date', '==', targetDate)
                 .where('timeSlot', '==', slotKey)
@@ -1312,8 +1313,12 @@ async function loadReservationsTimeline() {
             
             const reservations = [];
             reservationsSnapshot.forEach(doc => {
-                reservations.push({ id: doc.id, ...doc.data() });
+                const data = doc.data();
+                console.log(`예약 발견: ${data.userName} (${data.status})`);
+                reservations.push({ id: doc.id, ...data });
             });
+            
+            console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
             
             const isFull = reservations.length >= 4;
             const statusClass = isFull ? 'full' : reservations.length > 0 ? 'partial' : 'empty';
@@ -1431,7 +1436,9 @@ async function handleTimelineReservation(timeSlot, date) {
         };
         
         // 예약 생성
-        await createReservation(reservationData);
+        console.log('예약 데이터 생성 중:', reservationData);
+        const reservationId = await createReservation(reservationData);
+        console.log('예약 생성 완료, ID:', reservationId);
         
         showToast('예약이 완료되었습니다!', 'success');
         
@@ -1612,6 +1619,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 초기 날짜 표시
     updateCurrentDateDisplay();
+    
+    // 예약/취소 버튼 이벤트 리스너
+    const makeReservationBtn = document.getElementById('make-reservation-btn');
+    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
+    
+    if (makeReservationBtn) {
+        makeReservationBtn.addEventListener('click', async () => {
+            const selectedTimeSlot = document.getElementById('selected-time')?.textContent;
+            const selectedDate = window.currentDate;
+            
+            if (selectedTimeSlot && selectedDate) {
+                const timeSlot = selectedTimeSlot.replace(' - ', '-');
+                await handleTimelineReservation(timeSlot, selectedDate);
+            } else {
+                showToast('시간을 선택해주세요.', 'warning');
+            }
+        });
+    }
+    
+    if (cancelReservationBtn) {
+        cancelReservationBtn.addEventListener('click', async () => {
+            // 취소 로직 구현
+            showToast('취소 기능은 준비 중입니다.', 'info');
+        });
+    }
 });
 
 // 시간 슬롯 로드

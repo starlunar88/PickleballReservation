@@ -238,11 +238,11 @@ function clearReservations() {
 }
 
 // 예약 생성
-function createReservation(reservationData) {
+async function createReservation(reservationData) {
     const user = auth.currentUser;
     if (!user) {
         showToast('로그인이 필요합니다.', 'warning');
-        return;
+        return null;
     }
     
     const reservation = {
@@ -254,7 +254,15 @@ function createReservation(reservationData) {
         status: 'pending' // 대기 상태로 시작
     };
     
-    return db.collection('reservations').add(reservation);
+    try {
+        const docRef = await db.collection('reservations').add(reservation);
+        console.log('Firestore에 예약 저장 완료:', docRef.id);
+        return docRef.id;
+    } catch (error) {
+        console.error('예약 저장 오류:', error);
+        showToast('예약 저장 중 오류가 발생했습니다.', 'error');
+        return null;
+    }
 }
 
 // 토스트 알림 표시
