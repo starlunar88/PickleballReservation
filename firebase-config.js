@@ -9,11 +9,21 @@ const firebaseConfig = {
   appId: "1:1000923785177:web:3ebd3e9528f6e5e6725bc8"
 };
 // Firebase 초기화
-firebase.initializeApp(firebaseConfig);
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log('Firebase 초기화 성공!');
+    console.log('프로젝트 ID:', firebaseConfig.projectId);
+} catch (error) {
+    console.error('Firebase 초기화 실패:', error);
+}
 
 // Firebase 서비스 참조
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Firebase 연결 상태 확인
+console.log('Firebase Auth 객체:', auth);
+console.log('Firebase Firestore 객체:', db);
 
 // 인증 상태 변경 감지
 auth.onAuthStateChanged((user) => {

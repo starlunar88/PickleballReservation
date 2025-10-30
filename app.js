@@ -116,36 +116,46 @@ function closeModal(type) {
     }
 }
 
-// 로그인 처리
+// 로그인 처리 (이메일 링크 방식)
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
     
-    if (!email || !password) {
-        showToast('이메일과 비밀번호를 입력해주세요.', 'error');
+    if (!email) {
+        showToast('이메일을 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (!isValidEmail(email)) {
+        showToast('유효한 이메일 주소를 입력해주세요.', 'error');
         return;
     }
     
     try {
         showLoading();
-        await auth.signInWithEmailAndPassword(email, password);
-        showToast('로그인되었습니다!', 'success');
+        
+        // 이메일 링크 전송
+        const actionCodeSettings = {
+            url: window.location.origin + window.location.pathname,
+            handleCodeInApp: true,
+        };
+        
+        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+        
+        // 이메일을 localStorage에 저장
+        localStorage.setItem('emailForSignIn', email);
+        
+        showToast('로그인 링크가 이메일로 전송되었습니다! 이메일을 확인해주세요.', 'success');
         closeModal('login');
         loginForm.reset();
+        
     } catch (error) {
-        console.error('로그인 오류:', error);
+        console.error('로그인 링크 전송 오류:', error);
         console.error('오류 코드:', error.code);
         console.error('오류 메시지:', error.message);
         
-        let errorMessage = '로그인 중 오류가 발생했습니다.';
+        let errorMessage = '로그인 링크 전송 중 오류가 발생했습니다.';
         
         switch (error.code) {
-            case 'auth/user-not-found':
-                errorMessage = '등록되지 않은 이메일입니다.';
-                break;
-            case 'auth/wrong-password':
-                errorMessage = '비밀번호가 올바르지 않습니다.';
-                break;
             case 'auth/invalid-email':
                 errorMessage = '유효하지 않은 이메일입니다.';
                 break;
@@ -153,7 +163,7 @@ async function handleLogin() {
                 errorMessage = '비활성화된 계정입니다.';
                 break;
             case 'auth/operation-not-allowed':
-                errorMessage = '이메일/비밀번호 인증이 비활성화되어 있습니다.';
+                errorMessage = '이메일 링크 인증이 비활성화되어 있습니다.';
                 break;
             case 'auth/network-request-failed':
                 errorMessage = '네트워크 오류가 발생했습니다.';
@@ -174,59 +184,53 @@ async function handleLogin() {
     }
 }
 
-// 회원가입 처리
+// 회원가입 처리 (이메일 링크 방식)
 async function handleSignup() {
     const name = document.getElementById('signup-name').value;
     const email = document.getElementById('signup-email').value;
-    const password = document.getElementById('signup-password').value;
-    const confirmPassword = document.getElementById('signup-confirm-password').value;
     
-    if (!name || !email || !password || !confirmPassword) {
-        showToast('모든 필드를 입력해주세요.', 'error');
+    if (!name || !email) {
+        showToast('이름과 이메일을 입력해주세요.', 'error');
         return;
     }
     
-    if (password !== confirmPassword) {
-        showToast('비밀번호가 일치하지 않습니다.', 'error');
-        return;
-    }
-    
-    if (password.length < 6) {
-        showToast('비밀번호는 6자 이상이어야 합니다.', 'error');
+    if (!isValidEmail(email)) {
+        showToast('유효한 이메일 주소를 입력해주세요.', 'error');
         return;
     }
     
     try {
         showLoading();
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         
-        // 사용자 프로필 업데이트
-        await userCredential.user.updateProfile({
-            displayName: name
-        });
+        // 이메일 링크 전송
+        const actionCodeSettings = {
+            url: window.location.origin + window.location.pathname,
+            handleCodeInApp: true,
+        };
         
-        showToast('회원가입이 완료되었습니다!', 'success');
+        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+        
+        // 사용자 정보를 localStorage에 저장
+        localStorage.setItem('emailForSignIn', email);
+        localStorage.setItem('userNameForSignIn', name);
+        
+        showToast('회원가입 링크가 이메일로 전송되었습니다! 이메일을 확인해주세요.', 'success');
         closeModal('signup');
         signupForm.reset();
+        
     } catch (error) {
-        console.error('회원가입 오류:', error);
+        console.error('회원가입 링크 전송 오류:', error);
         console.error('오류 코드:', error.code);
         console.error('오류 메시지:', error.message);
         
-        let errorMessage = '회원가입 중 오류가 발생했습니다.';
+        let errorMessage = '회원가입 링크 전송 중 오류가 발생했습니다.';
         
         switch (error.code) {
-            case 'auth/email-already-in-use':
-                errorMessage = '이미 사용 중인 이메일입니다.';
-                break;
             case 'auth/invalid-email':
                 errorMessage = '유효하지 않은 이메일입니다.';
                 break;
-            case 'auth/weak-password':
-                errorMessage = '비밀번호가 너무 약합니다.';
-                break;
             case 'auth/operation-not-allowed':
-                errorMessage = '이메일/비밀번호 인증이 비활성화되어 있습니다.';
+                errorMessage = '이메일 링크 인증이 비활성화되어 있습니다.';
                 break;
             case 'auth/network-request-failed':
                 errorMessage = '네트워크 오류가 발생했습니다.';
@@ -347,6 +351,81 @@ document.addEventListener('DOMContentLoaded', function() {
         dateInput.min = today;
         dateInput.value = today;
     }
+});
+
+// 이메일 유효성 검사
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// 이메일 링크 확인 및 로그인 처리
+function handleEmailLinkSignIn() {
+    // URL에서 이메일 링크 확인
+    if (auth.isSignInWithEmailLink(window.location.href)) {
+        let email = localStorage.getItem('emailForSignIn');
+        let userName = localStorage.getItem('userNameForSignIn');
+        
+        if (!email) {
+            // 이메일이 localStorage에 없는 경우 사용자에게 입력 요청
+            email = window.prompt('이메일 주소를 입력해주세요:');
+        }
+        
+        if (email) {
+            showLoading();
+            
+            auth.signInWithEmailLink(email, window.location.href)
+                .then((result) => {
+                    console.log('이메일 링크 로그인 성공:', result);
+                    
+                    // 회원가입인 경우 사용자 이름 설정
+                    if (userName && !result.user.displayName) {
+                        return result.user.updateProfile({
+                            displayName: userName
+                        });
+                    }
+                })
+                .then(() => {
+                    showToast('로그인되었습니다!', 'success');
+                    localStorage.removeItem('emailForSignIn');
+                    localStorage.removeItem('userNameForSignIn');
+                    
+                    // URL에서 이메일 링크 파라미터 제거
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                })
+                .catch((error) => {
+                    console.error('이메일 링크 로그인 오류:', error);
+                    let errorMessage = '이메일 링크 로그인 중 오류가 발생했습니다.';
+                    
+                    switch (error.code) {
+                        case 'auth/invalid-email':
+                            errorMessage = '유효하지 않은 이메일입니다.';
+                            break;
+                        case 'auth/invalid-action-code':
+                            errorMessage = '유효하지 않거나 만료된 링크입니다.';
+                            break;
+                        case 'auth/expired-action-code':
+                            errorMessage = '만료된 링크입니다. 다시 요청해주세요.';
+                            break;
+                        case 'auth/user-disabled':
+                            errorMessage = '비활성화된 계정입니다.';
+                            break;
+                        default:
+                            errorMessage = `오류: ${error.message}`;
+                    }
+                    
+                    showToast(errorMessage, 'error');
+                })
+                .finally(() => {
+                    hideLoading();
+                });
+        }
+    }
+}
+
+// 페이지 로드 시 이메일 링크 확인
+document.addEventListener('DOMContentLoaded', function() {
+    handleEmailLinkSignIn();
 });
 
 // 페이지 로드 시 애니메이션

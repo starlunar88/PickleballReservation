@@ -426,6 +426,31 @@ body {
     text-decoration: underline;
 }
 
+/* 로그인/회원가입 정보 메시지 */
+.login-info,
+.signup-info {
+    margin-top: 15px;
+    padding: 12px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    border-left: 4px solid #2196f3;
+}
+
+.login-info p,
+.signup-info p {
+    margin: 0;
+    color: #1976d2;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.login-info i,
+.signup-info i {
+    color: #2196f3;
+}
+
 /* Loading Spinner */
 .loading {
     position: fixed;
