@@ -54,6 +54,21 @@ async function isAdmin(user) {
     }
 }
 
+// 사용자 DUPR 가져오기
+async function getUserDUPR(userId) {
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return userData.dupr || null;
+        }
+        return null;
+    } catch (error) {
+        console.error('DUPR 가져오기 오류:', error);
+        return null;
+    }
+}
+
 // 인증 상태 변경 감지
 auth.onAuthStateChanged((user) => {
     if (user) {
@@ -144,7 +159,6 @@ function loadUserReservations(userId) {
     
     db.collection('reservations')
         .where('userId', '==', userId)
-        .orderBy('date', 'desc')
         .onSnapshot((snapshot) => {
             reservationsList.innerHTML = '';
             

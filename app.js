@@ -967,13 +967,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 관리자 설정 모달 열 때 시간 옵션 로드
-    const adminSettingsBtn = document.getElementById('admin-settings-btn');
-    if (adminSettingsBtn) {
-        adminSettingsBtn.addEventListener('click', async () => {
-            await loadAssignmentTimeOptions();
-        });
-    }
+    // 관리자 설정 모달 열 때 시간 옵션 로드 (이미 위에서 처리됨)
     
     // 알림 버튼
     const notificationsBtn = document.getElementById('notifications-btn');
@@ -1018,7 +1012,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // 로그아웃 버튼
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
 });
+
+// 로그아웃 처리
+async function handleLogout() {
+    try {
+        showLoading();
+        
+        // Firebase 로그아웃
+        await auth.signOut();
+        
+        // UI 초기화
+        showAuthButtons();
+        clearReservations();
+        
+        // 모든 모달 닫기
+        closeAllModals();
+        
+        showToast('로그아웃되었습니다.', 'success');
+        
+        // 페이지를 메인 대시보드로 스크롤
+        document.getElementById('main-dashboard').scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        console.error('로그아웃 오류:', error);
+        showToast('로그아웃 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 모든 모달 닫기
+function closeAllModals() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        modal.style.display = 'none';
+    });
+    document.body.style.overflow = 'auto';
+}
 
 // 페이지 로드 시 이메일 링크 확인
 document.addEventListener('DOMContentLoaded', function() {
