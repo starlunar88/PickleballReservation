@@ -1975,20 +1975,20 @@ body {
 /* 모바일 네비게이션 탭 - 모든 화면에서 표시 */
 .mobile-nav-tabs {
     display: flex; /* 모든 화면에서 표시 */
-    position: sticky; /* 메뉴바 아래에 붙도록 */
-    top: 76px; /* 네비게이션 높이만큼 아래에서 sticky */
+    position: fixed; /* 하단 고정 탭바 */
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 2000;
     width: 100%;
     max-width: 400px;
-    margin: 0 auto; /* 가운데 정렬 */
     background: white;
     border-top: 1px solid #e9ecef;
-    border-bottom: 1px solid #f1f3f5;
     padding: 8px 0;
     min-height: 56px;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.06); /* 상단 방향 그림자 */
 }
 
 /* Spacer under fixed mobile tabs so content starts below tabs */
@@ -2051,8 +2051,8 @@ body {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 0 20px 100px 20px;
-    margin-top: 0; /* sticky 탭은 흐름에 포함되어 별도 여백 불필요 */
+    padding: 0 20px 140px 20px; /* 하단 탭바만큼 여백 확보 */
+    margin-top: 0;
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
