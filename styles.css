@@ -2086,12 +2086,14 @@ body {
 .section-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 25px;
     padding: 20px;
     background: rgba(255,255,255,0.9);
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .section-header h2 {
@@ -2153,7 +2155,9 @@ body {
 .date-navigation {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .date-navigation span {
@@ -2167,15 +2171,18 @@ body {
     background: #667eea;
     border: 2px solid #667eea;
     color: white;
-    width: 36px;
+    min-width: 36px;
     height: 36px;
-    padding: 0;
+    padding: 6px 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .date-navigation button:hover {
@@ -2336,6 +2343,20 @@ body {
         gap: 15px;
         text-align: center;
         margin: 0 0 20px 0;
+        align-items: center;
+    }
+    
+    .date-navigation {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .date-navigation button {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        height: 32px;
+        min-width: 60px;
     }
     
     .ranking-filters, .stats-filters {
