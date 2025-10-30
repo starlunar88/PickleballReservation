@@ -76,7 +76,7 @@ body {
 }
 
 .nav-menu {
-    display: none; /* 모든 화면에서 숨김 - 햄버거 메뉴 사용 */
+    display: none; /* 기본 숨김 - 햄버거로 열기 */
     align-items: center;
     gap: 15px; /* 모바일 기준으로 축소 */
 }
@@ -1855,7 +1855,6 @@ body {
 /* 모든 화면에서 모바일 스타일 적용 */
 .nav-menu {
     position: fixed;
-    left: -100%;
     top: 70px;
     flex-direction: column;
     background-color: rgba(102, 126, 234, 0.95);
@@ -1867,14 +1866,14 @@ body {
     transition: 0.3s;
     padding: 20px 0;
     backdrop-filter: blur(10px);
-    z-index: 999;
+    z-index: 3000; /* 다른 레이어 위에 표시 */
     display: none; /* 기본 숨김 */
 }
 
 .nav-menu.active {
     left: 50%;
     transform: translateX(-50%);
-    display: flex; /* 햄버거 클릭 시 표시 */
+    display: flex !important; /* 햄버거 클릭 시 확실히 표시 */
 }
 
 .nav-menu .nav-link {
@@ -1888,6 +1887,8 @@ body {
     margin-top: 20px;
 }
 
+/* 누락된 미디어 쿼리 시작: 모바일 레이아웃 보정 */
+@media (max-width: 768px) {
     .hero {
         flex-direction: column;
         text-align: center;
@@ -2373,7 +2374,6 @@ body {
     .info-item {
         font-size: 0.9rem;
     }
-}
 
 @media (max-width: 480px) {
     .desktop-nav-tabs {
@@ -2454,6 +2454,7 @@ body {
     box-shadow: 0 4px 12px rgba(17,17,26,0.05);
     transition: all 0.2s ease;
     position: relative;
+    cursor: pointer;
 }
 
 .timeline-item:hover { box-shadow: 0 6px 16px rgba(17,17,26,0.08); transform: translateY(-2px); }
@@ -2548,6 +2549,147 @@ body {
 .player-dupr {
     color: #667eea;
     font-size: 0.7rem;
+}
+
+/* 대진표 섹션 스타일 */
+.match-schedule-section {
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    margin-top: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.match-info {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.match-schedule {
+    margin-top: 20px;
+}
+
+.match-round {
+    margin-bottom: 25px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.match-round h3 {
+    color: #333;
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.match-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+}
+
+.match-teams {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.team {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f6f7fb;
+    border-radius: 8px;
+    font-weight: 500;
+    color: #333;
+    min-width: 120px;
+}
+
+.team.vs {
+    background: #667eea;
+    color: white;
+    font-weight: 600;
+    min-width: auto;
+    padding: 8px 16px;
+}
+
+.match-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-input {
+    width: 50px;
+    padding: 8px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.score-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.score-separator {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.save-score-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.save-score-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.save-score-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.match-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.match-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.match-status.completed {
+    background: #d4edda;
+    color: #155724;
 }
 
 /* 타임라인 예약 버튼 */

@@ -57,6 +57,19 @@ if (hamburger && navMenu) {
     hamburger.addEventListener('click', () => {
         navMenu.classList.toggle('active');
         hamburger.classList.toggle('active');
+        document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : 'auto';
+    });
+}
+
+// 햄버거 메뉴 외부 클릭 시 닫기
+if (navMenu && hamburger) {
+    document.addEventListener('click', (e) => {
+        const clickedInside = navMenu.contains(e.target) || hamburger.contains(e.target);
+        if (!clickedInside && navMenu.classList.contains('active')) {
+            navMenu.classList.remove('active');
+            hamburger.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
     });
 }
 
@@ -1263,9 +1276,6 @@ async function loadTabData(tabName) {
         case 'stats':
             await loadStatsData();
             break;
-        case 'matches':
-            await loadMatchesData();
-            break;
         case 'admin':
             await loadAdminData();
             break;
@@ -1277,6 +1287,9 @@ async function loadReservationsData() {
     try {
         // 예약 현황 로드
         await loadReservationsTimeline();
+        
+        // 현재 선택된 시간대에 대진표가 있는지 확인
+        await checkAndShowMatchSchedule();
         
     } catch (error) {
         console.error('예약 데이터 로드 오류:', error);
@@ -1450,7 +1463,7 @@ async function loadReservationsTimeline() {
             }
             
             timelineHTML += `
-                <div class="timeline-item ${statusClass}">
+                <div class="timeline-item ${statusClass}" data-time-slot="${slotKey}" data-date="${targetDate}">
                     <div class="timeline-time">
                         <div class="time-start">${timeSlot.start}</div>
                         <div class="time-end">${timeSlot.end}</div>
@@ -1520,6 +1533,30 @@ async function loadReservationsTimeline() {
                 const timeSlot = e.target.getAttribute('data-time-slot');
                 const date = e.target.getAttribute('data-date');
                 await handleCancelReservation(timeSlot, date);
+            });
+        });
+        
+        // 타임라인 아이템 클릭 이벤트 (시간대 선택)
+        timeline.querySelectorAll('.timeline-item').forEach(item => {
+            item.addEventListener('click', async (e) => {
+                // 버튼 클릭은 제외
+                if (e.target.classList.contains('timeline-reserve-btn') || 
+                    e.target.classList.contains('timeline-cancel-btn')) {
+                    return;
+                }
+                
+                const timeSlot = item.getAttribute('data-time-slot');
+                const date = item.getAttribute('data-date');
+                
+                // 선택된 시간대 저장
+                window.selectedTimeSlot = timeSlot;
+                window.currentDate = date;
+                
+                // 선택된 정보 업데이트
+                updateSelectedInfo(date, timeSlot);
+                
+                // 대진표 확인 및 표시
+                await checkAndShowMatchSchedule();
             });
         });
         
@@ -3139,64 +3176,6 @@ async function loadAssignmentTimeOptions() {
     }
 }
 
-// 경기 탭: 시간 옵션 로드
-async function loadMatchesTimeOptions() {
-    try {
-        const settings = await getSystemSettings();
-        if (!settings) return;
-        const matchesTime = document.getElementById('matches-time');
-        if (!matchesTime) return;
-        matchesTime.innerHTML = '<option value="">시간을 선택하세요</option>';
-        settings.timeSlots.forEach(slot => {
-            const option = document.createElement('option');
-            option.value = `${slot.start}-${slot.end}`;
-            option.textContent = `${slot.start} - ${slot.end}`;
-            matchesTime.appendChild(option);
-        });
-        const matchesDate = document.getElementById('matches-date');
-        if (matchesDate) {
-            const today = new Date().toISOString().slice(0, 10);
-            matchesDate.value = today;
-        }
-    } catch (error) {
-        console.error('경기 시간 옵션 로드 오류:', error);
-    }
-}
-
-// 경기 탭 데이터 로드
-async function loadMatchesData() {
-    try {
-        await loadMatchesTimeOptions();
-        const generateBtn = document.getElementById('generate-schedule-btn');
-        const dateInput = document.getElementById('matches-date');
-        const timeSelect = document.getElementById('matches-time');
-        if (generateBtn && dateInput && timeSelect) {
-            generateBtn.onclick = async () => {
-                const date = dateInput.value;
-                const timeSlot = timeSelect.value;
-                if (!date || !timeSlot) {
-                    showToast('날짜와 시간을 선택해주세요.', 'error');
-                    return;
-                }
-                await generateMatchSchedule(date, timeSlot);
-                await renderMatches(date, timeSlot);
-            };
-            // 최초 로드 시 목록 표시 (이미 생성된 스케줄 있으면)
-            timeSelect.onchange = async () => {
-                if (dateInput.value && timeSelect.value) {
-                    await renderMatches(dateInput.value, timeSelect.value);
-                }
-            };
-            dateInput.onchange = async () => {
-                if (dateInput.value && timeSelect.value) {
-                    await renderMatches(dateInput.value, timeSelect.value);
-                }
-            };
-        }
-    } catch (error) {
-        console.error('경기 탭 데이터 로드 오류:', error);
-    }
-}
 
 // 예약 마감 확인 (요청: 20분 전 마감)
 function isPastClosing(date, timeSlot, closingMinutes = 20) {
@@ -3207,6 +3186,41 @@ function isPastClosing(date, timeSlot, closingMinutes = 20) {
         return new Date() >= cutoff;
     } catch (e) {
         return true;
+    }
+}
+
+// 대진표 확인 및 표시
+async function checkAndShowMatchSchedule() {
+    try {
+        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        const selectedTimeSlot = window.selectedTimeSlot;
+        
+        if (!selectedTimeSlot) return;
+        
+        // 20분 전 마감 확인
+        if (!isPastClosing(currentDate, selectedTimeSlot, 20)) {
+            hideMatchSchedule();
+            return;
+        }
+        
+        // 기존 대진표 확인
+        const existingMatches = await db.collection('matches')
+            .where('date', '==', currentDate)
+            .where('timeSlot', '==', selectedTimeSlot)
+            .orderBy('roundNumber')
+            .orderBy('courtNumber')
+            .get();
+        
+        if (existingMatches.empty) {
+            // 대진표가 없으면 생성
+            await generateMatchSchedule(currentDate, selectedTimeSlot);
+        } else {
+            // 기존 대진표 표시
+            await renderMatchSchedule(existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() })), currentDate, selectedTimeSlot);
+        }
+        
+    } catch (error) {
+        console.error('대진표 확인 오류:', error);
     }
 }
 
@@ -3235,23 +3249,6 @@ async function generateMatchSchedule(date, timeSlot) {
         const courtCount = Math.max(1, settings?.courtCount || 2);
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
-        // 이미 스케줄이 있으면 건너뜀
-        const existing = await db.collection('matches')
-            .where('date', '==', date)
-            .where('timeSlot', '==', timeSlot)
-            .limit(1)
-            .get();
-        if (!existing.empty) {
-            showToast('이미 생성된 스케줄이 있습니다.', 'info');
-            return;
-        }
-
-        // 마감 확인: 20분 전 이후만 생성 허용
-        if (!isPastClosing(date, timeSlot, 20)) {
-            showToast('경기 20분 전부터 스케줄을 생성할 수 있습니다.', 'warning');
-            return;
-        }
-
         const schedule = buildMatchSchedule(players, courtCount, rounds);
 
         const batch = db.batch();
@@ -3273,7 +3270,21 @@ async function generateMatchSchedule(date, timeSlot) {
             });
         });
         await batch.commit();
-        showToast('경기 스케줄이 생성되었습니다.', 'success');
+        
+        // 생성된 대진표 표시
+        await renderMatchSchedule(schedule.map(match => ({
+            id: `${date}_${timeSlot}_R${match.round}_C${match.court}`,
+            ...match,
+            date,
+            timeSlot,
+            roundNumber: match.round,
+            courtNumber: match.court,
+            scoreA: null,
+            scoreB: null,
+            status: 'scheduled'
+        })), date, timeSlot);
+        
+        showToast('대진표가 생성되었습니다.', 'success');
     } catch (error) {
         console.error('스케줄 생성 오류:', error);
         showToast('스케줄 생성 중 오류가 발생했습니다.', 'error');
@@ -3310,75 +3321,119 @@ function buildMatchSchedule(players, courtCount, rounds) {
     return schedule;
 }
 
-// 매치 불러와서 렌더링
-async function renderMatches(date, timeSlot) {
+// 대진표 렌더링
+async function renderMatchSchedule(matches, date, timeSlot) {
     try {
-        showLoading();
-        const list = document.getElementById('matches-list');
-        if (!list) return;
-        const snapshot = await db.collection('matches')
-            .where('date', '==', date)
-            .where('timeSlot', '==', timeSlot)
-            .orderBy('roundNumber')
-            .orderBy('courtNumber')
-            .get();
-        if (snapshot.empty) {
-            list.innerHTML = `
+        const scheduleSection = document.getElementById('match-schedule-section');
+        const scheduleContainer = document.getElementById('match-schedule');
+        const dateTimeDisplay = document.getElementById('match-date-time');
+        
+        if (!scheduleSection || !scheduleContainer) return;
+        
+        // 날짜/시간 표시
+        if (dateTimeDisplay) {
+            const [startTime] = timeSlot.split('-');
+            dateTimeDisplay.textContent = `${date} ${startTime}-${timeSlot.split('-')[1]}`;
+        }
+        
+        if (matches.length === 0) {
+            scheduleContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-calendar-times"></i>
-                    <p>스케줄이 없습니다. 스케줄을 생성해주세요.</p>
+                    <p>대진표가 없습니다.</p>
                 </div>
             `;
+            scheduleSection.style.display = 'block';
             return;
         }
-        const matches = [];
-        snapshot.forEach(doc => matches.push({ id: doc.id, ...doc.data() }));
-        list.innerHTML = '';
-        let currentRound = 0;
+        
+        // 라운드별로 그룹화
+        const rounds = {};
         matches.forEach(match => {
-            if (match.roundNumber !== currentRound) {
-                currentRound = match.roundNumber;
-                const roundHeader = document.createElement('h3');
-                roundHeader.textContent = `${currentRound}경기 (15분)`;
-                list.appendChild(roundHeader);
+            if (!rounds[match.roundNumber]) {
+                rounds[match.roundNumber] = [];
             }
-            const card = document.createElement('div');
-            card.className = 'match-card';
-            const teamALabel = match.teamA.map(p => p.userName).join(', ');
-            const teamBLabel = match.teamB.map(p => p.userName).join(', ');
-            const scoreA = match.scoreA ?? '';
-            const scoreB = match.scoreB ?? '';
-            card.innerHTML = `
-                <div class="match-row">
-                    <div class="match-meta">코트 ${match.courtNumber} | R${match.roundNumber}</div>
-                    <div class="teams">
-                        <span class="team">${teamALabel}</span>
-                        <span class="vs">vs</span>
-                        <span class="team">${teamBLabel}</span>
-                    </div>
-                    <div class="score-inputs">
-                        <input type="number" class="form-control" min="0" id="scoreA-${match.id}" placeholder="A" value="${scoreA}">
-                        <span>:</span>
-                        <input type="number" class="form-control" min="0" id="scoreB-${match.id}" placeholder="B" value="${scoreB}">
-                        <button class="btn btn-outline btn-small" id="save-${match.id}">저장</button>
-                    </div>
-                </div>
-            `;
-            list.appendChild(card);
-            const btn = card.querySelector(`#save-${match.id}`);
-            if (btn) {
-                btn.addEventListener('click', async () => {
-                    const a = Number((document.getElementById(`scoreA-${match.id}`) || {}).value || 0);
-                    const b = Number((document.getElementById(`scoreB-${match.id}`) || {}).value || 0);
-                    await saveMatchScore(match, a, b);
-                });
-            }
+            rounds[match.roundNumber].push(match);
         });
+        
+        scheduleContainer.innerHTML = '';
+        
+        // 각 라운드 렌더링
+        Object.keys(rounds).sort((a, b) => a - b).forEach(roundNum => {
+            const roundMatches = rounds[roundNum];
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'match-round';
+            
+            const startTime = timeSlot.split('-')[0];
+            const roundStartTime = new Date(`2000-01-01T${startTime}:00`);
+            roundStartTime.setMinutes(roundStartTime.getMinutes() + (parseInt(roundNum) - 1) * 15);
+            const timeStr = roundStartTime.toTimeString().slice(0, 5);
+            
+            roundDiv.innerHTML = `
+                <h3>${timeStr} - ${roundNum}경기 (15분)</h3>
+                <div class="round-matches"></div>
+            `;
+            
+            const roundMatchesContainer = roundDiv.querySelector('.round-matches');
+            
+            roundMatches.forEach(match => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'match-item';
+                
+                const teamALabel = match.teamA.map(p => p.userName).join(', ');
+                const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+                const scoreA = match.scoreA ?? '';
+                const scoreB = match.scoreB ?? '';
+                const isCompleted = match.status === 'completed';
+                
+                matchDiv.innerHTML = `
+                    <div class="match-teams">
+                        <div class="team">${teamALabel}</div>
+                        <div class="team vs">vs</div>
+                        <div class="team">${teamBLabel}</div>
+                    </div>
+                    <div class="match-score">
+                        <input type="number" class="score-input" min="0" id="scoreA-${match.id}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                        <span class="score-separator">:</span>
+                        <input type="number" class="score-input" min="0" id="scoreB-${match.id}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                        <button class="save-score-btn" id="save-${match.id}" ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '완료' : '저장'}
+                        </button>
+                        <span class="match-status ${isCompleted ? 'completed' : 'pending'}">
+                            ${isCompleted ? '완료' : '대기'}
+                        </span>
+                    </div>
+                `;
+                
+                roundMatchesContainer.appendChild(matchDiv);
+                
+                // 저장 버튼 이벤트
+                const saveBtn = matchDiv.querySelector(`#save-${match.id}`);
+                if (saveBtn && !isCompleted) {
+                    saveBtn.addEventListener('click', async () => {
+                        const scoreA = Number(document.getElementById(`scoreA-${match.id}`).value || 0);
+                        const scoreB = Number(document.getElementById(`scoreB-${match.id}`).value || 0);
+                        await saveMatchScore(match, scoreA, scoreB);
+                    });
+                }
+            });
+            
+            scheduleContainer.appendChild(roundDiv);
+        });
+        
+        scheduleSection.style.display = 'block';
+        
     } catch (error) {
-        console.error('경기 렌더링 오류:', error);
-        showToast('경기를 불러오는 중 오류가 발생했습니다.', 'error');
-    } finally {
-        hideLoading();
+        console.error('대진표 렌더링 오류:', error);
+        showToast('대진표를 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 대진표 숨기기
+function hideMatchSchedule() {
+    const scheduleSection = document.getElementById('match-schedule-section');
+    if (scheduleSection) {
+        scheduleSection.style.display = 'none';
     }
 }
 
@@ -3409,6 +3464,10 @@ async function saveMatchScore(match, scoreA, scoreB) {
         });
 
         showToast('점수가 저장되었습니다.', 'success');
+        
+        // 대진표 다시 렌더링
+        await checkAndShowMatchSchedule();
+        
     } catch (error) {
         console.error('점수 저장 오류:', error);
         showToast('점수 저장 중 오류가 발생했습니다.', 'error');
