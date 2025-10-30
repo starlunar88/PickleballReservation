@@ -1040,8 +1040,14 @@ async function handleLogout() {
         
         showToast('로그아웃되었습니다.', 'success');
         
-        // 페이지를 메인 대시보드로 스크롤
-        document.getElementById('main-dashboard').scrollIntoView({ behavior: 'smooth' });
+        // 페이지를 메인 대시보드로 스크롤 (요소가 존재할 때만)
+        const mainDashboard = document.getElementById('main-dashboard');
+        if (mainDashboard) {
+            mainDashboard.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // 메인 대시보드가 없으면 페이지 상단으로
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         
     } catch (error) {
         console.error('로그아웃 오류:', error);
