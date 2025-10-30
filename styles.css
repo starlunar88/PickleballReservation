@@ -2046,6 +2046,16 @@ body {
     padding: 0 20px 100px 20px;
 }
 
+/* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
+.tab-contents,
+.reservations-container,
+.rankings-container,
+.stats-container {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
 .tab-content {
     display: none;
     animation: fadeIn 0.3s ease;
