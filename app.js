@@ -1321,7 +1321,28 @@ async function loadReservationsTimeline() {
             console.log(`${slotKey} 시간대 예약 수: ${reservations.length}`);
             
             const isFull = reservations.length >= 4;
-            const statusClass = isFull ? 'full' : reservations.length > 0 ? 'partial' : 'empty';
+            
+            // 20분 전 마감 체크
+            const now = new Date();
+            const [startTime] = timeSlot.split('-');
+            const gameStartTime = new Date(`${targetDate}T${startTime}:00`);
+            const closingTime = new Date(gameStartTime.getTime() - 20 * 60 * 1000); // 20분 전
+            const isClosed = now > closingTime;
+            
+            let statusClass, statusText;
+            if (isClosed) {
+                statusClass = 'closed';
+                statusText = '마감';
+            } else if (isFull) {
+                statusClass = 'full';
+                statusText = '만석';
+            } else if (reservations.length > 0) {
+                statusClass = 'partial';
+                statusText = `${reservations.length}/4명`;
+            } else {
+                statusClass = 'empty';
+                statusText = '예약 가능';
+            }
             
             timelineHTML += `
                 <div class="timeline-item ${statusClass}">
@@ -1332,7 +1353,7 @@ async function loadReservationsTimeline() {
                     <div class="timeline-content">
                         <div class="timeline-status">
                             <span class="status-badge ${statusClass}">
-                                ${isFull ? '만석' : reservations.length > 0 ? `${reservations.length}/4명` : '예약 가능'}
+                                ${statusText}
                             </span>
                         </div>
                         <div class="timeline-players">
@@ -1347,8 +1368,8 @@ async function loadReservationsTimeline() {
                     <button class="timeline-reserve-btn" 
                             data-time-slot="${slotKey}" 
                             data-date="${targetDate}"
-                            ${isFull ? 'disabled' : ''}>
-                        ${isFull ? '만석' : '예약하기'}
+                            ${isClosed || isFull ? 'disabled' : ''}>
+                        ${isClosed ? '마감' : isFull ? '만석' : '예약하기'}
                     </button>
                 </div>
             `;
@@ -1588,11 +1609,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isToday) {
             currentDateDisplay.textContent = '오늘';
         } else {
-            currentDateDisplay.textContent = dateObj.toLocaleDateString('ko-KR', {
+            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
                 month: 'short',
                 day: 'numeric',
                 weekday: 'short'
             });
+            currentDateDisplay.textContent = formattedDate;
         }
         
         // 타임라인 새로고침
@@ -1620,9 +1642,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 날짜 표시
     updateCurrentDateDisplay();
     
-    // 예약/취소 버튼 이벤트 리스너
+    // 예약 버튼 이벤트 리스너
     const makeReservationBtn = document.getElementById('make-reservation-btn');
-    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
     
     if (makeReservationBtn) {
         makeReservationBtn.addEventListener('click', async () => {
@@ -1635,13 +1656,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showToast('시간을 선택해주세요.', 'warning');
             }
-        });
-    }
-    
-    if (cancelReservationBtn) {
-        cancelReservationBtn.addEventListener('click', async () => {
-            // 취소 로직 구현
-            showToast('취소 기능은 준비 중입니다.', 'info');
         });
     }
 });
@@ -2764,49 +2778,10 @@ async function manualTeamAssignment(date, timeSlot, mode = TEAM_MODE.BALANCED) {
     }
 }
 
-// 예약 상태 확인 및 업데이트
+// 예약 상태 확인 및 업데이트 (자동 취소 제거)
 async function updateReservationStatus() {
-    try {
-        const now = new Date();
-        const currentDate = now.toISOString().slice(0, 10);
-        
-        // 오늘의 모든 예약 상태 업데이트
-        const reservationsSnapshot = await db.collection('reservations')
-            .where('date', '==', currentDate)
-            .where('status', '==', 'pending')
-            .get();
-        
-        const batch = db.batch();
-        let updatedCount = 0;
-        
-        reservationsSnapshot.forEach(doc => {
-            const reservation = doc.data();
-            const timeSlot = reservation.timeSlot;
-            
-            if (timeSlot) {
-                const [startTime] = timeSlot.split('-');
-                const gameStartTime = new Date(`${currentDate}T${startTime}:00`);
-                
-                // 게임 시작 시간이 지났으면 자동 취소
-                if (now > gameStartTime) {
-                    batch.update(doc.ref, {
-                        status: 'cancelled',
-                        cancellationReason: 'game_started',
-                        cancelledAt: new Date()
-                    });
-                    updatedCount++;
-                }
-            }
-        });
-        
-        if (updatedCount > 0) {
-            await batch.commit();
-            console.log(`${updatedCount}건의 예약이 자동 취소되었습니다.`);
-        }
-        
-    } catch (error) {
-        console.error('예약 상태 업데이트 오류:', error);
-    }
+    // 자동 취소 기능 제거 - 예약은 수동으로만 취소 가능
+    console.log('예약 상태 확인 완료 (자동 취소 비활성화)');
 }
 
 // 페이지 로드 시 애니메이션
