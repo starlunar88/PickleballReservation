@@ -287,6 +287,33 @@
                     
                     <button type="submit" class="btn btn-primary btn-full">설정 저장</button>
                 </form>
+                
+                <div class="admin-section">
+                    <h3>팀 배정 관리</h3>
+                    <div class="team-assignment-controls">
+                        <div class="form-group">
+                            <label for="assignment-date">날짜</label>
+                            <input type="date" id="assignment-date" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="assignment-time">시간</label>
+                            <select id="assignment-time" class="form-control">
+                                <option value="">시간을 선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="assignment-mode">팀 짜기 모드</label>
+                            <select id="assignment-mode" class="form-control">
+                                <option value="balanced">밸런스 모드</option>
+                                <option value="random">랜덤 모드</option>
+                                <option value="grouped">그룹별 모드</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="manual-assignment-btn">수동 팀 배정</button>
+                        <button type="button" class="btn btn-outline" id="view-assignments-btn">배정 결과 보기</button>
+                    </div>
+                </div>
+                
                 <div class="admin-info">
                     <p><i class="fas fa-info-circle"></i> 설정 변경 시 기존 예약에 영향을 줄 수 있습니다.</p>
                 </div>

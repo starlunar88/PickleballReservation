@@ -726,6 +726,39 @@ body {
     line-height: 1.4;
 }
 
+/* 관리자 섹션 스타일 */
+.admin-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px solid #e9ecef;
+}
+
+.admin-section h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+.team-assignment-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.team-assignment-controls .form-group {
+    margin-bottom: 0;
+}
+
+.team-assignment-controls .btn {
+    margin-top: 20px;
+    height: 40px;
+}
+
+.team-assignment-controls .btn:first-of-type {
+    margin-right: 10px;
+}
+
 .reservation-actions {
     display: flex;
     gap: 10px;

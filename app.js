@@ -905,6 +905,50 @@ document.addEventListener('DOMContentLoaded', function() {
             switchTab(tabName);
         });
     });
+    
+    // 관리자 팀 배정 관리
+    const manualAssignmentBtn = document.getElementById('manual-assignment-btn');
+    const viewAssignmentsBtn = document.getElementById('view-assignments-btn');
+    const assignmentDate = document.getElementById('assignment-date');
+    const assignmentTime = document.getElementById('assignment-time');
+    const assignmentMode = document.getElementById('assignment-mode');
+    
+    if (manualAssignmentBtn) {
+        manualAssignmentBtn.addEventListener('click', async () => {
+            const date = assignmentDate.value;
+            const timeSlot = assignmentTime.value;
+            const mode = assignmentMode.value;
+            
+            if (!date || !timeSlot) {
+                showToast('날짜와 시간을 선택해주세요.', 'error');
+                return;
+            }
+            
+            await manualTeamAssignment(date, timeSlot, mode);
+        });
+    }
+    
+    if (viewAssignmentsBtn) {
+        viewAssignmentsBtn.addEventListener('click', async () => {
+            const date = assignmentDate.value;
+            const timeSlot = assignmentTime.value;
+            
+            if (!date || !timeSlot) {
+                showToast('날짜와 시간을 선택해주세요.', 'error');
+                return;
+            }
+            
+            await viewTeamAssignments(date, timeSlot);
+        });
+    }
+    
+    // 관리자 설정 모달 열 때 시간 옵션 로드
+    const adminSettingsBtn = document.getElementById('admin-settings-btn');
+    if (adminSettingsBtn) {
+        adminSettingsBtn.addEventListener('click', async () => {
+            await loadAssignmentTimeOptions();
+        });
+    }
 });
 
 // 페이지 로드 시 이메일 링크 확인
@@ -1782,6 +1826,299 @@ function createTeamModeSelector() {
     return container;
 }
 
+// 예약 마감 및 자동 팀 배정 시스템
+
+// 마감 시간 확인 및 자동 팀 배정
+async function checkAndProcessReservations() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5); // HH:MM 형식
+        const currentDate = now.toISOString().slice(0, 10); // YYYY-MM-DD 형식
+        
+        // 오늘의 모든 시간 슬롯 확인
+        for (const timeSlot of settings.timeSlots) {
+            const slotStart = timeSlot.start;
+            const slotEnd = timeSlot.end;
+            
+            // 마감 시간 계산 (게임 시작 1시간 전)
+            const gameStartTime = new Date(`${currentDate}T${slotStart}:00`);
+            const closingTime = new Date(gameStartTime.getTime() - (settings.closingTime * 60 * 1000));
+            
+            // 현재 시간이 마감 시간을 지났는지 확인
+            if (now >= closingTime) {
+                await processTimeSlotReservations(currentDate, `${slotStart}-${slotEnd}`);
+            }
+        }
+        
+    } catch (error) {
+        console.error('예약 처리 오류:', error);
+    }
+}
+
+// 특정 시간 슬롯의 예약 처리
+async function processTimeSlotReservations(date, timeSlot) {
+    try {
+        // 이미 처리된 시간 슬롯인지 확인
+        const processedKey = `processed_${date}_${timeSlot}`;
+        const isProcessed = localStorage.getItem(processedKey);
+        
+        if (isProcessed) {
+            console.log(`이미 처리된 시간 슬롯: ${date} ${timeSlot}`);
+            return;
+        }
+        
+        // 해당 시간 슬롯의 예약 가져오기
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', '==', 'pending')
+            .get();
+        
+        if (reservationsSnapshot.empty) {
+            console.log(`처리할 예약이 없음: ${date} ${timeSlot}`);
+            localStorage.setItem(processedKey, 'true');
+            return;
+        }
+        
+        const reservations = [];
+        reservationsSnapshot.forEach(doc => {
+            reservations.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // 최소 4명 이상인지 확인
+        if (reservations.length < 4) {
+            console.log(`예약자 수 부족 (${reservations.length}명): ${date} ${timeSlot}`);
+            
+            // 예약 취소 처리
+            await cancelInsufficientReservations(reservations, date, timeSlot);
+            localStorage.setItem(processedKey, 'true');
+            return;
+        }
+        
+        // 기본 팀 짜기 모드 (밸런스 모드)
+        const teams = await createTeams(reservations, TEAM_MODE.BALANCED);
+        
+        // 팀 배정 결과 저장
+        await saveTeamAssignments(date, timeSlot, teams, TEAM_MODE.BALANCED);
+        
+        // 처리 완료 표시
+        localStorage.setItem(processedKey, 'true');
+        
+        // 알림 전송
+        await sendTeamAssignmentNotifications(reservations, teams, date, timeSlot);
+        
+        console.log(`팀 배정 완료: ${date} ${timeSlot} - ${teams.length}개 팀`);
+        
+    } catch (error) {
+        console.error(`시간 슬롯 처리 오류 (${date} ${timeSlot}):`, error);
+    }
+}
+
+// 예약자 수 부족 시 취소 처리
+async function cancelInsufficientReservations(reservations, date, timeSlot) {
+    try {
+        const batch = db.batch();
+        
+        for (const reservation of reservations) {
+            const reservationRef = db.collection('reservations').doc(reservation.id);
+            batch.update(reservationRef, {
+                status: 'cancelled',
+                cancellationReason: 'insufficient_players',
+                cancelledAt: new Date()
+            });
+        }
+        
+        await batch.commit();
+        
+        // 취소 알림 전송
+        for (const reservation of reservations) {
+            await sendCancellationNotification(reservation, date, timeSlot);
+        }
+        
+        console.log(`예약 취소 완료: ${reservations.length}건`);
+        
+    } catch (error) {
+        console.error('예약 취소 처리 오류:', error);
+    }
+}
+
+// 팀 배정 알림 전송
+async function sendTeamAssignmentNotifications(reservations, teams, date, timeSlot) {
+    try {
+        // 각 플레이어에게 팀 배정 결과 알림
+        for (const team of teams) {
+            for (const player of team.players) {
+                const playerReservation = reservations.find(r => r.userId === player.userId);
+                if (playerReservation) {
+                    await sendTeamAssignmentNotification(player, team, date, timeSlot);
+                }
+            }
+        }
+        
+    } catch (error) {
+        console.error('팀 배정 알림 전송 오류:', error);
+    }
+}
+
+// 개별 팀 배정 알림 전송
+async function sendTeamAssignmentNotification(player, team, date, timeSlot) {
+    try {
+        // 알림 데이터 저장
+        const notificationData = {
+            userId: player.userId,
+            type: 'team_assignment',
+            title: '팀 배정 완료!',
+            message: `${date} ${timeSlot} 게임의 팀이 배정되었습니다. 코트 ${team.courtNumber}에 배정되었습니다.`,
+            data: {
+                date: date,
+                timeSlot: timeSlot,
+                teamId: team.teamId,
+                courtNumber: team.courtNumber,
+                teammates: team.players.map(p => p.userName)
+            },
+            createdAt: new Date(),
+            read: false
+        };
+        
+        await db.collection('notifications').add(notificationData);
+        
+        // 토스트 알림 (현재 사용자가 해당 플레이어인 경우)
+        const currentUser = auth.currentUser;
+        if (currentUser && currentUser.uid === player.userId) {
+            showToast(`팀 배정 완료! 코트 ${team.courtNumber}에 배정되었습니다.`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('개별 팀 배정 알림 전송 오류:', error);
+    }
+}
+
+// 취소 알림 전송
+async function sendCancellationNotification(reservation, date, timeSlot) {
+    try {
+        const notificationData = {
+            userId: reservation.userId,
+            type: 'reservation_cancelled',
+            title: '예약 취소',
+            message: `${date} ${timeSlot} 예약이 취소되었습니다. (예약자 수 부족)`,
+            data: {
+                date: date,
+                timeSlot: timeSlot,
+                reason: 'insufficient_players'
+            },
+            createdAt: new Date(),
+            read: false
+        };
+        
+        await db.collection('notifications').add(notificationData);
+        
+        // 토스트 알림 (현재 사용자인 경우)
+        const currentUser = auth.currentUser;
+        if (currentUser && currentUser.uid === reservation.userId) {
+            showToast('예약이 취소되었습니다. (예약자 수 부족)', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('취소 알림 전송 오류:', error);
+    }
+}
+
+// 수동 팀 배정 (관리자용)
+async function manualTeamAssignment(date, timeSlot, mode = TEAM_MODE.BALANCED) {
+    try {
+        showLoading();
+        
+        // 해당 시간 슬롯의 예약 가져오기
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', 'in', ['pending', 'confirmed'])
+            .get();
+        
+        if (reservationsSnapshot.empty) {
+            showToast('처리할 예약이 없습니다.', 'warning');
+            return;
+        }
+        
+        const reservations = [];
+        reservationsSnapshot.forEach(doc => {
+            reservations.push({ id: doc.id, ...doc.data() });
+        });
+        
+        if (reservations.length < 4) {
+            showToast('최소 4명의 플레이어가 필요합니다.', 'error');
+            return;
+        }
+        
+        // 팀 생성
+        const teams = await createTeams(reservations, mode);
+        
+        // 팀 배정 결과 저장
+        await saveTeamAssignments(date, timeSlot, teams, mode);
+        
+        // 알림 전송
+        await sendTeamAssignmentNotifications(reservations, teams, date, timeSlot);
+        
+        showToast(`팀 배정이 완료되었습니다! (${teams.length}개 팀)`, 'success');
+        
+        return teams;
+        
+    } catch (error) {
+        console.error('수동 팀 배정 오류:', error);
+        showToast('팀 배정 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 예약 상태 확인 및 업데이트
+async function updateReservationStatus() {
+    try {
+        const now = new Date();
+        const currentDate = now.toISOString().slice(0, 10);
+        
+        // 오늘의 모든 예약 상태 업데이트
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('date', '==', currentDate)
+            .where('status', '==', 'pending')
+            .get();
+        
+        const batch = db.batch();
+        let updatedCount = 0;
+        
+        reservationsSnapshot.forEach(doc => {
+            const reservation = doc.data();
+            const timeSlot = reservation.timeSlot;
+            
+            if (timeSlot) {
+                const [startTime] = timeSlot.split('-');
+                const gameStartTime = new Date(`${currentDate}T${startTime}:00`);
+                
+                // 게임 시작 시간이 지났으면 자동 취소
+                if (now > gameStartTime) {
+                    batch.update(doc.ref, {
+                        status: 'cancelled',
+                        cancellationReason: 'game_started',
+                        cancelledAt: new Date()
+                    });
+                    updatedCount++;
+                }
+            }
+        });
+        
+        if (updatedCount > 0) {
+            await batch.commit();
+            console.log(`${updatedCount}건의 예약이 자동 취소되었습니다.`);
+        }
+        
+    } catch (error) {
+        console.error('예약 상태 업데이트 오류:', error);
+    }
+}
+
 // 페이지 로드 시 애니메이션
 window.addEventListener('load', function() {
     const elements = document.querySelectorAll('.reservation-card');
@@ -1794,7 +2131,188 @@ window.addEventListener('load', function() {
     // 시간 슬롯과 코트 옵션 로드
     loadTimeSlots();
     loadCourtOptions();
+    
+    // 자동 예약 처리 시작
+    startAutoProcessing();
 });
+
+// 자동 예약 처리 시작
+function startAutoProcessing() {
+    // 페이지 로드 시 즉시 한 번 실행
+    checkAndProcessReservations();
+    updateReservationStatus();
+    
+    // 5분마다 예약 상태 확인 및 처리
+    setInterval(() => {
+        checkAndProcessReservations();
+        updateReservationStatus();
+    }, 5 * 60 * 1000); // 5분 = 5 * 60 * 1000ms
+    
+    // 1분마다 예약 상태 업데이트 (더 자주 체크)
+    setInterval(() => {
+        updateReservationStatus();
+    }, 1 * 60 * 1000); // 1분 = 1 * 60 * 1000ms
+    
+    console.log('자동 예약 처리 시스템이 시작되었습니다.');
+}
+
+// 관리자용 팀 배정 관리 함수들
+
+// 배정 시간 옵션 로드
+async function loadAssignmentTimeOptions() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        
+        const assignmentTime = document.getElementById('assignment-time');
+        if (!assignmentTime) return;
+        
+        // 기존 옵션 제거 (첫 번째 옵션 제외)
+        assignmentTime.innerHTML = '<option value="">시간을 선택하세요</option>';
+        
+        // 시간 슬롯 추가
+        settings.timeSlots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = `${slot.start}-${slot.end}`;
+            option.textContent = `${slot.start} - ${slot.end}`;
+            assignmentTime.appendChild(option);
+        });
+        
+        // 오늘 날짜로 기본 설정
+        const assignmentDate = document.getElementById('assignment-date');
+        if (assignmentDate) {
+            const today = new Date().toISOString().slice(0, 10);
+            assignmentDate.value = today;
+        }
+        
+    } catch (error) {
+        console.error('배정 시간 옵션 로드 오류:', error);
+    }
+}
+
+// 팀 배정 결과 보기
+async function viewTeamAssignments(date, timeSlot) {
+    try {
+        showLoading();
+        
+        const teams = await getTeamAssignments(date, timeSlot);
+        
+        if (teams.length === 0) {
+            showToast('해당 시간대에 배정된 팀이 없습니다.', 'info');
+            return;
+        }
+        
+        // 팀 배정 결과 모달 표시
+        showTeamAssignmentsModal(teams, date, timeSlot);
+        
+    } catch (error) {
+        console.error('팀 배정 결과 보기 오류:', error);
+        showToast('팀 배정 결과를 불러올 수 없습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 팀 배정 결과 모달 표시
+function showTeamAssignmentsModal(teams, date, timeSlot) {
+    // 기존 모달이 있으면 제거
+    const existingModal = document.getElementById('team-assignments-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 모달 생성
+    const modal = document.createElement('div');
+    modal.id = 'team-assignments-modal';
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    
+    const teamAssignmentsUI = createTeamAssignmentUI(teams);
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h2>팀 배정 결과 - ${date} ${timeSlot}</h2>
+                <span class="close" id="close-team-assignments">&times;</span>
+            </div>
+            <div class="modal-body">
+                ${teamAssignmentsUI.outerHTML}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    // 닫기 버튼 이벤트
+    const closeBtn = document.getElementById('close-team-assignments');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        });
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }
+    });
+}
+
+// 예약 현황 대시보드 (관리자용)
+async function getReservationDashboard(date) {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return null;
+        
+        const dashboard = {
+            date: date,
+            timeSlots: [],
+            totalReservations: 0,
+            totalPlayers: 0,
+            assignedTeams: 0
+        };
+        
+        for (const timeSlot of settings.timeSlots) {
+            const slotKey = `${timeSlot.start}-${timeSlot.end}`;
+            
+            // 예약 수 확인
+            const reservationsSnapshot = await db.collection('reservations')
+                .where('date', '==', date)
+                .where('timeSlot', '==', slotKey)
+                .where('status', 'in', ['pending', 'confirmed'])
+                .get();
+            
+            // 팀 배정 수 확인
+            const teamsSnapshot = await db.collection('teams')
+                .where('date', '==', date)
+                .where('timeSlot', '==', slotKey)
+                .get();
+            
+            const slotData = {
+                timeSlot: slotKey,
+                reservations: reservationsSnapshot.size,
+                players: reservationsSnapshot.size,
+                teams: teamsSnapshot.size,
+                status: reservationsSnapshot.size >= 4 ? 'ready' : 'insufficient'
+            };
+            
+            dashboard.timeSlots.push(slotData);
+            dashboard.totalReservations += slotData.reservations;
+            dashboard.totalPlayers += slotData.players;
+            dashboard.assignedTeams += slotData.teams;
+        }
+        
+        return dashboard;
+        
+    } catch (error) {
+        console.error('예약 현황 대시보드 오류:', error);
+        return null;
+    }
+}
 
 // 스크롤 시 네비게이션 스타일 변경 및 랭킹 로드
 window.addEventListener('scroll', function() {
