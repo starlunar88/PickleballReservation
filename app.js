@@ -186,8 +186,24 @@ async function handleLogin() {
 
 // 회원가입 처리 (이메일 링크 방식)
 async function handleSignup() {
-    const name = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
+    console.log('handleSignup 함수 시작');
+    
+    const nameElement = document.getElementById('signup-name');
+    const emailElement = document.getElementById('signup-email');
+    
+    console.log('nameElement:', nameElement);
+    console.log('emailElement:', emailElement);
+    
+    if (!nameElement || !emailElement) {
+        console.error('필수 요소를 찾을 수 없습니다:', { nameElement, emailElement });
+        showToast('폼 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.', 'error');
+        return;
+    }
+    
+    const name = nameElement.value;
+    const email = emailElement.value;
+    
+    console.log('입력된 값:', { name, email });
     
     if (!name || !email) {
         showToast('이름과 이메일을 입력해주세요.', 'error');
