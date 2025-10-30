@@ -51,26 +51,26 @@ body {
 }
 
 .nav-container {
-    max-width: 480px; /* 모바일 기준으로 제한 */
+    max-width: 400px; /* 더 작은 모바일 크기로 제한 */
     margin: 0 auto;
     padding: 0 15px; /* 모바일 기준 패딩 */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 70px;
+    height: 60px; /* 더 작은 높이 */
 }
 
 .nav-logo {
     display: flex;
     align-items: center;
     color: white;
-    font-size: 1.2rem; /* 모바일 기준으로 축소 */
+    font-size: 1rem; /* 더 작게 축소 */
     font-weight: bold;
 }
 
 .nav-logo i {
-    margin-right: 8px; /* 모바일 기준으로 축소 */
-    font-size: 1.4rem; /* 모바일 기준으로 축소 */
+    margin-right: 6px; /* 더 작게 축소 */
+    font-size: 1.2rem; /* 더 작게 축소 */
 }
 
 .nav-menu {
@@ -143,10 +143,10 @@ body {
 }
 
 .bar {
-    width: 25px;
-    height: 3px;
+    width: 20px; /* 더 작게 */
+    height: 2px; /* 더 얇게 */
     background-color: white;
-    margin: 3px 0;
+    margin: 2px 0; /* 간격 축소 */
     transition: 0.3s;
 }
 
@@ -1964,9 +1964,10 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding-top: 80px;
     width: 100%;
-    max-width: 480px; /* 모바일 최대 너비로 제한 */
+    max-width: 400px; /* 더 작은 모바일 크기로 제한 */
     margin: 0 auto; /* 중앙 정렬 */
     padding-bottom: 60px; /* 하단 탭 공간 확보 */
+    box-shadow: 0 0 20px rgba(0,0,0,0.3); /* PC에서 모바일 느낌 강화 */
 }
 
 /* 모바일 네비게이션 탭 - 모든 화면에서 표시 */
@@ -1977,10 +1978,10 @@ body {
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
-    max-width: 480px; /* 모바일 너비로 제한 */
+    max-width: 400px; /* 더 작은 모바일 너비로 제한 */
     background: white;
     border-top: 1px solid #e9ecef;
-    padding: 8px 0;
+    padding: 6px 0; /* 더 작은 패딩 */
     z-index: 1000;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
@@ -1990,11 +1991,11 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 4px;
+    padding: 6px 3px; /* 더 작은 패딩 */
     background: none;
     border: none;
     color: #6c757d;
-    font-size: 0.7rem;
+    font-size: 0.6rem; /* 더 작은 폰트 */
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -2004,8 +2005,8 @@ body {
 }
 
 .mobile-tab-btn i {
-    font-size: 1.2rem;
-    margin-bottom: 4px;
+    font-size: 1rem; /* 더 작은 아이콘 */
+    margin-bottom: 3px; /* 간격 축소 */
 }
 
 /* 데스크톱 네비게이션 탭 - 숨김 */
@@ -2090,10 +2091,10 @@ body {
 /* 예약 현황판 (기차표 스타일) - 모든 화면 모바일 기준 */
 .reservations-board {
     background: rgba(255,255,255,0.9);
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-radius: 12px; /* 더 작은 둥근 모서리 */
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1); /* 더 작은 그림자 */
     overflow: hidden;
-    margin: 0 10px; /* 모든 화면에서 동일한 여백 */
+    margin: 0 8px; /* 더 작은 여백 */
 }
 
 /* 선택된 정보 카드 */
@@ -2260,26 +2261,26 @@ body {
 }
 
 .timeline-item {
-    padding: 12px 15px; /* 타임라인 아이템 패딩 축소 */
-    margin-bottom: 8px; /* 간격 축소 */
+    padding: 10px 12px; /* 더 작은 패딩 */
+    margin-bottom: 6px; /* 더 작은 간격 */
 }
 
 .timeline-time {
-    min-width: 80px; /* 시간 영역 축소 */
+    min-width: 70px; /* 더 작은 시간 영역 */
 }
 
 .time-start, .time-end {
-    font-size: 0.9rem; /* 시간 텍스트 크기 축소 */
+    font-size: 0.8rem; /* 더 작은 시간 텍스트 */
 }
 
 .status-badge {
-    font-size: 0.8rem; /* 상태 배지 크기 축소 */
-    padding: 4px 8px;
+    font-size: 0.7rem; /* 더 작은 상태 배지 */
+    padding: 3px 6px; /* 더 작은 패딩 */
 }
 
 .player-item {
-    padding: 4px 8px; /* 플레이어 아이템 패딩 축소 */
-    font-size: 0.75rem; /* 플레이어 텍스트 크기 축소 */
+    padding: 3px 6px; /* 더 작은 플레이어 아이템 패딩 */
+    font-size: 0.7rem; /* 더 작은 플레이어 텍스트 */
 }
 
 .player-dupr {
@@ -2547,12 +2548,12 @@ body {
 }
 
 .timeline-reserve-btn {
-    padding: 8px 16px;
+    padding: 6px 12px; /* 더 작은 버튼 */
     background: #667eea;
     color: white;
     border: none;
-    border-radius: 20px;
-    font-size: 0.8rem;
+    border-radius: 15px; /* 더 작은 둥근 모서리 */
+    font-size: 0.7rem; /* 더 작은 폰트 */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -2571,12 +2572,12 @@ body {
 
 /* 타임라인 취소 버튼 */
 .timeline-cancel-btn {
-    padding: 8px 16px;
+    padding: 6px 12px; /* 더 작은 버튼 */
     background: #dc3545;
     color: white;
     border: none;
-    border-radius: 20px;
-    font-size: 0.8rem;
+    border-radius: 15px; /* 더 작은 둥근 모서리 */
+    font-size: 0.7rem; /* 더 작은 폰트 */
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
