@@ -2345,7 +2345,7 @@ body {
     .timeline-reserve-btn {
         position: static;
         transform: none;
-        opacity: 1;
+        opacity: 1; /* 모바일에서도 항상 표시 */
         margin-top: 10px;
         width: 100%;
     }
@@ -2568,11 +2568,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    opacity: 0;
-}
-
-.timeline-item:hover .timeline-reserve-btn {
-    opacity: 1;
+    opacity: 1; /* 항상 표시 */
 }
 
 /* 예약/취소 버튼 영역 */

@@ -1577,6 +1577,9 @@ async function updateReservationButtons(timeSlot, date) {
             makeReservationBtn.style.display = 'block';
             cancelReservationBtn.style.display = 'none';
         }
+        
+        // 버튼 영역 항상 표시
+        reservationActions.style.display = 'flex';
     } catch (error) {
         console.error('버튼 상태 업데이트 오류:', error);
     }
@@ -1754,15 +1757,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 날짜 표시
     updateCurrentDateDisplay();
     
-    // 초기 버튼 상태 설정
+    // 초기 버튼 상태 설정 - 강제 표시
     const reservationActions = document.getElementById('reservation-actions');
+    const makeReservationBtn = document.getElementById('make-reservation-btn');
+    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
+    
     if (reservationActions) {
         reservationActions.style.display = 'flex';
     }
+    if (makeReservationBtn) {
+        makeReservationBtn.style.display = 'block';
+    }
+    if (cancelReservationBtn) {
+        cancelReservationBtn.style.display = 'none';
+    }
     
-    // 예약/취소 버튼 이벤트 리스너
-    const makeReservationBtn = document.getElementById('make-reservation-btn');
-    const cancelReservationBtn = document.getElementById('cancel-reservation-btn');
+    // 예약/취소 버튼 이벤트 리스너 (이미 위에서 선언됨)
     
     if (makeReservationBtn) {
         makeReservationBtn.addEventListener('click', async () => {
