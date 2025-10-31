@@ -3599,16 +3599,31 @@ async function deleteRecord(matchId) {
         const matchDate = matchData.date;
         
         // 점수 초기화 (매치 삭제가 아닌 점수만 초기화)
+        // 주의: match 문서를 삭제하지 않고 점수만 초기화합니다!
         const FieldValue = firebase.firestore.FieldValue;
         const updateData = {
             scoreA: null,
             scoreB: null,
-            status: 'scheduled',
-            recordedAt: FieldValue.delete() // 필드 삭제
+            scoreAOld: null,  // 기존 점수 필드도 초기화
+            scoreBOld: null,
+            status: 'scheduled',  // 상태를 scheduled로 변경 (completed -> scheduled)
+            recordedAt: FieldValue.delete(), // recordedAt 필드 삭제
+            recordedBy: FieldValue.delete()  // recordedBy 필드도 삭제
         };
         
+        // 중요한 부분: update를 사용하여 문서를 유지하면서 필드만 업데이트
+        // 절대 delete()나 set()을 사용하지 않음! update()만 사용!
         await matchRef.update(updateData);
-        console.log(`✅ 매치 점수 초기화 완료: ${matchId}`);
+        console.log(`✅ 매치 점수 초기화 완료 (문서 유지): ${matchId}`);
+        console.log(`📋 업데이트된 필드:`, updateData);
+        
+        // 즉시 확인: 문서가 여전히 존재하는지
+        const immediateCheck = await matchRef.get();
+        if (!immediateCheck.exists) {
+            console.error(`❌ 치명적 오류: 업데이트 후 매치 문서가 없어짐! ${matchId}`);
+            showToast('오류가 발생했습니다. 관리자에게 문의하세요.', 'error');
+            return;
+        }
         
         // 관련 gameResults 삭제
         const gameResultsA = await db.collection('gameResults')
@@ -3626,6 +3641,18 @@ async function deleteRecord(matchId) {
         if (!gameResultsA.empty || !gameResultsB.empty) {
             await batch.commit();
             console.log(`🔄 gameResults 삭제 및 점수 초기화: ${matchId} (${gameResultsA.size + gameResultsB.size}개)`);
+        }
+        
+        // 삭제 후 매치 문서가 여전히 존재하는지 확인 (디버깅)
+        const verifyDoc = await matchRef.get();
+        if (!verifyDoc.exists) {
+            console.error(`❌ 치명적 오류: 매치 문서가 삭제되었습니다! ${matchId}`);
+            showToast('오류: 매치가 삭제되었습니다. 다시 확인해주세요.', 'error');
+            return;
+        } else {
+            console.log(`✅ 매치 문서 확인: ${matchId} 존재함`);
+            const verifyData = verifyDoc.data();
+            console.log(`📋 매치 상태: ${verifyData.status}, scoreA: ${verifyData.scoreA}, scoreB: ${verifyData.scoreB}`);
         }
         
         showToast('기록이 초기화되었습니다.', 'success');
