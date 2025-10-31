@@ -1502,6 +1502,7 @@ async function loadMatchesForDate(date) {
                         const isCompleted = match.status === 'completed';
                         const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
                         const roundNum = match.roundNumber || 1;
+                        const courtNum = match.courtNumber || 1;
                         
                         // 경기 시간 계산 (각 경기는 15분으로 가정)
                         const timeSlotStart = timeSlot.start.split(':');
