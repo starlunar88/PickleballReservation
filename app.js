@@ -1397,6 +1397,9 @@ async function loadTabData(tabName) {
         case 'stats':
             await loadStatsData();
             break;
+        case 'records':
+            await loadRecordsData();
+            break;
         case 'admin':
             await loadAdminData();
             break;
@@ -1944,6 +1947,455 @@ async function loadStatsData() {
         await loadStatsCharts();
     } catch (error) {
         console.error('통계 데이터 로드 오류:', error);
+    }
+}
+
+// 기록 데이터 로드
+async function loadRecordsData() {
+    try {
+        console.log('📝 기록 데이터 로드 시작');
+        const recordsList = document.getElementById('records-list');
+        if (!recordsList) {
+            console.error('records-list 컨테이너를 찾을 수 없습니다');
+            return;
+        }
+        
+        // 오늘 날짜로 기본 설정
+        const today = new Date().toISOString().slice(0, 10);
+        document.getElementById('record-start-date').value = today;
+        document.getElementById('record-end-date').value = today;
+        
+        // 기본적으로 오늘 기록 로드
+        await loadRecordsForPeriod('today');
+        
+    } catch (error) {
+        console.error('기록 데이터 로드 오류:', error);
+        const recordsList = document.getElementById('records-list');
+        if (recordsList) {
+            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>기록을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 기간별 기록 로드
+async function loadRecordsForPeriod(period) {
+    try {
+        const recordsList = document.getElementById('records-list');
+        if (!recordsList) return;
+        
+        recordsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>기록을 불러오는 중...</p></div>';
+        
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            console.error('db 객체를 찾을 수 없습니다');
+            return;
+        }
+        
+        let startDate = new Date();
+        let endDate = new Date();
+        
+        // 기간 계산
+        switch (period) {
+            case 'today':
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'week1':
+                startDate.setDate(startDate.getDate() - 7);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'week2':
+                startDate.setDate(startDate.getDate() - 14);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'month':
+                startDate.setMonth(startDate.getMonth() - 1);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'all':
+                startDate = new Date(2020, 0, 1); // 과거 날짜
+                endDate = new Date(2099, 11, 31); // 미래 날짜
+                break;
+        }
+        
+        const startDateStr = startDate.toISOString().slice(0, 10);
+        const endDateStr = endDate.toISOString().slice(0, 10);
+        
+        // Firestore에서 완료된 매치 조회
+        let matchesSnapshot;
+        if (period === 'all') {
+            matchesSnapshot = await db.collection('matches')
+                .where('status', '==', 'completed')
+                .get();
+        } else {
+            matchesSnapshot = await db.collection('matches')
+                .where('status', '==', 'completed')
+                .where('date', '>=', startDateStr)
+                .where('date', '<=', endDateStr)
+                .get();
+        }
+        
+        if (matchesSnapshot.empty) {
+            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>해당 기간의 기록이 없습니다</p></div>';
+            return;
+        }
+        
+        const matches = [];
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (match.scoreA !== null && match.scoreA !== undefined && 
+                match.scoreB !== null && match.scoreB !== undefined) {
+                matches.push({
+                    id: doc.id,
+                    ...match
+                });
+            }
+        });
+        
+        // 클라이언트 측에서 날짜와 시간으로 정렬
+        matches.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            if (dateA !== dateB) {
+                return dateB.localeCompare(dateA);
+            }
+            const timeA = a.timeSlot || '';
+            const timeB = b.timeSlot || '';
+            return timeB.localeCompare(timeA);
+        });
+        
+        if (matches.length === 0) {
+            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>해당 기간의 기록이 없습니다</p></div>';
+            return;
+        }
+        
+        renderRecords(matches);
+        
+    } catch (error) {
+        console.error('기간별 기록 로드 오류:', error);
+        const recordsList = document.getElementById('records-list');
+        if (recordsList) {
+            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>기록을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 커스텀 기간 기록 로드
+async function loadRecordsForCustomPeriod() {
+    try {
+        const startDate = document.getElementById('record-start-date').value;
+        const endDate = document.getElementById('record-end-date').value;
+        
+        if (!startDate || !endDate) {
+            showToast('시작일과 종료일을 모두 선택해주세요.', 'warning');
+            return;
+        }
+        
+        const recordsList = document.getElementById('records-list');
+        if (!recordsList) return;
+        
+        recordsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>기록을 불러오는 중...</p></div>';
+        
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            console.error('db 객체를 찾을 수 없습니다');
+            return;
+        }
+        
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .where('date', '>=', startDate)
+            .where('date', '<=', endDate)
+            .get();
+        
+        if (matchesSnapshot.empty) {
+            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>해당 기간의 기록이 없습니다</p></div>';
+            return;
+        }
+        
+        const matches = [];
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (match.scoreA !== null && match.scoreA !== undefined && 
+                match.scoreB !== null && match.scoreB !== undefined) {
+                matches.push({
+                    id: doc.id,
+                    ...match
+                });
+            }
+        });
+        
+        matches.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            if (dateA !== dateB) {
+                return dateB.localeCompare(dateA);
+            }
+            const timeA = a.timeSlot || '';
+            const timeB = b.timeSlot || '';
+            return timeB.localeCompare(timeA);
+        });
+        
+        if (matches.length === 0) {
+            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>해당 기간의 기록이 없습니다</p></div>';
+            return;
+        }
+        
+        renderRecords(matches);
+        
+    } catch (error) {
+        console.error('커스텀 기간 기록 로드 오류:', error);
+        showToast('기록을 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 기록 카드 렌더링
+function renderRecords(matches) {
+    const recordsList = document.getElementById('records-list');
+    if (!recordsList) return;
+    
+    if (matches.length === 0) {
+        recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>기록이 없습니다</p></div>';
+        return;
+    }
+    
+    window.currentDisplayedRecords = matches;
+    
+    let recordsHTML = '';
+    
+    matches.forEach(match => {
+        const matchDate = match.date;
+        const timeSlot = match.timeSlot || '';
+        const [startTime] = timeSlot.split('-');
+        
+        const dateObj = new Date(matchDate + 'T' + (startTime || '12:00'));
+        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+        });
+        const formattedTime = dateObj.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).replace(' ', '');
+        
+        const teamANames = match.teamA ? match.teamA.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
+        const teamBNames = match.teamB ? match.teamB.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
+        
+        const scoreA = match.scoreA ?? 0;
+        const scoreB = match.scoreB ?? 0;
+        
+        recordsHTML += `
+            <div class="record-card" data-match-id="${match.id}">
+                <div class="record-header">
+                    <div class="record-date-time">${formattedDate} ${formattedTime}</div>
+                    <button class="record-delete-btn" data-match-id="${match.id}" title="삭제">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="record-teams">
+                    <div class="record-team team-a">
+                        <div class="team-icon team-a-icon">A</div>
+                        <div class="team-info">
+                            <div class="team-names">${teamANames}</div>
+                            <div class="team-score score-a">${scoreA}</div>
+                        </div>
+                    </div>
+                    <div class="record-team team-b">
+                        <div class="team-icon team-b-icon">B</div>
+                        <div class="team-info">
+                            <div class="team-names">${teamBNames}</div>
+                            <div class="team-score score-b">${scoreB}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    recordsList.innerHTML = recordsHTML;
+    
+    document.querySelectorAll('.record-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const matchId = btn.getAttribute('data-match-id');
+            if (confirm('이 기록을 삭제하시겠습니까?')) {
+                await deleteRecord(matchId);
+            }
+        });
+    });
+}
+
+// 기록 삭제
+async function deleteRecord(matchId) {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        await db.collection('matches').doc(matchId).delete();
+        showToast('기록이 삭제되었습니다.', 'success');
+        
+        const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
+        await loadRecordsForPeriod(activePeriod);
+        
+    } catch (error) {
+        console.error('기록 삭제 오류:', error);
+        showToast('기록 삭제 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 모든 기록 삭제
+async function deleteAllRecords() {
+    try {
+        if (!confirm('모든 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            return;
+        }
+        
+        showLoading();
+        
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        if (matchesSnapshot.empty) {
+            showToast('삭제할 기록이 없습니다.', 'info');
+            hideLoading();
+            return;
+        }
+        
+        const batch = db.batch();
+        matchesSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        await batch.commit();
+        
+        showToast('모든 기록이 삭제되었습니다.', 'success');
+        
+        const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
+        await loadRecordsForPeriod(activePeriod);
+        
+        hideLoading();
+        
+    } catch (error) {
+        console.error('모든 기록 삭제 오류:', error);
+        showToast('기록 삭제 중 오류가 발생했습니다.', 'error');
+        hideLoading();
+    }
+}
+
+// CSV 내보내기
+function exportRecordsToCSV(matches, filename = 'records.csv') {
+    if (!matches || matches.length === 0) {
+        showToast('내보낼 기록이 없습니다.', 'warning');
+        return;
+    }
+    
+    const headers = ['날짜', '시간', '팀A', '팀B', '팀A점수', '팀B점수'];
+    const csvRows = [headers.join(',')];
+    
+    matches.forEach(match => {
+        const matchDate = match.date;
+        const timeSlot = match.timeSlot || '';
+        const [startTime] = timeSlot.split('-');
+        
+        const dateObj = new Date(matchDate + 'T' + (startTime || '12:00'));
+        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+        });
+        const formattedTime = dateObj.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).replace(' ', '');
+        
+        const teamANames = match.teamA ? match.teamA.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
+        const teamBNames = match.teamB ? match.teamB.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
+        
+        const scoreA = match.scoreA ?? 0;
+        const scoreB = match.scoreB ?? 0;
+        
+        const escapeCSV = (str) => {
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+        
+        csvRows.push([
+            escapeCSV(formattedDate),
+            escapeCSV(formattedTime),
+            escapeCSV(teamANames),
+            escapeCSV(teamBNames),
+            escapeCSV(String(scoreA)),
+            escapeCSV(String(scoreB))
+        ].join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('CSV 파일이 다운로드되었습니다.', 'success');
+}
+
+// 전체 기록 가져오기 (CSV 내보내기용)
+async function getAllRecordsForExport() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            showToast('데이터베이스 연결 오류', 'error');
+            return [];
+        }
+        
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        const matches = [];
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (match.scoreA !== null && match.scoreA !== undefined && 
+                match.scoreB !== null && match.scoreB !== undefined) {
+                matches.push({
+                    id: doc.id,
+                    ...match
+                });
+            }
+        });
+        
+        matches.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            if (dateA !== dateB) {
+                return dateB.localeCompare(dateA);
+            }
+            const timeA = a.timeSlot || '';
+            const timeB = b.timeSlot || '';
+            return timeB.localeCompare(timeA);
+        });
+        
+        return matches;
+    } catch (error) {
+        console.error('전체 기록 조회 오류:', error);
+        showToast('기록을 불러오는 중 오류가 발생했습니다.', 'error');
+        return [];
     }
 }
 
@@ -2749,6 +3201,74 @@ document.addEventListener('DOMContentLoaded', function() {
     // 하단 버튼 초기화 코드 제거됨 (타임라인에 통합)
     
     // 하단 버튼 이벤트 리스너 제거됨 (타임라인에 통합)
+    
+    // 기록 보기 탭 이벤트 리스너
+    // 기간 선택 버튼들
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            // 모든 버튼 비활성화
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            // 클릭한 버튼 활성화
+            btn.classList.add('active');
+            
+            const period = btn.getAttribute('data-period');
+            await loadRecordsForPeriod(period);
+        });
+    });
+    
+    // 커스텀 기간 내보내기 버튼
+    const exportCustomPeriodBtn = document.getElementById('export-custom-period');
+    if (exportCustomPeriodBtn) {
+        exportCustomPeriodBtn.addEventListener('click', async () => {
+            try {
+                await loadRecordsForCustomPeriod();
+                const startDate = document.getElementById('record-start-date').value;
+                const endDate = document.getElementById('record-end-date').value;
+                
+                if (window.currentDisplayedRecords && window.currentDisplayedRecords.length > 0) {
+                    const filename = `records_${startDate}_${endDate}.csv`;
+                    exportRecordsToCSV(window.currentDisplayedRecords, filename);
+                } else {
+                    showToast('내보낼 기록이 없습니다.', 'warning');
+                }
+            } catch (error) {
+                console.error('커스텀 기간 내보내기 오류:', error);
+                showToast('내보내기 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+    
+    // 전체 기록 내보내기 버튼
+    const exportAllRecordsBtn = document.getElementById('export-all-records');
+    if (exportAllRecordsBtn) {
+        exportAllRecordsBtn.addEventListener('click', async () => {
+            try {
+                showLoading();
+                const allRecords = await getAllRecordsForExport();
+                hideLoading();
+                
+                if (allRecords && allRecords.length > 0) {
+                    const today = new Date().toISOString().slice(0, 10);
+                    exportRecordsToCSV(allRecords, `records_all_${today}.csv`);
+                } else {
+                    showToast('내보낼 기록이 없습니다.', 'warning');
+                }
+            } catch (error) {
+                console.error('전체 기록 내보내기 오류:', error);
+                hideLoading();
+                showToast('내보내기 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+    
+    // 모든 기록 삭제 버튼
+    const deleteAllRecordsBtn = document.getElementById('delete-all-records');
+    if (deleteAllRecordsBtn) {
+        deleteAllRecordsBtn.addEventListener('click', async () => {
+            await deleteAllRecords();
+        });
+    }
 });
 
 // 시간 슬롯 로드

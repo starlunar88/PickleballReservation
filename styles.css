@@ -2071,6 +2071,210 @@ body {
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
 .tab-contents,
 .reservations-container,
+.records-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 기간 선택 버튼 */
+.period-filter-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.period-btn {
+    padding: 10px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    background: #fff;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.period-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.period-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: #fff;
+}
+
+/* 커스텀 기간 선택 */
+.custom-period-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.period-select-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.custom-period-inputs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.date-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.date-separator {
+    font-size: 16px;
+    color: #666;
+    font-weight: 500;
+}
+
+/* 내보내기 버튼 섹션 */
+.export-all-section {
+    margin-bottom: 20px;
+}
+
+/* 기록 카드 리스트 */
+.records-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+/* 기록 카드 */
+.record-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.record-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.record-date-time {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.record-delete-btn {
+    background: transparent;
+    border: none;
+    color: #ff6b6b;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.record-delete-btn:hover {
+    background: #ffe0e0;
+}
+
+/* 기록 팀 정보 */
+.record-teams {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.record-team {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.team-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.team-a-icon {
+    background: #4a90e2;
+}
+
+.team-b-icon {
+    background: #9b59b6;
+}
+
+.team-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.team-names {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.team-score {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.score-a {
+    color: #27ae60;
+}
+
+.score-b {
+    color: #e74c3c;
+}
+
+/* 삭제 버튼 섹션 */
+.delete-all-section {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
 .rankings-container,
 .stats-container {
     max-width: 400px;
@@ -3572,6 +3776,49 @@ body {
         padding: 5px 8px;
         min-width: 80px;
         max-width: 120px;
+    }
+    
+    /* 기록 보기 반응형 */
+    .records-container {
+        padding: 15px 10px;
+    }
+    
+    .period-filter-buttons {
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+    
+    .period-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+    
+    .custom-period-section {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .records-list {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .record-card {
+        padding: 14px;
+    }
+    
+    .team-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    
+    .team-names {
+        font-size: 13px;
+    }
+    
+    .team-score {
+        font-size: 16px;
     }
     
     .match-score {
