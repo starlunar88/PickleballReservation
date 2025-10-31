@@ -3164,6 +3164,20 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-align: center;
 }
 
+.today-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
 .date-navigation button {
     background: #667eea;
     border: 2px solid #667eea;

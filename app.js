@@ -3589,22 +3589,26 @@ async function deleteRecord(matchId) {
         const matchRef = db.collection('matches').doc(matchId);
         const matchDoc = await matchRef.get();
         
-        if (matchDoc.exists) {
-            const updateData = {
-                scoreA: null,
-                scoreB: null,
-                status: 'scheduled'
-            };
-            
-            // recordedAt 필드가 있으면 삭제
-            if (matchDoc.data().recordedAt) {
-                // Firestore에서 필드 삭제는 FieldValue.delete() 사용
-                const FieldValue = db.firestore ? db.firestore.FieldValue : firebase.firestore.FieldValue;
-                updateData.recordedAt = FieldValue.delete();
-            }
-            
-            await matchRef.update(updateData);
+        if (!matchDoc.exists) {
+            console.warn(`⚠️ 매치를 찾을 수 없습니다: ${matchId}`);
+            showToast('매치를 찾을 수 없습니다.', 'error');
+            return;
         }
+        
+        const matchData = matchDoc.data();
+        const matchDate = matchData.date;
+        
+        // 점수 초기화 (매치 삭제가 아닌 점수만 초기화)
+        const FieldValue = firebase.firestore.FieldValue;
+        const updateData = {
+            scoreA: null,
+            scoreB: null,
+            status: 'scheduled',
+            recordedAt: FieldValue.delete() // 필드 삭제
+        };
+        
+        await matchRef.update(updateData);
+        console.log(`✅ 매치 점수 초기화 완료: ${matchId}`);
         
         // 관련 gameResults 삭제
         const gameResultsA = await db.collection('gameResults')
@@ -3630,16 +3634,10 @@ async function deleteRecord(matchId) {
         const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
         await loadRecordsForPeriod(activePeriod);
         
-        // 대진표도 새로고침
+        // 대진표도 새로고침 (매치 삭제가 아닌 점수 초기화되었으므로 대진표에 계속 표시됨)
         const matchesTab = document.getElementById('matches-tab');
-        if (matchesTab && matchesTab.classList.contains('active')) {
-            const matchesCurrentDateDisplay = document.getElementById('matches-current-date-display');
-            if (matchesCurrentDateDisplay) {
-                const currentDate = matchesCurrentDateDisplay.getAttribute('data-date');
-                if (currentDate) {
-                    await loadMatchesForDate(currentDate);
-                }
-            }
+        if (matchesTab && matchesTab.classList.contains('active') && matchDate) {
+            await loadMatchesForDate(matchDate);
         }
         
     } catch (error) {
@@ -4396,15 +4394,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const isToday = dateObj.getTime() === today.getTime();
         
+        // 항상 날짜 형식으로 표시
+        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            month: 'long',
+            day: 'numeric',
+            weekday: 'short'
+        });
+        currentDateDisplay.textContent = formattedDate;
+        
+        // Today 배지 표시/숨김 (date-navigation의 왼쪽에 배치)
+        const dateNav = currentDateDisplay.parentElement;
+        let todayBadge = dateNav.querySelector('.today-badge');
         if (isToday) {
-            currentDateDisplay.textContent = '오늘';
+            if (!todayBadge) {
+                todayBadge = document.createElement('span');
+                todayBadge.className = 'today-badge';
+                todayBadge.textContent = 'Today';
+                dateNav.insertBefore(todayBadge, dateNav.firstChild);
+            }
+            todayBadge.style.display = 'inline-block';
         } else {
-            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-                month: 'short',
-                day: 'numeric',
-                weekday: 'short'
-            });
-            currentDateDisplay.textContent = formattedDate;
+            if (todayBadge) {
+                todayBadge.style.display = 'none';
+            }
         }
         
         // 타임라인 새로고침
@@ -4524,15 +4536,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const isToday = dateObj.getTime() === today.getTime();
         
+        // 항상 날짜 형식으로 표시
+        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            month: 'long',
+            day: 'numeric',
+            weekday: 'short'
+        });
+        matchesCurrentDateDisplay.textContent = formattedDate;
+        
+        // Today 배지 표시/숨김 (date-navigation의 왼쪽에 배치)
+        const dateNav = matchesCurrentDateDisplay.parentElement;
+        let todayBadge = dateNav.querySelector('.today-badge');
         if (isToday) {
-            matchesCurrentDateDisplay.textContent = '오늘';
+            if (!todayBadge) {
+                todayBadge = document.createElement('span');
+                todayBadge.className = 'today-badge';
+                todayBadge.textContent = 'Today';
+                dateNav.insertBefore(todayBadge, dateNav.firstChild);
+            }
+            todayBadge.style.display = 'inline-block';
         } else {
-            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-                month: 'short',
-                day: 'numeric',
-                weekday: 'short'
-            });
-            matchesCurrentDateDisplay.textContent = formattedDate;
+            if (todayBadge) {
+                todayBadge.style.display = 'none';
+            }
         }
         
         // 대진표 새로고침
