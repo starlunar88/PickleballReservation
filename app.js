@@ -4385,11 +4385,65 @@ async function getRankings(limit = 50) {
         const db = window.db || firebase.firestore();
         if (!db) return [];
         
-        // 모든 게임 결과에서 점수 계산
-        const gameResultsSnapshot = await db.collection('gameResults').get();
-        
-        // 사용자별 점수 계산
+        // 사용자별 점수 계산 (승리 +10점, 패배 -5점)
         const userScores = {};
+        
+        // 1. matches 컬렉션에서 완료된 경기 확인
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            
+            const aWins = match.scoreA > match.scoreB;
+            const winners = aWins ? match.teamA : match.teamB;
+            const losers = aWins ? match.teamB : match.teamA;
+            
+            // 승자에게 +10점
+            if (winners && Array.isArray(winners)) {
+                winners.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (!userId) return;
+                    
+                    if (!userScores[userId]) {
+                        userScores[userId] = { 
+                            score: 0, 
+                            wins: 0, 
+                            losses: 0,
+                            totalGames: 0
+                        };
+                    }
+                    userScores[userId].score += 10;
+                    userScores[userId].wins += 1;
+                    userScores[userId].totalGames += 1;
+                });
+            }
+            
+            // 패자에게 -5점 (최소 0점)
+            if (losers && Array.isArray(losers)) {
+                losers.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (!userId) return;
+                    
+                    if (!userScores[userId]) {
+                        userScores[userId] = { 
+                            score: 0, 
+                            wins: 0, 
+                            losses: 0,
+                            totalGames: 0
+                        };
+                    }
+                    userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                    userScores[userId].losses += 1;
+                    userScores[userId].totalGames += 1;
+                });
+            }
+        });
+        
+        // 2. gameResults 컬렉션에서도 확인 (matches에 없는 데이터)
+        const gameResultsSnapshot = await db.collection('gameResults').get();
         
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
