@@ -3405,6 +3405,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     z-index: 10;
 }
 
+/* 모바일에서 Today와 제목을 같은 줄에 배치하기 위한 래퍼 */
+@media (max-width: 480px) {
+    .section-header > h2 {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+}
+
 .date-navigation button {
     background: #667eea;
     border: 2px solid #667eea;
@@ -3718,35 +3731,61 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .reservations-board { margin: 0 6px; }
     .reservations-timeline { padding: 14px; }
     .section-header { 
-        padding: 8px 12px; 
-        padding-top: 32px; /* Today 배지를 위한 공간 - 줄임 */
-        margin-bottom: 12px; 
+        padding: 4px 8px !important; /* padding 최소화 */
+        margin-bottom: 6px !important; /* margin 줄임 */
         position: relative;
-        display: flex !important;
-        flex-direction: column !important;
+        display: grid !important;
+        grid-template-columns: auto 1fr !important; /* Today 배지 | 제목 */
+        grid-template-rows: auto auto !important; /* 첫 줄: Today+제목, 둘째 줄: 날짜 네비게이션 */
         align-items: center !important;
-        justify-content: center !important;
-        gap: 8px; /* gap 줄임 */
+        gap: 4px 6px !important; /* row-gap column-gap */
+        min-height: auto !important; /* 높이 자동 */
     }
-    .section-header h2 { 
-        font-size: 1rem; /* 더 작게 */
+    
+    /* Today 배지와 제목을 같은 줄에 배치 */
+    .section-header > .today-badge {
+        grid-column: 1 !important; /* 첫 번째 열 */
+        grid-row: 1 !important; /* 첫 번째 행 */
+        position: static !important; /* absolute 제거 */
+        font-size: 0.55rem !important; /* 더 작게 */
+        padding: 2px 5px !important; /* padding 최소화 */
+        margin: 0 !important;
+        align-self: center !important;
+    }
+    
+    .section-header > h2 {
+        grid-column: 2 !important; /* 두 번째 열 */
+        grid-row: 1 !important; /* 첫 번째 행 */
+        font-size: 0.85rem !important; /* 더 작게 */
         text-align: center !important;
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         display: flex !important;
     }
-    .date-navigation { gap: 6px; } /* gap 줄임 */
-    .date-navigation button { padding: 5px 8px; font-size: 0.8rem; } /* 더 작게 */
     
-    .today-badge {
-        position: absolute;
-        top: 4px; /* 더 위로 */
-        left: 8px;
-        font-size: 0.65rem; /* 더 작게 */
-        padding: 3px 8px; /* padding 줄임 */
-        z-index: 10;
+    .section-header > .date-navigation {
+        grid-column: 1 / -1 !important; /* 전체 열 차지 */
+        grid-row: 2 !important; /* 두 번째 행 */
+    }
+    
+    .date-navigation { 
+        gap: 3px !important; /* gap 더 줄임 */
+        margin-top: 2px !important; /* 위쪽 여백 최소화 */
+        width: 100%;
+        justify-content: center !important;
+    }
+    .date-navigation button { 
+        padding: 3px 5px !important; /* 더 작게 */
+        font-size: 0.7rem !important; /* 더 작게 */
+        min-width: 28px !important; /* 최소 너비 줄임 */
+        height: 24px !important; /* 높이 줄임 */
+    }
+    .date-navigation span {
+        font-size: 0.75rem !important; /* 날짜 텍스트 작게 */
+        min-width: auto !important;
+        padding: 0 4px !important;
     }
     
     .today-emoji {
