@@ -46,6 +46,43 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// 예약 생성 함수 (firebase-config.js에 정의되어 있지만 중복 정의로 안전성 확보)
+async function createReservation(reservationData) {
+    // Firebase 초기화 확인
+    if (!auth || !db) {
+        if (!initializeFirebase()) {
+            showToast('Firebase가 초기화되지 않았습니다.', 'error');
+            return null;
+        }
+    }
+    
+    const user = auth.currentUser;
+    if (!user) {
+        showToast('로그인이 필요합니다.', 'warning');
+        return null;
+    }
+    
+    // 예약 데이터에 사용자 정보 추가 (이미 포함된 경우 중복 방지)
+    const reservation = {
+        ...reservationData,
+        userId: reservationData.userId || user.uid,
+        userName: reservationData.userName || user.displayName || user.email,
+        userDupr: reservationData.userDupr || null,
+        createdAt: reservationData.createdAt || new Date(),
+        status: reservationData.status || 'pending' // 대기 상태로 시작
+    };
+    
+    try {
+        const docRef = await db.collection('reservations').add(reservation);
+        console.log('Firestore에 예약 저장 완료:', docRef.id);
+        return docRef.id;
+    } catch (error) {
+        console.error('예약 저장 오류:', error);
+        showToast('예약 저장 중 오류가 발생했습니다.', 'error');
+        return null;
+    }
+}
+
 // DOM 요소 참조
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
@@ -1528,9 +1565,8 @@ async function loadReservationsTimeline() {
                         </div>
                         <div class="timeline-players">
                             ${reservations.map(res => `
-                                <div class="player-item ${res.isAdminReservation ? 'admin-reservation' : ''}">
+                                <div class="player-item">
                                     <span class="player-name">${res.userName || '익명'}</span>
-                                    ${res.isAdminReservation ? '<span class="admin-badge">관리자</span>' : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -1620,29 +1656,9 @@ async function loadReservationsTimeline() {
 
 // 선택된 정보 업데이트
 function updateSelectedInfo(date, timeSlot) {
-    const selectedInfo = document.getElementById('selected-info');
-    const selectedDate = document.getElementById('selected-date');
-    const selectedTime = document.getElementById('selected-time');
-    
-    if (selectedInfo && selectedDate) {
-        // 날짜 포맷팅
-        const dateObj = new Date(date);
-        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            weekday: 'short'
-        });
-        
-        selectedDate.textContent = formattedDate;
-        
-        if (timeSlot) {
-            selectedTime.textContent = timeSlot.replace('-', ' - ');
-            selectedInfo.style.display = 'block';
-        } else {
-            selectedInfo.style.display = 'none';
-        }
-    }
+    // selected-info 섹션이 제거되었으므로 함수는 동작하지 않음
+    // 호출은 유지하되 아무 동작도 하지 않음 (기존 코드 호환성을 위해)
+    return;
 }
 
 // 타임라인 예약 처리
@@ -1911,16 +1927,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // 날짜 네비게이션 이벤트 리스너
     const prevDayBtn = document.getElementById('prev-day');
     const nextDayBtn = document.getElementById('next-day');
+    const refreshTimelineBtn = document.getElementById('refresh-timeline');
     const currentDateDisplay = document.getElementById('current-date-display');
     
     // 전역 currentDate 변수 설정
-    window.currentDate = new Date().toISOString().slice(0, 10);
+    if (!window.currentDate) {
+        window.currentDate = new Date().toISOString().slice(0, 10);
+    }
     
-    // 현재 날짜 표시 업데이트
-    function updateCurrentDateDisplay() {
+    // 현재 날짜 표시 업데이트 함수 (전역으로 사용 가능하도록)
+    window.updateCurrentDateDisplay = function() {
+        if (!currentDateDisplay) {
+            console.warn('날짜 표시 요소를 찾을 수 없습니다');
+            return;
+        }
+        
         const dateObj = new Date(window.currentDate);
         const today = new Date();
-        const isToday = dateObj.toDateString() === today.toDateString();
+        today.setHours(0, 0, 0, 0);
+        dateObj.setHours(0, 0, 0, 0);
+        
+        const isToday = dateObj.getTime() === today.getTime();
         
         if (isToday) {
             currentDateDisplay.textContent = '오늘';
@@ -1935,28 +1962,69 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 타임라인 새로고침
         loadReservationsTimeline();
-    }
+    };
     
+    // 이전 날짜 버튼
     if (prevDayBtn) {
         prevDayBtn.addEventListener('click', () => {
-            const dateObj = new Date(window.currentDate);
-            dateObj.setDate(dateObj.getDate() - 1);
-            window.currentDate = dateObj.toISOString().slice(0, 10);
-            updateCurrentDateDisplay();
+            try {
+                const dateObj = new Date(window.currentDate);
+                dateObj.setDate(dateObj.getDate() - 1);
+                window.currentDate = dateObj.toISOString().slice(0, 10);
+                console.log('이전 날짜로 이동:', window.currentDate);
+                window.updateCurrentDateDisplay();
+            } catch (error) {
+                console.error('날짜 변경 오류:', error);
+                showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+            }
         });
+    } else {
+        console.warn('prev-day 버튼을 찾을 수 없습니다');
     }
     
+    // 다음 날짜 버튼
     if (nextDayBtn) {
         nextDayBtn.addEventListener('click', () => {
-            const dateObj = new Date(window.currentDate);
-            dateObj.setDate(dateObj.getDate() + 1);
-            window.currentDate = dateObj.toISOString().slice(0, 10);
-            updateCurrentDateDisplay();
+            try {
+                const dateObj = new Date(window.currentDate);
+                dateObj.setDate(dateObj.getDate() + 1);
+                window.currentDate = dateObj.toISOString().slice(0, 10);
+                console.log('다음 날짜로 이동:', window.currentDate);
+                window.updateCurrentDateDisplay();
+            } catch (error) {
+                console.error('날짜 변경 오류:', error);
+                showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+            }
         });
+    } else {
+        console.warn('next-day 버튼을 찾을 수 없습니다');
+    }
+    
+    // 새로고침 버튼
+    if (refreshTimelineBtn) {
+        refreshTimelineBtn.addEventListener('click', async () => {
+            try {
+                console.log('타임라인 새로고침 요청');
+                showLoading();
+                await loadReservationsTimeline();
+                showToast('예약 현황이 새로고침되었습니다.', 'success');
+            } catch (error) {
+                console.error('타임라인 새로고침 오류:', error);
+                showToast('새로고침 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+    } else {
+        console.warn('refresh-timeline 버튼을 찾을 수 없습니다');
     }
     
     // 초기 날짜 표시
-    updateCurrentDateDisplay();
+    if (currentDateDisplay) {
+        window.updateCurrentDateDisplay();
+    } else {
+        console.warn('current-date-display 요소를 찾을 수 없습니다');
+    }
     
     // 하단 버튼 초기화 코드 제거됨 (타임라인에 통합)
     
