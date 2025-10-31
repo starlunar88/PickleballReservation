@@ -3273,8 +3273,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     font-weight: 600;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
-    margin: 0;
+    margin: 0 auto;
+    text-align: center;
+    width: 100%;
 }
 
 .section-header h2 i {
@@ -3382,6 +3385,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .section-header h2 {
     width: 100%;
     text-align: center;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .section-header > .today-badge {
@@ -3547,6 +3554,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 .section-header h2 {
     font-size: 1.3rem; /* 제목 크기 축소 */
+    text-align: center;
+    justify-content: center;
+    width: 100%;
 }
 
 .date-navigation {
@@ -3657,6 +3667,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .section-header h2 {
         font-size: 1.3rem;
+        text-align: center;
+        justify-content: center;
+        width: 100%;
     }
     
     .admin-stat-card {
@@ -3696,7 +3709,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin-bottom: 16px; 
         position: relative;
     }
-    .section-header h2 { font-size: 1.1rem; }
+    .section-header h2 { 
+        font-size: 1.1rem; 
+        text-align: center;
+        justify-content: center;
+        width: 100%;
+    }
     .date-navigation { gap: 8px; }
     .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
     
