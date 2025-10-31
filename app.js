@@ -1484,7 +1484,7 @@ async function loadMatchesForDate(date) {
                 // 시간대별 섹션 헤더 추가
                 matchesHTML += `
                     <div class="time-slot-section">
-                        <div class="time-slot-header-compact">${timeSlot.start} - ${timeSlot.end}</div>
+                        <div class="time-slot-header-compact">${timeSlot.start} ~ ${timeSlot.end}</div>
                         <div class="courts-container">
                 `;
                 
@@ -3134,7 +3134,9 @@ function drawTeamBarChart(data, canvasId, color) {
     
     // Canvas 크기 설정 (고해상도 지원)
     const container = canvas.parentElement;
-    const containerWidth = container ? container.offsetWidth : 500;
+    let containerWidth = container ? container.offsetWidth : 500;
+    // 컨테이너 너비 제한 (너무 넓어지지 않도록)
+    containerWidth = Math.min(containerWidth, 600);
     const containerHeight = 250; // 높이 줄임 (300 -> 250)
     const dpr = window.devicePixelRatio || 1;
     
@@ -3177,12 +3179,12 @@ function drawTeamBarChart(data, canvasId, color) {
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
     const padding = { 
         top: 15, 
-        right: 60, // 오른쪽 여백 줄임 (승률 레이블 공간)
+        right: 40, // 오른쪽 여백 더 줄임
         bottom: 25, // 하단 여백 줄임
-        left: Math.max(maxNameWidth + 15, 90) // 이름 너비 + 여백 (최소 90px, 최대 120px로 제한)
+        left: Math.max(maxNameWidth + 10, 85) // 이름 너비 + 여백 (최소 85px, 최대 110px로 제한)
     };
     // 너무 넓지 않도록 최대값 제한
-    padding.left = Math.min(padding.left, 120);
+    padding.left = Math.min(padding.left, 110);
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
@@ -3926,8 +3928,7 @@ async function loadReservationsTimeline() {
                 <div class="timeline-item ${statusClass}" data-time-slot="${slotKey}" data-date="${targetDate}">
                     <div class="timeline-header">
                         <div class="timeline-time">
-                            <div class="time-start">${timeSlot.start}</div>
-                            <div class="time-end">${timeSlot.end}</div>
+                            ${timeSlot.start} ~ ${timeSlot.end}
                         </div>
                         <div class="timeline-status">
                             <span class="status-badge ${statusClass}">
@@ -5453,13 +5454,32 @@ async function loadTopPerformers() {
         
         rankings.forEach((ranking, index) => {
             const rank = index + 1;
-            const isTop3 = rank <= 3;
+            
+            // 점수에 따른 계급 아이콘 결정
+            let tierIcon = '';
+            const score = ranking.score || 0;
+            
+            if (score >= 2500) {
+                tierIcon = '<i class="fas fa-trophy" style="color: #764ba2;"></i>'; // GOAT
+            } else if (score >= 1800) {
+                tierIcon = '<i class="fas fa-medal" style="color: #ffd700;"></i>'; // 레전드
+            } else if (score >= 1200) {
+                tierIcon = '<i class="fas fa-medal" style="color: #c0c0c0;"></i>'; // 마스터
+            } else if (score >= 800) {
+                tierIcon = '<i class="fas fa-medal" style="color: #cd7f32;"></i>'; // 챔피언
+            } else if (score >= 400) {
+                tierIcon = '<i class="fas fa-star" style="color: #ffd700;"></i>'; // 프로
+            } else if (score >= 30) {
+                tierIcon = '<i class="fas fa-table-tennis" style="color: #ff69b4;"></i>'; // 플레이어
+            } else {
+                tierIcon = '<span style="font-size: 0.9rem; font-weight: 700; color: #666;">NEW</span>'; // 초보자
+            }
             
             performersHTML += `
                 <div class="performer-item">
                     <div class="performer-rank">${rank}</div>
                     <div class="performer-icon">
-                        ${isTop3 ? '<i class="fas fa-star" style="color: #ffd700;"></i>' : '<i class="fas fa-table-tennis" style="color: #ff69b4;"></i>'}
+                        ${tierIcon}
                     </div>
                     <div class="performer-name">${ranking.userName}</div>
                     <div class="performer-score">${ranking.score}점</div>

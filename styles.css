@@ -2159,7 +2159,7 @@ body {
 /* 기록 카드 리스트 */
 .records-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     margin-bottom: 40px;
 }
@@ -2321,6 +2321,9 @@ body {
     border-radius: 20px;
     min-height: 300px;
     position: relative;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .podium-card {
@@ -2631,9 +2634,9 @@ body {
     font-weight: 700;
     color: #000;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible;
     text-overflow: ellipsis;
-    max-width: 200px;
+    min-width: 80px;
 }
 
 .performer-score {
@@ -2911,15 +2914,19 @@ body {
 
 .team-charts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .team-chart-card {
     background: #fff;
     border-radius: 12px;
-    padding: 24px;
+    padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .team-chart-header {
@@ -3259,13 +3266,10 @@ body {
     margin-bottom: 6px; /* 더 작은 간격 */
 }
 
-.timeline-time {
-    min-width: 70px; /* 더 작은 시간 영역 */
-}
-
-.time-start, .time-end {
-    font-size: 0.8rem; /* 더 작은 시간 텍스트 */
-}
+    .timeline-time {
+        min-width: 80px;
+        font-size: 0.9rem;
+    }
 
 .status-badge {
     font-size: 0.7rem; /* 더 작은 상태 배지 */
@@ -3378,16 +3382,9 @@ body {
     }
     
     .timeline-time {
-        min-width: 70px;
+        min-width: 80px;
         margin-right: 15px;
-    }
-    
-    .time-start {
-        font-size: 1rem;
-    }
-    
-    .time-end {
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
     /* 모바일 컴팩트 사이징 */
     .nav-container { height: 52px; }
@@ -3939,24 +3936,10 @@ body {
 }
 
 .timeline-time {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.time-start, .time-end {
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: #333;
-}
-
-.time-start { 
-    font-size: 1.1rem; 
-    font-weight: 700; 
-}
-
-.time-end { 
-    font-size: 0.9rem; 
-    color: #8a8f98; 
+    white-space: nowrap;
 }
 
 .timeline-status {
