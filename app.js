@@ -1581,7 +1581,7 @@ async function loadMatchesForDate(date) {
                                 return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>';
                             } else {
                                 // 점수가 0이거나 없으면 초보자로 표시
-                                return '<span style="font-size: 0.7rem; font-weight: 700; color: #666; margin-right: 3px;">NEW</span>';
+                                return '<span style="font-size: 0.7rem; font-weight: 700; color: #667eea; margin-right: 3px;">NEW</span>';
                             }
                         };
                         
@@ -6006,7 +6006,7 @@ async function loadTopPerformers() {
             } else if (score >= 30) {
                 tierIcon = '<i class="fas fa-table-tennis" style="color: #ff69b4;"></i>'; // 플레이어
             } else {
-                tierIcon = '<span style="font-size: 0.9rem; font-weight: 700; color: #666;">NEW</span>'; // 초보자
+                tierIcon = '<span style="font-size: 0.9rem; font-weight: 700; color: #667eea;">NEW</span>'; // 초보자 (파란색)
             }
             
             performersHTML += `
