@@ -2009,21 +2009,15 @@ function setupStatsEventListeners() {
             e.target.classList.add('active');
             const period = e.target.getAttribute('data-period');
             await loadGameStats(period);
+            await loadWinRateChart(); // 사용자 선택 차트도 업데이트
         });
     });
     
     // 개인 성장 분석 필터
     const userSelect = document.getElementById('growth-user-select');
-    const periodSelect = document.getElementById('growth-period-select');
     
     if (userSelect) {
         userSelect.addEventListener('change', async () => {
-            await loadWinRateChart();
-        });
-    }
-    
-    if (periodSelect) {
-        periodSelect.addEventListener('change', async () => {
             await loadWinRateChart();
         });
     }
@@ -2176,10 +2170,45 @@ async function loadUserList() {
         const userSelect = document.getElementById('growth-user-select');
         if (!userSelect) return;
         
-        // 게임 결과에서 사용자 ID 수집
-        const gameResultsSnapshot = await db.collection('gameResults').get();
+        // 사용자 ID 수집 (matches와 gameResults 모두에서)
         const userIds = new Set();
+        const userInfoMap = new Map(); // userId -> userName 매핑
         
+        // 1. matches 컬렉션에서 사용자 ID 수집
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (match.teamA && Array.isArray(match.teamA)) {
+                match.teamA.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (userId) {
+                        userIds.add(userId);
+                        // 이름도 함께 저장
+                        if (player.userName && !userInfoMap.has(userId)) {
+                            userInfoMap.set(userId, player.userName);
+                        }
+                    }
+                });
+            }
+            if (match.teamB && Array.isArray(match.teamB)) {
+                match.teamB.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (userId) {
+                        userIds.add(userId);
+                        // 이름도 함께 저장
+                        if (player.userName && !userInfoMap.has(userId)) {
+                            userInfoMap.set(userId, player.userName);
+                        }
+                    }
+                });
+            }
+        });
+        
+        // 2. gameResults 컬렉션에서 사용자 ID 수집
+        const gameResultsSnapshot = await db.collection('gameResults').get();
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
             if (game.winners) game.winners.forEach(id => userIds.add(id));
@@ -2189,15 +2218,54 @@ async function loadUserList() {
         // 사용자 이름 가져오기 및 드롭다운 채우기
         userSelect.innerHTML = '<option value="all">전체</option>';
         
+        // 이름이 이미 있는 경우 우선 사용, 없으면 users 컬렉션에서 찾기
         for (const userId of userIds) {
-            const userDoc = await db.collection('users').doc(userId).get();
-            const userName = userDoc.exists ? (userDoc.data().displayName || userDoc.data().name || userDoc.data().email || userId) : userId;
+            let userName = userInfoMap.get(userId); // matches에서 가져온 이름
+            
+            if (!userName) {
+                // users 컬렉션에서 찾기
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    userName = userData.displayName || userData.name || userData.email;
+                }
+            }
+            
+            // 여전히 이름이 없으면 reservations에서 찾기
+            if (!userName) {
+                const reservationsSnapshot = await db.collection('reservations')
+                    .where('userId', '==', userId)
+                    .limit(1)
+                    .get();
+                
+                if (!reservationsSnapshot.empty) {
+                    const reservation = reservationsSnapshot.docs[0].data();
+                    userName = reservation.userName || reservation.name;
+                }
+            }
+            
+            // 최종적으로 이름이 없으면 userId 사용 (하지만 짧게 표시)
+            if (!userName || userName.startsWith('test_') || userName.length > 30) {
+                // userId가 너무 길거나 이상한 경우 건너뛰기
+                continue;
+            }
             
             const option = document.createElement('option');
             option.value = userId;
             option.textContent = userName;
             userSelect.appendChild(option);
         }
+        
+        // 이름 순으로 정렬
+        const options = Array.from(userSelect.options);
+        options.sort((a, b) => {
+            if (a.value === 'all') return -1;
+            if (b.value === 'all') return 1;
+            return a.textContent.localeCompare(b.textContent);
+        });
+        
+        userSelect.innerHTML = '';
+        options.forEach(option => userSelect.appendChild(option));
         
     } catch (error) {
         console.error('사용자 목록 로드 오류:', error);
@@ -2211,45 +2279,105 @@ async function loadWinRateChart() {
         if (!db) return;
         
         const userSelect = document.getElementById('growth-user-select');
-        const periodSelect = document.getElementById('growth-period-select');
+        
+        // 현재 선택된 기간 버튼 확인
+        const activePeriodBtn = document.querySelector('.stats-period-btn.active');
+        const selectedPeriod = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
         
         const selectedUserId = userSelect?.value || 'all';
-        const selectedPeriod = periodSelect?.value || 'all';
         
         // 기간 계산
         const now = new Date();
-        let startDate = new Date(0);
+        let startDate = new Date();
         
-        if (selectedPeriod !== 'all') {
-            switch (selectedPeriod) {
-                case 'week1':
-                    startDate.setDate(now.getDate() - 7);
-                    break;
-                case 'week2':
-                    startDate.setDate(now.getDate() - 14);
-                    break;
-                case 'month':
-                    startDate.setMonth(now.getMonth() - 1);
-                    break;
-            }
+        switch (selectedPeriod) {
+            case 'today':
+                startDate.setHours(0, 0, 0, 0);
+                break;
+            case 'week1':
+                startDate.setDate(now.getDate() - 7);
+                break;
+            case 'week2':
+                startDate.setDate(now.getDate() - 14);
+                break;
+            case 'month':
+                startDate.setMonth(now.getMonth() - 1);
+                break;
+            case 'all':
+                startDate = new Date(0);
+                break;
         }
         
         // 게임 결과 가져오기
         const gameResultsSnapshot = await db.collection('gameResults').get();
         
+        // matches 컬렉션에서도 데이터 가져오기
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
         const gameResults = [];
+        
+        // matches 컬렉션 데이터 처리
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            
+            const gameDate = match.recordedAt ? (match.recordedAt.toDate ? match.recordedAt.toDate() : new Date(match.recordedAt)) : new Date();
+            
+            if (selectedPeriod !== 'all' && gameDate < startDate) return;
+            
+            const aWins = match.scoreA > match.scoreB;
+            const winners = aWins ? match.teamA : match.teamB;
+            const losers = aWins ? match.teamB : match.teamA;
+            
+            const winnerIds = winners ? winners.map(p => p.userId || p.id).filter(id => id) : [];
+            const loserIds = losers ? losers.map(p => p.userId || p.id).filter(id => id) : [];
+            
+            // 선택된 사용자 확인
+            if (selectedUserId !== 'all') {
+                const isInGame = winnerIds.includes(selectedUserId) || loserIds.includes(selectedUserId);
+                if (!isInGame) return;
+            }
+            
+            gameResults.push({
+                winners: winnerIds,
+                losers: loserIds,
+                players: [...winnerIds, ...loserIds],
+                date: gameDate
+            });
+        });
+        
+        // gameResults 컬렉션 데이터 처리
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
             const gameDate = game.recordedAt ? (game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt)) : new Date();
             
-            if (selectedPeriod === 'all' || gameDate >= startDate) {
-                if (selectedUserId === 'all' || (game.winners?.includes(selectedUserId) || game.losers?.includes(selectedUserId))) {
-                    gameResults.push({
-                        ...game,
-                        date: gameDate
-                    });
-                }
+            if (selectedPeriod !== 'all' && gameDate < startDate) return;
+            if (!game.winners || !game.losers) return;
+            
+            // 이미 matches에서 처리한 데이터인지 확인 (중복 방지)
+            const isDuplicate = gameResults.some(g => {
+                const sameWinners = g.winners && g.winners.length === game.winners.length &&
+                    g.winners.every(id => game.winners.includes(id));
+                const sameLosers = g.losers && g.losers.length === game.losers.length &&
+                    g.losers.every(id => game.losers.includes(id));
+                return sameWinners && sameLosers && 
+                    Math.abs(g.date.getTime() - gameDate.getTime()) < 60000; // 1분 이내
+            });
+            
+            if (isDuplicate) return;
+            
+            // 선택된 사용자 확인
+            if (selectedUserId !== 'all') {
+                const isInGame = game.winners.includes(selectedUserId) || game.losers.includes(selectedUserId);
+                if (!isInGame) return;
             }
+            
+            gameResults.push({
+                ...game,
+                date: gameDate
+            });
         });
         
         // 날짜별 승률 계산
