@@ -3135,7 +3135,7 @@ function drawTeamBarChart(data, canvasId, color) {
     // Canvas 크기 설정 (고해상도 지원)
     const container = canvas.parentElement;
     const containerWidth = container ? container.offsetWidth : 500;
-    const containerHeight = 300;
+    const containerHeight = 250; // 높이 줄임 (300 -> 250)
     const dpr = window.devicePixelRatio || 1;
     
     // 실제 캔버스 크기 (픽셀)
@@ -3166,27 +3166,23 @@ function drawTeamBarChart(data, canvasId, color) {
         return;
     }
     
-    // 팀 이름 세로로 표시할 때 필요한 공간 계산 (문자 수 기준)
-    ctx.font = '12px Arial';
-    let maxNameLength = 0;
+    // 팀 이름 가로로 표시할 때 필요한 공간 계산
+    ctx.font = '11px Arial';
+    let maxNameWidth = 0;
     data.forEach(item => {
-        const nameLength = item.playerNames.length;
-        maxNameLength = Math.max(maxNameLength, nameLength);
+        const textWidth = ctx.measureText(item.playerNames).width;
+        maxNameWidth = Math.max(maxNameWidth, textWidth);
     });
     
-    // 세로 텍스트의 높이 계산 (한 글자당 약 14px + 여유공간)
-    const singleCharHeight = 14;
-    const nameTextHeight = maxNameLength * singleCharHeight;
-    
-    // padding 계산 (팀 이름 세로 표시 공간 + 여백)
-    // 세로로 표시하면 가로 공간을 훨씬 적게 차지
-    const nameAreaWidth = Math.max(nameTextHeight, 50); // 최소 50px
+    // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
     const padding = { 
-        top: 20, 
-        right: 100, // 오른쪽 여백 증가 (승률 레이블 공간)
-        bottom: 30, // 하단 여백 증가 (그리드 레이블 공간)
-        left: Math.min(nameAreaWidth + 20, 80) // 세로 텍스트는 공간을 적게 차지 (최대 80px)
+        top: 15, 
+        right: 60, // 오른쪽 여백 줄임 (승률 레이블 공간)
+        bottom: 25, // 하단 여백 줄임
+        left: Math.max(maxNameWidth + 15, 90) // 이름 너비 + 여백 (최소 90px, 최대 120px로 제한)
     };
+    // 너무 넓지 않도록 최대값 제한
+    padding.left = Math.min(padding.left, 120);
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
@@ -3229,16 +3225,20 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.fillStyle = color;
         ctx.fillRect(x, y, barWidth, actualBarHeight);
         
-        // 팀 이름 레이블 (세로로 표시하여 공간 절약)
-        ctx.save();
+        // 팀 이름 레이블 (가로로 표시, 한 줄)
         ctx.fillStyle = '#333';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        // 텍스트를 세로로 회전하여 표시
-        ctx.translate(padding.left - 15, y + actualBarHeight / 2);
-        ctx.rotate(-Math.PI / 2); // -90도 회전
-        ctx.fillText(item.playerNames, 0, 0);
-        ctx.restore();
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'right';
+        // 이름이 너무 길면 자르기
+        let displayName = item.playerNames;
+        const maxNameDisplayWidth = padding.left - 15;
+        if (ctx.measureText(displayName).width > maxNameDisplayWidth) {
+            while (displayName.length > 0 && ctx.measureText(displayName + '...').width > maxNameDisplayWidth) {
+                displayName = displayName.slice(0, -1);
+            }
+            displayName = displayName + '...';
+        }
+        ctx.fillText(displayName, padding.left - 5, y + actualBarHeight / 2 + 4);
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
         ctx.fillStyle = '#333';
