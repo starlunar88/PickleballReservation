@@ -1549,9 +1549,9 @@ async function loadMatchesForDate(date) {
                                     </div>
                                 </div>
                                 <div class="match-score-input-compact">
-                                    <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                                    <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
                                     <span class="score-separator-compact">-</span>
-                                    <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                                    <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
                                 </div>
                                 <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                                     ${isCompleted ? '완료' : '경기 기록하기'}
@@ -1660,7 +1660,7 @@ async function loadMatchesForDate(date) {
                 const matchInfos = matchesContainer.querySelectorAll('.match-info-compact');
                 matchInfos.forEach(el => {
                     el.style.fontSize = '0.7rem';
-                    el.style.color = '#666';
+                    el.style.color = '#000';
                     el.style.fontWeight = '500';
                 });
                 
@@ -1718,6 +1718,25 @@ async function loadMatchesForDate(date) {
                     el.style.fontSize = '0.9rem';
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
+                    
+                    // 클릭 시 초기화 (readonly가 아닌 경우)
+                    if (!el.readOnly) {
+                        // focus 이벤트: 15가 기본값이고 클릭하면 빈칸으로
+                        el.addEventListener('focus', function() {
+                            const originalValue = this.getAttribute('data-original-value') || '';
+                            // 기본값 15일 때만 초기화
+                            if (this.value === '15' || this.value === '' || (originalValue === '' && this.value === '15')) {
+                                this.value = '';
+                            }
+                        });
+                        
+                        // blur 이벤트: 비어있으면 다시 15로
+                        el.addEventListener('blur', function() {
+                            if (!this.value || this.value === '') {
+                                this.value = '15';
+                            }
+                        });
+                    }
                 });
                 
                 const scoreSeparators = matchesContainer.querySelectorAll('.score-separator-compact');
