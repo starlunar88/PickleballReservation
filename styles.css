@@ -2020,6 +2020,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     padding-bottom: 16px; /* 여백 최소화 */
 }
 
+@media (max-width: 480px) {
+    .main-container {
+        padding-top: 60px !important; /* 메뉴바와 예약현황 사이 공백 최소화 */
+    }
+}
+
 /* 모바일 네비게이션 탭 - 모든 화면에서 표시 */
 .mobile-nav-tabs {
     display: flex; /* 모든 화면에서 표시 */
@@ -3788,10 +3794,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         justify-content: center !important;
     }
     .date-navigation button { 
-        padding: 2px 4px !important; /* 더 작게 */
-        font-size: 0.65rem !important; /* 더 작게 */
-        min-width: 24px !important; /* 최소 너비 더 줄임 */
-        height: 20px !important; /* 높이 더 줄임 */
+        padding: 4px 8px !important; /* 예전처럼 조금 더 크게 */
+        font-size: 0.75rem !important; /* 예전처럼 조금 더 크게 */
+        min-width: 32px !important; /* 예전처럼 조금 더 크게 */
+        height: 28px !important; /* 예전처럼 조금 더 크게 */
     }
     .date-navigation span {
         font-size: 0.7rem !important; /* 날짜 텍스트 더 작게 */
@@ -3828,17 +3834,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         gap: 2px !important; /* gap 최소화 */
         width: 100% !important;
         margin-top: 2px !important; /* 더 줄임 */
+        margin-bottom: 2px !important; /* 예약자와 버튼 사이 여백 최소화 */
     }
     
     .player-item { 
-        font-size: 0.55rem !important; /* 더 작게 */
-        padding: 3px 1px !important; /* padding 최소화 */
-        min-height: 24px !important; /* 높이 더 줄임 */
+        font-size: 0.5rem !important; /* 2/3 수준으로 줄이기 */
+        padding: 2px 1px !important; /* 2/3 수준으로 줄이기 */
+        min-height: 20px !important; /* 2/3 수준으로 줄이기 (24px * 2/3 = 16px, 여유있게 20px) */
         width: 100% !important;
+        line-height: 1.2 !important; /* 줄 간격 조정 */
     }
     
     .timeline-actions {
-        margin-top: 4px !important; /* 더 줄임 */
+        margin-top: 2px !important; /* 예약자와 예약하기 버튼 사이 여백 최소화 */
         gap: 3px !important; /* gap 최소화 */
     }
     
