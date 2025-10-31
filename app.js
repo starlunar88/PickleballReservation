@@ -1239,53 +1239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 테스트용 임시 사람 추가 버튼
-    const testAddPersonBtn = document.getElementById('test-add-person');
-    if (testAddPersonBtn) {
-        testAddPersonBtn.addEventListener('click', async () => {
-            try {
-                const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
-                
-                // 현재 날짜의 모든 시간대 조회
-                const reservationsSnapshot = await db.collection('reservations')
-                    .where('date', '==', currentDate)
-                    .get();
-                
-                // 시간대 추출 (중복 제거)
-                const timeSlots = new Set();
-                reservationsSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.timeSlot) {
-                        timeSlots.add(data.timeSlot);
-                    }
-                });
-                
-                // 시간대가 없으면 기본 시간대 사용 (09:00-11:00, 11:00-13:00, 13:00-15:00)
-                if (timeSlots.size === 0) {
-                    timeSlots.add('09:00-11:00');
-                    timeSlots.add('11:00-13:00');
-                    timeSlots.add('13:00-15:00');
-                }
-                
-                // 각 시간대에 임시 사람 추가
-                let addedCount = 0;
-                for (const timeSlot of timeSlots) {
-                    await addRandomReservation(currentDate, timeSlot);
-                    addedCount++;
-                    // 약간의 지연을 주어 순차적으로 추가
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                }
-                
-                showToast(`${addedCount}개의 시간대에 임시 사람이 추가되었습니다.`, 'success');
-                
-                // 타임라인 새로고침
-                await loadReservationsTimeline();
-            } catch (error) {
-                console.error('테스트 사람 추가 오류:', error);
-                showToast('테스트 사람 추가 중 오류가 발생했습니다.', 'error');
-            }
-        });
-    }
+    // 테스트용 임시 사람 추가 버튼 (제거됨 - 각 시간대별로 개별 버튼 사용)
     
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
@@ -1471,10 +1425,39 @@ async function loadMatchesData() {
     }
 }
 
-// 특정 날짜의 대진표 로드
+// 특정 날짜의 대진표 로드 (중복 호출 방지)
+let isLoadingMatches = false;
+let lastLoadedDate = null;
+
 async function loadMatchesForDate(date) {
     try {
         console.log('📋 loadMatchesForDate 호출됨, 날짜:', date);
+        
+        // 중복 호출 방지: 이미 같은 날짜를 로딩 중이면 스킵
+        if (isLoadingMatches && lastLoadedDate === date) {
+            console.log('⚠️ 이미 로딩 중인 날짜입니다. 중복 호출 스킵:', date);
+            return;
+        }
+        
+        // 중복 호출 방지: 다른 날짜를 로딩 중이면 대기
+        if (isLoadingMatches) {
+            console.log('⚠️ 다른 날짜를 로딩 중입니다. 완료 후 재시도:', date);
+            // 최대 2초 대기
+            let waitCount = 0;
+            while (isLoadingMatches && waitCount < 20) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                waitCount++;
+            }
+            if (isLoadingMatches) {
+                console.log('⚠️ 로딩 대기 시간 초과. 중복 호출 스킵:', date);
+                return;
+            }
+        }
+        
+        // 로딩 시작
+        isLoadingMatches = true;
+        lastLoadedDate = date;
+        console.log('✅ 로딩 시작:', date);
         
         const settings = await getSystemSettings();
         if (!settings || !settings.timeSlots) {
@@ -2014,6 +1997,10 @@ async function loadMatchesForDate(date) {
     } catch (error) {
         console.error('대진표 로드 오류:', error);
         showToast('대진표를 불러오는 중 오류가 발생했습니다.', 'error');
+    } finally {
+        // 로딩 완료
+        isLoadingMatches = false;
+        console.log('✅ 로딩 완료:', date);
     }
 }
 
@@ -4198,21 +4185,33 @@ async function loadReservationsTimeline() {
                             const currentUser = firebase.auth().currentUser;
                             const userReservation = reservations.find(res => res.userId === currentUser?.uid);
                             
+                            let buttons = '';
+                            
                             if (isClosed) {
-                                return `<button class="timeline-reserve-btn" disabled>마감</button>`;
+                                buttons += `<button class="timeline-reserve-btn" disabled>마감</button>`;
                             } else if (userReservation) {
-                                return `<button class="timeline-cancel-btn" 
+                                buttons += `<button class="timeline-cancel-btn" 
                                                data-time-slot="${slotKey}" 
                                                data-date="${targetDate}">
                                             취소하기
                                         </button>`;
                             } else {
-                                return `<button class="timeline-reserve-btn" 
+                                buttons += `<button class="timeline-reserve-btn" 
                                                data-time-slot="${slotKey}" 
                                                data-date="${targetDate}">
                                             예약하기
                                         </button>`;
                             }
+                            
+                            // 테스트용 임시 사람 추가 버튼 (항상 표시)
+                            buttons += `<button class="btn btn-primary add-random-btn" 
+                                           data-time-slot="${slotKey}" 
+                                           data-date="${targetDate}"
+                                           style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
+                                        <i class="fas fa-user-plus"></i> 테스트 추가
+                                    </button>`;
+                            
+                            return buttons;
                         })()}
                     </div>
                     <div class="timeline-match-schedule" id="match-schedule-${targetDate}-${slotKey.replace(/:/g, '-')}" style="display: none; margin-top: 12px;">
@@ -4249,12 +4248,42 @@ async function loadReservationsTimeline() {
             });
         });
         
+        // 테스트용 임시 사람 추가 버튼 이벤트 리스너 추가
+        timeline.querySelectorAll('.add-random-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation(); // 타임라인 아이템 클릭 이벤트 방지
+                try {
+                    const timeSlot = btn.getAttribute('data-time-slot');
+                    const date = btn.getAttribute('data-date');
+                    
+                    console.log(`🧪 테스트 사람 추가: ${date}, ${timeSlot}`);
+                    
+                    if (!timeSlot || !date) {
+                        console.error('시간대 또는 날짜 정보가 없습니다');
+                        showToast('시간대 또는 날짜 정보가 없습니다.', 'error');
+                        return;
+                    }
+                    
+                    await addRandomReservation(date, timeSlot);
+                    showToast(`${timeSlot} 시간대에 임시 사람이 추가되었습니다.`, 'success');
+                    
+                    // 타임라인 새로고침
+                    await loadReservationsTimeline();
+                } catch (error) {
+                    console.error('테스트 사람 추가 오류:', error);
+                    showToast('테스트 사람 추가 중 오류가 발생했습니다.', 'error');
+                }
+            });
+        });
+        
         // 타임라인 아이템 클릭 이벤트 (시간대 선택)
         timeline.querySelectorAll('.timeline-item').forEach(item => {
             item.addEventListener('click', async (e) => {
                 // 버튼 클릭은 제외
                 if (e.target.classList.contains('timeline-reserve-btn') || 
-                    e.target.classList.contains('timeline-cancel-btn')) {
+                    e.target.classList.contains('timeline-cancel-btn') ||
+                    e.target.classList.contains('add-random-btn') ||
+                    e.target.closest('.add-random-btn')) {
                     return;
                 }
                 
@@ -4625,7 +4654,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!todayBadge) {
                     todayBadge = document.createElement('span');
                     todayBadge.className = 'today-badge';
-                    todayBadge.innerHTML = '<span class="today-emoji">📅</span> Today';
+                    todayBadge.textContent = 'Today';
                     sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
                 }
                 todayBadge.style.display = 'flex';
@@ -4769,7 +4798,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!todayBadge) {
                     todayBadge = document.createElement('span');
                     todayBadge.className = 'today-badge';
-                    todayBadge.innerHTML = '<span class="today-emoji">📅</span> Today';
+                    todayBadge.textContent = 'Today';
                     sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
                 }
                 todayBadge.style.display = 'flex';
