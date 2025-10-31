@@ -5237,7 +5237,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .performer-item {
         padding: 10px 12px;
         padding-right: 20px;
-        gap: 2px;
+        gap: 0 !important; /* gap 제거 - margin으로 개별 제어 */
         flex-wrap: nowrap;
     }
     
@@ -5245,6 +5245,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 25px;
         font-size: 1rem;
         flex-shrink: 0;
+        margin-right: 6px !important; /* 순위와 아이콘 사이 간격 */
     }
     
     .performer-icon {
@@ -5252,7 +5253,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 32px;
         font-size: 1.2rem;
         flex-shrink: 0;
-        margin-right: 16px !important; /* 모바일: 계급/아이콘과 이름 사이 간격 넓히기 (10px -> 16px) */
+        margin-right: 16px !important; /* 모바일: 계급/아이콘과 이름 사이 간격 넓히기 */
     }
     
     .performer-name {
@@ -5260,7 +5261,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
         min-width: 60px;
         max-width: 100px;
-        margin-right: 0px !important; /* 모바일: 이름과 점수 사이 간격 좁히기 (2px -> 0px) */
+        margin-right: 4px !important; /* 모바일: 이름과 점수 사이 간격 좁히기 (gap 대신 margin 사용) */
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -5273,6 +5274,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         flex-shrink: 0;
         text-align: right;
         margin-left: 0 !important; /* 모바일: 이름과 점수 사이 간격 좁히기 */
+        margin-right: 4px !important; /* 점수와 승률 사이 간격 */
     }
     
     .performer-winrate {
@@ -5280,6 +5282,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 50px;
         flex-shrink: 0;
         text-align: right;
+        margin-left: 4px !important; /* 승률과 기록 사이 간격 */
+        margin-right: 4px !important;
     }
     
     .performer-record {
@@ -5287,6 +5291,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 45px;
         flex-shrink: 0;
         text-align: right;
+        margin-left: 0 !important;
     }
     
     .match-score {
