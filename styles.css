@@ -3564,7 +3564,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .tab-contents {
-        padding: 0 10px 60px 10px; /* 여백 축소 */
+        padding: 0 4px 60px 4px !important; /* 여백 최소화 */
+    }
+    .reservations-container,
+    .records-container {
+        padding: 0 4px !important; /* 좌우 패딩 최소화 */
     }
     
 /* 모든 화면에서 모바일 컴팩트 UI 적용 */
@@ -3725,20 +3729,27 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .nav-container { height: 52px; }
     .nav-logo { font-size: 0.9rem; }
     .nav-logo i { font-size: 1.05rem; }
-    .mobile-nav-tabs { padding: 12px 0; min-height: 85px; }
+    .mobile-nav-tabs { 
+        padding: 8px 0 !important; /* 패딩 줄임 */
+        min-height: 75px !important; /* 높이 줄임 */
+    }
     .mobile-tab-btn { padding: 10px 5px; font-size: 0.85rem; font-weight: 500; }
     .mobile-tab-btn i { font-size: 1.6rem; margin-bottom: 5px; }
-    .reservations-board { margin: 0 6px; }
-    .reservations-timeline { padding: 14px; }
+    .reservations-board { 
+        margin: 0 4px !important; /* 좌우 마진 최소화 */
+    }
+    .reservations-timeline { 
+        padding: 8px !important; /* 패딩 최소화 */
+    }
     .section-header { 
-        padding: 4px 8px !important; /* padding 최소화 */
-        margin-bottom: 6px !important; /* margin 줄임 */
+        padding: 2px 6px !important; /* padding 최소화 */
+        margin-bottom: 4px !important; /* margin 더 줄임 */
         position: relative;
         display: grid !important;
         grid-template-columns: auto 1fr !important; /* Today 배지 | 제목 */
         grid-template-rows: auto auto !important; /* 첫 줄: Today+제목, 둘째 줄: 날짜 네비게이션 */
         align-items: center !important;
-        gap: 4px 6px !important; /* row-gap column-gap */
+        gap: 2px 4px !important; /* row-gap column-gap 최소화 */
         min-height: auto !important; /* 높이 자동 */
     }
     
@@ -3771,64 +3782,64 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .date-navigation { 
-        gap: 3px !important; /* gap 더 줄임 */
-        margin-top: 2px !important; /* 위쪽 여백 최소화 */
+        gap: 2px !important; /* gap 최소화 */
+        margin-top: 0 !important; /* 위쪽 여백 제거 */
         width: 100%;
         justify-content: center !important;
     }
     .date-navigation button { 
-        padding: 3px 5px !important; /* 더 작게 */
-        font-size: 0.7rem !important; /* 더 작게 */
-        min-width: 28px !important; /* 최소 너비 줄임 */
-        height: 24px !important; /* 높이 줄임 */
+        padding: 2px 4px !important; /* 더 작게 */
+        font-size: 0.65rem !important; /* 더 작게 */
+        min-width: 24px !important; /* 최소 너비 더 줄임 */
+        height: 20px !important; /* 높이 더 줄임 */
     }
     .date-navigation span {
-        font-size: 0.75rem !important; /* 날짜 텍스트 작게 */
+        font-size: 0.7rem !important; /* 날짜 텍스트 더 작게 */
         min-width: auto !important;
-        padding: 0 4px !important;
+        padding: 0 2px !important;
     }
     
     .today-emoji {
         display: none !important; /* 이모티콘 제거됨 */
     }
     .timeline-item {
-        padding: 8px 10px; /* padding 줄임 */
-        margin-bottom: 6px; /* margin 줄임 */
-        min-height: auto; /* 높이 자동 */
+        padding: 6px 8px !important; /* padding 최소화 */
+        margin-bottom: 4px !important; /* margin 더 줄임 */
+        min-height: auto !important; /* 높이 자동 */
     }
     
     .timeline-header {
-        margin-bottom: 6px; /* 줄임 */
+        margin-bottom: 4px !important; /* 더 줄임 */
     }
     
     .timeline-time {
-        min-width: 70px; /* 줄임 */
-        font-size: 0.85rem; /* 줄임 */
-        margin-right: 10px; /* 줄임 */
+        min-width: 65px !important; /* 더 줄임 */
+        font-size: 0.8rem !important; /* 더 작게 */
+        margin-right: 6px !important; /* 더 줄임 */
     }
     
     .timeline-status {
-        font-size: 0.7rem; /* 줄임 */
+        font-size: 0.65rem !important; /* 더 작게 */
     }
     
     .timeline-players {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 3px !important; /* 줄임 */
+        gap: 2px !important; /* gap 최소화 */
         width: 100% !important;
-        margin-top: 4px; /* 줄임 */
+        margin-top: 2px !important; /* 더 줄임 */
     }
     
     .player-item { 
-        font-size: 0.6rem !important; /* 더 작게 */
-        padding: 5px 2px !important; /* 줄임 */
-        min-height: 28px !important; /* 줄임 */
+        font-size: 0.55rem !important; /* 더 작게 */
+        padding: 3px 1px !important; /* padding 최소화 */
+        min-height: 24px !important; /* 높이 더 줄임 */
         width: 100% !important;
     }
     
     .timeline-actions {
-        margin-top: 6px !important; /* 줄임 */
-        gap: 4px !important; /* 줄임 */
+        margin-top: 4px !important; /* 더 줄임 */
+        gap: 3px !important; /* gap 최소화 */
     }
     
     .timeline-actions .btn,
@@ -3836,8 +3847,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .timeline-actions .timeline-cancel-btn,
     .timeline-actions .force-generate-btn,
     .timeline-actions .add-random-btn {
-        padding: 5px 8px !important; /* 줄임 */
-        font-size: 0.7rem !important; /* 줄임 */
+        padding: 4px 6px !important; /* padding 최소화 */
+        font-size: 0.65rem !important; /* 더 작게 */
     }
     
     /* 대진표 작은 모바일 반응형 */
