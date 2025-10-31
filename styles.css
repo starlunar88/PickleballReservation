@@ -3326,7 +3326,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .date-navigation {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
+    flex: 1;
 }
 
 .date-navigation span {
@@ -3370,11 +3372,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 .section-header {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
     position: relative;
     padding-top: 40px; /* Today 배지를 위한 공간 확보 */
+    gap: 12px;
+}
+
+.section-header h2 {
+    width: 100%;
+    text-align: center;
 }
 
 .section-header > .today-badge {
