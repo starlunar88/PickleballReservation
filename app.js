@@ -1469,12 +1469,22 @@ async function loadMatchesForDate(date) {
             console.log(`🔍 시간대 확인: ${slotKey}, 날짜: ${date}`);
             
             // 해당 시간대의 대진표 확인
+            console.log(`🔍 Firestore 쿼리 실행: date=${date}, timeSlot=${slotKey}`);
+            console.log(`⚠️ 주의: status 필터가 없으므로 scheduled와 completed 모두 가져와야 함`);
+            
             const existingMatches = await db.collection('matches')
                 .where('date', '==', date)
                 .where('timeSlot', '==', slotKey)
                 .get();
             
-            console.log(`📊 ${slotKey} 시간대 매치 수:`, existingMatches.size);
+            console.log(`📊 ${slotKey} 시간대 매치 수: ${existingMatches.size}개`);
+            console.log(`📋 쿼리 결과 상세:`);
+            
+            // 쿼리 결과 상세 로그
+            existingMatches.docs.forEach((doc, index) => {
+                const matchData = doc.data();
+                console.log(`  매치 ${index + 1}: id=${doc.id}, status=${matchData.status}, scoreA=${matchData.scoreA}, scoreB=${matchData.scoreB}`);
+            });
             
             if (!existingMatches.empty) {
                 hasMatches = true;
@@ -3629,6 +3639,18 @@ async function deleteRecord(matchId) {
         // 점수 초기화 (매치 삭제가 아닌 점수만 초기화)
         // 주의: match 문서를 삭제하지 않고 점수만 초기화합니다!
         const FieldValue = firebase.firestore.FieldValue;
+        
+        console.log(`🔍 삭제 전 매치 데이터:`, {
+            id: matchId,
+            date: matchData.date,
+            timeSlot: matchData.timeSlot,
+            status: matchData.status,
+            scoreA: matchData.scoreA,
+            scoreB: matchData.scoreB,
+            teamA: matchData.teamA?.map(p => p.userName || p.name).join(', '),
+            teamB: matchData.teamB?.map(p => p.userName || p.name).join(', ')
+        });
+        
         const updateData = {
             scoreA: null,
             scoreB: null,
@@ -3639,18 +3661,37 @@ async function deleteRecord(matchId) {
             recordedBy: FieldValue.delete()  // recordedBy 필드도 삭제
         };
         
+        console.log(`🔄 업데이트할 데이터:`, updateData);
+        console.log(`⚠️ 주의: matchRef.delete()를 호출하는지 확인 - 절대 호출하면 안됨!`);
+        
         // 중요한 부분: update를 사용하여 문서를 유지하면서 필드만 업데이트
         // 절대 delete()나 set()을 사용하지 않음! update()만 사용!
+        console.log(`📤 matchRef.update() 호출 시작...`);
         await matchRef.update(updateData);
+        console.log(`✅ matchRef.update() 호출 완료 - 문서는 유지되어야 함`);
         console.log(`✅ 매치 점수 초기화 완료 (문서 유지): ${matchId}`);
         console.log(`📋 업데이트된 필드:`, updateData);
         
         // 즉시 확인: 문서가 여전히 존재하는지
+        console.log(`🔍 즉시 확인: matchRef.get() 호출...`);
         const immediateCheck = await matchRef.get();
+        console.log(`📋 즉시 확인 결과: exists=${immediateCheck.exists}`);
+        
         if (!immediateCheck.exists) {
             console.error(`❌ 치명적 오류: 업데이트 후 매치 문서가 없어짐! ${matchId}`);
+            console.error(`❌ 이것은 matchRef.delete()가 호출되었거나, 다른 곳에서 삭제된 것입니다!`);
             showToast('오류가 발생했습니다. 관리자에게 문의하세요.', 'error');
             return;
+        } else {
+            const immediateData = immediateCheck.data();
+            console.log(`✅ 즉시 확인 성공: 매치 문서 존재함`, {
+                id: matchId,
+                status: immediateData.status,
+                scoreA: immediateData.scoreA,
+                scoreB: immediateData.scoreB,
+                date: immediateData.date,
+                timeSlot: immediateData.timeSlot
+            });
         }
         
         // 관련 gameResults 삭제
@@ -3709,21 +3750,50 @@ async function deleteRecord(matchId) {
                 await loadMatchesForDate(matchDate);
                 
                 // 새로고침 후 매치가 실제로 대진표에 표시되는지 확인
+                console.log(`🔍 최종 확인 시작: 매치 ${matchId}`);
                 const matchRef = db.collection('matches').doc(matchId);
                 const finalCheck = await matchRef.get();
+                
                 if (finalCheck.exists) {
                     const finalData = finalCheck.data();
-                    console.log(`✅ 최종 확인: 매치 ${matchId} 존재함, status: ${finalData.status}, scoreA: ${finalData.scoreA}, scoreB: ${finalData.scoreB}`);
+                    console.log(`✅ 최종 확인 (Firestore): 매치 ${matchId} 존재함`, {
+                        status: finalData.status,
+                        scoreA: finalData.scoreA,
+                        scoreB: finalData.scoreB,
+                        date: finalData.date,
+                        timeSlot: finalData.timeSlot,
+                        teamA: finalData.teamA?.map(p => p.userName || p.name).join(', '),
+                        teamB: finalData.teamB?.map(p => p.userName || p.name).join(', ')
+                    });
                     
                     // 대진표 DOM에서도 확인
+                    console.log(`🔍 DOM 확인: data-match-id="${matchId}" 검색 중...`);
                     const matchInDOM = document.querySelector(`[data-match-id="${matchId}"]`);
                     if (matchInDOM) {
                         console.log(`✅ DOM 확인: 매치 ${matchId}가 대진표에 표시됨`);
+                        console.log(`📋 DOM 요소:`, matchInDOM);
                     } else {
                         console.warn(`⚠️ DOM 확인: 매치 ${matchId}가 대진표에 표시되지 않음`);
+                        console.warn(`⚠️ 대진표 컨테이너 확인:`);
+                        const matchSchedule = document.getElementById('match-schedule');
+                        console.warn(`  match-schedule 컨테이너:`, matchSchedule ? '존재함' : '존재하지 않음');
+                        if (matchSchedule) {
+                            const allMatches = matchSchedule.querySelectorAll('[data-match-id]');
+                            console.warn(`  대진표 내 총 매치 수: ${allMatches.length}개`);
+                            allMatches.forEach((el, idx) => {
+                                console.warn(`    매치 ${idx + 1}: ${el.getAttribute('data-match-id')}`);
+                            });
+                        }
                     }
                 } else {
                     console.error(`❌ 최종 확인: 매치 ${matchId} 존재하지 않음!`);
+                    console.error(`❌ 매치가 실제로 삭제되었습니다! delete()가 호출되었을 가능성이 있습니다!`);
+                    
+                    // 삭제된 매치의 정보 확인
+                    console.error(`📋 삭제 전 정보:`, {
+                        date: matchDate,
+                        matchId: matchId
+                    });
                 }
                 console.log(`✅ 대진표 새로고침 완료: ${matchDate}`);
             } else if (isMatchesTabActive) {

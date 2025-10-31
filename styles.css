@@ -2032,8 +2032,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     max-width: 400px;
     background: white;
     border-top: 1px solid #e9ecef;
-    padding: 12px 0;
-    min-height: 80px;
+    padding: 14px 0;
+    min-height: 90px;
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
     box-shadow: 0 -4px 12px rgba(0,0,0,0.06); /* 상단 방향 그림자 */
@@ -2047,11 +2047,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 4px;
+    padding: 12px 6px;
     background: none;
     border: none;
     color: #6c757d;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -2061,8 +2062,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .mobile-tab-btn i {
-    font-size: 1.5rem;
-    margin-bottom: 5px;
+    font-size: 1.8rem;
+    margin-bottom: 6px;
 }
 
 /* 데스크톱 네비게이션 탭 - 숨김 */
@@ -3713,9 +3714,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .nav-container { height: 52px; }
     .nav-logo { font-size: 0.9rem; }
     .nav-logo i { font-size: 1.05rem; }
-    .mobile-nav-tabs { padding: 10px 0; min-height: 75px; }
-    .mobile-tab-btn { padding: 8px 3px; font-size: 0.75rem; }
-    .mobile-tab-btn i { font-size: 1.3rem; margin-bottom: 4px; }
+    .mobile-nav-tabs { padding: 12px 0; min-height: 85px; }
+    .mobile-tab-btn { padding: 10px 5px; font-size: 0.85rem; font-weight: 500; }
+    .mobile-tab-btn i { font-size: 1.6rem; margin-bottom: 5px; }
     .reservations-board { margin: 0 6px; }
     .reservations-timeline { padding: 14px; }
     .section-header { 
