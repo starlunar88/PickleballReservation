@@ -2586,7 +2586,7 @@ body {
 
 .timeline-players {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 10px;
 }
@@ -2595,11 +2595,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 12px;
+    padding: 10px 8px;
     background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
     border: 1.5px solid #ffc7c7;
     border-radius: 12px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #2d3748;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(255, 199, 199, 0.2);
@@ -2936,7 +2936,7 @@ body {
     }
     
     .timeline-players {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
     }
     
