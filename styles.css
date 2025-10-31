@@ -3393,10 +3393,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .date-navigation span {
-    font-weight: 600;
-    color: #333;
+    font-weight: 700; /* 더 굵게 */
+    color: #764ba2; /* 보라색으로 변경하여 강조 */
     min-width: 100px;
     text-align: center;
+    background: rgba(118, 75, 162, 0.1); /* 배경색 추가로 강조 */
+    padding: 4px 12px; /* 패딩 추가 */
+    border-radius: 8px; /* 둥근 모서리 */
+    font-size: 0.95rem; /* 약간 더 크게 */
 }
 
 .today-badge {
@@ -3468,8 +3472,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .date-navigation button {
-    background: #667eea;
-    border: 2px solid #667eea;
+    background: #4a5568; /* 어두운 회색으로 변경하여 날짜 텍스트와 구분 */
+    border: 2px solid #4a5568;
     color: white;
     min-width: 36px;
     height: 36px;
@@ -3483,6 +3487,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     font-size: 0.8rem;
     white-space: nowrap;
     flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
 }
 
 /* 테스트 버튼 컨테이너 */
@@ -3524,9 +3529,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .date-navigation button:hover {
-    background: #5a6fd8;
-    border-color: #5a6fd8;
+    background: #2d3748; /* 호버 시 더 어둡게 */
+    border-color: #2d3748;
     transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* 호버 시 그림자 강화 */
 }
 
 .date-navigation button i { font-size: 16px; }
@@ -3870,9 +3876,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 28px !important; /* 예전처럼 조금 더 크게 */
     }
     .date-navigation span {
-        font-size: 0.7rem !important; /* 날짜 텍스트 더 작게 */
+        font-size: 0.75rem !important; /* 날짜 텍스트 크기 */
         min-width: auto !important;
-        padding: 0 2px !important;
+        padding: 4px 10px !important; /* 패딩 추가 */
+        color: #764ba2 !important; /* 보라색 유지 */
+        background: rgba(118, 75, 162, 0.1) !important; /* 배경색 유지 */
+        border-radius: 6px !important; /* 둥근 모서리 */
+        font-weight: 700 !important; /* 굵게 */
     }
     
     .today-emoji {
