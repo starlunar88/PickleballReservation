@@ -2517,75 +2517,247 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .rank-tier-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    gap: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.rank-tier-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    transition: left 0.5s ease;
+}
+
+.rank-tier-card:hover::before {
+    left: 100%;
 }
 
 .rank-tier-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.rank-tier-card.goat-card {
+    background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+    border: 2px solid #ffd700;
+}
+
+.rank-tier-card.legend-card {
+    background: linear-gradient(135deg, #fffef0 0%, #fffce8 100%);
+    border: 2px solid #ffd700;
+}
+
+.rank-tier-card.master-card {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border: 2px solid #c0c0c0;
+}
+
+.rank-tier-card.champion-card {
+    background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+    border: 2px solid #cd7f32;
+}
+
+.rank-tier-card.pro-card {
+    background: linear-gradient(135deg, #fffef0 0%, #fffce8 100%);
+    border: 2px solid #ffd700;
+}
+
+.rank-tier-card.player-card {
+    background: linear-gradient(135deg, #fff0f8 0%, #ffe0f0 100%);
+    border: 2px solid #ff69b4;
 }
 
 .rank-tier-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: #fff;
     position: relative;
     flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.rank-tier-icon::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transform: rotate(45deg);
+    transition: all 0.5s ease;
+    opacity: 0;
+}
+
+.rank-tier-card:hover .rank-tier-icon::before {
+    opacity: 1;
+    animation: shine 1.5s ease-in-out;
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
 }
 
 .beginner-icon {
-    background: #e0e0e0;
-    color: #666;
-    border: 2px solid #ccc;
+    background: linear-gradient(135deg, #d4d4d4 0%, #a0a0a0 100%);
+    color: #555;
+    border: 2px solid #bbb;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 .player-icon {
-    background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%);
+    background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+    box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+}
+
+.player-icon i {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .pro-icon {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
     color: #333;
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
 }
 
-.champion-icon,
-.master-icon,
-.legend-icon {
-    background: #fff;
+.pro-icon i {
+    filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.8));
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.8));
+    }
+    50% {
+        transform: scale(1.1) rotate(5deg);
+        filter: drop-shadow(0 4px 12px rgba(255, 215, 0, 1));
+    }
+}
+
+.champion-icon {
+    background: linear-gradient(135deg, #cd7f32 0%, #8b4513 100%);
+    box-shadow: 0 6px 25px rgba(205, 127, 50, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.2);
 }
 
 .champion-icon i {
-    color: #cd7f32;
-    font-size: 2rem;
+    color: #ffd700;
+    font-size: 2.2rem;
+    filter: drop-shadow(0 3px 8px rgba(255, 215, 0, 0.6));
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.master-icon {
+    background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+    box-shadow: 0 6px 25px rgba(192, 192, 192, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.3);
 }
 
 .master-icon i {
-    color: #c0c0c0;
-    font-size: 2rem;
+    color: #ffffff;
+    font-size: 2.2rem;
+    filter: drop-shadow(0 3px 8px rgba(255, 255, 255, 0.6));
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.legend-icon {
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 50%, #ff8c00 100%);
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6), inset 0 2px 10px rgba(255, 255, 255, 0.4);
 }
 
 .legend-icon i {
-    color: #ffd700;
-    font-size: 2rem;
+    color: #fff;
+    font-size: 2.4rem;
+    filter: drop-shadow(0 4px 10px rgba(255, 215, 0, 0.8));
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        filter: drop-shadow(0 4px 10px rgba(255, 215, 0, 0.8));
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
+    to {
+        filter: drop-shadow(0 6px 20px rgba(255, 215, 0, 1));
+        text-shadow: 0 0 25px rgba(255, 255, 255, 1);
+    }
 }
 
 .goat-icon {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-    color: #764ba2;
-    font-size: 1.8rem;
+    background: linear-gradient(135deg, #764ba2 0%, #ffd700 50%, #764ba2 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    box-shadow: 0 10px 40px rgba(118, 75, 162, 0.6), 0 0 30px rgba(255, 215, 0, 0.5), inset 0 2px 15px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes gradient-shift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.goat-icon i {
+    color: #fff;
+    font-size: 2.6rem;
+    filter: drop-shadow(0 5px 15px rgba(255, 215, 0, 1));
+    text-shadow: 0 0 20px rgba(255, 255, 255, 1);
+    animation: goat-glow 2s ease-in-out infinite alternate, rotate-glow 4s linear infinite;
+}
+
+@keyframes goat-glow {
+    from {
+        filter: drop-shadow(0 5px 15px rgba(255, 215, 0, 1));
+        text-shadow: 0 0 20px rgba(255, 255, 255, 1);
+    }
+    to {
+        filter: drop-shadow(0 8px 25px rgba(255, 215, 0, 1.2));
+        text-shadow: 0 0 35px rgba(255, 255, 255, 1.2);
+    }
+}
+
+@keyframes rotate-glow {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-2deg);
+    }
+    75% {
+        transform: rotate(2deg);
+    }
 }
 
 .rank-tier-info {
