@@ -4606,9 +4606,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .timeline-actions {
     margin-top: 8px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: center;
     width: 100%;
 }
 
@@ -4776,6 +4778,25 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .time-end {
         font-size: 0.85rem;
+    }
+    
+    .timeline-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        align-items: center !important;
+    }
+    
+    .timeline-actions .btn,
+    .timeline-actions .timeline-reserve-btn,
+    .timeline-actions .timeline-cancel-btn,
+    .timeline-actions .force-generate-btn,
+    .timeline-actions .add-random-btn {
+        flex: 0 0 auto !important;
+        min-width: auto !important;
+        font-size: 0.75rem !important;
+        padding: 6px 10px !important;
     }
     
     .timeline-players {
