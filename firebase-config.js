@@ -17,9 +17,13 @@ try {
     console.error('Firebase 초기화 실패:', error);
 }
 
-// Firebase 서비스 참조
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Firebase 서비스 참조 (전역 변수로 설정)
+window.auth = firebase.auth();
+window.db = firebase.firestore();
+
+// 전역 변수로도 설정 (app.js 호환성)
+const auth = window.auth;
+const db = window.db;
 
 // Firebase 연결 상태 확인
 console.log('Firebase Auth 객체:', auth);
