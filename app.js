@@ -1548,14 +1548,14 @@ async function loadMatchesForDate(date) {
                                         ${teamBNames.map(name => `<div class="team-name-compact">${name}</div>`).join('')}
                                     </div>
                                 </div>
-                                <div class="match-score-compact">
+                                <div class="match-score-input-compact">
                                     <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
-                                    <span class="score-separator-compact">:</span>
+                                    <span class="score-separator-compact">-</span>
                                     <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
-                                    <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
-                                        ${isCompleted ? '완료' : '저장'}
-                                    </button>
                                 </div>
+                                <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
+                                    ${isCompleted ? '완료' : '경기 기록하기'}
+                                </button>
                             </div>
                         `;
                     });
@@ -1619,8 +1619,9 @@ async function loadMatchesForDate(date) {
                     el.style.minWidth = '0';
                     el.style.display = 'flex';
                     el.style.flexDirection = 'column';
-                    el.style.padding = '0 4px';
-                    // 코트 사이 구분선 (마지막이 아니면)
+                    el.style.padding = '0 6px';
+                    el.style.height = '100%';
+                    // 코트 사이 구분선 (첫 번째 코트에만)
                     if (index === 0 && courtColumns.length > 1) {
                         el.style.borderRight = '2px solid #667eea';
                     }
@@ -1628,29 +1629,32 @@ async function loadMatchesForDate(date) {
                 
                 const courtHeaders = matchesContainer.querySelectorAll('.court-header-compact');
                 courtHeaders.forEach(el => {
-                    el.style.fontSize = '0.8rem';
-                    el.style.fontWeight = '600';
+                    el.style.fontSize = '0.85rem';
+                    el.style.fontWeight = '700';
                     el.style.color = '#667eea';
-                    el.style.padding = '2px 4px';
-                    el.style.marginBottom = '2px';
+                    el.style.padding = '4px 8px';
+                    el.style.marginBottom = '4px';
                     el.style.background = '#e8f0ff';
-                    el.style.borderRadius = '3px';
+                    el.style.borderRadius = '6px';
                     el.style.textAlign = 'center';
                 });
                 
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
                 matchItems.forEach(el => {
-                    el.style.padding = '2px 4px';
-                    el.style.marginBottom = '2px';
-                    el.style.borderBottom = 'none';
+                    el.style.padding = '4px';
+                    el.style.marginBottom = '4px';
+                    el.style.borderBottom = '1px solid #e0e0e0';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.gap = '4px';
                 });
                 
                 const matchHeaders = matchesContainer.querySelectorAll('.match-header-compact');
                 matchHeaders.forEach(el => {
-                    el.style.padding = '1px 0';
-                    el.style.marginBottom = '1px';
+                    el.style.padding = '2px 0';
+                    el.style.marginBottom = '0';
                 });
                 
                 const matchInfos = matchesContainer.querySelectorAll('.match-info-compact');
@@ -1664,9 +1668,10 @@ async function loadMatchesForDate(date) {
                 matchTeams.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
-                    el.style.gap = '4px';
-                    el.style.padding = '1px 0';
-                    el.style.marginBottom = '1px';
+                    el.style.justifyContent = 'center';
+                    el.style.gap = '6px';
+                    el.style.padding = '2px 0';
+                    el.style.marginBottom = '0';
                 });
                 
                 const teams = matchesContainer.querySelectorAll('.team-compact');
@@ -1693,35 +1698,47 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '500';
                 });
                 
-                const matchScores = matchesContainer.querySelectorAll('.match-score-compact');
-                matchScores.forEach(el => {
+                const matchScoreInputs = matchesContainer.querySelectorAll('.match-score-input-compact');
+                matchScoreInputs.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
-                    el.style.gap = '3px';
-                    el.style.padding = '1px 0';
+                    el.style.justifyContent = 'center';
+                    el.style.gap = '8px';
+                    el.style.padding = '4px 0';
+                    el.style.marginBottom = '0';
                 });
                 
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
-                    el.style.width = '30px';
-                    el.style.padding = '1px 3px';
+                    el.style.width = '50px';
+                    el.style.padding = '6px';
                     el.style.border = '1px solid #ccc';
-                    el.style.borderRadius = '3px';
+                    el.style.borderRadius = '6px';
                     el.style.textAlign = 'center';
-                    el.style.fontSize = '0.75rem';
+                    el.style.fontSize = '0.9rem';
+                    el.style.fontWeight = '600';
                     el.style.background = 'white';
+                });
+                
+                const scoreSeparators = matchesContainer.querySelectorAll('.score-separator-compact');
+                scoreSeparators.forEach(el => {
+                    el.style.fontSize = '1rem';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#333';
                 });
                 
                 const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
                 saveBtns.forEach(el => {
-                    el.style.background = '#28a745';
+                    el.style.background = '#667eea';
                     el.style.color = 'white';
                     el.style.border = 'none';
-                    el.style.padding = '1px 6px';
-                    el.style.borderRadius = '3px';
-                    el.style.fontSize = '0.7rem';
-                    el.style.fontWeight = '500';
+                    el.style.padding = '10px';
+                    el.style.borderRadius = '8px';
+                    el.style.fontSize = '0.85rem';
+                    el.style.fontWeight = '600';
                     el.style.cursor = 'pointer';
+                    el.style.width = '100%';
+                    el.style.marginTop = '4px';
                 });
                 
                 console.log('✅ 컴팩트 스타일 적용 완료');
