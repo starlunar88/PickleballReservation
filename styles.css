@@ -2498,14 +2498,17 @@ body {
     }
     
     .timeline-players {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 5px;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 4px !important;
+        width: 100% !important;
     }
     
     .player-item { 
-        font-size: 0.7rem; 
-        padding: 8px 3px; 
-        min-height: 36px;
+        font-size: 0.65rem !important; 
+        padding: 7px 2px !important; 
+        min-height: 34px !important;
+        width: 100% !important;
     }
     .timeline-reserve-btn, .timeline-cancel-btn { padding: 6px 10px; font-size: 0.65rem; border-radius: 12px; }
     .filter-btn { padding: 6px 10px; font-size: 0.8rem; border-radius: 16px; }
@@ -2614,6 +2617,7 @@ body {
     gap: 8px;
     margin-bottom: 12px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .player-item {
@@ -2629,6 +2633,11 @@ body {
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(255, 199, 199, 0.2);
     min-height: 42px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .player-item:hover { 
@@ -2966,14 +2975,17 @@ body {
     }
     
     .timeline-players {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 5px !important;
+        width: 100% !important;
     }
     
     .player-item {
-        padding: 8px 4px;
-        font-size: 0.7rem;
-        min-height: 38px;
+        padding: 7px 3px !important;
+        font-size: 0.68rem !important;
+        min-height: 36px !important;
+        width: 100% !important;
     }
     
     .stats-grid {
