@@ -1966,38 +1966,72 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 이전 날짜 버튼
     if (prevDayBtn) {
-        prevDayBtn.addEventListener('click', () => {
+        prevDayBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('이전 날짜 버튼 클릭됨');
             try {
+                // currentDate가 없으면 오늘 날짜로 초기화
+                if (!window.currentDate) {
+                    window.currentDate = new Date().toISOString().slice(0, 10);
+                }
+                
                 const dateObj = new Date(window.currentDate);
                 dateObj.setDate(dateObj.getDate() - 1);
                 window.currentDate = dateObj.toISOString().slice(0, 10);
                 console.log('이전 날짜로 이동:', window.currentDate);
-                window.updateCurrentDateDisplay();
+                
+                if (window.updateCurrentDateDisplay) {
+                    window.updateCurrentDateDisplay();
+                } else {
+                    console.error('updateCurrentDateDisplay 함수가 정의되지 않았습니다');
+                    // 직접 타임라인 새로고침
+                    loadReservationsTimeline();
+                }
             } catch (error) {
                 console.error('날짜 변경 오류:', error);
                 showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
             }
+            return false;
         });
+        console.log('이전 날짜 버튼 이벤트 리스너 등록 완료');
     } else {
-        console.warn('prev-day 버튼을 찾을 수 없습니다');
+        console.error('prev-day 버튼을 찾을 수 없습니다');
     }
     
     // 다음 날짜 버튼
     if (nextDayBtn) {
-        nextDayBtn.addEventListener('click', () => {
+        nextDayBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('다음 날짜 버튼 클릭됨');
             try {
+                // currentDate가 없으면 오늘 날짜로 초기화
+                if (!window.currentDate) {
+                    window.currentDate = new Date().toISOString().slice(0, 10);
+                }
+                
                 const dateObj = new Date(window.currentDate);
                 dateObj.setDate(dateObj.getDate() + 1);
                 window.currentDate = dateObj.toISOString().slice(0, 10);
                 console.log('다음 날짜로 이동:', window.currentDate);
-                window.updateCurrentDateDisplay();
+                
+                if (window.updateCurrentDateDisplay) {
+                    window.updateCurrentDateDisplay();
+                } else {
+                    console.error('updateCurrentDateDisplay 함수가 정의되지 않았습니다');
+                    // 직접 타임라인 새로고침
+                    loadReservationsTimeline();
+                }
             } catch (error) {
                 console.error('날짜 변경 오류:', error);
                 showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
             }
+            return false;
         });
+        console.log('다음 날짜 버튼 이벤트 리스너 등록 완료');
     } else {
-        console.warn('next-day 버튼을 찾을 수 없습니다');
+        console.error('next-day 버튼을 찾을 수 없습니다');
     }
     
     // 새로고침 버튼
