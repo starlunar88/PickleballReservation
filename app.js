@@ -14,6 +14,21 @@ function initializeFirebase() {
     }
 }
 
+// 로딩 표시/숨김 함수 (firebase-config.js에 정의되어 있지만 중복 정의로 안전성 확보)
+function showLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = 'flex';
+    }
+}
+
+function hideLoading() {
+    const loading = document.getElementById('loading');
+    if (loading) {
+        loading.style.display = 'none';
+    }
+}
+
 // DOM 요소 참조
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
