@@ -2573,6 +2573,10 @@ body {
 /* 최고 성과자 섹션 */
 .top-performers-section {
     margin-bottom: 40px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
+    padding-right: 0;
 }
 
 .top-performers-header h2 {
@@ -2596,9 +2600,10 @@ body {
     border-radius: 12px;
     border: 1px solid #333;
     padding: 12px;
-    padding-right: 16px;
+    padding-right: 24px;
     overflow: visible;
     box-sizing: border-box;
+    width: 100%;
 }
 
 .performer-item {
@@ -2606,7 +2611,7 @@ body {
     border: 1px solid #333 !important;
     border-radius: 8px;
     padding: 12px 20px;
-    padding-right: 24px;
+    padding-right: 28px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2614,6 +2619,7 @@ body {
     box-sizing: border-box;
     overflow: visible;
     width: 100%;
+    margin: 0;
 }
 
 .performer-item:hover {
@@ -2934,7 +2940,9 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 20px;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
+    padding-right: 20px;
+    box-sizing: border-box;
 }
 
 .team-chart-card {

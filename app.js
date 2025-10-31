@@ -3106,7 +3106,7 @@ async function loadTeamAnalysis(period = null) {
             .slice(0, 5);
         
         const weakestTeams = [...teamWinRates]
-            .filter(t => t.total >= 2) // 최소 2경기 이상
+            .filter(t => t.total >= 2 && t.winRate < 50) // 최소 2경기 이상, 승률 50% 미만만
             .sort((a, b) => a.winRate - b.winRate)
             .slice(0, 5);
         
@@ -3179,7 +3179,7 @@ function drawTeamBarChart(data, canvasId, color) {
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
     const padding = { 
         top: 15, 
-        right: 50, // 오른쪽 여백 증가 (잘림 방지)
+        right: 60, // 오른쪽 여백 더 증가 (잘림 방지)
         bottom: 25, // 하단 여백 줄임
         left: Math.max(maxNameWidth + 10, 85) // 이름 너비 + 여백 (최소 85px, 최대 110px로 제한)
     };
