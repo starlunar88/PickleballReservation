@@ -1972,9 +1972,29 @@ async function loadStatsData() {
     try {
         await loadUserList();
         await loadGameStats();
-        await loadIndividualPerformance();
-        await loadTeamAnalysis();
+        
+        // 차트 렌더링을 위한 약간의 지연 (레이아웃이 완료된 후)
+        setTimeout(async () => {
+            await loadIndividualPerformance();
+            await loadTeamAnalysis();
+        }, 300);
+        
         await setupStatsEventListeners();
+        
+        // 창 크기 변경 시 차트 재그리기 (한 번만 추가)
+        if (!window.statsResizeHandlerAdded) {
+            window.statsResizeHandlerAdded = true;
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    const statsTab = document.getElementById('stats-tab');
+                    if (statsTab && statsTab.classList.contains('active')) {
+                        loadWinRateChart();
+                        loadIndividualPerformance();
+                        loadTeamAnalysis();
+                    }
+                }, 200);
+            });
+        }
     } catch (error) {
         console.error('통계 데이터 로드 오류:', error);
     }
@@ -2285,13 +2305,21 @@ function drawWinRateChart(data) {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const width = canvas.width = canvas.offsetWidth;
-    const height = canvas.height = canvas.offsetHeight || 300;
+    
+    // Canvas 크기 설정 (offsetWidth가 0이면 기본값 사용)
+    const containerWidth = canvas.parentElement?.offsetWidth || 800;
+    const containerHeight = 300;
+    const width = canvas.width = containerWidth;
+    const height = canvas.height = containerHeight;
     
     // 배경 지우기
     ctx.clearRect(0, 0, width, height);
     
     if (data.length === 0) {
+        // 배경을 흰색으로 설정
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+        
         ctx.fillStyle = '#999';
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
@@ -2459,12 +2487,20 @@ function drawWinRateDonutChart(data) {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const width = canvas.width = canvas.offsetWidth || 400;
-    const height = canvas.height = canvas.offsetHeight || 400;
+    
+    // Canvas 크기 설정
+    const containerWidth = canvas.parentElement?.offsetWidth || 400;
+    const containerHeight = 400;
+    const width = canvas.width = containerWidth;
+    const height = canvas.height = containerHeight;
     
     ctx.clearRect(0, 0, width, height);
     
     if (data.length === 0) {
+        // 배경을 흰색으로 설정
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+        
         ctx.fillStyle = '#999';
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
@@ -2518,12 +2554,20 @@ function drawParticipationBarChart(data) {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const width = canvas.width = canvas.offsetWidth || 400;
-    const height = canvas.height = canvas.offsetHeight || 300;
+    
+    // Canvas 크기 설정
+    const containerWidth = canvas.parentElement?.offsetWidth || 400;
+    const containerHeight = 300;
+    const width = canvas.width = containerWidth;
+    const height = canvas.height = containerHeight;
     
     ctx.clearRect(0, 0, width, height);
     
     if (data.length === 0) {
+        // 배경을 흰색으로 설정
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+        
         ctx.fillStyle = '#999';
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
@@ -2683,12 +2727,20 @@ function drawTeamBarChart(data, canvasId, color) {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const width = canvas.width = canvas.offsetWidth || 500;
-    const height = canvas.height = canvas.offsetHeight || 300;
+    
+    // Canvas 크기 설정
+    const containerWidth = canvas.parentElement?.offsetWidth || 500;
+    const containerHeight = 300;
+    const width = canvas.width = containerWidth;
+    const height = canvas.height = containerHeight;
     
     ctx.clearRect(0, 0, width, height);
     
     if (data.length === 0) {
+        // 배경을 흰색으로 설정
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+        
         ctx.fillStyle = '#999';
         ctx.font = '16px Arial';
         ctx.textAlign = 'center';
