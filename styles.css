@@ -2230,9 +2230,21 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .record-date-time {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.record-date {
     font-size: 14px;
     color: #666;
     font-weight: 500;
+}
+
+.record-time {
+    font-size: 13px;
+    color: #888;
+    font-weight: 400;
 }
 
 .record-delete-btn {

@@ -3652,7 +3652,10 @@ function renderRecords(matches) {
         recordsHTML += `
             <div class="record-card" data-match-id="${match.id}">
                 <div class="record-header">
-                    <div class="record-date-time">${formattedDate} ${displayTime}</div>
+                    <div class="record-date-time">
+                        <div class="record-date">${formattedDate}</div>
+                        <div class="record-time">${displayTime}</div>
+                    </div>
                     <button class="record-delete-btn" data-match-id="${match.id}" title="삭제">
                         <i class="fas fa-trash"></i>
                     </button>
