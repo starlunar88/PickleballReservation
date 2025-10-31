@@ -1239,6 +1239,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // 테스트용 임시 사람 추가 버튼
+    const testAddPersonBtn = document.getElementById('test-add-person');
+    if (testAddPersonBtn) {
+        testAddPersonBtn.addEventListener('click', async () => {
+            try {
+                const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+                
+                // 현재 날짜의 모든 시간대 조회
+                const reservationsSnapshot = await db.collection('reservations')
+                    .where('date', '==', currentDate)
+                    .get();
+                
+                // 시간대 추출 (중복 제거)
+                const timeSlots = new Set();
+                reservationsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.timeSlot) {
+                        timeSlots.add(data.timeSlot);
+                    }
+                });
+                
+                // 시간대가 없으면 기본 시간대 사용 (09:00-11:00, 11:00-13:00, 13:00-15:00)
+                if (timeSlots.size === 0) {
+                    timeSlots.add('09:00-11:00');
+                    timeSlots.add('11:00-13:00');
+                    timeSlots.add('13:00-15:00');
+                }
+                
+                // 각 시간대에 임시 사람 추가
+                let addedCount = 0;
+                for (const timeSlot of timeSlots) {
+                    await addRandomReservation(currentDate, timeSlot);
+                    addedCount++;
+                    // 약간의 지연을 주어 순차적으로 추가
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                showToast(`${addedCount}개의 시간대에 임시 사람이 추가되었습니다.`, 'success');
+                
+                // 타임라인 새로고침
+                await loadReservationsTimeline();
+            } catch (error) {
+                console.error('테스트 사람 추가 오류:', error);
+                showToast('테스트 사람 추가 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+    
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
     if (closeNotifications) {
