@@ -4188,7 +4188,13 @@ async function loadReservationsTimeline() {
                             let buttons = '';
                             
                             if (isClosed) {
-                                buttons += `<button class="timeline-reserve-btn" disabled>마감</button>`;
+                                // 마감 후: 대진표 생성 버튼 표시
+                                buttons += `<button class="btn btn-primary force-generate-btn" 
+                                               data-time-slot="${slotKey}" 
+                                               data-date="${targetDate}"
+                                               style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <i class="fas fa-calendar-alt"></i> 대진표 생성
+                                        </button>`;
                             } else if (userReservation) {
                                 buttons += `<button class="timeline-cancel-btn" 
                                                data-time-slot="${slotKey}" 
@@ -4276,6 +4282,31 @@ async function loadReservationsTimeline() {
             });
         });
         
+        // 대진표 생성 버튼 이벤트 리스너 추가
+        timeline.querySelectorAll('.force-generate-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation(); // 타임라인 아이템 클릭 이벤트 방지
+                try {
+                    const timeSlot = btn.getAttribute('data-time-slot');
+                    const date = btn.getAttribute('data-date');
+                    
+                    console.log(`📅 대진표 생성 버튼 클릭: ${date}, ${timeSlot}`);
+                    
+                    if (!timeSlot || !date) {
+                        console.error('시간대 또는 날짜 정보가 없습니다');
+                        showToast('시간대 또는 날짜 정보가 없습니다.', 'error');
+                        return;
+                    }
+                    
+                    // 모달 열기 (옵션 선택)
+                    openMatchScheduleOptionsModal(date, timeSlot);
+                } catch (error) {
+                    console.error('대진표 생성 버튼 오류:', error);
+                    showToast('대진표 생성 중 오류가 발생했습니다.', 'error');
+                }
+            });
+        });
+        
         // 타임라인 아이템 클릭 이벤트 (시간대 선택)
         timeline.querySelectorAll('.timeline-item').forEach(item => {
             item.addEventListener('click', async (e) => {
@@ -4283,7 +4314,9 @@ async function loadReservationsTimeline() {
                 if (e.target.classList.contains('timeline-reserve-btn') || 
                     e.target.classList.contains('timeline-cancel-btn') ||
                     e.target.classList.contains('add-random-btn') ||
-                    e.target.closest('.add-random-btn')) {
+                    e.target.classList.contains('force-generate-btn') ||
+                    e.target.closest('.add-random-btn') ||
+                    e.target.closest('.force-generate-btn')) {
                     return;
                 }
                 

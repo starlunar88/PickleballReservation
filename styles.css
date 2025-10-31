@@ -3368,9 +3368,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .today-emoji {
-    font-size: 1rem;
-    line-height: 1;
-    animation: pulse 2s ease-in-out infinite;
+    display: none; /* 이모티콘 제거됨 */
 }
 
 @keyframes pulse {
@@ -3751,7 +3749,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .today-emoji {
-        font-size: 0.85rem;
+        display: none; /* 이모티콘 제거됨 */
     }
     .timeline-item {
         padding: 10px 12px;
