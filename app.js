@@ -4850,6 +4850,7 @@ async function getRankings(limit = 50) {
         
         // 사용자별 점수 계산 (승리 +10점, 패배 -5점)
         const userScores = {};
+        const userInfoMap = {}; // userId -> userName 매핑 (matches/gameResults에서 수집)
         const processedMatches = new Set(); // 중복 방지를 위한 처리된 match ID 집합
         
         // 1. matches 컬렉션에서 완료된 경기 확인 (우선)
@@ -4900,6 +4901,11 @@ async function getRankings(limit = 50) {
                     return;
                 }
                 
+                // 이름 정보 수집 (matches에서)
+                if (!userInfoMap[userId] && player.userName) {
+                    userInfoMap[userId] = player.userName;
+                }
+                
                 if (!userScores[userId]) {
                     userScores[userId] = { 
                         score: 0, 
@@ -4933,6 +4939,11 @@ async function getRankings(limit = 50) {
                 if (!userId) {
                     console.warn(`⚠️ 매치 ${matchId}: 플레이어에 userId 없음`, player);
                     return;
+                }
+                
+                // 이름 정보 수집 (matches에서)
+                if (!userInfoMap[userId] && player.userName) {
+                    userInfoMap[userId] = player.userName;
                 }
                 
                 if (!userScores[userId]) {
@@ -5083,15 +5094,24 @@ async function getRankings(limit = 50) {
             console.log(`📈 사용자 ${userId}: ${userData.wins}승 ${userData.losses}패, 총 ${userData.totalGames}경기, 점수: ${userData.score}`);
             
             // 사용자 이름 찾기 (여러 소스에서 시도)
-            let userName = '알 수 없음';
+            let userName = null;
             
-            // 1. users 컬렉션에서 찾기
-            const userDoc = await db.collection('users').doc(userId).get();
-            if (userDoc.exists) {
-                const userDocData = userDoc.data();
-                userName = userDocData.displayName || userDocData.name || userDocData.email || '알 수 없음';
-            } else {
-                // 2. reservations 컬렉션에서 최근 예약 찾기 (인덱스 없이)
+            // 1. matches/gameResults에서 수집한 이름 정보 우선 사용
+            if (userInfoMap[userId]) {
+                userName = userInfoMap[userId];
+            }
+            
+            // 2. users 컬렉션에서 찾기
+            if (!userName) {
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    const userDocData = userDoc.data();
+                    userName = userDocData.displayName || userDocData.name || userDocData.email || null;
+                }
+            }
+            
+            // 3. reservations 컬렉션에서 최근 예약 찾기
+            if (!userName) {
                 const reservationsSnapshot = await db.collection('reservations')
                     .where('userId', '==', userId)
                     .limit(10)
@@ -5119,6 +5139,32 @@ async function getRankings(limit = 50) {
                         userName = reservations[0].userName;
                     }
                 }
+            }
+            
+            // 4. gameResults에서 이름 찾기 시도
+            if (!userName) {
+                // gameResults에서 해당 사용자가 포함된 경기를 찾아 이름 확인
+                const gameResultsWithUser = await db.collection('gameResults')
+                    .where('winners', 'array-contains', userId)
+                    .limit(1)
+                    .get();
+                
+                if (gameResultsWithUser.empty) {
+                    const gameResultsWithUser2 = await db.collection('gameResults')
+                        .where('losers', 'array-contains', userId)
+                        .limit(1)
+                        .get();
+                    
+                    if (!gameResultsWithUser2.empty) {
+                        const game = gameResultsWithUser2.docs[0].data();
+                        // gameResults에는 직접 이름 정보가 없을 수 있으므로 건너뛰기
+                    }
+                }
+            }
+            
+            // 최종적으로 이름이 없으면 '알 수 없음'으로 설정
+            if (!userName || userName.startsWith('test_') || userName.length > 30) {
+                userName = '알 수 없음';
             }
             
             const winRate = userData.totalGames > 0 ? (userData.wins / userData.totalGames * 100) : 0;
