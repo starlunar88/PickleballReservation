@@ -2658,7 +2658,74 @@ body {
     font-size: 0.7rem;
 }
 
-/* 대진표 섹션 스타일 */
+/* 타임라인 내부 대진표 스타일 */
+.timeline-match-schedule {
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+    border: 2px solid #e0e4ff;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.timeline-match-schedule .match-round {
+    margin-bottom: 16px;
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    border-left: 3px solid #667eea;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.timeline-match-schedule .match-round:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-match-schedule .match-round h3 {
+    color: #667eea;
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.timeline-match-schedule .match-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #fafbff;
+    border-radius: 8px;
+    border: 1px solid #e0e4ff;
+}
+
+.timeline-match-schedule .match-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-match-schedule .match-teams {
+    gap: 10px;
+    font-size: 0.85rem;
+}
+
+.timeline-match-schedule .team {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+}
+
+.timeline-match-schedule .match-score {
+    gap: 8px;
+}
+
+.timeline-match-schedule .score-input {
+    width: 50px;
+    padding: 6px;
+    font-size: 0.85rem;
+}
+
+.timeline-match-schedule .save-score-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+/* 대진표 섹션 스타일 (하위 호환성) */
 .match-schedule-section {
     background: rgba(255,255,255,0.9);
     border-radius: 15px;
