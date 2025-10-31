@@ -2551,14 +2551,84 @@ async function loadIndividualPerformance() {
         const db = window.db || firebase.firestore();
         if (!db) return;
         
-        // 게임 결과 가져오기
-        const gameResultsSnapshot = await db.collection('gameResults').get();
-        
         const userStats = {};
+        const userInfoMap = {}; // userId -> { userName, ... } 매핑
+        
+        // 1. matches 컬렉션에서 데이터 가져오기
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            
+            const aWins = match.scoreA > match.scoreB;
+            const winners = aWins ? match.teamA : match.teamB;
+            const losers = aWins ? match.teamB : match.teamA;
+            
+            // 승자 처리
+            if (winners && Array.isArray(winners)) {
+                winners.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (!userId) return;
+                    
+                    if (!userStats[userId]) {
+                        userStats[userId] = { wins: 0, total: 0 };
+                    }
+                    userStats[userId].wins++;
+                    userStats[userId].total++;
+                    
+                    // 이름 정보 저장
+                    if (player.userName && !userInfoMap[userId]) {
+                        userInfoMap[userId] = player.userName;
+                    }
+                });
+            }
+            
+            // 패자 처리
+            if (losers && Array.isArray(losers)) {
+                losers.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (!userId) return;
+                    
+                    if (!userStats[userId]) {
+                        userStats[userId] = { wins: 0, total: 0 };
+                    }
+                    userStats[userId].total++;
+                    
+                    // 이름 정보 저장
+                    if (player.userName && !userInfoMap[userId]) {
+                        userInfoMap[userId] = player.userName;
+                    }
+                });
+            }
+        });
+        
+        // 2. gameResults 컬렉션에서 데이터 가져오기 (중복 방지)
+        const matchesDocIds = new Set();
+        matchesSnapshot.forEach(doc => {
+            matchesDocIds.add(doc.id);
+        });
+        
+        const gameResultsSnapshot = await db.collection('gameResults').get();
         
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
             if (!game.winners || !game.losers) return;
+            
+            // matches에서 이미 처리한 경기인지 확인
+            let matchIdFromTeamId = null;
+            if (game.teamId) {
+                const parts = game.teamId.split('_');
+                if (parts.length >= 2) {
+                    matchIdFromTeamId = parts.slice(0, -1).join('_');
+                }
+            }
+            
+            if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) {
+                return; // 이미 matches에서 처리한 경기는 건너뛰기
+            }
             
             game.winners.forEach(userId => {
                 if (!userStats[userId]) {
@@ -2584,9 +2654,35 @@ async function loadIndividualPerformance() {
             const stats = userStats[userId];
             const winRate = stats.total > 0 ? (stats.wins / stats.total) * 100 : 0;
             
-            // 사용자 이름 가져오기
-            const userDoc = await db.collection('users').doc(userId).get();
-            const userName = userDoc.exists ? (userDoc.data().displayName || userDoc.data().name || userDoc.data().email || '알 수 없음') : '알 수 없음';
+            // 사용자 이름 가져오기 (여러 소스 확인)
+            let userName = userInfoMap[userId]; // matches에서 가져온 이름 우선
+            
+            if (!userName) {
+                // users 컬렉션에서 찾기
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    userName = userData.displayName || userData.name || userData.email;
+                }
+            }
+            
+            // 여전히 이름이 없으면 reservations에서 찾기
+            if (!userName) {
+                const reservationsSnapshot = await db.collection('reservations')
+                    .where('userId', '==', userId)
+                    .limit(1)
+                    .get();
+                
+                if (!reservationsSnapshot.empty) {
+                    const reservation = reservationsSnapshot.docs[0].data();
+                    userName = reservation.userName || reservation.name;
+                }
+            }
+            
+            // 최종적으로 이름이 없으면 건너뛰기 (또는 '알 수 없음' 표시하지 않음)
+            if (!userName || userName.startsWith('test_') || userName.length > 30) {
+                continue; // 이상한 이름은 건너뛰기
+            }
             
             rankings.push({
                 userId: userId,
@@ -2597,7 +2693,7 @@ async function loadIndividualPerformance() {
         }
         
         // 승률 TOP 5
-        const top5WinRate = [...rankings].sort((a, b) => b.winRate - a.winRate).slice(0, 5);
+        const top5WinRate = [...rankings].filter(r => r.total > 0).sort((a, b) => b.winRate - a.winRate).slice(0, 5);
         drawWinRateDonutChart(top5WinRate);
         
         // 참여 횟수 TOP 5
@@ -2771,14 +2867,92 @@ async function loadTeamAnalysis() {
         const db = window.db || firebase.firestore();
         if (!db) return;
         
-        // 게임 결과 가져오기
-        const gameResultsSnapshot = await db.collection('gameResults').get();
-        
         const teamStats = {};
+        const userInfoMap = {}; // userId -> userName 매핑
+        
+        // 1. matches 컬렉션에서 데이터 가져오기
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            
+            const aWins = match.scoreA > match.scoreB;
+            const winners = aWins ? match.teamA : match.teamB;
+            const losers = aWins ? match.teamB : match.teamA;
+            
+            // 팀A, 팀B에서 플레이어 ID 추출
+            const getPlayerIds = (team) => {
+                if (!team || !Array.isArray(team)) return [];
+                return team.map(p => p.userId || p.id).filter(id => id);
+            };
+            
+            const winnerIds = getPlayerIds(winners);
+            const loserIds = getPlayerIds(losers);
+            
+            // 이름 정보 저장
+            if (winners && Array.isArray(winners)) {
+                winners.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (userId && player.userName && !userInfoMap[userId]) {
+                        userInfoMap[userId] = player.userName;
+                    }
+                });
+            }
+            if (losers && Array.isArray(losers)) {
+                losers.forEach(player => {
+                    const userId = player.userId || player.id;
+                    if (userId && player.userName && !userInfoMap[userId]) {
+                        userInfoMap[userId] = player.userName;
+                    }
+                });
+            }
+            
+            // 승자 팀 조합 (2명 팀만)
+            if (winnerIds.length === 2) {
+                const teamKey = winnerIds.sort().join(',');
+                if (!teamStats[teamKey]) {
+                    teamStats[teamKey] = { wins: 0, losses: 0, players: winnerIds };
+                }
+                teamStats[teamKey].wins++;
+            }
+            
+            // 패자 팀 조합 (2명 팀만)
+            if (loserIds.length === 2) {
+                const teamKey = loserIds.sort().join(',');
+                if (!teamStats[teamKey]) {
+                    teamStats[teamKey] = { wins: 0, losses: 0, players: loserIds };
+                }
+                teamStats[teamKey].losses++;
+            }
+        });
+        
+        // 2. gameResults 컬렉션에서 데이터 가져오기 (중복 방지)
+        const matchesDocIds = new Set();
+        matchesSnapshot.forEach(doc => {
+            matchesDocIds.add(doc.id);
+        });
+        
+        const gameResultsSnapshot = await db.collection('gameResults').get();
         
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
             if (!game.winners || !game.losers) return;
+            
+            // matches에서 이미 처리한 경기인지 확인
+            let matchIdFromTeamId = null;
+            if (game.teamId) {
+                const parts = game.teamId.split('_');
+                if (parts.length >= 2) {
+                    matchIdFromTeamId = parts.slice(0, -1).join('_');
+                }
+            }
+            
+            if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) {
+                return; // 이미 matches에서 처리한 경기는 건너뛰기
+            }
             
             // 승자 팀 조합
             if (game.winners.length === 2) {
@@ -2814,20 +2988,54 @@ async function loadTeamAnalysis() {
             const playerNames = [];
             for (const userId of stats.players) {
                 if (!userNameCache[userId]) {
-                    const userDoc = await db.collection('users').doc(userId).get();
-                    const userName = userDoc.exists ? (userDoc.data().displayName || userDoc.data().name || userDoc.data().email || '알 수 없음') : '알 수 없음';
+                    // matches에서 가져온 이름 우선
+                    let userName = userInfoMap[userId];
+                    
+                    if (!userName) {
+                        // users 컬렉션에서 찾기
+                        const userDoc = await db.collection('users').doc(userId).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            userName = userData.displayName || userData.name || userData.email;
+                        }
+                    }
+                    
+                    // 여전히 이름이 없으면 reservations에서 찾기
+                    if (!userName) {
+                        const reservationsSnapshot = await db.collection('reservations')
+                            .where('userId', '==', userId)
+                            .limit(1)
+                            .get();
+                        
+                        if (!reservationsSnapshot.empty) {
+                            const reservation = reservationsSnapshot.docs[0].data();
+                            userName = reservation.userName || reservation.name;
+                        }
+                    }
+                    
+                    // 최종적으로 이름이 없으면 건너뛰기
+                    if (!userName || userName.startsWith('test_') || userName.length > 30) {
+                        userName = null;
+                    }
+                    
                     userNameCache[userId] = userName;
                 }
-                playerNames.push(userNameCache[userId]);
+                
+                if (userNameCache[userId]) {
+                    playerNames.push(userNameCache[userId]);
+                }
             }
             
-            teamWinRates.push({
-                teamKey: teamKey,
-                players: stats.players,
-                playerNames: playerNames.join(', '),
-                winRate: winRate,
-                total: total
-            });
+            // 두 플레이어 모두 이름이 있을 때만 추가
+            if (playerNames.length === 2) {
+                teamWinRates.push({
+                    teamKey: teamKey,
+                    players: stats.players,
+                    playerNames: playerNames.join(', '),
+                    winRate: winRate,
+                    total: total
+                });
+            }
         }
         
         // 최강/최약 팀 조합
@@ -4515,8 +4723,9 @@ async function getRankings(limit = 50) {
         
         // 사용자별 점수 계산 (승리 +10점, 패배 -5점)
         const userScores = {};
+        const processedMatches = new Set(); // 중복 방지를 위한 처리된 match ID 집합
         
-        // 1. matches 컬렉션에서 완료된 경기 확인
+        // 1. matches 컬렉션에서 완료된 경기 확인 (우선)
         const matchesSnapshot = await db.collection('matches')
             .where('status', '==', 'completed')
             .get();
@@ -4524,6 +4733,9 @@ async function getRankings(limit = 50) {
         matchesSnapshot.forEach(doc => {
             const match = doc.data();
             if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            
+            const matchId = doc.id;
+            processedMatches.add(matchId); // 처리된 match ID 저장
             
             const aWins = match.scoreA > match.scoreB;
             const winners = aWins ? match.teamA : match.teamB;
@@ -4540,12 +4752,18 @@ async function getRankings(limit = 50) {
                             score: 0, 
                             wins: 0, 
                             losses: 0,
-                            totalGames: 0
+                            totalGames: 0,
+                            matchIds: new Set() // 각 사용자별 참여한 match ID 추적
                         };
                     }
-                    userScores[userId].score += 10;
-                    userScores[userId].wins += 1;
-                    userScores[userId].totalGames += 1;
+                    
+                    // 이미 처리한 match인지 확인
+                    if (!userScores[userId].matchIds.has(matchId)) {
+                        userScores[userId].score += 10;
+                        userScores[userId].wins += 1;
+                        userScores[userId].totalGames += 1;
+                        userScores[userId].matchIds.add(matchId);
+                    }
                 });
             }
             
@@ -4560,22 +4778,58 @@ async function getRankings(limit = 50) {
                             score: 0, 
                             wins: 0, 
                             losses: 0,
-                            totalGames: 0
+                            totalGames: 0,
+                            matchIds: new Set()
                         };
                     }
-                    userScores[userId].score = Math.max(0, userScores[userId].score - 5);
-                    userScores[userId].losses += 1;
-                    userScores[userId].totalGames += 1;
+                    
+                    // 이미 처리한 match인지 확인
+                    if (!userScores[userId].matchIds.has(matchId)) {
+                        userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                        userScores[userId].losses += 1;
+                        userScores[userId].totalGames += 1;
+                        userScores[userId].matchIds.add(matchId);
+                    }
                 });
             }
         });
         
-        // 2. gameResults 컬렉션에서도 확인 (matches에 없는 데이터)
+        // 2. gameResults 컬렉션에서 확인 (matches에 없는 데이터만)
+        // matches 컬렉션에서 모든 match ID 수집 (중복 방지)
+        const matchesDocIds = new Set();
+        matchesSnapshot.forEach(doc => {
+            matchesDocIds.add(doc.id);
+        });
+        
         const gameResultsSnapshot = await db.collection('gameResults').get();
+        const processedGameResults = new Set(); // 이미 처리한 gameResults ID
         
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
             if (!game.players || !game.winners || !game.losers) return;
+            
+            // gameResults의 teamId에서 match ID 추출 (형식: matchId_A 또는 matchId_B)
+            let matchIdFromTeamId = null;
+            if (game.teamId) {
+                // teamId 형식: "matchId_A" 또는 "matchId_B" -> "matchId" 추출
+                const parts = game.teamId.split('_');
+                if (parts.length >= 2) {
+                    matchIdFromTeamId = parts.slice(0, -1).join('_'); // 마지막 부분 제외
+                }
+            }
+            
+            // matches에서 이미 처리한 경기인지 확인
+            if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) {
+                return; // 이미 matches에서 처리한 경기는 건너뛰기
+            }
+            
+            // gameResults의 경우 고유한 gameResult ID로 추적
+            const gameResultId = doc.id;
+            
+            // 이미 처리한 gameResult인지 확인 (전역 체크)
+            if (processedGameResults.has(gameResultId)) {
+                return;
+            }
             
             // 승자에게 +10점
             game.winners.forEach(userId => {
@@ -4584,12 +4838,18 @@ async function getRankings(limit = 50) {
                         score: 0, 
                         wins: 0, 
                         losses: 0,
-                        totalGames: 0
+                        totalGames: 0,
+                        matchIds: new Set()
                     };
                 }
-                userScores[userId].score += 10;
-                userScores[userId].wins += 1;
-                userScores[userId].totalGames += 1;
+                
+                // 사용자별로 이미 처리한 gameResult인지 확인
+                if (!userScores[userId].matchIds.has(gameResultId)) {
+                    userScores[userId].score += 10;
+                    userScores[userId].wins += 1;
+                    userScores[userId].totalGames += 1;
+                    userScores[userId].matchIds.add(gameResultId);
+                }
             });
             
             // 패자에게 -5점 (최소 0점)
@@ -4599,13 +4859,22 @@ async function getRankings(limit = 50) {
                         score: 0, 
                         wins: 0, 
                         losses: 0,
-                        totalGames: 0
+                        totalGames: 0,
+                        matchIds: new Set()
                     };
                 }
-                userScores[userId].score = Math.max(0, userScores[userId].score - 5);
-                userScores[userId].losses += 1;
-                userScores[userId].totalGames += 1;
+                
+                // 사용자별로 이미 처리한 gameResult인지 확인
+                if (!userScores[userId].matchIds.has(gameResultId)) {
+                    userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                    userScores[userId].losses += 1;
+                    userScores[userId].totalGames += 1;
+                    userScores[userId].matchIds.add(gameResultId);
+                }
             });
+            
+            // 이 gameResult는 처리되었음을 표시
+            processedGameResults.add(gameResultId);
         });
         
         // 사용자 정보 가져오기
