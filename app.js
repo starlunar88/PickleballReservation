@@ -4187,14 +4187,20 @@ async function loadReservationsTimeline() {
                             
                             let buttons = '';
                             
+                            // 예약하기/취소하기 버튼 (항상 표시)
                             if (isClosed) {
-                                // 마감 후: 대진표 생성 버튼 표시
-                                buttons += `<button class="btn btn-primary force-generate-btn" 
-                                               data-time-slot="${slotKey}" 
-                                               data-date="${targetDate}"
-                                               style="padding: 6px 12px; font-size: 0.8rem;">
-                                            <i class="fas fa-calendar-alt"></i> 대진표 생성
-                                        </button>`;
+                                // 마감 후에도 예약 취소는 가능, 예약하기는 비활성화
+                                if (userReservation) {
+                                    buttons += `<button class="timeline-cancel-btn" 
+                                                   data-time-slot="${slotKey}" 
+                                                   data-date="${targetDate}">
+                                                취소하기
+                                            </button>`;
+                                } else {
+                                    buttons += `<button class="timeline-reserve-btn" disabled style="opacity: 0.5;">
+                                                예약하기
+                                            </button>`;
+                                }
                             } else if (userReservation) {
                                 buttons += `<button class="timeline-cancel-btn" 
                                                data-time-slot="${slotKey}" 
@@ -4206,6 +4212,16 @@ async function loadReservationsTimeline() {
                                                data-time-slot="${slotKey}" 
                                                data-date="${targetDate}">
                                             예약하기
+                                        </button>`;
+                            }
+                            
+                            // 마감 후: 대진표 생성 버튼 표시
+                            if (isClosed) {
+                                buttons += `<button class="btn btn-primary force-generate-btn" 
+                                               data-time-slot="${slotKey}" 
+                                               data-date="${targetDate}"
+                                               style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
+                                            <i class="fas fa-calendar-alt"></i> 대진표 생성
                                         </button>`;
                             }
                             
@@ -7024,8 +7040,9 @@ async function checkAndShowMatchSchedule() {
             .get();
         
         if (existingMatches.empty) {
-            // 대진표가 없으면 생성
-            await generateMatchSchedule(currentDate, selectedTimeSlot);
+            // 대진표가 없으면 생성 (자동 생성 시 기본 모드: 점수별 매칭 - balanced)
+            console.log('📅 자동 대진표 생성: 점수별 매칭 모드로 생성');
+            await generateMatchSchedule(currentDate, selectedTimeSlot, 'balanced');
         } else {
             // 기존 대진표 표시 (클라이언트에서 정렬)
             const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
