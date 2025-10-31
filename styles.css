@@ -2522,7 +2522,8 @@ body {
     }
     
     .match-schedule {
-        max-height: calc(100vh - 380px);
+        max-height: none !important;
+        overflow-y: visible !important;
     }
     
     .match-item {
@@ -3164,24 +3165,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 30px;
-}
-
-.match-schedule::-webkit-scrollbar {
-    width: 6px;
-}
-
-.match-schedule::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.match-schedule::-webkit-scrollbar-thumb {
-    background: #667eea;
-    border-radius: 10px;
-}
-
-.match-schedule::-webkit-scrollbar-thumb:hover {
-    background: #5568d3;
+    overflow-y: visible !important;
+    max-height: none !important;
 }
 
 .match-round {
@@ -3517,7 +3502,8 @@ body {
     }
     
     .match-schedule {
-        max-height: calc(100vh - 350px);
+        max-height: none !important;
+        overflow-y: visible !important;
     }
     
     .match-item {
