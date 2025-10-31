@@ -2575,6 +2575,9 @@ body {
     }
     
 /* 대진표 시간대별 섹션 스타일 */
+#match-schedule .time-slot-matches,
+.match-schedule .time-slot-matches,
+.match-schedule-section .time-slot-matches,
 .time-slot-matches {
     margin-bottom: 30px !important;
     background: white !important;
@@ -2584,13 +2587,21 @@ body {
     border: 3px solid #e0e4ff !important;
     position: relative !important;
     transition: all 0.3s ease !important;
+    display: block !important;
+    width: 100% !important;
 }
 
+#match-schedule .time-slot-matches:hover,
+.match-schedule .time-slot-matches:hover,
+.match-schedule-section .time-slot-matches:hover,
 .time-slot-matches:hover {
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2) !important;
     transform: translateY(-2px) !important;
 }
 
+#match-schedule .time-slot-matches .time-slot-header,
+.match-schedule .time-slot-matches .time-slot-header,
+.match-schedule-section .time-slot-matches .time-slot-header,
 .time-slot-matches .time-slot-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     padding: 18px 24px !important;
@@ -2601,6 +2612,8 @@ body {
     display: block !important;
     justify-content: normal !important;
     align-items: normal !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .time-slot-matches .time-slot-header::before {
@@ -2638,12 +2651,22 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)) !important;
 }
 
+#match-schedule .time-slot-matches .time-slot-content,
+.match-schedule .time-slot-matches .time-slot-content,
+.match-schedule-section .time-slot-matches .time-slot-content,
+#matches-tab .time-slot-matches .time-slot-content,
 .time-slot-matches .time-slot-content {
     padding: 24px !important;
     background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%) !important;
     min-height: 100px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
+#match-schedule .time-slot-matches .court-section,
+.match-schedule .time-slot-matches .court-section,
+.match-schedule-section .time-slot-matches .court-section,
+#matches-tab .time-slot-matches .court-section,
 .time-slot-matches .court-section {
     margin-bottom: 28px !important;
     background: white !important;
@@ -2652,6 +2675,9 @@ body {
     border: 2px solid #f0f0f0 !important;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05) !important;
     transition: all 0.3s ease !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .time-slot-matches .court-section:hover {
@@ -2664,6 +2690,10 @@ body {
     margin-bottom: 0 !important;
 }
 
+#match-schedule .time-slot-matches .court-title,
+.match-schedule .time-slot-matches .court-title,
+.match-schedule-section .time-slot-matches .court-title,
+#matches-tab .time-slot-matches .court-title,
 .time-slot-matches .court-title {
     color: white !important;
     margin: 0 0 16px 0 !important;
@@ -2679,6 +2709,8 @@ body {
     gap: 10px !important;
     position: relative !important;
     overflow: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .time-slot-matches .court-title::before {
@@ -2711,6 +2743,10 @@ body {
     padding: 8px 0 !important;
 }
 
+#match-schedule .time-slot-matches .match-item-small,
+.match-schedule .time-slot-matches .match-item-small,
+.match-schedule-section .time-slot-matches .match-item-small,
+#matches-tab .time-slot-matches .match-item-small,
 .time-slot-matches .match-item-small {
     display: flex !important;
     flex-direction: column !important;
@@ -2724,6 +2760,8 @@ body {
     margin-bottom: 0 !important;
     position: relative !important;
     overflow: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .time-slot-matches .match-item-small::before {
