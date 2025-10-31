@@ -2130,8 +2130,8 @@ async function loadReservationsTimeline() {
                                 return `<button class="btn btn-primary force-generate-btn" 
                                                data-time-slot="${slotKey}" 
                                                data-date="${targetDate}"
-                                               style="margin-top: 8px; width: 100%;">
-                                            <i class="fas fa-trophy"></i> 대진표 생성
+                                               style="margin-top: 8px; width: 100%; white-space: nowrap;">
+                                            대진표 생성
                                         </button>`;
                             }
                             return '';
