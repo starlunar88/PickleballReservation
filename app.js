@@ -1553,8 +1553,8 @@ async function loadMatchesForDate(date) {
                                     <span class="score-separator-compact">-</span>
                                     <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
                                 </div>
-                                <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
-                                    ${isCompleted ? '완료' : '경기 기록하기'}
+                                <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
+                                    ${isCompleted ? '수정하기' : '경기 기록하기'}
                                 </button>
                             </div>
                         `;
@@ -1719,6 +1719,18 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
                     
+                    // 스피너 제거 (위아래 화살표 제거)
+                    el.style.webkitAppearance = 'none';
+                    el.style.mozAppearance = 'textfield';
+                    el.type = 'text';
+                    el.setAttribute('inputmode', 'numeric');
+                    el.setAttribute('pattern', '[0-9]*');
+                    
+                    // 숫자만 입력 허용
+                    el.addEventListener('input', function(e) {
+                        this.value = this.value.replace(/[^0-9]/g, '');
+                    });
+                    
                     // 클릭 시 초기화 (readonly가 아닌 경우)
                     if (!el.readOnly) {
                         // focus 이벤트: 15가 기본값이고 클릭하면 빈칸으로
@@ -1748,8 +1760,33 @@ async function loadMatchesForDate(date) {
                 
                 const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
                 saveBtns.forEach(el => {
-                    el.style.background = '#667eea';
-                    el.style.color = 'white';
+                    // 완료 상태인지 확인
+                    const isCompleted = el.classList.contains('completed') || el.textContent.includes('수정');
+                    
+                    if (isCompleted) {
+                        el.style.background = '#6c757d';
+                        el.style.color = 'white';
+                        
+                        // 완료 상태면 입력 필드도 읽기 전용으로 설정
+                        const btnId = el.id.replace('save-', '');
+                        const scoreAInput = document.getElementById(`scoreA-${btnId}`);
+                        const scoreBInput = document.getElementById(`scoreB-${btnId}`);
+                        
+                        if (scoreAInput) {
+                            scoreAInput.readOnly = true;
+                            scoreAInput.style.background = '#f5f5f5';
+                            scoreAInput.style.cursor = 'not-allowed';
+                        }
+                        if (scoreBInput) {
+                            scoreBInput.readOnly = true;
+                            scoreBInput.style.background = '#f5f5f5';
+                            scoreBInput.style.cursor = 'not-allowed';
+                        }
+                    } else {
+                        el.style.background = '#667eea';
+                        el.style.color = 'white';
+                    }
+                    
                     el.style.border = 'none';
                     el.style.padding = '10px';
                     el.style.borderRadius = '8px';
@@ -1772,16 +1809,76 @@ async function loadMatchesForDate(date) {
                         try {
                             const safeId = btn.id.replace('save-', '');
                             const originalId = safeId.replace(/_/g, ':').replace(/_/g, '/');
-                            const scoreA = Number(document.getElementById(`scoreA-${safeId}`).value || 0);
-                            const scoreB = Number(document.getElementById(`scoreB-${safeId}`).value || 0);
+                            const scoreAInput = document.getElementById(`scoreA-${safeId}`);
+                            const scoreBInput = document.getElementById(`scoreB-${safeId}`);
+                            const scoreA = Number(scoreAInput.value || 0);
+                            const scoreB = Number(scoreBInput.value || 0);
                             
                             // 매치 찾기
                             const db = window.db || firebase.firestore();
                             const matchDoc = await db.collection('matches').doc(originalId).get();
                             if (matchDoc.exists) {
                                 await saveMatchScore({ id: originalId, ...matchDoc.data() }, scoreA, scoreB);
-                                // 대진표 새로고침
-                                await loadMatchesForDate(date);
+                                
+                                showToast('점수가 기록되었습니다.', 'success');
+                                
+                                // 버튼 상태 변경: 완료 상태로
+                                btn.textContent = '수정하기';
+                                btn.style.background = '#6c757d';
+                                btn.style.color = 'white';
+                                btn.classList.add('completed');
+                                
+                                // 입력 필드 읽기 전용으로 변경
+                                scoreAInput.readOnly = true;
+                                scoreBInput.readOnly = true;
+                                scoreAInput.style.background = '#f5f5f5';
+                                scoreBInput.style.background = '#f5f5f5';
+                                scoreAInput.style.cursor = 'not-allowed';
+                                scoreBInput.style.cursor = 'not-allowed';
+                                
+                                // 버튼 클릭 시 수정 모드로 전환
+                                const enableEditMode = async () => {
+                                    scoreAInput.readOnly = false;
+                                    scoreBInput.readOnly = false;
+                                    scoreAInput.style.background = 'white';
+                                    scoreBInput.style.background = 'white';
+                                    scoreAInput.style.cursor = 'text';
+                                    scoreBInput.style.cursor = 'text';
+                                    
+                                    btn.textContent = '경기 기록하기';
+                                    btn.style.background = '#667eea';
+                                    btn.classList.remove('completed');
+                                    
+                                    // 저장 이벤트로 다시 설정
+                                    btn.onclick = async function() {
+                                        try {
+                                            const scoreA = Number(scoreAInput.value || 0);
+                                            const scoreB = Number(scoreBInput.value || 0);
+                                            
+                                            await saveMatchScore({ id: originalId, ...matchDoc.data() }, scoreA, scoreB);
+                                            
+                                            // 다시 완료 상태로
+                                            btn.textContent = '수정하기';
+                                            btn.style.background = '#6c757d';
+                                            btn.classList.add('completed');
+                                            
+                                            scoreAInput.readOnly = true;
+                                            scoreBInput.readOnly = true;
+                                            scoreAInput.style.background = '#f5f5f5';
+                                            scoreBInput.style.background = '#f5f5f5';
+                                            scoreAInput.style.cursor = 'not-allowed';
+                                            scoreBInput.style.cursor = 'not-allowed';
+                                            
+                                            btn.onclick = enableEditMode;
+                                            showToast('점수가 수정되었습니다.', 'success');
+                                        } catch (error) {
+                                            console.error('점수 저장 오류:', error);
+                                            showToast('점수 저장 중 오류가 발생했습니다.', 'error');
+                                        }
+                                    };
+                                };
+                                
+                                btn.onclick = enableEditMode;
                             }
                         } catch (error) {
                             console.error('점수 저장 오류:', error);
