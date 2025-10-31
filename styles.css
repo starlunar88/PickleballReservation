@@ -35,9 +35,9 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 16px;
 }
 
 /* Navigation */
@@ -982,7 +982,7 @@ body {
 }
 
 .dashboard-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
@@ -2064,7 +2064,7 @@ body {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 0 20px 140px 20px; /* 하단 탭바만큼 여백 확보 */
+    padding: 0 16px 140px 16px; /* 하단 탭바만큼 여백 확보 */
     margin-top: 0;
 }
 
@@ -2072,8 +2072,7 @@ body {
 .tab-contents,
 .reservations-container,
 .records-container {
-    padding: 20px;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
@@ -2276,8 +2275,8 @@ body {
 }
 
 .rankings-container {
-    padding: 20px;
-    max-width: 1200px;
+    padding: 20px 16px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
@@ -2667,8 +2666,8 @@ body {
 }
 
 .stats-container {
-    padding: 20px;
-    max-width: 1200px;
+    padding: 20px 16px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 

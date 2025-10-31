@@ -3197,21 +3197,26 @@ function drawTeamBarChart(data, canvasId, color) {
     const barHeight = chartHeight / data.length;
     const barSpacing = barHeight * 0.15; // spacing 감소
     
-    // 그리드 그리기
+    // 그리드 그리기 (20% 간격으로 여유있게)
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     
-    for (let i = 0; i <= 10; i++) {
-        const x = padding.left + (i / 10) * chartWidth;
+    // 그리드 라인 (20% 간격: 0%, 20%, 40%, 60%, 80%, 100%)
+    for (let i = 0; i <= 5; i++) {
+        const x = padding.left + (i / 5) * chartWidth;
         ctx.beginPath();
         ctx.moveTo(x, padding.top);
         ctx.lineTo(x, padding.top + chartHeight);
         ctx.stroke();
-        
-        ctx.fillStyle = '#666';
-        ctx.font = '11px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${i * 10}%`, x, height - padding.bottom + 15);
+    }
+    
+    // 퍼센테이지 레이블 (20% 간격으로 표시)
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 5; i++) {
+        const x = padding.left + (i / 5) * chartWidth;
+        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 15);
     }
     
     // 바 차트 그리기
