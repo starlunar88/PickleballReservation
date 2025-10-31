@@ -4703,9 +4703,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!todayBadge) {
                     todayBadge = document.createElement('span');
                     todayBadge.className = 'today-badge';
-                    todayBadge.textContent = 'Today';
                     sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
                 }
+                // 이모티콘 제거: 기존 innerHTML 제거하고 textContent로 설정
+                todayBadge.innerHTML = '';
+                todayBadge.textContent = 'Today';
                 todayBadge.style.display = 'flex';
             } else {
                 if (todayBadge) {
@@ -4847,9 +4849,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!todayBadge) {
                     todayBadge = document.createElement('span');
                     todayBadge.className = 'today-badge';
-                    todayBadge.textContent = 'Today';
                     sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
                 }
+                // 이모티콘 제거: 기존 innerHTML 제거하고 textContent로 설정
+                todayBadge.innerHTML = '';
+                todayBadge.textContent = 'Today';
                 todayBadge.style.display = 'flex';
             } else {
                 if (todayBadge) {
