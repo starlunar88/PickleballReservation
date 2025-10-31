@@ -3374,11 +3374,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     align-items: flex-start;
     flex-wrap: wrap;
     position: relative;
+    padding-top: 40px; /* Today 배지를 위한 공간 확보 */
 }
 
 .section-header > .today-badge {
     position: absolute;
-    top: -8px;
+    top: 8px;
     left: 12px;
     z-index: 10;
 }
@@ -3682,10 +3683,28 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .mobile-tab-btn i { font-size: 0.9rem; margin-bottom: 2px; }
     .reservations-board { margin: 0 6px; }
     .reservations-timeline { padding: 14px; }
-    .section-header { padding: 12px 14px; margin-bottom: 16px; }
+    .section-header { 
+        padding: 12px 14px; 
+        padding-top: 50px; /* Today 배지를 위한 공간 확보 */
+        margin-bottom: 16px; 
+        position: relative;
+    }
     .section-header h2 { font-size: 1.1rem; }
     .date-navigation { gap: 8px; }
     .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
+    
+    .today-badge {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        z-index: 10;
+    }
+    
+    .today-emoji {
+        font-size: 0.85rem;
+    }
     .timeline-item {
         padding: 10px 12px;
         margin-bottom: 8px;
