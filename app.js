@@ -3430,16 +3430,34 @@ function renderRecords(matches) {
     });
 }
 
-// 기록 삭제
+// 기록 삭제 (점수만 초기화, 대진표는 유지)
 async function deleteRecord(matchId) {
     try {
         const db = window.db || firebase.firestore();
         if (!db) return;
         
-        // matches 삭제
-        await db.collection('matches').doc(matchId).delete();
+        // match 점수 초기화 (삭제가 아닌 초기화)
+        const matchRef = db.collection('matches').doc(matchId);
+        const matchDoc = await matchRef.get();
         
-        // 관련 gameResults도 삭제 (teamId가 matchId로 시작하는 모든 문서)
+        if (matchDoc.exists) {
+            const updateData = {
+                scoreA: null,
+                scoreB: null,
+                status: 'scheduled'
+            };
+            
+            // recordedAt 필드가 있으면 삭제
+            if (matchDoc.data().recordedAt) {
+                // Firestore에서 필드 삭제는 FieldValue.delete() 사용
+                const FieldValue = db.firestore ? db.firestore.FieldValue : firebase.firestore.FieldValue;
+                updateData.recordedAt = FieldValue.delete();
+            }
+            
+            await matchRef.update(updateData);
+        }
+        
+        // 관련 gameResults 삭제
         const gameResultsA = await db.collection('gameResults')
             .where('teamId', '==', `${matchId}_A`)
             .get();
@@ -3454,13 +3472,26 @@ async function deleteRecord(matchId) {
         
         if (!gameResultsA.empty || !gameResultsB.empty) {
             await batch.commit();
-            console.log(`🗑️ gameResults 삭제: ${matchId} (${gameResultsA.size + gameResultsB.size}개)`);
+            console.log(`🔄 gameResults 삭제 및 점수 초기화: ${matchId} (${gameResultsA.size + gameResultsB.size}개)`);
         }
         
-        showToast('기록이 삭제되었습니다.', 'success');
+        showToast('기록이 초기화되었습니다.', 'success');
         
+        // 기록 목록 새로고침
         const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
         await loadRecordsForPeriod(activePeriod);
+        
+        // 대진표도 새로고침
+        const matchesTab = document.getElementById('matches-tab');
+        if (matchesTab && matchesTab.classList.contains('active')) {
+            const matchesCurrentDateDisplay = document.getElementById('matches-current-date-display');
+            if (matchesCurrentDateDisplay) {
+                const currentDate = matchesCurrentDateDisplay.getAttribute('data-date');
+                if (currentDate) {
+                    await loadMatchesForDate(currentDate);
+                }
+            }
+        }
         
     } catch (error) {
         console.error('기록 삭제 오류:', error);
