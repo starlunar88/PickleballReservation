@@ -1495,51 +1495,51 @@ async function loadMatchesForDate(date) {
                 
                 // 각 경기 렌더링
                 matches.forEach(match => {
-                        const teamALabel = match.teamA.map(p => p.userName).join(', ');
-                        const teamBLabel = match.teamB.map(p => p.userName).join(', ');
-                        const scoreA = match.scoreA ?? '';
-                        const scoreB = match.scoreB ?? '';
-                        const isCompleted = match.status === 'completed';
-                        const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
-                        const roundNum = match.roundNumber || 1;
-                        const courtNum = match.courtNumber || 1;
-                        
-                        // 경기 시간 계산 (각 경기는 15분으로 가정)
-                        const timeSlotStart = timeSlot.start.split(':');
-                        const startHour = parseInt(timeSlotStart[0]);
-                        const startMin = parseInt(timeSlotStart[1]);
-                        const minutesPerGame = 15;
-                        const gameStartMinutes = (roundNum - 1) * minutesPerGame;
-                        const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-                        const gameStartHour = Math.floor(totalStartMinutes / 60);
-                        const gameStartMin = totalStartMinutes % 60;
-                        const totalEndMinutes = totalStartMinutes + minutesPerGame;
-                        const gameEndHour = Math.floor(totalEndMinutes / 60);
-                        const gameEndMin = totalEndMinutes % 60;
-                        
-                        const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-                        const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
-                        
-                        matchesHTML += `
-                            <div class="match-item-compact">
-                                <div class="match-header-compact">
-                                    <span class="match-info-compact">${roundNum}경기 (${courtNum}코트) ${gameStart} ~ ${gameEnd}</span>
-                                </div>
-                                <div class="match-teams-compact">
-                                    <span class="team-name-compact">${teamALabel}</span>
-                                    <span class="team-vs-compact">vs</span>
-                                    <span class="team-name-compact">${teamBLabel}</span>
-                                </div>
-                                <div class="match-score-compact">
-                                    <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
-                                    <span class="score-separator-compact">:</span>
-                                    <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
-                                    <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
-                                        ${isCompleted ? '완료' : '저장'}
-                                    </button>
-                                </div>
+                    const teamALabel = match.teamA.map(p => p.userName).join(', ');
+                    const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+                    const scoreA = match.scoreA ?? '';
+                    const scoreB = match.scoreB ?? '';
+                    const isCompleted = match.status === 'completed';
+                    const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
+                    const roundNum = match.roundNumber || 1;
+                    const courtNum = match.courtNumber || 1;
+                    
+                    // 경기 시간 계산 (각 경기는 15분으로 가정)
+                    const timeSlotStart = timeSlot.start.split(':');
+                    const startHour = parseInt(timeSlotStart[0]);
+                    const startMin = parseInt(timeSlotStart[1]);
+                    const minutesPerGame = 15;
+                    const gameStartMinutes = (roundNum - 1) * minutesPerGame;
+                    const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+                    const gameStartHour = Math.floor(totalStartMinutes / 60);
+                    const gameStartMin = totalStartMinutes % 60;
+                    const totalEndMinutes = totalStartMinutes + minutesPerGame;
+                    const gameEndHour = Math.floor(totalEndMinutes / 60);
+                    const gameEndMin = totalEndMinutes % 60;
+                    
+                    const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+                    const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                    
+                    matchesHTML += `
+                        <div class="match-item-compact">
+                            <div class="match-header-compact">
+                                <span class="match-info-compact">${roundNum}경기 (${courtNum}코트) ${gameStart} ~ ${gameEnd}</span>
                             </div>
-                        `;
+                            <div class="match-teams-compact">
+                                <span class="team-name-compact">${teamALabel}</span>
+                                <span class="team-vs-compact">vs</span>
+                                <span class="team-name-compact">${teamBLabel}</span>
+                            </div>
+                            <div class="match-score-compact">
+                                <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                                <span class="score-separator-compact">:</span>
+                                <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                                <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
+                                    ${isCompleted ? '완료' : '저장'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 });
                 
                 // 시간대별 섹션 닫기
