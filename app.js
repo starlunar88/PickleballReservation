@@ -3665,9 +3665,40 @@ async function deleteRecord(matchId) {
         await loadRecordsForPeriod(activePeriod);
         
         // 대진표도 새로고침 (매치 삭제가 아닌 점수 초기화되었으므로 대진표에 계속 표시됨)
+        // matchesTab이 active이든 아니든, 대진표 탭이 열려있다면 새로고침
         const matchesTab = document.getElementById('matches-tab');
-        if (matchesTab && matchesTab.classList.contains('active') && matchDate) {
-            await loadMatchesForDate(matchDate);
+        const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
+        console.log(`🔍 대진표 탭 상태 확인: active=${isMatchesTabActive}, matchDate=${matchDate}`);
+        
+        if (matchDate) {
+            // 현재 대진표에 표시된 날짜 확인
+            const currentDateDisplay = document.getElementById('matches-current-date-display');
+            const currentDate = currentDateDisplay ? currentDateDisplay.getAttribute('data-date') : window.currentDate || null;
+            console.log(`🔍 현재 대진표 날짜: ${currentDate}, 삭제된 매치 날짜: ${matchDate}`);
+            
+            // 현재 표시된 날짜와 삭제된 매치 날짜가 같으면 새로고침
+            if (currentDate === matchDate) {
+                console.log(`🔄 대진표 새로고침: ${matchDate} (날짜 일치)`);
+                await loadMatchesForDate(matchDate);
+                
+                // 새로고침 후 매치가 실제로 있는지 확인
+                const matchRef = db.collection('matches').doc(matchId);
+                const finalCheck = await matchRef.get();
+                if (finalCheck.exists) {
+                    const finalData = finalCheck.data();
+                    console.log(`✅ 최종 확인: 매치 ${matchId} 존재함, status: ${finalData.status}, scoreA: ${finalData.scoreA}, scoreB: ${finalData.scoreB}`);
+                } else {
+                    console.error(`❌ 최종 확인: 매치 ${matchId} 존재하지 않음!`);
+                }
+                console.log(`✅ 대진표 새로고침 완료: ${matchDate}`);
+            } else if (isMatchesTabActive) {
+                // 대진표 탭이 활성화되어 있고 날짜가 다르더라도 새로고침 (안전을 위해)
+                console.log(`🔄 대진표 탭이 활성화되어 있어 새로고침: ${matchDate}`);
+                await loadMatchesForDate(matchDate);
+                console.log(`✅ 대진표 새로고침 완료: ${matchDate}`);
+            } else {
+                console.log(`ℹ️ 대진표 탭이 비활성화되어 있어 새로고침하지 않음`);
+            }
         }
         
     } catch (error) {
