@@ -3931,26 +3931,39 @@ async function deleteAllRecords() {
             return;
         }
         
-        // matches 삭제 (주의: status가 'completed'인 매치만 삭제)
-        console.log(`⚠️ deleteAllRecords: 이 함수는 status='completed'인 매치를 완전히 삭제합니다!`);
+        // matches 점수 초기화 (매치 삭제가 아닌 점수만 초기화)
+        // 주의: 매치 문서를 삭제하지 않고 점수만 초기화하여 대진표는 유지합니다!
+        console.log(`⚠️ deleteAllRecords: 완료된 매치의 점수를 초기화합니다 (매치는 유지됨)!`);
+        
+        const FieldValue = firebase.firestore.FieldValue;
+        const updateData = {
+            scoreA: null,
+            scoreB: null,
+            scoreAOld: null,
+            scoreBOld: null,
+            status: 'scheduled',  // 상태를 scheduled로 변경
+            recordedAt: FieldValue.delete(), // recordedAt 필드 삭제
+            recordedBy: FieldValue.delete()  // recordedBy 필드 삭제
+        };
         
         const batch = db.batch();
         matchesSnapshot.forEach(doc => {
             const matchData = doc.data();
-            console.log(`🗑️ deleteAllRecords: 매치 삭제 예정: ${doc.id}`, {
+            console.log(`🔄 deleteAllRecords: 매치 점수 초기화 예정: ${doc.id}`, {
                 status: matchData.status,
                 date: matchData.date,
                 timeSlot: matchData.timeSlot,
                 scoreA: matchData.scoreA,
                 scoreB: matchData.scoreB
             });
-            batch.delete(doc.ref);
+            // 매치 삭제가 아닌 점수 초기화
+            batch.update(doc.ref, updateData);
         });
         
         console.log(`📤 deleteAllRecords: matches batch.commit() 호출 시작...`);
         await batch.commit();
         console.log(`✅ deleteAllRecords: matches batch.commit() 완료`);
-        console.log(`🗑️ deleteAllRecords: 완료된 매치 ${matchesSnapshot.size}개 삭제 완료`);
+        console.log(`🔄 deleteAllRecords: 완료된 매치 ${matchesSnapshot.size}개의 점수 초기화 완료 (매치는 유지됨)`);
         
         // 모든 gameResults 삭제
         console.log(`🔍 deleteAllRecords: 모든 gameResults 조회 시작...`);
@@ -3972,10 +3985,20 @@ async function deleteAllRecords() {
             console.log(`ℹ️ deleteAllRecords: 삭제할 gameResults가 없습니다`);
         }
         
-        showToast('모든 기록이 삭제되었습니다.', 'success');
+        showToast('모든 기록이 초기화되었습니다. (대진표는 유지됨)', 'success');
         
         const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
         await loadRecordsForPeriod(activePeriod);
+        
+        // 대진표 탭이 활성화되어 있다면 새로고침 (점수는 초기화되었지만 매치는 유지되어야 함)
+        const matchesTab = document.getElementById('matches-tab');
+        const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
+        if (isMatchesTabActive) {
+            console.log(`🔄 deleteAllRecords: 대진표 탭이 활성화되어 있어 새로고침...`);
+            const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+            await loadMatchesForDate(currentDate);
+            console.log(`✅ deleteAllRecords: 대진표 새로고침 완료`);
+        }
         
         hideLoading();
         
