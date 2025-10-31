@@ -1560,19 +1560,28 @@ async function loadMatchesForDate(date) {
                     
                     // 각 코트의 경기 렌더링
                     courtMatches.forEach(match => {
-                        // 계급 아이콘 생성 헬퍼 함수
+                        // 계급 아이콘 생성 헬퍼 함수 (점수 기준: 승리 +10점, 패배 -5점)
+                        // 점수가 없으면 internalRating을 사용 (internalRating은 보통 500-2000 범위이므로, 점수로 변환 필요)
                         const getTierIcon = (score) => {
-                            if (score >= 2500) {
+                            // score는 점수(승리 +10점, 패배 -5점) 또는 internalRating일 수 있음
+                            // internalRating을 점수로 근사치 변환 (500=0점, 2000=1500점으로 가정)
+                            let actualScore = score;
+                            if (score > 1000) {
+                                // internalRating으로 보임 (500-2000 범위를 점수로 변환)
+                                actualScore = Math.max(0, ((score - 500) / 1500) * 2500);
+                            }
+                            
+                            if (actualScore >= 2500) {
                                 return '<i class="fas fa-trophy" style="font-size: 0.75rem; color: #764ba2; margin-right: 3px;"></i>';
-                            } else if (score >= 1800) {
+                            } else if (actualScore >= 1800) {
                                 return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>';
-                            } else if (score >= 1200) {
+                            } else if (actualScore >= 1200) {
                                 return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #c0c0c0; margin-right: 3px;"></i>';
-                            } else if (score >= 800) {
+                            } else if (actualScore >= 800) {
                                 return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #cd7f32; margin-right: 3px;"></i>';
-                            } else if (score >= 400) {
+                            } else if (actualScore >= 400) {
                                 return '<i class="fas fa-star" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>';
-                            } else if (score >= 30) {
+                            } else if (actualScore >= 30) {
                                 return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>';
                             } else {
                                 return '<span style="font-size: 0.7rem; font-weight: 700; color: #666; margin-right: 3px;">NEW</span>';
@@ -1580,16 +1589,15 @@ async function loadMatchesForDate(date) {
                         };
                         
                         // 팀 A 이름들을 배열로 (계급 아이콘 포함)
-                        // async 함수에서 점수를 가져올 수 없으므로, 내부 랭킹을 사용하거나 점수를 계산해야 함
                         const teamANames = match.teamA.map(p => {
-                            // internalRating이 있으면 사용, 없으면 기본값 0 (NEW)
-                            const score = p.internalRating || 0;
+                            // 점수가 있으면 사용, 없으면 internalRating 사용
+                            const score = p.score || p.internalRating || 0;
                             const tierIcon = getTierIcon(score);
                             return `${tierIcon}${p.userName}`;
                         });
                         // 팀 B 이름들을 배열로 (계급 아이콘 포함)
                         const teamBNames = match.teamB.map(p => {
-                            const score = p.internalRating || 0;
+                            const score = p.score || p.internalRating || 0;
                             const tierIcon = getTierIcon(score);
                             return `${tierIcon}${p.userName}`;
                         });
@@ -5405,6 +5413,66 @@ function calculateRatingChange(currentRating, won) {
     return Math.round(K * (actualScore - expectedScore));
 }
 
+// 사용자 점수 계산 헬퍼 함수 (승리 +10점, 패배 -5점)
+async function calculateUserScores() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return {};
+        
+        const userScores = {};
+        const processedMatches = new Set();
+        
+        // matches 컬렉션에서 완료된 경기 확인
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) {
+                return;
+            }
+            
+            const matchId = doc.id;
+            if (processedMatches.has(matchId)) return;
+            processedMatches.add(matchId);
+            
+            const aWins = match.scoreA > match.scoreB;
+            const winners = aWins ? match.teamA : match.teamB;
+            const losers = aWins ? match.teamB : match.teamA;
+            
+            if (!Array.isArray(winners) || !Array.isArray(losers)) return;
+            
+            winners.forEach(player => {
+                const userId = player.userId || player.id;
+                if (!userId) return;
+                
+                if (!userScores[userId]) {
+                    userScores[userId] = { score: 0, wins: 0, losses: 0 };
+                }
+                userScores[userId].score += 10;
+                userScores[userId].wins += 1;
+            });
+            
+            losers.forEach(player => {
+                const userId = player.userId || player.id;
+                if (!userId) return;
+                
+                if (!userScores[userId]) {
+                    userScores[userId] = { score: 0, wins: 0, losses: 0 };
+                }
+                userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                userScores[userId].losses += 1;
+            });
+        });
+        
+        return userScores;
+    } catch (error) {
+        console.error('사용자 점수 계산 오류:', error);
+        return {};
+    }
+}
+
 // 랭킹 순위 가져오기 (점수 기준: 승리 +10점, 패배 -5점)
 async function getRankings(limit = 50) {
     try {
@@ -7244,11 +7312,16 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         const reservations = [];
         reservationsSnapshot.forEach(doc => reservations.push({ id: doc.id, ...doc.data() }));
         
-        // 플레이어 정보 수집 (DUPR 및 내부 점수 포함)
+        // 플레이어 정보 수집 (DUPR, 내부 점수, 게임 점수 포함)
         const players = [];
+        
+        // 모든 사용자 점수 미리 계산 (승리 +10점, 패배 -5점)
+        const userScores = await calculateUserScores();
+        
         for (const res of reservations) {
             let dupr = res.userDupr || 0;
             let internalRating = 1000; // 기본값
+            let gameScore = 0; // 게임 점수 (승리 +10점, 패배 -5점)
             
             // 내부 점수 조회 시도 (사용자 문서에서)
             try {
@@ -7264,11 +7337,17 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
                 console.warn(`사용자 ${res.userId} 정보 조회 실패:`, error);
             }
             
+            // 게임 점수 가져오기 (userScores에서)
+            if (userScores[res.userId]) {
+                gameScore = userScores[res.userId].score || 0;
+            }
+            
             players.push({
                 userId: res.userId,
                 userName: res.userName,
                 dupr: dupr,
-                internalRating: internalRating
+                internalRating: internalRating,
+                score: gameScore // 게임 점수 추가
             });
         }
         
@@ -7344,8 +7423,16 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
                 timeSlot,
                 roundNumber: match.round,
                 courtNumber: match.court,
-                teamA: match.teamA,
-                teamB: match.teamB,
+                teamA: match.teamA.map(p => ({
+                    ...p,
+                    score: p.score || 0,
+                    internalRating: p.internalRating || 0
+                })),
+                teamB: match.teamB.map(p => ({
+                    ...p,
+                    score: p.score || 0,
+                    internalRating: p.internalRating || 0
+                })),
                 scoreA: null,
                 scoreB: null,
                 status: 'scheduled',
@@ -7375,13 +7462,18 @@ const pairingPatterns = [
 
 // 매치 스케줄 빌드 (간단 로테이션, 동적 코트 지원, 코트 배정 유지)
 function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, teamMode = 'random') {
-    // Player 객체로 변환
-    const playerObjects = players.map(p => new Player(
-        p.userId,
-        p.userName,
-        p.dupr || 0,
-        p.internalRating || 1000
-    ));
+    // Player 객체로 변환 (점수 정보 포함)
+    const playerObjects = players.map(p => {
+        const player = new Player(
+            p.userId,
+            p.userName,
+            p.dupr || 0,
+            p.internalRating || 1000
+        );
+        // 점수 정보 추가 (Player 객체에 직접 저장)
+        player.score = p.score || 0;
+        return player;
+    });
     
     // 플레이어를 코트별로 분류
     const courtPlayers = {};
@@ -7501,10 +7593,34 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             const fourPlayers = teams[teamIndex];
             
             const p = pairingPatterns[(r - 1) % pairingPatterns.length];
-            const teamA = [{ userId: fourPlayers[p[0]].userId, userName: fourPlayers[p[0]].userName },
-                          { userId: fourPlayers[p[1]].userId, userName: fourPlayers[p[1]].userName }];
-            const teamB = [{ userId: fourPlayers[p[2]].userId, userName: fourPlayers[p[2]].userName },
-                          { userId: fourPlayers[p[3]].userId, userName: fourPlayers[p[3]].userName }];
+            const teamA = [
+                { 
+                    userId: fourPlayers[p[0]].userId, 
+                    userName: fourPlayers[p[0]].userName,
+                    internalRating: fourPlayers[p[0]].internalRating || 0,
+                    score: fourPlayers[p[0]].score || 0
+                },
+                { 
+                    userId: fourPlayers[p[1]].userId, 
+                    userName: fourPlayers[p[1]].userName,
+                    internalRating: fourPlayers[p[1]].internalRating || 0,
+                    score: fourPlayers[p[1]].score || 0
+                }
+            ];
+            const teamB = [
+                { 
+                    userId: fourPlayers[p[2]].userId, 
+                    userName: fourPlayers[p[2]].userName,
+                    internalRating: fourPlayers[p[2]].internalRating || 0,
+                    score: fourPlayers[p[2]].score || 0
+                },
+                { 
+                    userId: fourPlayers[p[3]].userId, 
+                    userName: fourPlayers[p[3]].userName,
+                    internalRating: fourPlayers[p[3]].internalRating || 0,
+                    score: fourPlayers[p[3]].score || 0
+                }
+            ];
             schedule.push({ round: r, court: c, teamA, teamB });
         }
     }
