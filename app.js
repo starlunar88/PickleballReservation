@@ -1396,6 +1396,10 @@ async function loadTabData(tabName) {
             break;
         case 'stats':
             await loadStatsData();
+            // 탭 전환 시 팀 분석도 로드 (이미 loadStatsData에서 호출되지만, 확실하게)
+            setTimeout(async () => {
+                await loadTeamAnalysis();
+            }, 500);
             break;
         case 'records':
             await loadRecordsData();
@@ -2867,8 +2871,12 @@ function drawParticipationBarChart(data) {
 // 팀별 분석 로드
 async function loadTeamAnalysis() {
     try {
+        console.log('팀별 분석 로드 시작');
         const db = window.db || firebase.firestore();
-        if (!db) return;
+        if (!db) {
+            console.warn('팀별 분석: 데이터베이스가 없습니다');
+            return;
+        }
         
         const teamStats = {};
         const userInfoMap = {}; // userId -> userName 매핑
@@ -3052,18 +3060,25 @@ async function loadTeamAnalysis() {
             .sort((a, b) => a.winRate - b.winRate)
             .slice(0, 5);
         
+        console.log(`팀별 분석 완료 - 최강 팀: ${strongestTeams.length}개, 최약 팀: ${weakestTeams.length}개`);
         drawTeamBarChart(strongestTeams, 'strongest-teams-chart', '#43e97b');
         drawTeamBarChart(weakestTeams, 'weakest-teams-chart', '#ff6b6b');
         
     } catch (error) {
         console.error('팀별 분석 로드 오류:', error);
+        // 오류 발생 시에도 빈 차트는 표시
+        drawTeamBarChart([], 'strongest-teams-chart', '#43e97b');
+        drawTeamBarChart([], 'weakest-teams-chart', '#ff6b6b');
     }
 }
 
 // 팀별 바 차트 그리기
 function drawTeamBarChart(data, canvasId, color) {
     const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    if (!canvas) {
+        console.warn(`팀별 차트: ${canvasId} 요소를 찾을 수 없습니다`);
+        return;
+    }
     
     const ctx = canvas.getContext('2d');
     
@@ -4220,6 +4235,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         showToast('대진표 로드에 실패했습니다.', 'error');
                     }
                 }, 50);
+            }
+            
+            // 통계 탭으로 전환 시 팀별 분석 확실히 로드
+            if (tabName === 'stats') {
+                setTimeout(async () => {
+                    try {
+                        console.log('📊 통계 탭으로 전환, 팀별 분석 로드');
+                        await loadTeamAnalysis();
+                    } catch (error) {
+                        console.error('통계 탭 전환 시 팀별 분석 로드 오류:', error);
+                    }
+                }, 600);
             }
         });
     });
