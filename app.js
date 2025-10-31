@@ -1560,10 +1560,39 @@ async function loadMatchesForDate(date) {
                     
                     // 각 코트의 경기 렌더링
                     courtMatches.forEach(match => {
-                        // 팀 A 이름들을 배열로 (위아래 배치용)
-                        const teamANames = match.teamA.map(p => p.userName);
-                        // 팀 B 이름들을 배열로 (위아래 배치용)
-                        const teamBNames = match.teamB.map(p => p.userName);
+                        // 계급 아이콘 생성 헬퍼 함수
+                        const getTierIcon = (score) => {
+                            if (score >= 2500) {
+                                return '<i class="fas fa-trophy" style="font-size: 0.75rem; color: #764ba2; margin-right: 3px;"></i>';
+                            } else if (score >= 1800) {
+                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>';
+                            } else if (score >= 1200) {
+                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #c0c0c0; margin-right: 3px;"></i>';
+                            } else if (score >= 800) {
+                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #cd7f32; margin-right: 3px;"></i>';
+                            } else if (score >= 400) {
+                                return '<i class="fas fa-star" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>';
+                            } else if (score >= 30) {
+                                return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>';
+                            } else {
+                                return '<span style="font-size: 0.7rem; font-weight: 700; color: #666; margin-right: 3px;">NEW</span>';
+                            }
+                        };
+                        
+                        // 팀 A 이름들을 배열로 (계급 아이콘 포함)
+                        // async 함수에서 점수를 가져올 수 없으므로, 내부 랭킹을 사용하거나 점수를 계산해야 함
+                        const teamANames = match.teamA.map(p => {
+                            // internalRating이 있으면 사용, 없으면 기본값 0 (NEW)
+                            const score = p.internalRating || 0;
+                            const tierIcon = getTierIcon(score);
+                            return `${tierIcon}${p.userName}`;
+                        });
+                        // 팀 B 이름들을 배열로 (계급 아이콘 포함)
+                        const teamBNames = match.teamB.map(p => {
+                            const score = p.internalRating || 0;
+                            const tierIcon = getTierIcon(score);
+                            return `${tierIcon}${p.userName}`;
+                        });
                         const scoreA = match.scoreA ?? '';
                         const scoreB = match.scoreB ?? '';
                         const isCompleted = match.status === 'completed';
