@@ -3718,17 +3718,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .reservations-board { margin: 0 6px; }
     .reservations-timeline { padding: 14px; }
     .section-header { 
-        padding: 12px 14px; 
-        padding-top: 50px; /* Today 배지를 위한 공간 확보 */
-        margin-bottom: 16px; 
+        padding: 8px 12px; 
+        padding-top: 32px; /* Today 배지를 위한 공간 - 줄임 */
+        margin-bottom: 12px; 
         position: relative;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
+        gap: 8px; /* gap 줄임 */
     }
     .section-header h2 { 
-        font-size: 1.1rem; 
+        font-size: 1rem; /* 더 작게 */
         text-align: center !important;
         justify-content: center !important;
         align-items: center !important;
@@ -3736,42 +3737,68 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin: 0 auto !important;
         display: flex !important;
     }
-    .date-navigation { gap: 8px; }
-    .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
+    .date-navigation { gap: 6px; } /* gap 줄임 */
+    .date-navigation button { padding: 5px 8px; font-size: 0.8rem; } /* 더 작게 */
     
     .today-badge {
         position: absolute;
-        top: 6px;
+        top: 4px; /* 더 위로 */
         left: 8px;
-        font-size: 0.7rem;
-        padding: 4px 10px;
+        font-size: 0.65rem; /* 더 작게 */
+        padding: 3px 8px; /* padding 줄임 */
         z-index: 10;
     }
     
     .today-emoji {
-        display: none; /* 이모티콘 제거됨 */
+        display: none !important; /* 이모티콘 제거됨 */
     }
     .timeline-item {
-        padding: 10px 12px;
-        margin-bottom: 8px;
+        padding: 8px 10px; /* padding 줄임 */
+        margin-bottom: 6px; /* margin 줄임 */
+        min-height: auto; /* 높이 자동 */
     }
     
     .timeline-header {
-        margin-bottom: 8px;
+        margin-bottom: 6px; /* 줄임 */
+    }
+    
+    .timeline-time {
+        min-width: 70px; /* 줄임 */
+        font-size: 0.85rem; /* 줄임 */
+        margin-right: 10px; /* 줄임 */
+    }
+    
+    .timeline-status {
+        font-size: 0.7rem; /* 줄임 */
     }
     
     .timeline-players {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 4px !important;
+        gap: 3px !important; /* 줄임 */
         width: 100% !important;
+        margin-top: 4px; /* 줄임 */
     }
     
     .player-item { 
-        font-size: 0.65rem !important; 
-        padding: 7px 2px !important; 
-        min-height: 34px !important;
+        font-size: 0.6rem !important; /* 더 작게 */
+        padding: 5px 2px !important; /* 줄임 */
+        min-height: 28px !important; /* 줄임 */
         width: 100% !important;
+    }
+    
+    .timeline-actions {
+        margin-top: 6px !important; /* 줄임 */
+        gap: 4px !important; /* 줄임 */
+    }
+    
+    .timeline-actions .btn,
+    .timeline-actions .timeline-reserve-btn,
+    .timeline-actions .timeline-cancel-btn,
+    .timeline-actions .force-generate-btn,
+    .timeline-actions .add-random-btn {
+        padding: 5px 8px !important; /* 줄임 */
+        font-size: 0.7rem !important; /* 줄임 */
     }
     
     /* 대진표 작은 모바일 반응형 */
