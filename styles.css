@@ -2574,25 +2574,45 @@ body {
     }
     
 .time-slot-matches {
-    padding: 12px !important;
-    margin-bottom: 15px !important;
+    margin-bottom: 25px;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    border: 2px solid #e0e4ff;
+}
+
+.time-slot-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 16px 20px;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
 }
 
 .time-slot-title {
-    color: #667eea;
-    margin-bottom: 15px;
-    font-size: 1rem;
-    font-weight: 600;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e0e4ff;
+    color: white;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-slot-title i {
+    font-size: 1.2rem;
+    color: white;
+}
+
+.time-slot-content {
+    padding: 20px;
 }
 
 .court-section {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+}
+
+.court-section:last-child {
+    margin-bottom: 0;
 }
 
 .court-title {
@@ -3449,14 +3469,25 @@ body {
     
     /* 대진표 반응형 */
     .time-slot-matches {
-        padding: 12px !important;
-        margin-bottom: 15px !important;
+        margin-bottom: 20px !important;
+        border-radius: 12px !important;
+    }
+    
+    .time-slot-header {
+        padding: 12px 16px !important;
     }
     
     .time-slot-title {
-        font-size: 0.9rem !important;
-        margin-bottom: 12px !important;
-        padding-bottom: 8px !important;
+        font-size: 0.95rem !important;
+        gap: 8px !important;
+    }
+    
+    .time-slot-title i {
+        font-size: 1rem !important;
+    }
+    
+    .time-slot-content {
+        padding: 16px !important;
     }
     
     .court-section {
@@ -3558,6 +3589,29 @@ body {
     .btn-large {
         padding: 14px 28px;
         font-size: 1rem;
+    }
+    
+    /* 대진표 작은 모바일 반응형 */
+    .time-slot-matches {
+        margin-bottom: 15px !important;
+        border-radius: 10px !important;
+    }
+    
+    .time-slot-header {
+        padding: 10px 12px !important;
+    }
+    
+    .time-slot-title {
+        font-size: 0.85rem !important;
+        gap: 6px !important;
+    }
+    
+    .time-slot-title i {
+        font-size: 0.9rem !important;
+    }
+    
+    .time-slot-content {
+        padding: 12px !important;
     }
 }
 

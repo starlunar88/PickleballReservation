@@ -1459,9 +1459,12 @@ async function loadMatchesForDate(date) {
                 
                 matchesHTML += `
                     <div class="time-slot-matches">
-                        <h3 class="time-slot-title">
-                            <i class="fas fa-clock"></i> ${timeSlot.start} - ${timeSlot.end}
-                        </h3>
+                        <div class="time-slot-header">
+                            <h3 class="time-slot-title">
+                                <i class="fas fa-clock"></i> ${timeSlot.start} - ${timeSlot.end}
+                            </h3>
+                        </div>
+                        <div class="time-slot-content">
                 `;
                 
                 // 각 코트 렌더링
@@ -1514,7 +1517,10 @@ async function loadMatchesForDate(date) {
                     `;
                 });
                 
-                matchesHTML += `</div>`;
+                matchesHTML += `
+                        </div>
+                    </div>
+                `;
             }
         }
         
