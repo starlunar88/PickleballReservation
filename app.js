@@ -3603,20 +3603,45 @@ function renderRecords(matches) {
     
     matches.forEach(match => {
         const matchDate = match.date;
-        const timeSlot = match.timeSlot || '';
-        const [startTime] = timeSlot.split('-');
         
-        const dateObj = new Date(matchDate + 'T' + (startTime || '12:00'));
+        // 경기 시간 표시 (gameStartTime/gameEndTime 우선, 없으면 계산)
+        let displayTime = '';
+        if (match.gameStartTime && match.gameEndTime) {
+            // 저장된 시간이 있으면 사용 (15분 간격으로 계산된 시간)
+            displayTime = `${match.gameStartTime} ~ ${match.gameEndTime}`;
+        } else {
+            // 저장된 시간이 없으면 roundNumber 기반으로 계산
+            const timeSlot = match.timeSlot || '';
+            const roundNum = match.roundNumber || 1;
+            
+            if (timeSlot) {
+                const [startTime] = timeSlot.split('-');
+                const timeSlotStart = startTime.split(':');
+                const startHour = parseInt(timeSlotStart[0]);
+                const startMin = parseInt(timeSlotStart[1]);
+                const minutesPerGame = 15;
+                const gameStartMinutes = (roundNum - 1) * minutesPerGame;
+                const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+                const gameStartHour = Math.floor(totalStartMinutes / 60);
+                const gameStartMin = totalStartMinutes % 60;
+                const totalEndMinutes = totalStartMinutes + minutesPerGame;
+                const gameEndHour = Math.floor(totalEndMinutes / 60);
+                const gameEndMin = totalEndMinutes % 60;
+                
+                const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+                const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                displayTime = `${gameStart} ~ ${gameEnd}`;
+            } else {
+                displayTime = '12:00 ~ 12:15'; // 기본값
+            }
+        }
+        
+        const dateObj = new Date(matchDate + 'T00:00');
         const formattedDate = dateObj.toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'numeric',
             day: 'numeric'
         });
-        const formattedTime = dateObj.toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        }).replace(' ', '');
         
         const teamANames = match.teamA ? match.teamA.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
         const teamBNames = match.teamB ? match.teamB.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
@@ -3627,7 +3652,7 @@ function renderRecords(matches) {
         recordsHTML += `
             <div class="record-card" data-match-id="${match.id}">
                 <div class="record-header">
-                    <div class="record-date-time">${formattedDate} ${formattedTime}</div>
+                    <div class="record-date-time">${formattedDate} ${displayTime}</div>
                     <button class="record-delete-btn" data-match-id="${match.id}" title="삭제">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -5314,7 +5339,10 @@ async function recordGameResult(teamId, gameResult) {
             date: gameResult.date,
             timeSlot: gameResult.timeSlot,
             courtNumber: gameResult.courtNumber || 1,
+            roundNumber: gameResult.roundNumber || gameResult.gameNumber || 1,
             gameNumber: gameResult.gameNumber || gameResult.roundNumber || 1,
+            gameStartTime: gameResult.gameStartTime || null, // 15분 간격으로 계산된 시작 시간
+            gameEndTime: gameResult.gameEndTime || null,     // 15분 간격으로 계산된 종료 시간
             players: gameResult.players,
             winners: gameResult.winners, // 승자 팀의 플레이어 ID 배열
             losers: gameResult.losers,   // 패자 팀의 플레이어 ID 배열
@@ -7812,12 +7840,40 @@ async function saveMatchScore(match, scoreA, scoreB) {
         const winners = aWins ? match.teamA : match.teamB;
         const losers = aWins ? match.teamB : match.teamA;
 
+        // 경기 시간 계산 (15분 간격)
+        let gameStartTime, gameEndTime;
+        if (match.gameStartTime && match.gameEndTime) {
+            // 저장된 시간이 있으면 사용
+            gameStartTime = match.gameStartTime;
+            gameEndTime = match.gameEndTime;
+        } else {
+            // 저장된 시간이 없으면 계산
+            const roundNum = match.roundNumber || match.round || 1;
+            const timeSlotStart = match.timeSlot ? match.timeSlot.split('-')[0].split(':') : ['12', '00'];
+            const startHour = parseInt(timeSlotStart[0]);
+            const startMin = parseInt(timeSlotStart[1]);
+            const minutesPerGame = 15;
+            const gameStartMinutes = (roundNum - 1) * minutesPerGame;
+            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+            const gameStartHour = Math.floor(totalStartMinutes / 60);
+            const gameStartMin = totalStartMinutes % 60;
+            const totalEndMinutes = totalStartMinutes + minutesPerGame;
+            const gameEndHour = Math.floor(totalEndMinutes / 60);
+            const gameEndMin = totalEndMinutes % 60;
+            
+            gameStartTime = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+            gameEndTime = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+        }
+        
         // 기존 recordGameResult API 재사용 (teamId는 match 기반 가짜 아이디)
         await recordGameResult(`${match.id}_A`, {
             date: match.date,
             timeSlot: match.timeSlot,
             courtNumber: match.courtNumber || match.court || 1,
+            roundNumber: match.roundNumber || match.round || 1,
             gameNumber: match.roundNumber || match.round || 1,
+            gameStartTime: gameStartTime, // 15분 간격으로 계산된 시간
+            gameEndTime: gameEndTime,     // 15분 간격으로 계산된 시간
             winners: winners.map(p => p.userId),
             losers: losers.map(p => p.userId),
             score: `${scoreA}-${scoreB}`,
