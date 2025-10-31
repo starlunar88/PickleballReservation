@@ -2319,7 +2319,7 @@ async function loadUserList() {
         });
         
         // 사용자 이름 가져오기 및 드롭다운 채우기
-        userSelect.innerHTML = '<option value="all">전체</option>';
+        userSelect.innerHTML = ''; // "전체" 옵션 제거
         
         // 이름이 이미 있는 경우 우선 사용, 없으면 users 컬렉션에서 찾기
         for (const userId of userIds) {
@@ -2362,13 +2362,16 @@ async function loadUserList() {
         // 이름 순으로 정렬
         const options = Array.from(userSelect.options);
         options.sort((a, b) => {
-            if (a.value === 'all') return -1;
-            if (b.value === 'all') return 1;
             return a.textContent.localeCompare(b.textContent);
         });
         
         userSelect.innerHTML = '';
         options.forEach(option => userSelect.appendChild(option));
+        
+        // 첫 번째 사용자를 기본으로 선택
+        if (userSelect.options.length > 0) {
+            userSelect.value = userSelect.options[0].value;
+        }
         
     } catch (error) {
         console.error('사용자 목록 로드 오류:', error);
@@ -2387,7 +2390,13 @@ async function loadWinRateChart() {
         const activePeriodBtn = document.querySelector('.stats-period-btn.active');
         const selectedPeriod = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
         
-        const selectedUserId = userSelect?.value || 'all';
+        const selectedUserId = userSelect?.value;
+        
+        // 사용자가 선택되지 않은 경우 첫 번째 사용자 선택
+        if (!selectedUserId && userSelect && userSelect.options.length > 0) {
+            userSelect.value = userSelect.options[0].value;
+            return; // 다시 로드
+        }
         
         // 기간 계산
         const now = new Date();
@@ -2437,10 +2446,13 @@ async function loadWinRateChart() {
             const winnerIds = winners ? winners.map(p => p.userId || p.id).filter(id => id) : [];
             const loserIds = losers ? losers.map(p => p.userId || p.id).filter(id => id) : [];
             
-            // 선택된 사용자 확인
-            if (selectedUserId !== 'all') {
+            // 선택된 사용자 확인 (항상 특정 사용자가 선택되어 있음)
+            if (selectedUserId) {
                 const isInGame = winnerIds.includes(selectedUserId) || loserIds.includes(selectedUserId);
                 if (!isInGame) return;
+            } else {
+                // 사용자가 선택되지 않은 경우 데이터 포함하지 않음
+                return;
             }
             
             gameResults.push({
@@ -2471,10 +2483,13 @@ async function loadWinRateChart() {
             
             if (isDuplicate) return;
             
-            // 선택된 사용자 확인
-            if (selectedUserId !== 'all') {
+            // 선택된 사용자 확인 (항상 특정 사용자가 선택되어 있음)
+            if (selectedUserId) {
                 const isInGame = game.winners.includes(selectedUserId) || game.losers.includes(selectedUserId);
                 if (!isInGame) return;
+            } else {
+                // 사용자가 선택되지 않은 경우 데이터 포함하지 않음
+                return;
             }
             
             gameResults.push({
@@ -2492,10 +2507,8 @@ async function loadWinRateChart() {
                 dateStats[dateKey] = { wins: 0, total: 0 };
             }
             
-            if (selectedUserId === 'all') {
-                dateStats[dateKey].wins += game.winners?.length || 0;
-                dateStats[dateKey].total += (game.winners?.length || 0) + (game.losers?.length || 0);
-            } else {
+            // 항상 특정 사용자에 대한 통계만 계산
+            if (selectedUserId) {
                 if (game.winners?.includes(selectedUserId)) {
                     dateStats[dateKey].wins++;
                     dateStats[dateKey].total++;
