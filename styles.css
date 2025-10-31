@@ -5244,7 +5244,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 32px;
         font-size: 1.2rem;
         flex-shrink: 0;
-        margin-right: 10px !important; /* 모바일: 아이콘과 이름 사이 간격 넓히기 */
+        margin-right: 16px !important; /* 모바일: 계급/아이콘과 이름 사이 간격 넓히기 (10px -> 16px) */
     }
     
     .performer-name {
@@ -5252,7 +5252,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
         min-width: 60px;
         max-width: 100px;
-        margin-right: 2px !important; /* 모바일: 이름과 점수 사이 간격 좁히기 */
+        margin-right: 0px !important; /* 모바일: 이름과 점수 사이 간격 좁히기 (2px -> 0px) */
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
