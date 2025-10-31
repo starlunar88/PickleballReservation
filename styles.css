@@ -2608,9 +2608,319 @@ body {
 }
 
 .stats-container {
-    max-width: 400px;
+    padding: 20px;
+    max-width: 1200px;
     margin: 0 auto;
+}
+
+/* 경기 통계 섹션 */
+.game-stats-section {
+    margin-bottom: 40px;
+}
+
+.stats-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.stats-section-header i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.stats-section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+/* 기간 선택 버튼 */
+.stats-period-filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.stats-period-btn {
+    padding: 10px 20px;
+    border: 2px solid #e0e0e0;
+    background: #fff;
+    color: #666;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stats-period-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.stats-period-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: #fff;
+}
+
+/* 개인 성장 분석 */
+.personal-growth-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.growth-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.growth-section-header i {
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+.growth-section-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.growth-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.growth-select {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+}
+
+.win-rate-chart-container {
+    margin-top: 20px;
+}
+
+.win-rate-chart-container h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+#win-rate-chart {
     width: 100%;
+    height: 300px;
+    max-height: 400px;
+}
+
+/* 통계 카드 */
+.stats-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    color: #fff;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+/* 개인별 성과 섹션 */
+.individual-performance-section {
+    margin-bottom: 40px;
+}
+
+.performance-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.performance-header i {
+    color: #ffd700;
+    font-size: 1.2rem;
+}
+
+.performance-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.performance-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+}
+
+.performance-chart-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.performance-chart-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+#win-rate-donut-chart,
+#participation-bar-chart {
+    width: 100%;
+    height: 300px;
+    max-height: 400px;
+}
+
+/* 팀별 분석 섹션 */
+.team-analysis-section {
+    margin-bottom: 40px;
+}
+
+.team-analysis-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.team-analysis-header i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.team-analysis-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.team-charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 30px;
+}
+
+.team-chart-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.team-chart-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.team-chart-header i {
+    font-size: 1.1rem;
+}
+
+.team-chart-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+#strongest-teams-chart,
+#weakest-teams-chart {
+    width: 100%;
+    height: 300px;
+    max-height: 400px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+    .stats-period-filter-buttons {
+        gap: 8px;
+    }
+    
+    .stats-period-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+    
+    .stats-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .performance-charts,
+    .team-charts {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    #win-rate-chart,
+    #win-rate-donut-chart,
+    #participation-bar-chart,
+    #strongest-teams-chart,
+    #weakest-teams-chart {
+        height: 250px;
+    }
 }
 
 .tab-content {

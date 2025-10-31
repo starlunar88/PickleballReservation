@@ -1970,10 +1970,778 @@ async function loadRankingsData() {
 // 통계 데이터 로드
 async function loadStatsData() {
     try {
-        await loadStatsCharts();
+        await loadUserList();
+        await loadGameStats();
+        await loadIndividualPerformance();
+        await loadTeamAnalysis();
+        await setupStatsEventListeners();
     } catch (error) {
         console.error('통계 데이터 로드 오류:', error);
     }
+}
+
+// 통계 이벤트 리스너 설정
+function setupStatsEventListeners() {
+    // 기간 선택 버튼
+    document.querySelectorAll('.stats-period-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            document.querySelectorAll('.stats-period-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            const period = e.target.getAttribute('data-period');
+            await loadGameStats(period);
+        });
+    });
+    
+    // 개인 성장 분석 필터
+    const userSelect = document.getElementById('growth-user-select');
+    const periodSelect = document.getElementById('growth-period-select');
+    
+    if (userSelect) {
+        userSelect.addEventListener('change', async () => {
+            await loadWinRateChart();
+        });
+    }
+    
+    if (periodSelect) {
+        periodSelect.addEventListener('change', async () => {
+            await loadWinRateChart();
+        });
+    }
+}
+
+// 경기 통계 로드
+async function loadGameStats(period = 'today') {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        // 기간 계산
+        const now = new Date();
+        let startDate = new Date();
+        
+        switch (period) {
+            case 'today':
+                startDate.setHours(0, 0, 0, 0);
+                break;
+            case 'week1':
+                startDate.setDate(now.getDate() - 7);
+                break;
+            case 'week2':
+                startDate.setDate(now.getDate() - 14);
+                break;
+            case 'month':
+                startDate.setMonth(now.getMonth() - 1);
+                break;
+            case 'all':
+                startDate = new Date(0); // 모든 기간
+                break;
+        }
+        
+        // 게임 결과 가져오기
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        
+        const gameResults = [];
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            const gameDate = game.recordedAt ? (game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt)) : new Date();
+            
+            if (period === 'all' || gameDate >= startDate) {
+                gameResults.push({
+                    ...game,
+                    date: gameDate
+                });
+            }
+        });
+        
+        // 통계 카드 업데이트
+        await updateStatsCards(gameResults);
+        
+        // 승률 변화 추이 차트 로드
+        await loadWinRateChart();
+        
+    } catch (error) {
+        console.error('경기 통계 로드 오류:', error);
+    }
+}
+
+// 통계 카드 업데이트
+async function updateStatsCards(gameResults) {
+    try {
+        // 최대 연승/연패 계산
+        const userStats = {};
+        
+        gameResults.forEach(game => {
+            if (!game.winners || !game.losers) return;
+            
+            // 승자 통계
+            game.winners.forEach(userId => {
+                if (!userStats[userId]) {
+                    userStats[userId] = {
+                        wins: [],
+                        losses: []
+                    };
+                }
+                userStats[userId].wins.push(game.date);
+            });
+            
+            // 패자 통계
+            game.losers.forEach(userId => {
+                if (!userStats[userId]) {
+                    userStats[userId] = {
+                        wins: [],
+                        losses: []
+                    };
+                }
+                userStats[userId].losses.push(game.date);
+            });
+        });
+        
+        // 최대 연승/연패 계산
+        let maxConsecutiveWins = 0;
+        let maxConsecutiveLosses = 0;
+        let totalGames = gameResults.length;
+        let recentWins = 0;
+        let recentGames = 0;
+        
+        // 최근 10경기 승률 계산
+        const sortedGames = [...gameResults].sort((a, b) => b.date - a.date).slice(0, 10);
+        sortedGames.forEach(game => {
+            if (game.winners && game.winners.length > 0) {
+                recentWins += game.winners.length;
+            }
+            recentGames += (game.winners?.length || 0) + (game.losers?.length || 0);
+        });
+        
+        // 각 사용자별 연승/연패 계산
+        Object.keys(userStats).forEach(userId => {
+            const stats = userStats[userId];
+            const allGames = [...stats.wins.map(d => ({ date: d, won: true })), ...stats.losses.map(d => ({ date: d, won: false }))];
+            allGames.sort((a, b) => a.date - b.date);
+            
+            let currentWins = 0;
+            let currentLosses = 0;
+            
+            allGames.forEach(game => {
+                if (game.won) {
+                    currentWins++;
+                    currentLosses = 0;
+                    maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWins);
+                } else {
+                    currentLosses++;
+                    currentWins = 0;
+                    maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentLosses);
+                }
+            });
+        });
+        
+        // 통계 카드 업데이트
+        document.getElementById('max-consecutive-wins').textContent = maxConsecutiveWins;
+        document.getElementById('max-consecutive-losses').textContent = maxConsecutiveLosses;
+        document.getElementById('total-games').textContent = totalGames;
+        
+        const recentWinRate = recentGames > 0 ? Math.round((recentWins / recentGames) * 100) : 0;
+        document.getElementById('recent-win-rate').textContent = `${recentWinRate}%`;
+        
+    } catch (error) {
+        console.error('통계 카드 업데이트 오류:', error);
+    }
+}
+
+// 사용자 목록 로드
+async function loadUserList() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        const userSelect = document.getElementById('growth-user-select');
+        if (!userSelect) return;
+        
+        // 게임 결과에서 사용자 ID 수집
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        const userIds = new Set();
+        
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            if (game.winners) game.winners.forEach(id => userIds.add(id));
+            if (game.losers) game.losers.forEach(id => userIds.add(id));
+        });
+        
+        // 사용자 이름 가져오기 및 드롭다운 채우기
+        userSelect.innerHTML = '<option value="all">전체</option>';
+        
+        for (const userId of userIds) {
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userName = userDoc.exists ? (userDoc.data().displayName || userDoc.data().name || userDoc.data().email || userId) : userId;
+            
+            const option = document.createElement('option');
+            option.value = userId;
+            option.textContent = userName;
+            userSelect.appendChild(option);
+        }
+        
+    } catch (error) {
+        console.error('사용자 목록 로드 오류:', error);
+    }
+}
+
+// 승률 변화 추이 차트 로드
+async function loadWinRateChart() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        const userSelect = document.getElementById('growth-user-select');
+        const periodSelect = document.getElementById('growth-period-select');
+        
+        const selectedUserId = userSelect?.value || 'all';
+        const selectedPeriod = periodSelect?.value || 'all';
+        
+        // 기간 계산
+        const now = new Date();
+        let startDate = new Date(0);
+        
+        if (selectedPeriod !== 'all') {
+            switch (selectedPeriod) {
+                case 'week1':
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case 'week2':
+                    startDate.setDate(now.getDate() - 14);
+                    break;
+                case 'month':
+                    startDate.setMonth(now.getMonth() - 1);
+                    break;
+            }
+        }
+        
+        // 게임 결과 가져오기
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        
+        const gameResults = [];
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            const gameDate = game.recordedAt ? (game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt)) : new Date();
+            
+            if (selectedPeriod === 'all' || gameDate >= startDate) {
+                if (selectedUserId === 'all' || (game.winners?.includes(selectedUserId) || game.losers?.includes(selectedUserId))) {
+                    gameResults.push({
+                        ...game,
+                        date: gameDate
+                    });
+                }
+            }
+        });
+        
+        // 날짜별 승률 계산
+        const dateStats = {};
+        
+        gameResults.sort((a, b) => a.date - b.date).forEach((game, index) => {
+            const dateKey = game.date.toISOString().split('T')[0];
+            if (!dateStats[dateKey]) {
+                dateStats[dateKey] = { wins: 0, total: 0 };
+            }
+            
+            if (selectedUserId === 'all') {
+                dateStats[dateKey].wins += game.winners?.length || 0;
+                dateStats[dateKey].total += (game.winners?.length || 0) + (game.losers?.length || 0);
+            } else {
+                if (game.winners?.includes(selectedUserId)) {
+                    dateStats[dateKey].wins++;
+                    dateStats[dateKey].total++;
+                } else if (game.losers?.includes(selectedUserId)) {
+                    dateStats[dateKey].total++;
+                }
+            }
+        });
+        
+        // 누적 승률 계산
+        const sortedDates = Object.keys(dateStats).sort();
+        const chartData = [];
+        let cumulativeWins = 0;
+        let cumulativeTotal = 0;
+        
+        sortedDates.forEach(date => {
+            cumulativeWins += dateStats[date].wins;
+            cumulativeTotal += dateStats[date].total;
+            const winRate = cumulativeTotal > 0 ? (cumulativeWins / cumulativeTotal) * 100 : 0;
+            
+            chartData.push({
+                date: date,
+                winRate: winRate
+            });
+        });
+        
+        // 차트 그리기
+        drawWinRateChart(chartData);
+        
+    } catch (error) {
+        console.error('승률 변화 추이 차트 로드 오류:', error);
+    }
+}
+
+// 승률 변화 추이 차트 그리기
+function drawWinRateChart(data) {
+    const canvas = document.getElementById('win-rate-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth;
+    const height = canvas.height = canvas.offsetHeight || 300;
+    
+    // 배경 지우기
+    ctx.clearRect(0, 0, width, height);
+    
+    if (data.length === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('데이터가 없습니다', width / 2, height / 2);
+        return;
+    }
+    
+    // 패딩
+    const padding = { top: 40, right: 40, bottom: 40, left: 60 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    
+    // Y축 범위 (0-100%)
+    const minY = 0;
+    const maxY = 100;
+    const yScale = chartHeight / (maxY - minY);
+    
+    // X축 범위
+    const xScale = chartWidth / (data.length - 1 || 1);
+    
+    // 그리드 및 축 그리기
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    // Y축 그리드
+    for (let i = 0; i <= 10; i++) {
+        const y = padding.top + (i / 10) * chartHeight;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+        
+        // Y축 레이블
+        ctx.fillStyle = '#666';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${100 - i * 10}%`, padding.left - 10, y + 4);
+    }
+    
+    // X축 레이블
+    const dateInterval = Math.max(1, Math.floor(data.length / 10));
+    data.forEach((point, index) => {
+        if (index % dateInterval === 0 || index === data.length - 1) {
+            const x = padding.left + index * xScale;
+            const date = new Date(point.date);
+            const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+            
+            ctx.fillStyle = '#666';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(dateStr, x, height - padding.bottom + 20);
+            
+            // X축 눈금
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.beginPath();
+            ctx.moveTo(x, padding.top);
+            ctx.lineTo(x, padding.top + chartHeight);
+            ctx.stroke();
+        }
+    });
+    
+    // Y축 레이블
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('승률 (%)', 15, height / 2);
+    
+    // 데이터 라인 그리기
+    ctx.strokeStyle = '#667eea';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    data.forEach((point, index) => {
+        const x = padding.left + index * xScale;
+        const y = padding.top + chartHeight - (point.winRate * yScale);
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    ctx.stroke();
+    
+    // 데이터 포인트 그리기
+    ctx.fillStyle = '#667eea';
+    data.forEach((point, index) => {
+        const x = padding.left + index * xScale;
+        const y = padding.top + chartHeight - (point.winRate * yScale);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+// 개인별 성과 로드
+async function loadIndividualPerformance() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        // 게임 결과 가져오기
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        
+        const userStats = {};
+        
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            if (!game.winners || !game.losers) return;
+            
+            game.winners.forEach(userId => {
+                if (!userStats[userId]) {
+                    userStats[userId] = { wins: 0, total: 0 };
+                }
+                userStats[userId].wins++;
+                userStats[userId].total++;
+            });
+            
+            game.losers.forEach(userId => {
+                if (!userStats[userId]) {
+                    userStats[userId] = { wins: 0, total: 0 };
+                }
+                userStats[userId].total++;
+            });
+        });
+        
+        // 사용자 이름 가져오기
+        const rankings = [];
+        const userIds = Object.keys(userStats);
+        
+        for (const userId of userIds) {
+            const stats = userStats[userId];
+            const winRate = stats.total > 0 ? (stats.wins / stats.total) * 100 : 0;
+            
+            // 사용자 이름 가져오기
+            const userDoc = await db.collection('users').doc(userId).get();
+            const userName = userDoc.exists ? (userDoc.data().displayName || userDoc.data().name || userDoc.data().email || '알 수 없음') : '알 수 없음';
+            
+            rankings.push({
+                userId: userId,
+                userName: userName,
+                winRate: winRate,
+                total: stats.total
+            });
+        }
+        
+        // 승률 TOP 5
+        const top5WinRate = [...rankings].sort((a, b) => b.winRate - a.winRate).slice(0, 5);
+        drawWinRateDonutChart(top5WinRate);
+        
+        // 참여 횟수 TOP 5
+        const top5Participation = [...rankings].sort((a, b) => b.total - a.total).slice(0, 5);
+        drawParticipationBarChart(top5Participation);
+        
+    } catch (error) {
+        console.error('개인별 성과 로드 오류:', error);
+    }
+}
+
+// 승률 TOP 5 도넛 차트 그리기
+function drawWinRateDonutChart(data) {
+    const canvas = document.getElementById('win-rate-donut-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth || 400;
+    const height = canvas.height = canvas.offsetHeight || 400;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    if (data.length === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('데이터가 없습니다', width / 2, height / 2);
+        return;
+    }
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) / 2 - 40;
+    const innerRadius = radius * 0.6;
+    
+    const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
+    
+    let currentAngle = -Math.PI / 2;
+    const total = data.reduce((sum, d) => sum + d.winRate, 0);
+    
+    // 도넛 차트 그리기
+    data.forEach((item, index) => {
+        const sliceAngle = (item.winRate / total) * Math.PI * 2;
+        
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+        ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+        
+        currentAngle += sliceAngle;
+    });
+    
+    // 범례 그리기
+    const legendX = width - 150;
+    const legendY = 20;
+    const legendItemHeight = 25;
+    
+    data.forEach((item, index) => {
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(legendX, legendY + index * legendItemHeight, 15, 15);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 20, legendY + index * legendItemHeight + 12);
+    });
+}
+
+// 참여 횟수 바 차트 그리기
+function drawParticipationBarChart(data) {
+    const canvas = document.getElementById('participation-bar-chart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth || 400;
+    const height = canvas.height = canvas.offsetHeight || 300;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    if (data.length === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('데이터가 없습니다', width / 2, height / 2);
+        return;
+    }
+    
+    const padding = { top: 20, right: 40, bottom: 60, left: 80 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    
+    const maxValue = Math.max(...data.map(d => d.total), 1);
+    const barWidth = chartWidth / data.length;
+    const barSpacing = barWidth * 0.2;
+    
+    // 그리드 그리기
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i <= 5; i++) {
+        const y = padding.top + (i / 5) * chartHeight;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+        
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(Math.round(maxValue * (1 - i / 5)), padding.left - 10, y + 4);
+    }
+    
+    // 바 차트 그리기
+    data.forEach((item, index) => {
+        const barHeight = (item.total / maxValue) * chartHeight;
+        const x = padding.left + index * barWidth + barSpacing;
+        const y = padding.top + chartHeight - barHeight;
+        
+        ctx.fillStyle = '#667eea';
+        ctx.fillRect(x, y, barWidth - barSpacing * 2, barHeight);
+        
+        // 이름 레이블
+        ctx.fillStyle = '#333';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.save();
+        ctx.translate(x + (barWidth - barSpacing * 2) / 2, height - padding.bottom + 15);
+        ctx.rotate(-Math.PI / 4);
+        ctx.fillText(item.userName, 0, 0);
+        ctx.restore();
+        
+        // 값 레이블
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.total, x + (barWidth - barSpacing * 2) / 2, y - 5);
+    });
+    
+    // Y축 레이블
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(15, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('횟수', 0, 0);
+    ctx.restore();
+}
+
+// 팀별 분석 로드
+async function loadTeamAnalysis() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return;
+        
+        // 게임 결과 가져오기
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        
+        const teamStats = {};
+        
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            if (!game.winners || !game.losers) return;
+            
+            // 승자 팀 조합
+            if (game.winners.length === 2) {
+                const teamKey = game.winners.sort().join(',');
+                if (!teamStats[teamKey]) {
+                    teamStats[teamKey] = { wins: 0, losses: 0, players: game.winners };
+                }
+                teamStats[teamKey].wins++;
+            }
+            
+            // 패자 팀 조합
+            if (game.losers.length === 2) {
+                const teamKey = game.losers.sort().join(',');
+                if (!teamStats[teamKey]) {
+                    teamStats[teamKey] = { wins: 0, losses: 0, players: game.losers };
+                }
+                teamStats[teamKey].losses++;
+            }
+        });
+        
+        // 팀 승률 계산
+        const teamWinRates = [];
+        
+        // 사용자 이름 캐시
+        const userNameCache = {};
+        
+        for (const teamKey of Object.keys(teamStats)) {
+            const stats = teamStats[teamKey];
+            const total = stats.wins + stats.losses;
+            const winRate = total > 0 ? (stats.wins / total) * 100 : 0;
+            
+            // 사용자 이름 가져오기
+            const playerNames = [];
+            for (const userId of stats.players) {
+                if (!userNameCache[userId]) {
+                    const userDoc = await db.collection('users').doc(userId).get();
+                    const userName = userDoc.exists ? (userDoc.data().displayName || userDoc.data().name || userDoc.data().email || '알 수 없음') : '알 수 없음';
+                    userNameCache[userId] = userName;
+                }
+                playerNames.push(userNameCache[userId]);
+            }
+            
+            teamWinRates.push({
+                teamKey: teamKey,
+                players: stats.players,
+                playerNames: playerNames.join(', '),
+                winRate: winRate,
+                total: total
+            });
+        }
+        
+        // 최강/최약 팀 조합
+        const strongestTeams = [...teamWinRates]
+            .filter(t => t.total >= 2) // 최소 2경기 이상
+            .sort((a, b) => b.winRate - a.winRate)
+            .slice(0, 5);
+        
+        const weakestTeams = [...teamWinRates]
+            .filter(t => t.total >= 2) // 최소 2경기 이상
+            .sort((a, b) => a.winRate - b.winRate)
+            .slice(0, 5);
+        
+        drawTeamBarChart(strongestTeams, 'strongest-teams-chart', '#43e97b');
+        drawTeamBarChart(weakestTeams, 'weakest-teams-chart', '#ff6b6b');
+        
+    } catch (error) {
+        console.error('팀별 분석 로드 오류:', error);
+    }
+}
+
+// 팀별 바 차트 그리기
+function drawTeamBarChart(data, canvasId, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width = canvas.offsetWidth || 500;
+    const height = canvas.height = canvas.offsetHeight || 300;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    if (data.length === 0) {
+        ctx.fillStyle = '#999';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('데이터가 없습니다', width / 2, height / 2);
+        return;
+    }
+    
+    const padding = { top: 20, right: 80, bottom: 20, left: 200 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    
+    const maxValue = 100; // 승률이므로 최대 100%
+    const barHeight = chartHeight / data.length;
+    const barSpacing = barHeight * 0.2;
+    
+    // 그리드 그리기
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i <= 10; i++) {
+        const x = padding.left + (i / 10) * chartWidth;
+        ctx.beginPath();
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, padding.top + chartHeight);
+        ctx.stroke();
+        
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${i * 10}%`, x, height - padding.bottom + 15);
+    }
+    
+    // 바 차트 그리기
+    data.forEach((item, index) => {
+        const barWidth = (item.winRate / maxValue) * chartWidth;
+        const x = padding.left;
+        const y = padding.top + index * barHeight + barSpacing;
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, barWidth, barHeight - barSpacing * 2);
+        
+        // 팀 이름 레이블
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(item.playerNames, padding.left - 10, y + (barHeight - barSpacing * 2) / 2 + 4);
+        
+        // 승률 레이블
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${item.winRate.toFixed(0)}%`, x + barWidth + 5, y + (barHeight - barSpacing * 2) / 2 + 4);
+    });
 }
 
 // 기록 데이터 로드
