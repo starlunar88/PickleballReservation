@@ -3222,8 +3222,14 @@ function drawTeamBarChart(data, canvasId, color) {
     // 바 차트 그리기
     data.forEach((item, index) => {
         // 막대 너비 계산 (차트 영역을 넘지 않도록 제한)
-        let barWidth = (item.winRate / maxValue) * chartWidth;
+        // 0%일 때도 최소 1% 너비로 표시하여 막대가 보이도록 함
+        let winRateForBar = item.winRate === 0 ? 1 : item.winRate;
+        let barWidth = (winRateForBar / maxValue) * chartWidth;
         barWidth = Math.min(barWidth, chartWidth - 2); // 2px 여유
+        // 0%일 때 최소 너비 보장 (약 4px 정도)
+        if (item.winRate === 0) {
+            barWidth = Math.max(barWidth, 4);
+        }
         
         const x = padding.left;
         const y = padding.top + index * barHeight + barSpacing;
