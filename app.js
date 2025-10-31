@@ -1724,15 +1724,26 @@ async function loadMatchesForDate(date) {
                 });
                 
                 const courtHeaders = matchesContainer.querySelectorAll('.court-header-compact');
-                courtHeaders.forEach(el => {
+                courtHeaders.forEach((el, index) => {
                     el.style.fontSize = '0.85rem';
                     el.style.fontWeight = '700';
-                    el.style.color = '#667eea';
+                    el.style.color = 'white';
                     el.style.padding = '4px 8px';
                     el.style.marginBottom = '4px';
-                    el.style.background = '#e8f0ff';
                     el.style.borderRadius = '6px';
                     el.style.textAlign = 'center';
+                    
+                    // 코트별로 다른 배경색 설정
+                    if (index === 0) {
+                        // 1코트: 파란색 계열
+                        el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    } else if (index === 1) {
+                        // 2코트: 빨간색/주황색 계열
+                        el.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+                    } else {
+                        // 3코트 이상: 초록색 계열
+                        el.style.background = 'linear-gradient(135deg, #51cf66 0%, #40c057 100%)';
+                    }
                 });
                 
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
@@ -1781,7 +1792,7 @@ async function loadMatchesForDate(date) {
                 const teamNames = matchesContainer.querySelectorAll('.team-name-compact');
                 teamNames.forEach(el => {
                     el.style.fontSize = '0.75rem';
-                    el.style.color = '#333';
+                    el.style.color = '#000'; /* 검은색으로 변경 */
                     el.style.fontWeight = '500';
                     el.style.textAlign = 'center';
                     el.style.whiteSpace = 'nowrap';
