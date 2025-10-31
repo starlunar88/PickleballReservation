@@ -3671,13 +3671,20 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .section-header {
         padding: 15px;
         margin: 0 0 15px 0;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     .section-header h2 {
         font-size: 1.3rem;
-        text-align: center;
-        justify-content: center;
-        width: 100%;
+        text-align: center !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        display: flex !important;
     }
     
     .admin-stat-card {
@@ -3716,18 +3723,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding-top: 50px; /* Today 배지를 위한 공간 확보 */
         margin-bottom: 16px; 
         position: relative;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     .section-header h2 { 
         font-size: 1.1rem; 
-        text-align: center;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        margin: 0 auto;
-        display: flex;
+        text-align: center !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        display: flex !important;
     }
     .date-navigation { gap: 8px; }
     .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
