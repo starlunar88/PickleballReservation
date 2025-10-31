@@ -1803,37 +1803,59 @@ async function loadMatchesForDate(date) {
                 console.log('✅ 컴팩트 스타일 적용 완료');
             }, 100);
             
-            // 저장 버튼 이벤트 리스너 추가
+            // 저장 버튼 이벤트 리스너 추가 (모든 버튼에 추가 - 상태에 따라 다르게 동작)
             const saveButtons = matchesContainer.querySelectorAll('.save-score-btn-compact');
             console.log('💾 저장 버튼 수:', saveButtons.length);
             saveButtons.forEach(btn => {
-                // 이미 completed 상태가 아닌 경우만 이벤트 리스너 추가
-                if (!btn.classList.contains('completed')) {
-                    btn.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                // 기존 이벤트 리스너 제거를 위해 클론
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                // 단일 이벤트 리스너로 모든 상태 처리
+                newBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                        const safeId = newBtn.id.replace('save-', '');
+                        const matchItem = newBtn.closest('.match-item-compact');
+                        const matchId = matchItem ? matchItem.getAttribute('data-match-id') : null;
                         
-                        try {
-                            console.log('💾 저장 버튼 클릭됨:', btn.id);
+                        if (!matchId) {
+                            console.error('매치 ID를 찾을 수 없습니다');
+                            showToast('매치 정보를 찾을 수 없습니다.', 'error');
+                            return;
+                        }
+                        
+                        const scoreAInput = document.getElementById(`scoreA-${safeId}`);
+                        const scoreBInput = document.getElementById(`scoreB-${safeId}`);
+                        
+                        if (!scoreAInput || !scoreBInput) {
+                            console.error('점수 입력 필드를 찾을 수 없습니다');
+                            showToast('점수 입력 필드를 찾을 수 없습니다.', 'error');
+                            return;
+                        }
+                        
+                        // 버튼 상태 확인: completed 클래스가 있으면 수정 모드 전환, 없으면 저장 모드
+                        const isCompleted = newBtn.classList.contains('completed');
+                        
+                        if (isCompleted) {
+                            // 수정 모드로 전환 (readonly 해제)
+                            console.log('수정 모드로 전환');
+                            scoreAInput.readOnly = false;
+                            scoreBInput.readOnly = false;
+                            scoreAInput.style.background = 'white';
+                            scoreBInput.style.background = 'white';
+                            scoreAInput.style.cursor = 'text';
+                            scoreBInput.style.cursor = 'text';
                             
-                            const safeId = btn.id.replace('save-', '');
-                            const matchItem = btn.closest('.match-item-compact');
-                            const matchId = matchItem ? matchItem.getAttribute('data-match-id') : null;
-                            
-                            if (!matchId) {
-                                console.error('매치 ID를 찾을 수 없습니다');
-                                showToast('매치 정보를 찾을 수 없습니다.', 'error');
-                                return;
-                            }
-                            
-                            const scoreAInput = document.getElementById(`scoreA-${safeId}`);
-                            const scoreBInput = document.getElementById(`scoreB-${safeId}`);
-                            
-                            if (!scoreAInput || !scoreBInput) {
-                                console.error('점수 입력 필드를 찾을 수 없습니다');
-                                showToast('점수 입력 필드를 찾을 수 없습니다.', 'error');
-                                return;
-                            }
+                            newBtn.textContent = '경기 기록하기';
+                            newBtn.style.background = '#667eea';
+                            newBtn.style.color = 'white';
+                            newBtn.classList.remove('completed');
+                        } else {
+                            // 저장 모드
+                            console.log('💾 저장 버튼 클릭됨:', newBtn.id);
                             
                             const scoreA = Number(scoreAInput.value || 0);
                             const scoreB = Number(scoreBInput.value || 0);
@@ -1874,10 +1896,10 @@ async function loadMatchesForDate(date) {
                             showToast('점수가 기록되었습니다.', 'success');
                             
                             // 버튼 상태 변경: 완료 상태로
-                            btn.textContent = '수정하기';
-                            btn.style.background = '#6c757d';
-                            btn.style.color = 'white';
-                            btn.classList.add('completed');
+                            newBtn.textContent = '수정하기';
+                            newBtn.style.background = '#6c757d';
+                            newBtn.style.color = 'white';
+                            newBtn.classList.add('completed');
                             
                             // 입력 필드 읽기 전용으로 변경
                             scoreAInput.readOnly = true;
@@ -1886,99 +1908,12 @@ async function loadMatchesForDate(date) {
                             scoreBInput.style.background = '#f5f5f5';
                             scoreAInput.style.cursor = 'not-allowed';
                             scoreBInput.style.cursor = 'not-allowed';
-                            
-                            // 수정 모드 토글 함수
-                            const toggleEditMode = async () => {
-                                const safeId = btn.id.replace('save-', '');
-                                const matchItem = btn.closest('.match-item-compact');
-                                const matchId = matchItem ? matchItem.getAttribute('data-match-id') : null;
-                                
-                                if (!matchId) {
-                                    showToast('매치 정보를 찾을 수 없습니다.', 'error');
-                                    return;
-                                }
-                                
-                                const scoreAInput = document.getElementById(`scoreA-${safeId}`);
-                                const scoreBInput = document.getElementById(`scoreB-${safeId}`);
-                                
-                                if (!scoreAInput || !scoreBInput) {
-                                    showToast('점수 입력 필드를 찾을 수 없습니다.', 'error');
-                                    return;
-                                }
-                                
-                                // 수정 모드로 전환 (readonly 해제)
-                                scoreAInput.readOnly = false;
-                                scoreBInput.readOnly = false;
-                                scoreAInput.style.background = 'white';
-                                scoreBInput.style.background = 'white';
-                                scoreAInput.style.cursor = 'text';
-                                scoreBInput.style.cursor = 'text';
-                                
-                                btn.textContent = '경기 기록하기';
-                                btn.style.background = '#667eea';
-                                btn.classList.remove('completed');
-                                
-                                // 버튼 클릭 이벤트를 저장 모드로 변경
-                                btn.onclick = async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    
-                                    try {
-                                        const finalScoreA = Number(scoreAInput.value || 0);
-                                        const finalScoreB = Number(scoreBInput.value || 0);
-                                        
-                                        if (finalScoreA === 0 && finalScoreB === 0) {
-                                            showToast('점수를 입력해주세요.', 'warning');
-                                            return;
-                                        }
-                                        
-                                        // 동점 점수 차단
-                                        if (finalScoreA === finalScoreB) {
-                                            showToast('동점 점수는 입력할 수 없습니다. 한 팀이 반드시 이겨야 합니다.', 'warning');
-                                            return;
-                                        }
-                                        
-                                        const db = window.db || firebase.firestore();
-                                        const matchDoc = await db.collection('matches').doc(matchId).get();
-                                        
-                                        if (!matchDoc.exists) {
-                                            showToast('매치를 찾을 수 없습니다.', 'error');
-                                            return;
-                                        }
-                                        
-                                        await saveMatchScore({ id: matchId, ...matchDoc.data() }, finalScoreA, finalScoreB);
-                                        
-                                        // 다시 완료 상태로
-                                        btn.textContent = '수정하기';
-                                        btn.style.background = '#6c757d';
-                                        btn.classList.add('completed');
-                                        
-                                        scoreAInput.readOnly = true;
-                                        scoreBInput.readOnly = true;
-                                        scoreAInput.style.background = '#f5f5f5';
-                                        scoreBInput.style.background = '#f5f5f5';
-                                        scoreAInput.style.cursor = 'not-allowed';
-                                        scoreBInput.style.cursor = 'not-allowed';
-                                        
-                                        // 수정 모드로 다시 전환할 수 있도록 이벤트 리스너 재설정
-                                        btn.onclick = toggleEditMode;
-                                        
-                                        showToast('점수가 수정되었습니다.', 'success');
-                                    } catch (error) {
-                                        console.error('점수 저장 오류:', error);
-                                        showToast('점수 저장 중 오류가 발생했습니다.', 'error');
-                                    }
-                                };
-                            };
-                            
-                            // 수정하기 버튼 클릭 시 수정 모드로 전환
-                            btn.onclick = toggleEditMode;
-                        } catch (error) {
-                            console.error('점수 저장 오류:', error);
-                            showToast('점수 저장 중 오류가 발생했습니다.', 'error');
                         }
-                    });
-                }
+                    } catch (error) {
+                        console.error('점수 저장 오류:', error);
+                        showToast('점수 저장 중 오류가 발생했습니다.', 'error');
+                    }
+                });
             });
         } else {
             matchesContainer.innerHTML = `
