@@ -3617,8 +3617,8 @@ function renderRecords(matches) {
             if (timeSlot) {
                 const [startTime] = timeSlot.split('-');
                 const timeSlotStart = startTime.split(':');
-                const startHour = parseInt(timeSlotStart[0]);
-                const startMin = parseInt(timeSlotStart[1]);
+                const startHour = parseInt(timeSlotStart[0]) || 12;
+                const startMin = parseInt(timeSlotStart[1]) || 0;
                 const minutesPerGame = 15;
                 const gameStartMinutes = (roundNum - 1) * minutesPerGame;
                 const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
@@ -3634,6 +3634,12 @@ function renderRecords(matches) {
             } else {
                 displayTime = '12:00 ~ 12:15'; // 기본값
             }
+        }
+        
+        // 디버깅: 시간이 비어있는지 확인
+        if (!displayTime || displayTime.trim() === '') {
+            console.warn('⚠️ displayTime이 비어있음:', match);
+            displayTime = '12:00 ~ 12:15'; // 기본값으로 대체
         }
         
         const dateObj = new Date(matchDate + 'T00:00');
