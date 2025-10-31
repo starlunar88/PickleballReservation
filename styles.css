@@ -2893,6 +2893,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     justify-content: center;
     font-size: 1.5rem;
     flex-shrink: 0;
+    margin-right: 12px; /* 아이콘과 이름 사이 간격 넓히기 */
 }
 
 .performer-name {
@@ -2905,7 +2906,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-overflow: ellipsis;
     min-width: 60px;
     max-width: 120px;
-    margin-right: 0;
+    margin-right: 4px; /* 이름과 점수 사이 간격 좁히기 */
 }
 
 .performer-score {
@@ -2915,7 +2916,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-align: right;
     flex-shrink: 0;
     font-weight: 600;
-    margin-left: 4px;
+    margin-left: 0; /* 이름과 점수 사이 간격 좁히기 */
 }
 
 .performer-winrate {
@@ -5243,6 +5244,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 32px;
         font-size: 1.2rem;
         flex-shrink: 0;
+        margin-right: 10px !important; /* 모바일: 아이콘과 이름 사이 간격 넓히기 */
     }
     
     .performer-name {
@@ -5250,7 +5252,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
         min-width: 60px;
         max-width: 100px;
-        margin-right: 0;
+        margin-right: 2px !important; /* 모바일: 이름과 점수 사이 간격 좁히기 */
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -5262,6 +5264,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 55px;
         flex-shrink: 0;
         text-align: right;
+        margin-left: 0 !important; /* 모바일: 이름과 점수 사이 간격 좁히기 */
     }
     
     .performer-winrate {
