@@ -1481,6 +1481,11 @@ async function loadMatchesForDate(date) {
                 const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log(`✅ ${slotKey} 시간대 매치 발견:`, matches.length);
                 
+                // 각 매치의 상태 로그
+                matches.forEach(match => {
+                    console.log(`📋 매치 ${match.id}: status=${match.status}, scoreA=${match.scoreA}, scoreB=${match.scoreB}`);
+                });
+                
                 // 시간대별 섹션 헤더 추가
                 matchesHTML += `
                     <div class="time-slot-section">
@@ -3571,9 +3576,14 @@ function renderRecords(matches) {
     document.querySelectorAll('.record-delete-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
+            e.preventDefault();
             const matchId = btn.getAttribute('data-match-id');
+            console.log(`🔘 기록 삭제 버튼 클릭됨: ${matchId}`);
             if (confirm('이 기록을 삭제하시겠습니까?')) {
+                console.log(`✅ 확인 버튼 클릭, deleteRecord 호출 예정: ${matchId}`);
                 await deleteRecord(matchId);
+            } else {
+                console.log(`❌ 취소 버튼 클릭, deleteRecord 호출 안함`);
             }
         });
     });
@@ -3681,12 +3691,20 @@ async function deleteRecord(matchId) {
                 console.log(`🔄 대진표 새로고침: ${matchDate} (날짜 일치)`);
                 await loadMatchesForDate(matchDate);
                 
-                // 새로고침 후 매치가 실제로 있는지 확인
+                // 새로고침 후 매치가 실제로 대진표에 표시되는지 확인
                 const matchRef = db.collection('matches').doc(matchId);
                 const finalCheck = await matchRef.get();
                 if (finalCheck.exists) {
                     const finalData = finalCheck.data();
                     console.log(`✅ 최종 확인: 매치 ${matchId} 존재함, status: ${finalData.status}, scoreA: ${finalData.scoreA}, scoreB: ${finalData.scoreB}`);
+                    
+                    // 대진표 DOM에서도 확인
+                    const matchInDOM = document.querySelector(`[data-match-id="${matchId}"]`);
+                    if (matchInDOM) {
+                        console.log(`✅ DOM 확인: 매치 ${matchId}가 대진표에 표시됨`);
+                    } else {
+                        console.warn(`⚠️ DOM 확인: 매치 ${matchId}가 대진표에 표시되지 않음`);
+                    }
                 } else {
                     console.error(`❌ 최종 확인: 매치 ${matchId} 존재하지 않음!`);
                 }
