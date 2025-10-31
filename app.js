@@ -1507,8 +1507,10 @@ async function loadMatchesForDate(date) {
                     
                     // 각 코트의 경기 렌더링
                     courtMatches.forEach(match => {
-                        const teamALabel = match.teamA.map(p => p.userName).join(', ');
-                        const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+                        // 팀 A 이름들을 배열로 (위아래 배치용)
+                        const teamANames = match.teamA.map(p => p.userName);
+                        // 팀 B 이름들을 배열로 (위아래 배치용)
+                        const teamBNames = match.teamB.map(p => p.userName);
                         const scoreA = match.scoreA ?? '';
                         const scoreB = match.scoreB ?? '';
                         const isCompleted = match.status === 'completed';
@@ -1538,9 +1540,13 @@ async function loadMatchesForDate(date) {
                                     <span class="match-info-compact">${roundNum}경기 ${gameStart} ~ ${gameEnd}</span>
                                 </div>
                                 <div class="match-teams-compact">
-                                    <span class="team-name-compact">${teamALabel}</span>
+                                    <div class="team-compact">
+                                        ${teamANames.map(name => `<div class="team-name-compact">${name}</div>`).join('')}
+                                    </div>
                                     <span class="team-vs-compact">vs</span>
-                                    <span class="team-name-compact">${teamBLabel}</span>
+                                    <div class="team-compact">
+                                        ${teamBNames.map(name => `<div class="team-name-compact">${name}</div>`).join('')}
+                                    </div>
                                 </div>
                                 <div class="match-score-compact">
                                     <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
@@ -1600,18 +1606,24 @@ async function loadMatchesForDate(date) {
                 const courtsContainers = matchesContainer.querySelectorAll('.courts-container');
                 courtsContainers.forEach(el => {
                     el.style.display = 'flex';
-                    el.style.gap = '4px';
+                    el.style.gap = '2px';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
+                    el.style.borderLeft = '2px solid #e0e0e0';
+                    el.style.borderRight = '2px solid #e0e0e0';
                 });
                 
                 const courtColumns = matchesContainer.querySelectorAll('.court-column');
-                courtColumns.forEach(el => {
+                courtColumns.forEach((el, index) => {
                     el.style.flex = '1';
                     el.style.minWidth = '0';
                     el.style.display = 'flex';
                     el.style.flexDirection = 'column';
-                    el.style.padding = '0 2px';
+                    el.style.padding = '0 4px';
+                    // 코트 사이 구분선 (마지막이 아니면)
+                    if (index === 0 && courtColumns.length > 1) {
+                        el.style.borderRight = '2px solid #667eea';
+                    }
                 });
                 
                 const courtHeaders = matchesContainer.querySelectorAll('.court-header-compact');
@@ -1657,11 +1669,21 @@ async function loadMatchesForDate(date) {
                     el.style.marginBottom = '1px';
                 });
                 
+                const teams = matchesContainer.querySelectorAll('.team-compact');
+                teams.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '2px';
+                });
+                
                 const teamNames = matchesContainer.querySelectorAll('.team-name-compact');
                 teamNames.forEach(el => {
-                    el.style.fontSize = '0.8rem';
+                    el.style.fontSize = '0.75rem';
                     el.style.color = '#333';
                     el.style.fontWeight = '500';
+                    el.style.textAlign = 'center';
+                    el.style.whiteSpace = 'nowrap';
                 });
                 
                 const teamVs = matchesContainer.querySelectorAll('.team-vs-compact');
