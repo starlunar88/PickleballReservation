@@ -1843,6 +1843,12 @@ async function loadMatchesForDate(date) {
                                 return;
                             }
                             
+                            // 동점 점수 차단
+                            if (scoreA === scoreB) {
+                                showToast('동점 점수는 입력할 수 없습니다. 한 팀이 반드시 이겨야 합니다.', 'warning');
+                                return;
+                            }
+                            
                             console.log('점수 저장 시작:', { matchId, scoreA, scoreB });
                             
                             // 매치 찾기
@@ -1935,6 +1941,12 @@ async function loadMatchesForDate(date) {
                                             
                                             if (finalScoreA === 0 && finalScoreB === 0) {
                                                 showToast('점수를 입력해주세요.', 'warning');
+                                                return;
+                                            }
+                                            
+                                            // 동점 점수 차단
+                                            if (finalScoreA === finalScoreB) {
+                                                showToast('동점 점수는 입력할 수 없습니다. 한 팀이 반드시 이겨야 합니다.', 'warning');
                                                 return;
                                             }
                                             
@@ -3495,18 +3507,26 @@ async function getUserInternalRating(userId) {
 // 게임 결과 기록
 async function recordGameResult(teamId, gameResult) {
     try {
+        const db = window.db || firebase.firestore();
+        const auth = window.auth || firebase.auth();
+        
+        if (!db) {
+            console.error('db 객체를 찾을 수 없습니다');
+            return;
+        }
+        
         const gameData = {
             teamId: teamId,
             date: gameResult.date,
             timeSlot: gameResult.timeSlot,
-            courtNumber: gameResult.courtNumber,
-            gameNumber: gameResult.gameNumber,
+            courtNumber: gameResult.courtNumber || 1,
+            gameNumber: gameResult.gameNumber || gameResult.roundNumber || 1,
             players: gameResult.players,
             winners: gameResult.winners, // 승자 팀의 플레이어 ID 배열
             losers: gameResult.losers,   // 패자 팀의 플레이어 ID 배열
             score: gameResult.score,     // 예: "11-9, 11-7"
             recordedAt: new Date(),
-            recordedBy: auth.currentUser.uid
+            recordedBy: auth && auth.currentUser ? auth.currentUser.uid : null
         };
         
         // 게임 결과 저장
@@ -5165,7 +5185,8 @@ async function saveMatchScore(match, scoreA, scoreB) {
         await recordGameResult(`${match.id}_A`, {
             date: match.date,
             timeSlot: match.timeSlot,
-            courtNumber: match.courtNumber,
+            courtNumber: match.courtNumber || match.court || 1,
+            gameNumber: match.roundNumber || match.round || 1,
             winners: winners.map(p => p.userId),
             losers: losers.map(p => p.userId),
             score: `${scoreA}-${scoreB}`,
