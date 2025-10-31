@@ -1525,21 +1525,28 @@ async function loadMatchesForDate(date) {
                         const roundNum = match.roundNumber || 1;
                         const courtNum = match.courtNumber || 1;
                         
-                        // 경기 시간 계산 (각 경기는 15분으로 가정)
-                        const timeSlotStart = timeSlot.start.split(':');
-                        const startHour = parseInt(timeSlotStart[0]);
-                        const startMin = parseInt(timeSlotStart[1]);
-                        const minutesPerGame = 15;
-                        const gameStartMinutes = (roundNum - 1) * minutesPerGame;
-                        const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-                        const gameStartHour = Math.floor(totalStartMinutes / 60);
-                        const gameStartMin = totalStartMinutes % 60;
-                        const totalEndMinutes = totalStartMinutes + minutesPerGame;
-                        const gameEndHour = Math.floor(totalEndMinutes / 60);
-                        const gameEndMin = totalEndMinutes % 60;
-                        
-                        const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-                        const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                        // 경기 시간 (저장된 값이 있으면 사용, 없으면 계산)
+                        let gameStart, gameEnd;
+                        if (match.gameStartTime && match.gameEndTime) {
+                            gameStart = match.gameStartTime;
+                            gameEnd = match.gameEndTime;
+                        } else {
+                            // 기존 계산 로직 (하위 호환성)
+                            const timeSlotStart = timeSlot.start.split(':');
+                            const startHour = parseInt(timeSlotStart[0]);
+                            const startMin = parseInt(timeSlotStart[1]);
+                            const minutesPerGame = 15;
+                            const gameStartMinutes = (roundNum - 1) * minutesPerGame;
+                            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+                            const gameStartHour = Math.floor(totalStartMinutes / 60);
+                            const gameStartMin = totalStartMinutes % 60;
+                            const totalEndMinutes = totalStartMinutes + minutesPerGame;
+                            const gameEndHour = Math.floor(totalEndMinutes / 60);
+                            const gameEndMin = totalEndMinutes % 60;
+                            
+                            gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+                            gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                        }
                     
                         matchesHTML += `
                             <div class="match-item-compact" data-match-id="${match.id}">
@@ -3995,21 +4002,6 @@ async function loadReservationsTimeline() {
                                         </button>`;
                             }
                         })()}
-                        ${(() => {
-                            // 관리자이거나 마감된 경우 대진표 생성 버튼 표시
-                            const currentUser = firebase.auth().currentUser;
-                            const isAdminUser = currentUser && currentUser.email && 
-                                                ['starlunar88@gmail.com', 'admin@pickleball.com'].includes(currentUser.email);
-                            if (isClosed || isAdminUser) {
-                                return `<button class="btn btn-primary force-generate-btn" 
-                                               data-time-slot="${slotKey}" 
-                                               data-date="${targetDate}"
-                                               style="margin-top: 8px; width: 100%; white-space: nowrap;">
-                                            대진표 생성
-                                        </button>`;
-                            }
-                            return '';
-                        })()}
                     </div>
                     <div class="timeline-match-schedule" id="match-schedule-${targetDate}-${slotKey.replace(/:/g, '-')}" style="display: none; margin-top: 12px;">
                         <!-- 대진표가 여기에 표시됩니다 -->
@@ -4042,40 +4034,6 @@ async function loadReservationsTimeline() {
                 const timeSlot = e.target.getAttribute('data-time-slot');
                 const date = e.target.getAttribute('data-date');
                 await handleCancelReservation(timeSlot, date);
-            });
-        });
-        
-        // 타임라인 대진표 생성 버튼 이벤트 리스너 추가
-        timeline.querySelectorAll('.force-generate-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                try {
-                    const timeSlot = btn.getAttribute('data-time-slot');
-                    const date = btn.getAttribute('data-date');
-                    
-                    if (!timeSlot) {
-                        console.error('시간대 정보가 없습니다');
-                        return;
-                    }
-                    
-                    // 모달 열기 (옵션 선택)
-                    openMatchScheduleOptionsModal(date, timeSlot);
-                    
-                    // 타임라인 새로고침
-                    await loadReservationsTimeline();
-                    
-                    // 현재 대진표 탭이 활성화되어 있으면 새로고침
-                    const matchesTab = document.getElementById('matches-tab');
-                    if (matchesTab && matchesTab.classList.contains('active')) {
-                        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
-                        await loadMatchesForDate(currentDate);
-                    }
-                } catch (error) {
-                    console.error('대진표 생성 오류:', error);
-                    showToast('대진표 생성 중 오류', 'error');
-                } finally {
-                    hideLoading();
-                }
             });
         });
         
@@ -6611,43 +6569,10 @@ function isPastClosing(date, timeSlot, closingMinutes = 20) {
     }
 }
 
-// 테스트용 시간대별 버튼 생성
+// 테스트용 시간대별 버튼 생성 - 제거됨
 async function createTestButtons() {
-    try {
-        const settings = await getSystemSettings();
-        if (!settings) return;
-        
-        const container = document.getElementById('test-buttons-container');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        settings.timeSlots.forEach(slot => {
-            const timeSlot = `${slot.start}-${slot.end}`;
-            const timeGroup = document.createElement('div');
-            timeGroup.className = 'test-time-group';
-            
-            timeGroup.innerHTML = `
-                <div class="test-time-label">${slot.start}-${slot.end}</div>
-                <div class="test-time-buttons">
-                    <button class="btn btn-outline add-random-btn" data-time-slot="${timeSlot}" title="무작위 예약자 추가">
-                        무작위 추가
-                    </button>
-                    <button class="btn btn-primary force-generate-btn" data-time-slot="${timeSlot}" title="강제 대진표 생성">
-                        대진표 생성
-                    </button>
-                </div>
-            `;
-            
-            container.appendChild(timeGroup);
-        });
-        
-        // 이벤트 리스너 추가
-        addTestButtonEventListeners();
-        
-    } catch (error) {
-        console.error('테스트 버튼 생성 오류:', error);
-    }
+    // 기능 제거됨
+    return;
 }
 
 // 테스트 버튼 이벤트 리스너 추가
@@ -6901,10 +6826,27 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         
         console.log(`대진표 생성: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
 
+        // 시간대 시작 시간 파싱
+        const [startHour, startMin] = timeSlot.split('-')[0].split(':').map(Number);
+        
         const batch = db.batch();
         schedule.forEach(match => {
             const matchId = `${date}_${timeSlot}_R${match.round}_C${match.court}`;
             const ref = db.collection('matches').doc(matchId);
+            
+            // 각 경기의 시간 계산 (15분 단위로 증가)
+            const minutesPerGame = 15;
+            const gameStartMinutes = (match.round - 1) * minutesPerGame;
+            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+            const gameStartHour = Math.floor(totalStartMinutes / 60);
+            const gameStartMin = totalStartMinutes % 60;
+            const totalEndMinutes = totalStartMinutes + minutesPerGame;
+            const gameEndHour = Math.floor(totalEndMinutes / 60);
+            const gameEndMin = totalEndMinutes % 60;
+            
+            const gameStartTime = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+            const gameEndTime = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+            
             batch.set(ref, {
                 matchId,
                 date,
@@ -6916,6 +6858,8 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
                 scoreA: null,
                 scoreB: null,
                 status: 'scheduled',
+                gameStartTime, // 게임 시작 시간
+                gameEndTime,   // 게임 종료 시간
                 createdAt: new Date()
             });
         });
@@ -7125,10 +7069,20 @@ async function renderMatchSchedule(matches, date, timeSlot) {
             const roundDiv = document.createElement('div');
             roundDiv.className = 'match-round';
             
-            const startTime = timeSlot.split('-')[0];
-            const roundStartTime = new Date(`2000-01-01T${startTime}:00`);
-            roundStartTime.setMinutes(roundStartTime.getMinutes() + (parseInt(roundNum) - 1) * 15);
-            const timeStr = roundStartTime.toTimeString().slice(0, 5);
+            // 라운드의 첫 번째 매치에서 시간 정보 가져오기
+            const firstMatch = roundMatches[0];
+            let timeStr = '';
+            if (firstMatch.gameStartTime && firstMatch.gameEndTime) {
+                timeStr = `${firstMatch.gameStartTime} ~ ${firstMatch.gameEndTime}`;
+            } else {
+                // 하위 호환성: 계산으로 시간 결정
+                const startTime = timeSlot.split('-')[0];
+                const roundStartTime = new Date(`2000-01-01T${startTime}:00`);
+                roundStartTime.setMinutes(roundStartTime.getMinutes() + (parseInt(roundNum) - 1) * 15);
+                const endTime = new Date(roundStartTime);
+                endTime.setMinutes(endTime.getMinutes() + 15);
+                timeStr = `${roundStartTime.toTimeString().slice(0, 5)} ~ ${endTime.toTimeString().slice(0, 5)}`;
+            }
             
             roundDiv.innerHTML = `
                 <h3>${timeStr} - ${roundNum}경기 (15분)</h3>

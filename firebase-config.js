@@ -108,8 +108,8 @@ async function showUserMenu(user) {
         // 네비게이션 바에 사용자 정보 표시
         if (navUserInfo) {
             const displayName = user.displayName || user.email?.split('@')[0] || '사용자';
-            const duprText = dupr ? `DUPR: ${dupr.toFixed(1)}` : '';
-            navUserInfo.textContent = `${displayName}${dupr ? ' · ' + duprText : ''}`;
+            const duprText = dupr ? `DUPR : ${dupr.toFixed(1)}` : '';
+            navUserInfo.textContent = `${displayName}${dupr ? ' ' + duprText : ''}`;
             navUserInfo.style.display = 'inline';
         }
         
