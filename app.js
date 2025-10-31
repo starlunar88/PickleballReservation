@@ -3116,13 +3116,33 @@ function drawTeamBarChart(data, canvasId, color) {
         return;
     }
     
-    const padding = { top: 20, right: 80, bottom: 20, left: 200 };
+    // 팀 이름 최대 길이 계산하여 동적으로 left padding 설정
+    ctx.font = '12px Arial';
+    let maxNameWidth = 0;
+    data.forEach(item => {
+        const textWidth = ctx.measureText(item.playerNames).width;
+        maxNameWidth = Math.max(maxNameWidth, textWidth);
+    });
+    
+    // padding 계산 (팀 이름 공간 + 여백)
+    const nameAreaWidth = Math.max(maxNameWidth + 20, 120); // 최소 120px
+    const padding = { 
+        top: 20, 
+        right: 100, // 오른쪽 여백 증가 (승률 레이블 공간)
+        bottom: 30, // 하단 여백 증가 (그리드 레이블 공간)
+        left: nameAreaWidth 
+    };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
+    // 차트 영역이 너무 작으면 경고
+    if (chartWidth < 100 || chartHeight < 50) {
+        console.warn('차트 영역이 너무 작습니다');
+    }
+    
     const maxValue = 100; // 승률이므로 최대 100%
     const barHeight = chartHeight / data.length;
-    const barSpacing = barHeight * 0.2;
+    const barSpacing = barHeight * 0.15; // spacing 감소
     
     // 그리드 그리기
     ctx.strokeStyle = '#e0e0e0';
@@ -3143,24 +3163,39 @@ function drawTeamBarChart(data, canvasId, color) {
     
     // 바 차트 그리기
     data.forEach((item, index) => {
-        const barWidth = (item.winRate / maxValue) * chartWidth;
+        // 막대 너비 계산 (차트 영역을 넘지 않도록 제한)
+        let barWidth = (item.winRate / maxValue) * chartWidth;
+        barWidth = Math.min(barWidth, chartWidth - 2); // 2px 여유
+        
         const x = padding.left;
         const y = padding.top + index * barHeight + barSpacing;
+        const actualBarHeight = barHeight - barSpacing * 2;
         
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, barWidth, barHeight - barSpacing * 2);
+        ctx.fillRect(x, y, barWidth, actualBarHeight);
         
-        // 팀 이름 레이블
+        // 팀 이름 레이블 (차트 영역 왼쪽)
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
         ctx.textAlign = 'right';
-        ctx.fillText(item.playerNames, padding.left - 10, y + (barHeight - barSpacing * 2) / 2 + 4);
+        ctx.fillText(item.playerNames, padding.left - 10, y + actualBarHeight / 2 + 4);
         
-        // 승률 레이블
+        // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${item.winRate.toFixed(0)}%`, x + barWidth + 5, y + (barHeight - barSpacing * 2) / 2 + 4);
+        const labelText = `${item.winRate.toFixed(0)}%`;
+        const labelX = x + barWidth + 8;
+        
+        // 레이블이 차트 영역을 벗어나면 막대 안에 표시
+        if (labelX + 30 > padding.left + chartWidth) {
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'right';
+            ctx.fillText(labelText, x + barWidth - 5, y + actualBarHeight / 2 + 4);
+        } else {
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.fillText(labelText, labelX, y + actualBarHeight / 2 + 4);
+        }
     });
 }
 
