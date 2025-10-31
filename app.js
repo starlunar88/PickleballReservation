@@ -1406,31 +1406,50 @@ async function loadTabData(tabName) {
 // 대진표 데이터 로드
 async function loadMatchesData() {
     try {
+        console.log('📋 loadMatchesData 호출됨');
         // 현재 날짜로 대진표 로드
         const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        console.log('📅 현재 날짜:', currentDate);
         await loadMatchesForDate(currentDate);
     } catch (error) {
-        console.error('대진표 데이터 로드 오류:', error);
+        console.error('❌ 대진표 데이터 로드 오류:', error);
     }
 }
 
 // 특정 날짜의 대진표 로드
 async function loadMatchesForDate(date) {
     try {
+        console.log('📋 loadMatchesForDate 호출됨, 날짜:', date);
+        
         const settings = await getSystemSettings();
         if (!settings || !settings.timeSlots) {
+            console.log('⚠️ 설정 또는 시간 슬롯이 없습니다');
             return;
         }
         
         const matchesContainer = document.getElementById('match-schedule');
-        if (!matchesContainer) return;
+        if (!matchesContainer) {
+            console.error('❌ match-schedule 컨테이너를 찾을 수 없습니다');
+            return;
+        }
+        
+        console.log('✅ match-schedule 컨테이너 찾음');
+        
+        const db = getDb();
+        if (!db) {
+            console.error('❌ db 객체를 찾을 수 없습니다');
+            return;
+        }
         
         // 모든 시간대의 대진표를 표시
         let matchesHTML = '';
         let hasMatches = false;
         
+        console.log('🕐 시간대 수:', settings.timeSlots.length);
+        
         for (const timeSlot of settings.timeSlots) {
             const slotKey = `${timeSlot.start}-${timeSlot.end}`;
+            console.log(`🔍 시간대 확인: ${slotKey}, 날짜: ${date}`);
             
             // 해당 시간대의 대진표 확인
             const existingMatches = await db.collection('matches')
@@ -1438,9 +1457,12 @@ async function loadMatchesForDate(date) {
                 .where('timeSlot', '==', slotKey)
                 .get();
             
+            console.log(`📊 ${slotKey} 시간대 매치 수:`, existingMatches.size);
+            
             if (!existingMatches.empty) {
                 hasMatches = true;
                 const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log(`✅ ${slotKey} 시간대 매치 발견:`, matches.length);
                 
                 // 코트별로 먼저 그룹화
                 const courts = {};
@@ -1451,6 +1473,8 @@ async function loadMatchesForDate(date) {
                     }
                     courts[courtNum].push(match);
                 });
+                
+                console.log(`🏟️ 코트 수:`, Object.keys(courts).length);
                 
                 // 각 코트 내에서 라운드순으로 정렬
                 Object.keys(courts).forEach(courtNum => {
@@ -1524,11 +1548,20 @@ async function loadMatchesForDate(date) {
             }
         }
         
-        if (hasMatches) {
+        console.log('📝 생성된 대진표 HTML 길이:', matchesHTML.length);
+        console.log('📝 대진표 HTML 미리보기:', matchesHTML.substring(0, 500));
+        console.log('🔍 hasMatches:', hasMatches);
+        
+        if (hasMatches && matchesHTML.length > 0) {
+            console.log('✅ 대진표가 있음, HTML 삽입');
+            console.log('📦 컨테이너:', matchesContainer);
             matchesContainer.innerHTML = matchesHTML;
+            console.log('✅ HTML 삽입 완료');
             
             // 저장 버튼 이벤트 리스너 추가
-            matchesContainer.querySelectorAll('.save-score-btn').forEach(btn => {
+            const saveButtons = matchesContainer.querySelectorAll('.save-score-btn-small');
+            console.log('💾 저장 버튼 수:', saveButtons.length);
+            saveButtons.forEach(btn => {
                 if (!btn.disabled) {
                     btn.addEventListener('click', async () => {
                         try {
@@ -2169,11 +2202,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 대진표 탭으로 전환 시 대진표 로드
             if (tabName === 'matches') {
+                console.log('🎯 대진표 탭으로 전환, loadMatchesData 호출');
                 setTimeout(async () => {
                     try {
+                        console.log('⏰ 대진표 탭 전환 후 로드 시작');
                         await loadMatchesData();
+                        console.log('✅ 대진표 탭 전환 후 로드 완료');
                     } catch (error) {
-                        console.error('탭 전환 시 대진표 로드 오류:', error);
+                        console.error('❌ 탭 전환 시 대진표 로드 오류:', error);
                         showToast('대진표 로드에 실패했습니다.', 'error');
                     }
                 }, 50);
