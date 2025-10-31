@@ -4270,11 +4270,64 @@ async function generateMatchSchedule(date, timeSlot) {
             showToast('최소 4명이 필요합니다.', 'error');
             return;
         }
+        
+        // 예약자 수에 따라 코트 수 동적 결정
+        // 4-5명: 1코트, 6-8명: 1코트, 9-12명: 2코트, 13-16명: 2코트, 17-20명: 3코트...
+        const playerCount = players.length;
+        let courtCount = 1;
+        if (playerCount >= 9 && playerCount <= 12) {
+            courtCount = 2;
+        } else if (playerCount >= 13 && playerCount <= 16) {
+            courtCount = 2;
+        } else if (playerCount >= 17 && playerCount <= 20) {
+            courtCount = 3;
+        } else if (playerCount >= 21 && playerCount <= 24) {
+            courtCount = 3;
+        } else if (playerCount >= 25) {
+            courtCount = Math.ceil(playerCount / 8); // 8명당 1코트
+        }
+        
+        // 기존 대진표 확인 (플레이어별 배정된 코트 추적)
+        const existingMatches = await db.collection('matches')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .get();
+        
+        const playerCourtMap = {}; // 플레이어별 배정된 코트 추적
+        existingMatches.forEach(doc => {
+            const match = doc.data();
+            if (match.teamA) {
+                match.teamA.forEach(p => {
+                    if (!playerCourtMap[p.userId]) {
+                        playerCourtMap[p.userId] = match.courtNumber || match.court || 1;
+                    }
+                });
+            }
+            if (match.teamB) {
+                match.teamB.forEach(p => {
+                    if (!playerCourtMap[p.userId]) {
+                        playerCourtMap[p.userId] = match.courtNumber || match.court || 1;
+                    }
+                });
+            }
+        });
+        
+        // 기존 대진표 삭제 (같은 날짜, 같은 시간대)
+        if (!existingMatches.empty) {
+            const deleteBatch = db.batch();
+            existingMatches.forEach(doc => {
+                deleteBatch.delete(doc.ref);
+            });
+            await deleteBatch.commit();
+            console.log('기존 대진표 삭제 완료');
+        }
+        
         const settings = await getSystemSettings();
-        const courtCount = Math.max(1, settings?.courtCount || 2);
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
-        const schedule = buildMatchSchedule(players, courtCount, rounds);
+        const schedule = buildMatchSchedule(players, courtCount, rounds, playerCourtMap);
+        
+        console.log(`대진표 생성: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
 
         const batch = db.batch();
         schedule.forEach(match => {
@@ -4326,23 +4379,65 @@ const pairingPatterns = [
     [1,2,0,3]  // 2,3 vs 1,4 (변형)
 ];
 
-// 매치 스케줄 빌드 (간단 로테이션, 2코트 지원)
-function buildMatchSchedule(players, courtCount, rounds) {
-    const shuffled = [...players].sort(() => Math.random() - 0.5);
-    const queue = [...shuffled];
+// 매치 스케줄 빌드 (간단 로테이션, 동적 코트 지원, 코트 배정 유지)
+function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}) {
+    // 플레이어를 코트별로 분류
+    const courtPlayers = {};
+    const unassignedPlayers = [];
+    
+    // 이미 배정된 플레이어는 해당 코트로 배정
+    players.forEach(player => {
+        const assignedCourt = playerCourtMap[player.userId];
+        if (assignedCourt && assignedCourt <= courtCount) {
+            if (!courtPlayers[assignedCourt]) {
+                courtPlayers[assignedCourt] = [];
+            }
+            courtPlayers[assignedCourt].push(player);
+        } else {
+            unassignedPlayers.push(player);
+        }
+    });
+    
+    // 미배정 플레이어를 코트별로 균등 분배
+    unassignedPlayers.forEach((player, index) => {
+        const court = (index % courtCount) + 1;
+        if (!courtPlayers[court]) {
+            courtPlayers[court] = [];
+        }
+        courtPlayers[court].push(player);
+    });
+    
     const schedule = [];
-    for (let r = 1; r <= rounds; r++) {
-        for (let c = 1; c <= courtCount; c++) {
-            if (queue.length < 4) break;
+    
+    // 각 코트별로 라운드별 경기 생성
+    for (let c = 1; c <= courtCount; c++) {
+        const courtPlayerList = [...(courtPlayers[c] || [])];
+        
+        if (courtPlayerList.length < 4) {
+            // 이 코트에 4명 미만이면 스킵
+            continue;
+        }
+        
+        // 코트별 플레이어를 섞어서 로테이션
+        const queue = [...courtPlayerList].sort(() => Math.random() - 0.5);
+        
+        for (let r = 1; r <= rounds; r++) {
+            if (queue.length < 4) {
+                // 큐에 4명 미만이면 루프 초기화
+                queue.push(...courtPlayerList);
+            }
+            
             const group = queue.splice(0, 4);
             // 사용된 인원은 맨 뒤로 이동하여 다음 라운드에 로테이션
             queue.push(...group);
+            
             const p = pairingPatterns[(r - 1) % pairingPatterns.length];
             const teamA = [group[p[0]], group[p[1]]];
             const teamB = [group[p[2]], group[p[3]]];
             schedule.push({ round: r, court: c, teamA, teamB });
         }
     }
+    
     return schedule;
 }
 
