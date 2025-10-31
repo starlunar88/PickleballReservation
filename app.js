@@ -1478,72 +1478,90 @@ async function loadMatchesForDate(date) {
                 matchesHTML += `
                     <div class="time-slot-section">
                         <div class="time-slot-header-compact">${timeSlot.start} - ${timeSlot.end}</div>
+                        <div class="courts-container">
                 `;
                 
-                // 경기 번호 우선, 그 다음 코트 번호 순으로 정렬
-                matches.sort((a, b) => {
-                    const roundA = a.roundNumber || 1;
-                    const roundB = b.roundNumber || 1;
-                    const courtA = a.courtNumber || 1;
-                    const courtB = b.courtNumber || 1;
-                    
-                    if (roundA !== roundB) {
-                        return roundA - roundB;
+                // 코트별로 그룹화
+                const courts = {};
+                matches.forEach(match => {
+                    const courtNum = match.courtNumber || 1;
+                    if (!courts[courtNum]) {
+                        courts[courtNum] = [];
                     }
-                    return courtA - courtB;
+                    courts[courtNum].push(match);
                 });
                 
-                // 각 경기 렌더링
-                matches.forEach(match => {
-                    const teamALabel = match.teamA.map(p => p.userName).join(', ');
-                    const teamBLabel = match.teamB.map(p => p.userName).join(', ');
-                    const scoreA = match.scoreA ?? '';
-                    const scoreB = match.scoreB ?? '';
-                    const isCompleted = match.status === 'completed';
-                    const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
-                    const roundNum = match.roundNumber || 1;
-                    const courtNum = match.courtNumber || 1;
-                    
-                    // 경기 시간 계산 (각 경기는 15분으로 가정)
-                    const timeSlotStart = timeSlot.start.split(':');
-                    const startHour = parseInt(timeSlotStart[0]);
-                    const startMin = parseInt(timeSlotStart[1]);
-                    const minutesPerGame = 15;
-                    const gameStartMinutes = (roundNum - 1) * minutesPerGame;
-                    const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-                    const gameStartHour = Math.floor(totalStartMinutes / 60);
-                    const gameStartMin = totalStartMinutes % 60;
-                    const totalEndMinutes = totalStartMinutes + minutesPerGame;
-                    const gameEndHour = Math.floor(totalEndMinutes / 60);
-                    const gameEndMin = totalEndMinutes % 60;
-                    
-                    const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-                    const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                // 각 코트 내에서 경기 번호 순으로 정렬
+                Object.keys(courts).forEach(courtNum => {
+                    courts[courtNum].sort((a, b) => (a.roundNumber || 1) - (b.roundNumber || 1));
+                });
+                
+                // 코트별로 렌더링 (1코트, 2코트 순서)
+                Object.keys(courts).sort((a, b) => a - b).forEach(courtNum => {
+                    const courtMatches = courts[courtNum];
                     
                     matchesHTML += `
-                        <div class="match-item-compact">
-                            <div class="match-header-compact">
-                                <span class="match-info-compact">${roundNum}경기 (${courtNum}코트) ${gameStart} ~ ${gameEnd}</span>
+                        <div class="court-column">
+                            <div class="court-header-compact">${courtNum}코트</div>
+                    `;
+                    
+                    // 각 코트의 경기 렌더링
+                    courtMatches.forEach(match => {
+                        const teamALabel = match.teamA.map(p => p.userName).join(', ');
+                        const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+                        const scoreA = match.scoreA ?? '';
+                        const scoreB = match.scoreB ?? '';
+                        const isCompleted = match.status === 'completed';
+                        const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
+                        const roundNum = match.roundNumber || 1;
+                        const courtNum = match.courtNumber || 1;
+                        
+                        // 경기 시간 계산 (각 경기는 15분으로 가정)
+                        const timeSlotStart = timeSlot.start.split(':');
+                        const startHour = parseInt(timeSlotStart[0]);
+                        const startMin = parseInt(timeSlotStart[1]);
+                        const minutesPerGame = 15;
+                        const gameStartMinutes = (roundNum - 1) * minutesPerGame;
+                        const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+                        const gameStartHour = Math.floor(totalStartMinutes / 60);
+                        const gameStartMin = totalStartMinutes % 60;
+                        const totalEndMinutes = totalStartMinutes + minutesPerGame;
+                        const gameEndHour = Math.floor(totalEndMinutes / 60);
+                        const gameEndMin = totalEndMinutes % 60;
+                        
+                        const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+                        const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                    
+                        matchesHTML += `
+                            <div class="match-item-compact">
+                                <div class="match-header-compact">
+                                    <span class="match-info-compact">${roundNum}경기 ${gameStart} ~ ${gameEnd}</span>
+                                </div>
+                                <div class="match-teams-compact">
+                                    <span class="team-name-compact">${teamALabel}</span>
+                                    <span class="team-vs-compact">vs</span>
+                                    <span class="team-name-compact">${teamBLabel}</span>
+                                </div>
+                                <div class="match-score-compact">
+                                    <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                                    <span class="score-separator-compact">:</span>
+                                    <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                                    <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
+                                        ${isCompleted ? '완료' : '저장'}
+                                    </button>
+                                </div>
                             </div>
-                            <div class="match-teams-compact">
-                                <span class="team-name-compact">${teamALabel}</span>
-                                <span class="team-vs-compact">vs</span>
-                                <span class="team-name-compact">${teamBLabel}</span>
-                            </div>
-                            <div class="match-score-compact">
-                                <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
-                                <span class="score-separator-compact">:</span>
-                                <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
-                                <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
-                                    ${isCompleted ? '완료' : '저장'}
-                                </button>
-                            </div>
+                        `;
+                    });
+                    
+                    matchesHTML += `
                         </div>
                     `;
                 });
                 
                 // 시간대별 섹션 닫기
                 matchesHTML += `
+                        </div>
                     </div>
                 `;
             }
@@ -1577,6 +1595,35 @@ async function loadMatchesForDate(date) {
                     el.style.marginBottom = '4px';
                     el.style.background = '#f0f4ff';
                     el.style.borderRadius = '4px';
+                });
+                
+                const courtsContainers = matchesContainer.querySelectorAll('.courts-container');
+                courtsContainers.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.gap = '4px';
+                    el.style.width = '100%';
+                    el.style.boxSizing = 'border-box';
+                });
+                
+                const courtColumns = matchesContainer.querySelectorAll('.court-column');
+                courtColumns.forEach(el => {
+                    el.style.flex = '1';
+                    el.style.minWidth = '0';
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.padding = '0 2px';
+                });
+                
+                const courtHeaders = matchesContainer.querySelectorAll('.court-header-compact');
+                courtHeaders.forEach(el => {
+                    el.style.fontSize = '0.8rem';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#667eea';
+                    el.style.padding = '2px 4px';
+                    el.style.marginBottom = '2px';
+                    el.style.background = '#e8f0ff';
+                    el.style.borderRadius = '3px';
+                    el.style.textAlign = 'center';
                 });
                 
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');

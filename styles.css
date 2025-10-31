@@ -3175,10 +3175,10 @@ body {
 
 /* 대진표 컨테이너 스타일 */
 .matches-container {
-    max-width: 400px;
+    max-width: 100%;
     margin: 0 auto;
     width: 100%;
-    padding: 0 8px 120px 8px; /* 하단 네비게이션 바 공간 확보 */
+    padding: 0 4px 120px 4px; /* 하단 네비게이션 바 공간 확보, 좌우 여백 최소화 */
     min-height: calc(100vh - 200px);
     box-sizing: border-box;
     overflow-x: hidden; /* 가로 스크롤 방지 */
