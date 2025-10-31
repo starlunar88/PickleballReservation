@@ -1561,15 +1561,11 @@ async function loadMatchesForDate(date) {
                     // 각 코트의 경기 렌더링
                     courtMatches.forEach(match => {
                         // 계급 아이콘 생성 헬퍼 함수 (점수 기준: 승리 +10점, 패배 -5점)
-                        // 점수가 없으면 internalRating을 사용 (internalRating은 보통 500-2000 범위이므로, 점수로 변환 필요)
+                        // 실제 게임 점수만 사용 (internalRating은 사용하지 않음)
                         const getTierIcon = (score) => {
-                            // score는 점수(승리 +10점, 패배 -5점) 또는 internalRating일 수 있음
-                            // internalRating을 점수로 근사치 변환 (500=0점, 2000=1500점으로 가정)
-                            let actualScore = score;
-                            if (score > 1000) {
-                                // internalRating으로 보임 (500-2000 범위를 점수로 변환)
-                                actualScore = Math.max(0, ((score - 500) / 1500) * 2500);
-                            }
+                            // score가 없거나 0이면 NEW로 표시
+                            // 점수는 승리 +10점, 패배 -5점으로 계산되므로 0 이상의 정수값만 사용
+                            const actualScore = score || 0;
                             
                             if (actualScore >= 2500) {
                                 return '<i class="fas fa-trophy" style="font-size: 0.75rem; color: #764ba2; margin-right: 3px;"></i>';
@@ -1584,20 +1580,23 @@ async function loadMatchesForDate(date) {
                             } else if (actualScore >= 30) {
                                 return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>';
                             } else {
+                                // 점수가 0이거나 없으면 초보자로 표시
                                 return '<span style="font-size: 0.7rem; font-weight: 700; color: #666; margin-right: 3px;">NEW</span>';
                             }
                         };
                         
                         // 팀 A 이름들을 배열로 (계급 아이콘 포함)
                         const teamANames = match.teamA.map(p => {
-                            // 점수가 있으면 사용, 없으면 internalRating 사용
-                            const score = p.score || p.internalRating || 0;
+                            // 실제 게임 점수만 사용 (score 필드)
+                            // score가 없으면 0으로 처리하여 NEW로 표시
+                            const score = p.score || 0;
                             const tierIcon = getTierIcon(score);
                             return `${tierIcon}${p.userName}`;
                         });
                         // 팀 B 이름들을 배열로 (계급 아이콘 포함)
                         const teamBNames = match.teamB.map(p => {
-                            const score = p.score || p.internalRating || 0;
+                            // 실제 게임 점수만 사용 (score 필드)
+                            const score = p.score || 0;
                             const tierIcon = getTierIcon(score);
                             return `${tierIcon}${p.userName}`;
                         });
