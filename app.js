@@ -5140,70 +5140,108 @@ async function getRankings(limit = 50) {
                 userName = userInfoMap[userId];
             }
             
-            // 2. users 컬렉션에서 찾기
+            // 2. users 컬렉션에서 찾기 (더 철저하게)
             if (!userName) {
-                const userDoc = await db.collection('users').doc(userId).get();
-                if (userDoc.exists) {
-                    const userDocData = userDoc.data();
-                    userName = userDocData.displayName || userDocData.name || userDocData.email || null;
+                try {
+                    const userDoc = await db.collection('users').doc(userId).get();
+                    if (userDoc.exists) {
+                        const userDocData = userDoc.data();
+                        // 여러 필드명 시도
+                        userName = userDocData.displayName || 
+                                   userDocData.name || 
+                                   userDocData.userName ||
+                                   userDocData.email?.split('@')[0] || // email의 @ 앞부분만
+                                   userDocData.email || 
+                                   null;
+                        console.log(`📝 users 컬렉션에서 이름 찾음: ${userId} -> ${userName}`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ users 컬렉션 조회 오류 (${userId}):`, error);
                 }
             }
             
             // 3. reservations 컬렉션에서 최근 예약 찾기
             if (!userName) {
-                const reservationsSnapshot = await db.collection('reservations')
-                    .where('userId', '==', userId)
-                    .limit(10)
-                    .get();
-                
-                if (!reservationsSnapshot.empty) {
-                    // 가장 최근 예약 찾기 (클라이언트 측 정렬)
-                    const reservations = [];
-                    reservationsSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        reservations.push({
-                            userName: data.userName || data.name || null,
-                            createdAt: data.createdAt || new Date(0)
-                        });
-                    });
-                    
-                    // 최신순으로 정렬
-                    reservations.sort((a, b) => {
-                        const dateA = a.createdAt instanceof Date ? a.createdAt : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0));
-                        const dateB = b.createdAt instanceof Date ? b.createdAt : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0));
-                        return dateB - dateA;
-                    });
-                    
-                    if (reservations.length > 0 && reservations[0].userName) {
-                        userName = reservations[0].userName;
-                    }
-                }
-            }
-            
-            // 4. gameResults에서 이름 찾기 시도
-            if (!userName) {
-                // gameResults에서 해당 사용자가 포함된 경기를 찾아 이름 확인
-                const gameResultsWithUser = await db.collection('gameResults')
-                    .where('winners', 'array-contains', userId)
-                    .limit(1)
-                    .get();
-                
-                if (gameResultsWithUser.empty) {
-                    const gameResultsWithUser2 = await db.collection('gameResults')
-                        .where('losers', 'array-contains', userId)
-                        .limit(1)
+                try {
+                    const reservationsSnapshot = await db.collection('reservations')
+                        .where('userId', '==', userId)
+                        .limit(10)
                         .get();
                     
-                    if (!gameResultsWithUser2.empty) {
-                        const game = gameResultsWithUser2.docs[0].data();
-                        // gameResults에는 직접 이름 정보가 없을 수 있으므로 건너뛰기
+                    if (!reservationsSnapshot.empty) {
+                        // 가장 최근 예약 찾기 (클라이언트 측 정렬)
+                        const reservations = [];
+                        reservationsSnapshot.forEach(doc => {
+                            const data = doc.data();
+                            reservations.push({
+                                userName: data.userName || data.name || null,
+                                createdAt: data.createdAt || new Date(0)
+                            });
+                        });
+                        
+                        // 최신순으로 정렬
+                        reservations.sort((a, b) => {
+                            const dateA = a.createdAt instanceof Date ? a.createdAt : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0));
+                            const dateB = b.createdAt instanceof Date ? b.createdAt : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0));
+                            return dateB - dateA;
+                        });
+                        
+                        if (reservations.length > 0 && reservations[0].userName) {
+                            userName = reservations[0].userName;
+                            console.log(`📝 reservations 컬렉션에서 이름 찾음: ${userId} -> ${userName}`);
+                        }
                     }
+                } catch (error) {
+                    console.warn(`⚠️ reservations 컬렉션 조회 오류 (${userId}):`, error);
                 }
             }
             
-            // 최종적으로 이름이 없으면 '알 수 없음'으로 설정
-            if (!userName || userName.startsWith('test_') || userName.length > 30) {
+            // 4. matches에서 직접 찾기 시도
+            if (!userName) {
+                try {
+                    const matchesSnapshot = await db.collection('matches')
+                        .where('status', '==', 'completed')
+                        .limit(50)
+                        .get();
+                    
+                    for (const matchDoc of matchesSnapshot.docs) {
+                        const match = matchDoc.data();
+                        const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
+                        const player = allPlayers.find(p => (p.userId || p.id) === userId);
+                        if (player && (player.userName || player.name)) {
+                            userName = player.userName || player.name;
+                            console.log(`📝 matches에서 이름 찾음: ${userId} -> ${userName}`);
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ matches 컬렉션 조회 오류 (${userId}):`, error);
+                }
+            }
+            
+            // 이름 정리 (email에서 @ 제거, 공백 제거)
+            if (userName) {
+                // email 형식이면 @ 앞부분만 사용
+                if (userName.includes('@')) {
+                    userName = userName.split('@')[0];
+                }
+                // 공백 제거
+                userName = userName.trim();
+                // 빈 문자열 체크
+                if (userName === '') {
+                    userName = null;
+                }
+            }
+            
+            // 최종적으로 이름이 없거나 유효하지 않으면 '알 수 없음'으로 설정
+            if (!userName || 
+                userName.startsWith('test_') || 
+                userName.length > 30 ||
+                userName === '알 수 없음') {
+                console.warn(`⚠️ 이름을 찾을 수 없음: ${userId} (최종: ${userName || 'null'})`);
                 userName = '알 수 없음';
+            } else {
+                console.log(`✅ 최종 이름: ${userId} -> ${userName}`);
             }
             
             const winRate = userData.totalGames > 0 ? (userData.wins / userData.totalGames * 100) : 0;
