@@ -1435,11 +1435,21 @@ async function loadMatchesForDate(date) {
         
         console.log('✅ match-schedule 컨테이너 찾음');
         
-        const db = getDb();
+        // Firebase 초기화 확인
+        if (!window.db) {
+            if (!initializeFirebase()) {
+                console.error('❌ db 객체를 찾을 수 없습니다');
+                return;
+            }
+        }
+        
+        const db = window.db || firebase.firestore();
         if (!db) {
             console.error('❌ db 객체를 찾을 수 없습니다');
             return;
         }
+        
+        console.log('✅ db 객체 확인됨');
         
         // 모든 시간대의 대진표를 표시
         let matchesHTML = '';
@@ -1571,6 +1581,7 @@ async function loadMatchesForDate(date) {
                             const scoreB = Number(document.getElementById(`scoreB-${safeId}`).value || 0);
                             
                             // 매치 찾기
+                            const db = window.db || firebase.firestore();
                             const matchDoc = await db.collection('matches').doc(originalId).get();
                             if (matchDoc.exists) {
                                 await saveMatchScore({ id: originalId, ...matchDoc.data() }, scoreA, scoreB);
