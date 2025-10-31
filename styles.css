@@ -4132,7 +4132,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     font-size: 1rem !important;
     font-weight: 700 !important;
     padding: 12px 18px !important;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; /* 1코트 기본 색상 */
     border-radius: 14px !important;
     border: none !important;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
@@ -4143,6 +4143,25 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     overflow: hidden !important;
     width: 100% !important;
     box-sizing: border-box !important;
+}
+
+/* 1코트 색상 (파란색 계열) */
+.time-slot-matches .court-section:nth-child(1) .court-title,
+.time-slot-matches .court-section:first-child .court-title {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* 2코트 색상 (주황색 계열로 구분) */
+.time-slot-matches .court-section:nth-child(2) .court-title {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%) !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3) !important;
+}
+
+/* 3코트 이상 (초록색 계열) */
+.time-slot-matches .court-section:nth-child(n+3) .court-title {
+    background: linear-gradient(135deg, #51cf66 0%, #40c057 100%) !important;
+    box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3) !important;
 }
 
 .time-slot-matches .court-title::before {
@@ -4261,7 +4280,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: linear-gradient(135deg, #f6f7fb 0%, #ffffff 100%) !important;
     border-radius: 10px !important;
     font-weight: 600 !important;
-    color: #2d3748 !important;
+    color: #000000 !important; /* 검은색으로 변경 (파란색 배경에서 잘 보이도록) */
     font-size: 0.75rem !important;
     min-width: 85px !important;
     max-width: 130px !important;
