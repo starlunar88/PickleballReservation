@@ -4047,6 +4047,15 @@ async function loadReservationsTimeline() {
             return;
         }
         
+        // db 객체 확인 (모바일에서도 안전하게)
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            console.error('❌ db 객체를 찾을 수 없습니다');
+            timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터베이스 연결 실패</p></div>';
+            return;
+        }
+        console.log('✅ db 객체 확인됨');
+        
         // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨)
         const targetDate = window.currentDate || new Date().toISOString().slice(0, 10);
         console.log('📅 대상 날짜:', targetDate);
@@ -4353,7 +4362,25 @@ async function loadReservationsTimeline() {
         
     } catch (error) {
         console.error('예약 현황 로드 오류:', error);
-        timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
+        console.error('오류 상세:', error.message);
+        console.error('오류 스택:', error.stack);
+        
+        // 모바일에서도 사용자에게 명확한 메시지 표시
+        let errorMessage = '데이터를 불러올 수 없습니다';
+        if (error.message) {
+            errorMessage += `: ${error.message}`;
+        }
+        if (!navigator.onLine) {
+            errorMessage = '인터넷 연결을 확인해주세요';
+        }
+        
+        timeline.innerHTML = `<div class="empty-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>${errorMessage}</p>
+            <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 12px; padding: 8px 16px;">
+                새로고침
+            </button>
+        </div>`;
     }
     
     // 마감 시간 실시간 업데이트 (1분마다)
