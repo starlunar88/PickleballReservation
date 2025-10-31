@@ -1965,8 +1965,8 @@ async function loadReservationsData() {
         // 예약 현황 로드
         await loadReservationsTimeline();
         
-        // 현재 선택된 시간대에 대진표가 있는지 확인
-        await checkAndShowMatchSchedule();
+        // 예약 탭에서는 대진표를 자동으로 표시하지 않음
+        // 사용자가 시간대를 클릭했을 때만 표시됨
         
     } catch (error) {
         console.error('예약 데이터 로드 오류:', error);
@@ -3573,12 +3573,27 @@ function renderRecords(matches) {
     
     recordsList.innerHTML = recordsHTML;
     
-    document.querySelectorAll('.record-delete-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+    // 기존 이벤트 리스너 제거 후 새로 추가 (중복 방지)
+    const deleteButtons = document.querySelectorAll('.record-delete-btn');
+    console.log(`🔍 기록 삭제 버튼 찾음: ${deleteButtons.length}개`);
+    
+    deleteButtons.forEach((btn, index) => {
+        // 기존 이벤트 리스너 제거
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        // 새 이벤트 리스너 추가
+        newBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             e.preventDefault();
-            const matchId = btn.getAttribute('data-match-id');
-            console.log(`🔘 기록 삭제 버튼 클릭됨: ${matchId}`);
+            const matchId = newBtn.getAttribute('data-match-id');
+            console.log(`🔘 기록 삭제 버튼 클릭됨 (버튼 ${index}): ${matchId}`);
+            
+            if (!matchId) {
+                console.error(`❌ 매치 ID를 찾을 수 없습니다!`);
+                return;
+            }
+            
             if (confirm('이 기록을 삭제하시겠습니까?')) {
                 console.log(`✅ 확인 버튼 클릭, deleteRecord 호출 예정: ${matchId}`);
                 await deleteRecord(matchId);
@@ -3587,6 +3602,8 @@ function renderRecords(matches) {
             }
         });
     });
+    
+    console.log(`✅ ${deleteButtons.length}개의 기록 삭제 버튼에 이벤트 리스너 추가 완료`);
 }
 
 // 기록 삭제 (점수만 초기화, 대진표는 유지)
@@ -4400,7 +4417,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(async () => {
                     try {
                         await loadReservationsTimeline();
-                        await checkAndShowMatchSchedule();
+                        // 예약 탭에서는 대진표를 자동으로 표시하지 않음
+                        // 사용자가 시간대를 클릭했을 때만 표시됨
                     } catch (error) {
                         console.error('탭 전환 시 예약 현황 로드 오류:', error);
                         showToast('데이터 로드에 실패했습니다. 새로고침 버튼을 눌러주세요.', 'error');
@@ -7133,16 +7151,50 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
 // 대진표 렌더링
 async function renderMatchSchedule(matches, date, timeSlot) {
     try {
-        // 타임라인 항목 내부의 대진표 영역 찾기
-        const safeSlotKey = timeSlot.replace(/:/g, '-');
-        const matchScheduleDiv = document.getElementById(`match-schedule-${date}-${safeSlotKey}`);
+        // 현재 활성화된 탭 확인
+        const reservationsTab = document.getElementById('reservations-tab');
+        const matchesTab = document.getElementById('matches-tab');
+        const isReservationsTabActive = reservationsTab && reservationsTab.classList.contains('active');
+        const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
         
-        // 기존 별도 섹션도 확인 (하위 호환성)
-        const scheduleSection = document.getElementById('match-schedule-section');
-        const scheduleContainer = matchScheduleDiv || document.getElementById('match-schedule');
+        // 예약 탭에서는 타임라인 내부의 대진표 영역만 사용
+        if (isReservationsTabActive) {
+            const safeSlotKey = timeSlot.replace(/:/g, '-');
+            const matchScheduleDiv = document.getElementById(`match-schedule-${date}-${safeSlotKey}`);
+            
+            if (!matchScheduleDiv) {
+                console.warn(`예약 탭 대진표 컨테이너를 찾을 수 없습니다: match-schedule-${date}-${safeSlotKey}`);
+                return;
+            }
+            
+            await renderMatchScheduleToContainer(matches, date, timeSlot, matchScheduleDiv);
+            matchScheduleDiv.style.display = 'block';
+            return;
+        }
         
+        // 대진표 탭에서는 match-schedule 컨테이너 사용
+        if (isMatchesTabActive) {
+            const matchScheduleContainer = document.getElementById('match-schedule');
+            if (!matchScheduleContainer) {
+                console.warn('대진표 탭 컨테이너를 찾을 수 없습니다');
+                return;
+            }
+            // 대진표 탭에서는 loadMatchesForDate가 처리하므로 여기서는 아무것도 하지 않음
+            return;
+        }
+        
+        console.warn('활성화된 탭이 없어서 대진표를 렌더링할 수 없습니다');
+        
+    } catch (error) {
+        console.error('대진표 렌더링 오류:', error);
+    }
+}
+
+// 대진표를 특정 컨테이너에 렌더링하는 헬퍼 함수
+async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleContainer) {
+    try {
         if (!scheduleContainer) {
-            console.warn('대진표 컨테이너를 찾을 수 없습니다');
+            console.warn('대진표 컨테이너가 없습니다');
             return;
         }
         
@@ -7153,11 +7205,7 @@ async function renderMatchSchedule(matches, date, timeSlot) {
                     <p>대진표가 없습니다.</p>
                 </div>
             `;
-            if (matchScheduleDiv) {
-                matchScheduleDiv.style.display = 'block';
-            } else if (scheduleSection) {
-                scheduleSection.style.display = 'block';
-            }
+            scheduleContainer.style.display = 'block';
             return;
         }
         
@@ -7248,12 +7296,8 @@ async function renderMatchSchedule(matches, date, timeSlot) {
             scheduleContainer.appendChild(roundDiv);
         });
         
-        // 타임라인 항목 내부에 표시
-        if (matchScheduleDiv) {
-            matchScheduleDiv.style.display = 'block';
-        } else if (scheduleSection) {
-            scheduleSection.style.display = 'block';
-        }
+        // 컨테이너 표시
+        scheduleContainer.style.display = 'block';
         
     } catch (error) {
         console.error('대진표 렌더링 오류:', error);
