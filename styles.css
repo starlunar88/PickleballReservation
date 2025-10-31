@@ -2488,13 +2488,23 @@ body {
     .section-header h2 { font-size: 1.1rem; }
     .date-navigation { gap: 8px; }
     .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
-    .timeline-players {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
+    .timeline-item {
+        padding: 10px 12px;
+        margin-bottom: 8px;
     }
+    
+    .timeline-header {
+        margin-bottom: 8px;
+    }
+    
+    .timeline-players {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+    }
+    
     .player-item { 
-        font-size: 0.75rem; 
-        padding: 6px 8px; 
+        font-size: 0.7rem; 
+        padding: 8px 3px; 
         min-height: 36px;
     }
     .timeline-reserve-btn, .timeline-cancel-btn { padding: 6px 10px; font-size: 0.65rem; border-radius: 12px; }
@@ -2526,9 +2536,9 @@ body {
 /* 타임라인 스타일 */
 .timeline-item {
     display: flex;
-    align-items: center;
-    padding: 12px 14px;
-    margin-bottom: 10px;
+    flex-direction: column;
+    padding: 14px 16px;
+    margin-bottom: 12px;
     background: #ffffff;
     border-radius: 14px;
     border: 1px solid #eef0f4;
@@ -2555,23 +2565,37 @@ body {
     background: #f0fff4;
 }
 
-.timeline-time { min-width: 68px; text-align: left; margin-right: 12px; }
+.timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.timeline-time {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
 
 .time-start, .time-end {
     font-weight: 600;
     color: #333;
 }
 
-.time-start { font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
+.time-start { 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+}
 
-.time-end { font-size: 0.8rem; color: #8a8f98; }
-
-.timeline-content {
-    flex: 1;
+.time-end { 
+    font-size: 0.9rem; 
+    color: #8a8f98; 
 }
 
 .timeline-status {
-    margin-bottom: 10px;
+    margin: 0;
 }
 
 .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
@@ -2587,23 +2611,24 @@ body {
 .timeline-players {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 12px;
+    width: 100%;
 }
 
 .player-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 8px;
+    padding: 10px 6px;
     background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
     border: 1.5px solid #ffc7c7;
-    border-radius: 12px;
-    font-size: 0.8rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
     color: #2d3748;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(255, 199, 199, 0.2);
-    min-height: 44px;
+    min-height: 42px;
 }
 
 .player-item:hover { 
@@ -2768,9 +2793,10 @@ body {
 /* 타임라인 예약 버튼 */
 /* 타임라인 액션 버튼 영역 */
 .timeline-actions {
-    margin-top: 10px;
+    margin-top: 8px;
     display: flex;
     justify-content: flex-end;
+    width: 100%;
 }
 
 .timeline-reserve-btn {
@@ -2919,31 +2945,35 @@ body {
 /* 반응형 타임라인 */
 @media (max-width: 768px) {
     .timeline-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+    }
+    
+    .timeline-header {
+        margin-bottom: 10px;
     }
     
     .timeline-time {
-        min-width: auto;
-        margin-right: 0;
-        display: flex;
-        gap: 10px;
+        gap: 6px;
     }
     
-    .time-start, .time-end {
+    .time-start {
         font-size: 1rem;
     }
     
+    .time-end {
+        font-size: 0.85rem;
+    }
+    
     .timeline-players {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
     }
     
     .player-item {
-        padding: 8px 10px;
-        font-size: 0.8rem;
-        min-height: 40px;
+        padding: 8px 4px;
+        font-size: 0.7rem;
+        min-height: 38px;
     }
     
     .stats-grid {

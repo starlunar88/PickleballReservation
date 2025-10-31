@@ -1553,45 +1553,45 @@ async function loadReservationsTimeline() {
             
             timelineHTML += `
                 <div class="timeline-item ${statusClass}" data-time-slot="${slotKey}" data-date="${targetDate}">
-                    <div class="timeline-time">
-                        <div class="time-start">${timeSlot.start}</div>
-                        <div class="time-end">${timeSlot.end}</div>
-                    </div>
-                    <div class="timeline-content">
+                    <div class="timeline-header">
+                        <div class="timeline-time">
+                            <div class="time-start">${timeSlot.start}</div>
+                            <div class="time-end">${timeSlot.end}</div>
+                        </div>
                         <div class="timeline-status">
                             <span class="status-badge ${statusClass}">
                                 ${statusText}
                             </span>
                         </div>
-                        <div class="timeline-players">
-                            ${reservations.map(res => `
-                                <div class="player-item">
-                                    <span class="player-name">${res.userName || '익명'}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="timeline-actions">
-                            ${(() => {
-                                const currentUser = firebase.auth().currentUser;
-                                const userReservation = reservations.find(res => res.userId === currentUser?.uid);
-                                
-                                if (isClosed) {
-                                    return `<button class="timeline-reserve-btn" disabled>마감</button>`;
-                                } else if (userReservation) {
-                                    return `<button class="timeline-cancel-btn" 
-                                                   data-time-slot="${slotKey}" 
-                                                   data-date="${targetDate}">
-                                                취소하기
-                                            </button>`;
-                                } else {
-                                    return `<button class="timeline-reserve-btn" 
-                                                   data-time-slot="${slotKey}" 
-                                                   data-date="${targetDate}">
-                                                예약하기
-                                            </button>`;
-                                }
-                            })()}
-                        </div>
+                    </div>
+                    <div class="timeline-players">
+                        ${reservations.map(res => `
+                            <div class="player-item">
+                                <span class="player-name">${res.userName || '익명'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="timeline-actions">
+                        ${(() => {
+                            const currentUser = firebase.auth().currentUser;
+                            const userReservation = reservations.find(res => res.userId === currentUser?.uid);
+                            
+                            if (isClosed) {
+                                return `<button class="timeline-reserve-btn" disabled>마감</button>`;
+                            } else if (userReservation) {
+                                return `<button class="timeline-cancel-btn" 
+                                               data-time-slot="${slotKey}" 
+                                               data-date="${targetDate}">
+                                            취소하기
+                                        </button>`;
+                            } else {
+                                return `<button class="timeline-reserve-btn" 
+                                               data-time-slot="${slotKey}" 
+                                               data-date="${targetDate}">
+                                            예약하기
+                                        </button>`;
+                            }
+                        })()}
                     </div>
                 </div>
             `;
