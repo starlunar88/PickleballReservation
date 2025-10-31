@@ -2275,7 +2275,338 @@ body {
     border-top: 2px solid #f0f0f0;
 }
 
-.rankings-container,
+.rankings-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 올림픽 메달 시상식 섹션 */
+.medal-ceremony-section {
+    margin-bottom: 40px;
+}
+
+.medal-ceremony-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.medal-ceremony-header i {
+    color: #ffd700;
+    font-size: 1.2rem;
+}
+
+.medal-ceremony-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.medal-ceremony-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.podium-wrapper {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    min-height: 300px;
+    position: relative;
+}
+
+.podium-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.podium-card:hover {
+    transform: translateY(-4px);
+}
+
+.podium-card.first-place {
+    background: linear-gradient(180deg, #ffeb3b 0%, #ffc107 100%);
+    width: 180px;
+    height: 280px;
+    order: 2;
+}
+
+.podium-card.second-place {
+    background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
+    width: 160px;
+    height: 240px;
+    order: 1;
+}
+
+.podium-card.third-place {
+    background: linear-gradient(180deg, #d4a574 0%, #cd7f32 100%);
+    width: 160px;
+    height: 200px;
+    order: 3;
+}
+
+.medal-icon {
+    position: relative;
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+}
+
+.medal-icon i {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.medal-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.podium-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+}
+
+.podium-score {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+}
+
+/* 계급 시스템 섹션 */
+.rank-system-section {
+    margin-bottom: 40px;
+}
+
+.rank-system-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.rank-system-header i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.rank-system-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.rank-system-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.rank-tiers {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rank-tier-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rank-tier-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.rank-tier-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.beginner-icon {
+    background: #e0e0e0;
+    color: #666;
+    border: 2px solid #ccc;
+}
+
+.player-icon {
+    background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%);
+}
+
+.pro-icon {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #333;
+}
+
+.champion-icon,
+.master-icon,
+.legend-icon {
+    background: #fff;
+}
+
+.champion-icon i {
+    color: #cd7f32;
+    font-size: 2rem;
+}
+
+.master-icon i {
+    color: #c0c0c0;
+    font-size: 2rem;
+}
+
+.legend-icon i {
+    color: #ffd700;
+    font-size: 2rem;
+}
+
+.goat-icon {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #764ba2;
+    font-size: 1.8rem;
+}
+
+.rank-tier-info {
+    flex: 1;
+}
+
+.rank-tier-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.rank-tier-range {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* 최고 성과자 섹션 */
+.top-performers-section {
+    margin-bottom: 40px;
+}
+
+.top-performers-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+
+.top-performers-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.performers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: #f0f0f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.performer-item {
+    background: #fff;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: background 0.2s ease;
+}
+
+.performer-item:hover {
+    background: #f8f8f8;
+}
+
+.performer-rank {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+    width: 30px;
+    flex-shrink: 0;
+}
+
+.performer-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.performer-name {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.performer-score {
+    font-size: 0.95rem;
+    color: #666;
+    width: 80px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.performer-winrate {
+    font-size: 0.95rem;
+    color: #666;
+    width: 70px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.performer-record {
+    font-size: 0.95rem;
+    color: #666;
+    width: 80px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
 .stats-container {
     max-width: 400px;
     margin: 0 auto;
@@ -3819,6 +4150,75 @@ body {
     
     .team-score {
         font-size: 16px;
+    }
+    
+    /* 랭킹 탭 반응형 */
+    .podium-wrapper {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        min-height: auto;
+    }
+    
+    .podium-card {
+        width: 100% !important;
+        max-width: 280px;
+        height: auto !important;
+        min-height: 200px;
+        order: 0 !important;
+    }
+    
+    .podium-card.first-place {
+        order: 1 !important;
+    }
+    
+    .podium-card.second-place {
+        order: 2 !important;
+    }
+    
+    .podium-card.third-place {
+        order: 3 !important;
+    }
+    
+    .rank-tiers {
+        gap: 10px;
+    }
+    
+    .rank-tier-card {
+        padding: 14px;
+    }
+    
+    .rank-tier-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
+    }
+    
+    .performer-item {
+        padding: 12px;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .performer-rank,
+    .performer-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 1.2rem;
+    }
+    
+    .performer-name {
+        flex: 1 1 100%;
+        order: 3;
+    }
+    
+    .performer-score,
+    .performer-winrate,
+    .performer-record {
+        font-size: 0.85rem;
+        width: auto;
+        flex: 1;
     }
     
     .match-score {

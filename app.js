@@ -1960,7 +1960,8 @@ async function loadReservationsData() {
 // 랭킹 데이터 로드
 async function loadRankingsData() {
     try {
-        await loadOverallRankings();
+        await loadMedalCeremony();
+        await loadTopPerformers();
     } catch (error) {
         console.error('랭킹 데이터 로드 오류:', error);
     }
@@ -3558,31 +3559,279 @@ function calculateRatingChange(currentRating, won) {
     return Math.round(K * (actualScore - expectedScore));
 }
 
-// 랭킹 순위 가져오기
+// 랭킹 순위 가져오기 (점수 기준: 승리 +10점, 패배 -5점)
 async function getRankings(limit = 50) {
     try {
-        const rankingsSnapshot = await db.collection('userRatings')
-            .orderBy('internalRating', 'desc')
-            .limit(limit)
-            .get();
+        const db = window.db || firebase.firestore();
+        if (!db) return [];
         
-        const rankings = [];
-        rankingsSnapshot.forEach((doc, index) => {
-            const data = doc.data();
-            rankings.push({
-                rank: index + 1,
-                userId: data.userId,
-                internalRating: data.internalRating,
-                gamesPlayed: data.gamesPlayed,
-                gamesWon: data.gamesWon,
-                winRate: data.winRate
+        // 모든 게임 결과에서 점수 계산
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        
+        // 사용자별 점수 계산
+        const userScores = {};
+        
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            if (!game.players || !game.winners || !game.losers) return;
+            
+            // 승자에게 +10점
+            game.winners.forEach(userId => {
+                if (!userScores[userId]) {
+                    userScores[userId] = { 
+                        score: 0, 
+                        wins: 0, 
+                        losses: 0,
+                        totalGames: 0
+                    };
+                }
+                userScores[userId].score += 10;
+                userScores[userId].wins += 1;
+                userScores[userId].totalGames += 1;
+            });
+            
+            // 패자에게 -5점 (최소 0점)
+            game.losers.forEach(userId => {
+                if (!userScores[userId]) {
+                    userScores[userId] = { 
+                        score: 0, 
+                        wins: 0, 
+                        losses: 0,
+                        totalGames: 0
+                    };
+                }
+                userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                userScores[userId].losses += 1;
+                userScores[userId].totalGames += 1;
             });
         });
         
-        return rankings;
+        // 사용자 정보 가져오기
+        const rankings = [];
+        const userIds = Object.keys(userScores);
+        
+        for (const userId of userIds) {
+            const userData = userScores[userId];
+            
+            // 최소 3경기 이상 참여한 사용자만 포함
+            if (userData.totalGames >= 3) {
+                // 사용자 이름 찾기 (여러 소스에서 시도)
+                let userName = '알 수 없음';
+                
+                // 1. users 컬렉션에서 찾기
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    const userDocData = userDoc.data();
+                    userName = userDocData.displayName || userDocData.name || userDocData.email || '알 수 없음';
+                } else {
+                    // 2. reservations 컬렉션에서 최근 예약 찾기 (인덱스 없이)
+                    const reservationsSnapshot = await db.collection('reservations')
+                        .where('userId', '==', userId)
+                        .limit(10)
+                        .get();
+                    
+                    if (!reservationsSnapshot.empty) {
+                        // 가장 최근 예약 찾기 (클라이언트 측 정렬)
+                        const reservations = [];
+                        reservationsSnapshot.forEach(doc => {
+                            const data = doc.data();
+                            reservations.push({
+                                userName: data.userName || data.name || null,
+                                createdAt: data.createdAt || new Date(0)
+                            });
+                        });
+                        
+                        // 최신순으로 정렬
+                        reservations.sort((a, b) => {
+                            const dateA = a.createdAt instanceof Date ? a.createdAt : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0));
+                            const dateB = b.createdAt instanceof Date ? b.createdAt : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0));
+                            return dateB - dateA;
+                        });
+                        
+                        if (reservations.length > 0 && reservations[0].userName) {
+                            userName = reservations[0].userName;
+                        }
+                    }
+                }
+                
+                const winRate = userData.totalGames > 0 ? (userData.wins / userData.totalGames * 100) : 0;
+                
+                rankings.push({
+                    userId: userId,
+                    userName: userName,
+                    score: userData.score,
+                    wins: userData.wins,
+                    losses: userData.losses,
+                    totalGames: userData.totalGames,
+                    winRate: winRate
+                });
+            }
+        }
+        
+        // 점수 기준으로 정렬
+        rankings.sort((a, b) => b.score - a.score);
+        
+        // 순위 추가
+        rankings.forEach((ranking, index) => {
+            ranking.rank = index + 1;
+        });
+        
+        return rankings.slice(0, limit);
     } catch (error) {
         console.error('랭킹 가져오기 오류:', error);
         return [];
+    }
+}
+
+// 사용자 이름 가져오기
+async function getUserName(userId) {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) return '알 수 없음';
+        
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return userData.displayName || userData.name || userData.email || '알 수 없음';
+        }
+        
+        // users 컬렉션에 없으면 gameResults에서 찾기
+        const gameResultsSnapshot = await db.collection('gameResults')
+            .where('players', 'array-contains', userId)
+            .limit(1)
+            .get();
+        
+        if (!gameResultsSnapshot.empty) {
+            const game = gameResultsSnapshot.docs[0].data();
+            // winners나 losers에서 이름 찾기 시도
+            return '알 수 없음';
+        }
+        
+        return '알 수 없음';
+    } catch (error) {
+        console.error('사용자 이름 가져오기 오류:', error);
+        return '알 수 없음';
+    }
+}
+
+// 올림픽 메달 시상식 로드
+async function loadMedalCeremony() {
+    try {
+        const podiumContainer = document.getElementById('podium-container');
+        if (!podiumContainer) return;
+        
+        podiumContainer.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>랭킹을 불러오는 중...</p></div>';
+        
+        const rankings = await getRankings(50);
+        
+        // 최소 3경기 이상 참여한 선수 중 상위 3명만
+        const top3 = rankings.filter(r => r.totalGames >= 3).slice(0, 3);
+        
+        if (top3.length === 0) {
+            podiumContainer.innerHTML = '<div class="empty-state"><i class="fas fa-trophy"></i><p>아직 메달 수여 조건을 만족하는 선수가 없습니다</p></div>';
+            return;
+        }
+        
+        // 1등, 2등, 3등 순서로 배치 (1등 중앙, 2등 왼쪽, 3등 오른쪽)
+        let podiumHTML = '<div class="podium-wrapper">';
+        
+        if (top3.length >= 2) {
+            // 2등 (왼쪽)
+            podiumHTML += `
+                <div class="podium-card second-place">
+                    <div class="medal-icon">
+                        <i class="fas fa-medal" style="color: #c0c0c0;"></i>
+                        <span class="medal-number">2</span>
+                    </div>
+                    <div class="podium-name">${top3[1].userName}</div>
+                    <div class="podium-score">${top3[1].score}점 (${top3[1].wins}/${top3[1].totalGames})</div>
+                </div>
+            `;
+        }
+        
+        if (top3.length >= 1) {
+            // 1등 (중앙)
+            podiumHTML += `
+                <div class="podium-card first-place">
+                    <div class="medal-icon">
+                        <i class="fas fa-medal" style="color: #ffd700;"></i>
+                        <span class="medal-number">1</span>
+                    </div>
+                    <div class="podium-name">${top3[0].userName}</div>
+                    <div class="podium-score">${top3[0].score}점 (${top3[0].wins}/${top3[0].totalGames})</div>
+                </div>
+            `;
+        }
+        
+        if (top3.length >= 3) {
+            // 3등 (오른쪽)
+            podiumHTML += `
+                <div class="podium-card third-place">
+                    <div class="medal-icon">
+                        <i class="fas fa-medal" style="color: #cd7f32;"></i>
+                        <span class="medal-number">3</span>
+                    </div>
+                    <div class="podium-name">${top3[2].userName}</div>
+                    <div class="podium-score">${top3[2].score}점 (${top3[2].wins}/${top3[2].totalGames})</div>
+                </div>
+            `;
+        }
+        
+        podiumHTML += '</div>';
+        podiumContainer.innerHTML = podiumHTML;
+        
+    } catch (error) {
+        console.error('메달 시상식 로드 오류:', error);
+        const podiumContainer = document.getElementById('podium-container');
+        if (podiumContainer) {
+            podiumContainer.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>메달 시상식을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 최고 성과자 로드
+async function loadTopPerformers() {
+    try {
+        const performersList = document.getElementById('performers-list');
+        if (!performersList) return;
+        
+        performersList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>랭킹을 불러오는 중...</p></div>';
+        
+        const rankings = await getRankings(12);
+        
+        if (rankings.length === 0) {
+            performersList.innerHTML = '<div class="empty-state"><i class="fas fa-trophy"></i><p>아직 랭킹 데이터가 없습니다</p></div>';
+            return;
+        }
+        
+        let performersHTML = '';
+        
+        rankings.forEach((ranking, index) => {
+            const rank = index + 1;
+            const isTop3 = rank <= 3;
+            
+            performersHTML += `
+                <div class="performer-item">
+                    <div class="performer-rank">${rank}</div>
+                    <div class="performer-icon">
+                        ${isTop3 ? '<i class="fas fa-star" style="color: #ffd700;"></i>' : '<i class="fas fa-table-tennis" style="color: #ff69b4;"></i>'}
+                    </div>
+                    <div class="performer-name">${ranking.userName}</div>
+                    <div class="performer-score">${ranking.score}점</div>
+                    <div class="performer-winrate">${ranking.winRate.toFixed(1)}%</div>
+                    <div class="performer-record">(${ranking.wins}/${ranking.totalGames})</div>
+                </div>
+            `;
+        });
+        
+        performersList.innerHTML = performersHTML;
+        
+    } catch (error) {
+        console.error('최고 성과자 로드 오류:', error);
+        const performersList = document.getElementById('performers-list');
+        if (performersList) {
+            performersList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>최고 성과자를 불러올 수 없습니다</p></div>';
+        }
     }
 }
 

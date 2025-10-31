@@ -180,16 +180,103 @@
             <!-- 3. 랭킹 시스템 탭 -->
             <div class="tab-content" id="rankings-tab">
                 <div class="rankings-container">
-                    <div class="section-header">
-                        <h2><i class="fas fa-trophy"></i> 랭킹 시스템</h2>
-                        <div class="ranking-filters">
-                            <button class="filter-btn active" data-filter="overall">전체</button>
-                            <button class="filter-btn" data-filter="monthly">이번 달</button>
-                            <button class="filter-btn" data-filter="weekly">이번 주</button>
+                    <!-- 올림픽 메달 시상식 섹션 -->
+                    <div class="medal-ceremony-section">
+                        <div class="medal-ceremony-header">
+                            <i class="fas fa-trophy"></i>
+                            <h2>올림픽 메달 시상식</h2>
+                        </div>
+                        <p class="medal-ceremony-description">최소 3경기 이상 참여한 선수 중 점수 기준으로 메달을 수여합니다.</p>
+                        <div class="podium-container" id="podium-container">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>랭킹을 불러오는 중...</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="rankings-content">
-                        <div class="rankings-list" id="rankings-list">
+                    
+                    <!-- 계급 시스템 섹션 -->
+                    <div class="rank-system-section">
+                        <div class="rank-system-header">
+                            <i class="fas fa-medal"></i>
+                            <h2>계급 시스템</h2>
+                        </div>
+                        <p class="rank-system-description">승리 시 +10점, 패배 시 -5점으로 점수가 누적됩니다. (최소 0점)</p>
+                        <div class="rank-tiers" id="rank-tiers">
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon beginner-icon">NEW</div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">초보자</div>
+                                    <div class="rank-tier-range">0-29점</div>
+                                </div>
+                            </div>
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon player-icon">
+                                    <i class="fas fa-table-tennis"></i>
+                                </div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">플레이어</div>
+                                    <div class="rank-tier-range">30-399점</div>
+                                </div>
+                            </div>
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon pro-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">프로</div>
+                                    <div class="rank-tier-range">400-799점</div>
+                                </div>
+                            </div>
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon champion-icon">
+                                    <i class="fas fa-medal" style="color: #cd7f32;"></i>
+                                    <span class="medal-number">3</span>
+                                </div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">챔피언</div>
+                                    <div class="rank-tier-range">800-1199점</div>
+                                </div>
+                            </div>
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon master-icon">
+                                    <i class="fas fa-medal" style="color: #c0c0c0;"></i>
+                                    <span class="medal-number">2</span>
+                                </div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">마스터</div>
+                                    <div class="rank-tier-range">1200-1799점</div>
+                                </div>
+                            </div>
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon legend-icon">
+                                    <i class="fas fa-medal" style="color: #ffd700;"></i>
+                                    <span class="medal-number">1</span>
+                                </div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">레전드</div>
+                                    <div class="rank-tier-range">1800-2499점</div>
+                                </div>
+                            </div>
+                            <div class="rank-tier-card">
+                                <div class="rank-tier-icon goat-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="rank-tier-info">
+                                    <div class="rank-tier-name">GOAT</div>
+                                    <div class="rank-tier-range">2500점+</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 최고 성과자 섹션 -->
+                    <div class="top-performers-section">
+                        <div class="top-performers-header">
+                            <h2>최고 성과자</h2>
+                        </div>
+                        <p class="top-performers-description">점수와 승률, 참여 횟수를 기준으로 계산됩니다.</p>
+                        <div class="performers-list" id="performers-list">
                             <div class="loading-state">
                                 <i class="fas fa-spinner fa-spin"></i>
                                 <p>랭킹을 불러오는 중...</p>
