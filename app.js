@@ -3082,11 +3082,25 @@ function drawTeamBarChart(data, canvasId, color) {
     
     const ctx = canvas.getContext('2d');
     
-    // Canvas 크기 설정
-    const containerWidth = canvas.parentElement?.offsetWidth || 500;
+    // Canvas 크기 설정 (고해상도 지원)
+    const container = canvas.parentElement;
+    const containerWidth = container ? container.offsetWidth : 500;
     const containerHeight = 300;
-    const width = canvas.width = containerWidth;
-    const height = canvas.height = containerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    
+    // 실제 캔버스 크기 (픽셀)
+    canvas.width = containerWidth * dpr;
+    canvas.height = containerHeight * dpr;
+    
+    // CSS 크기 설정
+    canvas.style.width = containerWidth + 'px';
+    canvas.style.height = containerHeight + 'px';
+    
+    // 컨텍스트 스케일 조정
+    ctx.scale(dpr, dpr);
+    
+    const width = containerWidth;
+    const height = containerHeight;
     
     ctx.clearRect(0, 0, width, height);
     
