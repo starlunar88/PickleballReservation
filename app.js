@@ -1474,29 +1474,27 @@ async function loadMatchesForDate(date) {
                 const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log(`✅ ${slotKey} 시간대 매치 발견:`, matches.length);
                 
-                // 코트별로 먼저 그룹화
-                const courts = {};
-                matches.forEach(match => {
-                    const courtNum = match.courtNumber || 1;
-                    if (!courts[courtNum]) {
-                        courts[courtNum] = [];
-                    }
-                    courts[courtNum].push(match);
-                });
+                // 시간대별 섹션 헤더 추가
+                matchesHTML += `
+                    <div class="time-slot-section">
+                        <div class="time-slot-header-compact">${timeSlot.start} - ${timeSlot.end}</div>
+                `;
                 
-                console.log(`🏟️ 코트 수:`, Object.keys(courts).length);
-                
-                // 각 코트 내에서 라운드순으로 정렬
-                Object.keys(courts).forEach(courtNum => {
-                    courts[courtNum].sort((a, b) => a.roundNumber - b.roundNumber);
-                });
-                
-                // 각 코트 렌더링 - 더 이상 time-slot 구조 제거, 바로 경기만 표시
-                Object.keys(courts).sort((a, b) => a - b).forEach(courtNum => {
-                    const courtMatches = courts[courtNum];
+                // 경기 번호 우선, 그 다음 코트 번호 순으로 정렬
+                matches.sort((a, b) => {
+                    const roundA = a.roundNumber || 1;
+                    const roundB = b.roundNumber || 1;
+                    const courtA = a.courtNumber || 1;
+                    const courtB = b.courtNumber || 1;
                     
-                    // 각 경기 렌더링
-                    courtMatches.forEach(match => {
+                    if (roundA !== roundB) {
+                        return roundA - roundB;
+                    }
+                    return courtA - courtB;
+                });
+                
+                // 각 경기 렌더링
+                matches.forEach(match => {
                         const teamALabel = match.teamA.map(p => p.userName).join(', ');
                         const teamBLabel = match.teamB.map(p => p.userName).join(', ');
                         const scoreA = match.scoreA ?? '';
@@ -1541,8 +1539,12 @@ async function loadMatchesForDate(date) {
                                 </div>
                             </div>
                         `;
-                    });
                 });
+                
+                // 시간대별 섹션 닫기
+                matchesHTML += `
+                    </div>
+                `;
             }
         }
         
@@ -1558,19 +1560,37 @@ async function loadMatchesForDate(date) {
             
             // 컴팩트 스타일 강제 적용
             setTimeout(() => {
-                const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
-                matchItems.forEach(el => {
+                const timeSlotSections = matchesContainer.querySelectorAll('.time-slot-section');
+                timeSlotSections.forEach(el => {
+                    el.style.marginBottom = '8px';
+                    el.style.paddingBottom = '4px';
+                    el.style.borderBottom = '2px solid #e0e0e0';
+                });
+                
+                const timeSlotHeaders = matchesContainer.querySelectorAll('.time-slot-header-compact');
+                timeSlotHeaders.forEach(el => {
+                    el.style.fontSize = '0.85rem';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#667eea';
                     el.style.padding = '4px 8px';
                     el.style.marginBottom = '4px';
-                    el.style.borderBottom = '1px solid #e0e0e0';
+                    el.style.background = '#f0f4ff';
+                    el.style.borderRadius = '4px';
+                });
+                
+                const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
+                matchItems.forEach(el => {
+                    el.style.padding = '2px 4px';
+                    el.style.marginBottom = '2px';
+                    el.style.borderBottom = 'none';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
                 });
                 
                 const matchHeaders = matchesContainer.querySelectorAll('.match-header-compact');
                 matchHeaders.forEach(el => {
-                    el.style.padding = '2px 0';
-                    el.style.marginBottom = '2px';
+                    el.style.padding = '1px 0';
+                    el.style.marginBottom = '1px';
                 });
                 
                 const matchInfos = matchesContainer.querySelectorAll('.match-info-compact');
@@ -1584,9 +1604,9 @@ async function loadMatchesForDate(date) {
                 matchTeams.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
-                    el.style.gap = '6px';
-                    el.style.padding = '2px 0';
-                    el.style.marginBottom = '2px';
+                    el.style.gap = '4px';
+                    el.style.padding = '1px 0';
+                    el.style.marginBottom = '1px';
                 });
                 
                 const teamNames = matchesContainer.querySelectorAll('.team-name-compact');
@@ -1607,18 +1627,18 @@ async function loadMatchesForDate(date) {
                 matchScores.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
-                    el.style.gap = '4px';
-                    el.style.padding = '2px 0';
+                    el.style.gap = '3px';
+                    el.style.padding = '1px 0';
                 });
                 
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
-                    el.style.width = '35px';
-                    el.style.padding = '2px 4px';
+                    el.style.width = '30px';
+                    el.style.padding = '1px 3px';
                     el.style.border = '1px solid #ccc';
-                    el.style.borderRadius = '4px';
+                    el.style.borderRadius = '3px';
                     el.style.textAlign = 'center';
-                    el.style.fontSize = '0.8rem';
+                    el.style.fontSize = '0.75rem';
                     el.style.background = 'white';
                 });
                 
@@ -1627,9 +1647,9 @@ async function loadMatchesForDate(date) {
                     el.style.background = '#28a745';
                     el.style.color = 'white';
                     el.style.border = 'none';
-                    el.style.padding = '2px 8px';
-                    el.style.borderRadius = '4px';
-                    el.style.fontSize = '0.75rem';
+                    el.style.padding = '1px 6px';
+                    el.style.borderRadius = '3px';
+                    el.style.fontSize = '0.7rem';
                     el.style.fontWeight = '500';
                     el.style.cursor = 'pointer';
                 });
@@ -2101,11 +2121,8 @@ async function handleTimelineReservation(timeSlot, date) {
         // 선택된 정보 업데이트
         updateSelectedInfo(date, timeSlot);
         
-        // 타임라인 새로고침
+        // 타임라인 새로고침 (타임라인에 버튼이 포함되어 있음)
         await loadReservationsTimeline();
-        
-        // 버튼 상태 업데이트
-        updateReservationButtons(timeSlot, date);
         
     } catch (error) {
         console.error('타임라인 예약 오류:', error);
@@ -2148,11 +2165,8 @@ async function handleCancelReservation(timeSlot, date) {
         
         showToast('예약이 취소되었습니다.', 'success');
         
-        // 타임라인 새로고침
+        // 타임라인 새로고침 (타임라인에 버튼이 포함되어 있음)
         await loadReservationsTimeline();
-        
-        // 버튼 상태 업데이트
-        updateReservationButtons(timeSlot, date);
         
     } catch (error) {
         console.error('예약 취소 오류:', error);
@@ -2161,6 +2175,7 @@ async function handleCancelReservation(timeSlot, date) {
 }
 
 // 예약 버튼 상태 업데이트 - 제거됨 (타임라인에 통합)
+// loadReservationsTimeline() 호출로 대체됨
 
 // 통계 차트 로드
 async function loadStatsCharts() {
