@@ -68,10 +68,10 @@ body {
     color: white;
     font-size: 1rem; /* 더 작게 축소 */
     font-weight: bold;
-    overflow: hidden; /* 글자 잘림 방지 */
-    text-overflow: ellipsis; /* 넘치는 텍스트 처리 */
-    white-space: nowrap; /* 한 줄로 표시 */
+    flex-wrap: wrap; /* 요소들이 여러 줄로 표시될 수 있도록 */
+    gap: 4px; /* 요소 간 간격 */
     max-width: calc(100% - 80px); /* 햄버거 버튼 공간 확보 */
+    min-width: 0; /* flex 축소 허용 */
 }
 
 .nav-logo i {
@@ -92,9 +92,10 @@ body {
 .nav-user-info {
     color: white;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
+    overflow: visible; /* 잘림 방지 - 전체 내용 표시 */
+    text-overflow: clip; /* ellipsis 대신 clip 사용 */
+    max-width: none; /* 최대 너비 제한 제거 */
+    flex-shrink: 0; /* 축소되지 않도록 */
 }
 
 .nav-menu {
@@ -3763,9 +3764,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .nav-logo { 
         font-size: 0.85rem !important; /* 작은 화면에서 더 작게 */
         max-width: calc(100% - 60px) !important; /* 햄버거 버튼 공간 확보 */
-        overflow: hidden !important; /* 글자 잘림 방지 */
-        text-overflow: ellipsis !important; /* 넘치는 텍스트 처리 */
-        white-space: nowrap !important; /* 한 줄로 표시 */
+        flex-wrap: wrap !important; /* 요소들이 여러 줄로 표시될 수 있도록 */
+        gap: 4px !important; /* 요소 간 간격 */
+        min-width: 0 !important; /* flex 축소 허용 */
+    }
+    
+    .nav-user-info {
+        overflow: visible !important; /* 잘림 방지 - 전체 내용 표시 */
+        text-overflow: clip !important; /* ellipsis 대신 clip 사용 */
+        max-width: none !important; /* 최대 너비 제한 제거 */
+        flex-shrink: 0 !important; /* 축소되지 않도록 */
     }
     .nav-logo i { 
         font-size: 1rem !important; 
