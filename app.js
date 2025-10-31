@@ -1975,7 +1975,6 @@ async function loadStatsData() {
         
         // 차트 렌더링을 위한 약간의 지연 (레이아웃이 완료된 후)
         setTimeout(async () => {
-            await loadIndividualPerformance();
             await loadTeamAnalysis();
         }, 300);
         
@@ -1989,7 +1988,6 @@ async function loadStatsData() {
                     const statsTab = document.getElementById('stats-tab');
                     if (statsTab && statsTab.classList.contains('active')) {
                         loadWinRateChart();
-                        loadIndividualPerformance();
                         loadTeamAnalysis();
                     }
                 }, 200);
@@ -2148,13 +2146,18 @@ async function updateStatsCards(gameResults) {
             });
         });
         
-        // 통계 카드 업데이트
-        document.getElementById('max-consecutive-wins').textContent = maxConsecutiveWins;
-        document.getElementById('max-consecutive-losses').textContent = maxConsecutiveLosses;
-        document.getElementById('total-games').textContent = totalGames;
+        // 통계 카드 업데이트 (요소가 존재할 경우만)
+        const maxConsecutiveWinsEl = document.getElementById('max-consecutive-wins');
+        const maxConsecutiveLossesEl = document.getElementById('max-consecutive-losses');
+        const totalGamesEl = document.getElementById('total-games');
+        const recentWinRateEl = document.getElementById('recent-win-rate');
+        
+        if (maxConsecutiveWinsEl) maxConsecutiveWinsEl.textContent = maxConsecutiveWins;
+        if (maxConsecutiveLossesEl) maxConsecutiveLossesEl.textContent = maxConsecutiveLosses;
+        if (totalGamesEl) totalGamesEl.textContent = totalGames;
         
         const recentWinRate = recentGames > 0 ? Math.round((recentWins / recentGames) * 100) : 0;
-        document.getElementById('recent-win-rate').textContent = `${recentWinRate}%`;
+        if (recentWinRateEl) recentWinRateEl.textContent = `${recentWinRate}%`;
         
     } catch (error) {
         console.error('통계 카드 업데이트 오류:', error);
