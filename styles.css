@@ -3067,7 +3067,7 @@ body {
     -webkit-backdrop-filter: saturate(160%) blur(8px);
     border-radius: 14px; /* iOS 느낌의 둥근 모서리 */
     box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    overflow: hidden;
+    overflow: visible;
     margin: 0 8px;
 }
 
@@ -3179,8 +3179,7 @@ body {
 
 .reservations-timeline {
     padding: 20px;
-    max-height: 60vh;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 /* 랭킹 필터 */
@@ -3341,9 +3340,7 @@ body {
     }
     
     .reservations-timeline {
-        min-height: 40vh;
-        max-height: 60vh;
-        overflow-y: auto;
+        overflow: visible;
     }
     
     .timeline-reserve-btn {
