@@ -3582,6 +3582,7 @@ function renderRecords(matches) {
 // 기록 삭제 (점수만 초기화, 대진표는 유지)
 async function deleteRecord(matchId) {
     try {
+        console.log(`🗑️ deleteRecord 호출됨: ${matchId}`);
         const db = window.db || firebase.firestore();
         if (!db) return;
         
@@ -3653,8 +3654,10 @@ async function deleteRecord(matchId) {
             console.log(`✅ 매치 문서 확인: ${matchId} 존재함`);
             const verifyData = verifyDoc.data();
             console.log(`📋 매치 상태: ${verifyData.status}, scoreA: ${verifyData.scoreA}, scoreB: ${verifyData.scoreB}`);
+            console.log(`📋 매치 날짜: ${verifyData.date}, 시간대: ${verifyData.timeSlot}`);
         }
         
+        console.log(`✅ deleteRecord 완료: ${matchId} - 매치 문서는 유지되고 점수만 초기화됨`);
         showToast('기록이 초기화되었습니다.', 'success');
         
         // 기록 목록 새로고침
