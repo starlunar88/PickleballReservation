@@ -4947,65 +4947,64 @@ async function getRankings(limit = 50) {
         const rankings = [];
         const userIds = Object.keys(userScores);
         
-        console.log(`📊 최종 랭킹 계산: ${userIds.length}명의 사용자 중에서 최소 3경기 이상 필터링`);
+        console.log(`📊 최종 랭킹 계산: ${userIds.length}명의 사용자`);
         
         for (const userId of userIds) {
             const userData = userScores[userId];
             
-            // 최소 3경기 이상 참여한 사용자만 포함
-            if (userData.totalGames >= 3) {
-                console.log(`📈 사용자 ${userId}: ${userData.wins}승 ${userData.losses}패, 총 ${userData.totalGames}경기, 점수: ${userData.score}`);
-                // 사용자 이름 찾기 (여러 소스에서 시도)
-                let userName = '알 수 없음';
+            // 모든 사용자 포함 (경기 수 제한 없음)
+            console.log(`📈 사용자 ${userId}: ${userData.wins}승 ${userData.losses}패, 총 ${userData.totalGames}경기, 점수: ${userData.score}`);
+            
+            // 사용자 이름 찾기 (여러 소스에서 시도)
+            let userName = '알 수 없음';
+            
+            // 1. users 컬렉션에서 찾기
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+                const userDocData = userDoc.data();
+                userName = userDocData.displayName || userDocData.name || userDocData.email || '알 수 없음';
+            } else {
+                // 2. reservations 컬렉션에서 최근 예약 찾기 (인덱스 없이)
+                const reservationsSnapshot = await db.collection('reservations')
+                    .where('userId', '==', userId)
+                    .limit(10)
+                    .get();
                 
-                // 1. users 컬렉션에서 찾기
-                const userDoc = await db.collection('users').doc(userId).get();
-                if (userDoc.exists) {
-                    const userDocData = userDoc.data();
-                    userName = userDocData.displayName || userDocData.name || userDocData.email || '알 수 없음';
-                } else {
-                    // 2. reservations 컬렉션에서 최근 예약 찾기 (인덱스 없이)
-                    const reservationsSnapshot = await db.collection('reservations')
-                        .where('userId', '==', userId)
-                        .limit(10)
-                        .get();
+                if (!reservationsSnapshot.empty) {
+                    // 가장 최근 예약 찾기 (클라이언트 측 정렬)
+                    const reservations = [];
+                    reservationsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        reservations.push({
+                            userName: data.userName || data.name || null,
+                            createdAt: data.createdAt || new Date(0)
+                        });
+                    });
                     
-                    if (!reservationsSnapshot.empty) {
-                        // 가장 최근 예약 찾기 (클라이언트 측 정렬)
-                        const reservations = [];
-                        reservationsSnapshot.forEach(doc => {
-                            const data = doc.data();
-                            reservations.push({
-                                userName: data.userName || data.name || null,
-                                createdAt: data.createdAt || new Date(0)
-                            });
-                        });
-                        
-                        // 최신순으로 정렬
-                        reservations.sort((a, b) => {
-                            const dateA = a.createdAt instanceof Date ? a.createdAt : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0));
-                            const dateB = b.createdAt instanceof Date ? b.createdAt : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0));
-                            return dateB - dateA;
-                        });
-                        
-                        if (reservations.length > 0 && reservations[0].userName) {
-                            userName = reservations[0].userName;
-                        }
+                    // 최신순으로 정렬
+                    reservations.sort((a, b) => {
+                        const dateA = a.createdAt instanceof Date ? a.createdAt : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0));
+                        const dateB = b.createdAt instanceof Date ? b.createdAt : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0));
+                        return dateB - dateA;
+                    });
+                    
+                    if (reservations.length > 0 && reservations[0].userName) {
+                        userName = reservations[0].userName;
                     }
                 }
-                
-                const winRate = userData.totalGames > 0 ? (userData.wins / userData.totalGames * 100) : 0;
-                
-                rankings.push({
-                    userId: userId,
-                    userName: userName,
-                    score: userData.score,
-                    wins: userData.wins,
-                    losses: userData.losses,
-                    totalGames: userData.totalGames,
-                    winRate: winRate
-                });
             }
+            
+            const winRate = userData.totalGames > 0 ? (userData.wins / userData.totalGames * 100) : 0;
+            
+            rankings.push({
+                userId: userId,
+                userName: userName,
+                score: userData.score,
+                wins: userData.wins,
+                losses: userData.losses,
+                totalGames: userData.totalGames,
+                winRate: winRate
+            });
         }
         
         // 점수 기준으로 정렬
