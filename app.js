@@ -3166,21 +3166,26 @@ function drawTeamBarChart(data, canvasId, color) {
         return;
     }
     
-    // 팀 이름 최대 길이 계산하여 동적으로 left padding 설정
+    // 팀 이름 세로로 표시할 때 필요한 공간 계산 (문자 수 기준)
     ctx.font = '12px Arial';
-    let maxNameWidth = 0;
+    let maxNameLength = 0;
     data.forEach(item => {
-        const textWidth = ctx.measureText(item.playerNames).width;
-        maxNameWidth = Math.max(maxNameWidth, textWidth);
+        const nameLength = item.playerNames.length;
+        maxNameLength = Math.max(maxNameLength, nameLength);
     });
     
-    // padding 계산 (팀 이름 공간 + 여백)
-    const nameAreaWidth = Math.max(maxNameWidth + 20, 120); // 최소 120px
+    // 세로 텍스트의 높이 계산 (한 글자당 약 14px + 여유공간)
+    const singleCharHeight = 14;
+    const nameTextHeight = maxNameLength * singleCharHeight;
+    
+    // padding 계산 (팀 이름 세로 표시 공간 + 여백)
+    // 세로로 표시하면 가로 공간을 훨씬 적게 차지
+    const nameAreaWidth = Math.max(nameTextHeight, 50); // 최소 50px
     const padding = { 
         top: 20, 
         right: 100, // 오른쪽 여백 증가 (승률 레이블 공간)
         bottom: 30, // 하단 여백 증가 (그리드 레이블 공간)
-        left: nameAreaWidth 
+        left: Math.min(nameAreaWidth + 20, 80) // 세로 텍스트는 공간을 적게 차지 (최대 80px)
     };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
@@ -3224,11 +3229,16 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.fillStyle = color;
         ctx.fillRect(x, y, barWidth, actualBarHeight);
         
-        // 팀 이름 레이블 (차트 영역 왼쪽)
+        // 팀 이름 레이블 (세로로 표시하여 공간 절약)
+        ctx.save();
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(item.playerNames, padding.left - 10, y + actualBarHeight / 2 + 4);
+        ctx.textAlign = 'center';
+        // 텍스트를 세로로 회전하여 표시
+        ctx.translate(padding.left - 15, y + actualBarHeight / 2);
+        ctx.rotate(-Math.PI / 2); // -90도 회전
+        ctx.fillText(item.playerNames, 0, 0);
+        ctx.restore();
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
         ctx.fillStyle = '#333';
