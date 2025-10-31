@@ -2510,6 +2510,79 @@ body {
         min-height: 34px !important;
         width: 100% !important;
     }
+    
+    /* 대진표 작은 모바일 반응형 */
+    .matches-container {
+        padding: 0 4px 120px 4px;
+    }
+    
+    .match-schedule-section {
+        padding: 12px;
+        margin-top: 12px;
+    }
+    
+    .match-schedule {
+        max-height: calc(100vh - 380px);
+    }
+    
+    .match-item {
+        padding: 8px;
+        gap: 6px;
+    }
+    
+    .match-teams {
+        gap: 6px;
+        font-size: 0.75rem;
+    }
+    
+    .team {
+        font-size: 0.7rem;
+        padding: 4px 6px;
+        min-width: 70px;
+        max-width: 100px;
+    }
+    
+    .team.vs {
+        padding: 4px 10px;
+    }
+    
+    .match-score {
+        gap: 4px;
+        margin-top: 4px;
+        flex-wrap: wrap;
+    }
+    
+    .score-input {
+        width: 35px;
+        padding: 4px;
+        font-size: 0.8rem;
+    }
+    
+    .save-score-btn {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+    
+    .match-round {
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .match-round h4 {
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+    
+    .time-slot-matches {
+        padding: 12px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .time-slot-matches h3 {
+        font-size: 0.9rem !important;
+        margin-bottom: 10px !important;
+    }
+    
     .timeline-reserve-btn, .timeline-cancel-btn { padding: 6px 10px; font-size: 0.65rem; border-radius: 12px; }
     .filter-btn { padding: 6px 10px; font-size: 0.8rem; border-radius: 16px; }
     
@@ -2725,6 +2798,17 @@ body {
     font-size: 0.8rem;
 }
 
+/* 대진표 컨테이너 스타일 */
+.matches-container {
+    max-width: 400px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 8px 120px 8px; /* 하단 네비게이션 바 공간 확보 */
+    min-height: calc(100vh - 200px);
+    box-sizing: border-box;
+    overflow-x: hidden; /* 가로 스크롤 방지 */
+}
+
 /* 대진표 섹션 스타일 (하위 호환성) */
 .match-schedule-section {
     background: rgba(255,255,255,0.9);
@@ -2732,16 +2816,42 @@ body {
     margin-top: 20px;
     padding: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: visible; /* 내용이 잘리지 않도록 */
+    min-height: 200px;
 }
 
 .match-info {
     color: #667eea;
     font-weight: 600;
     font-size: 1rem;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e4ff;
 }
 
 .match-schedule {
     margin-top: 20px;
+    overflow-y: auto;
+    max-height: calc(100vh - 300px);
+    padding-right: 5px;
+}
+
+.match-schedule::-webkit-scrollbar {
+    width: 6px;
+}
+
+.match-schedule::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.match-schedule::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+.match-schedule::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
 }
 
 .match-round {
@@ -2761,33 +2871,41 @@ body {
 
 .match-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
     background: white;
     border-radius: 10px;
-    padding: 15px;
+    padding: 12px;
     margin-bottom: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     border: 1px solid #e9ecef;
+    gap: 10px;
 }
 
 .match-teams {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     flex: 1;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .team {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     background: #f6f7fb;
     border-radius: 8px;
     font-weight: 500;
     color: #333;
-    min-width: 120px;
+    font-size: 0.85rem;
+    min-width: 100px;
+    max-width: 150px;
+    word-break: break-word;
+    white-space: normal;
+    text-align: center;
 }
 
 .team.vs {
@@ -2801,17 +2919,20 @@ body {
 .match-score {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
 }
 
 .score-input {
-    width: 50px;
-    padding: 8px;
+    width: 45px;
+    padding: 6px;
     border: 2px solid #e9ecef;
     border-radius: 6px;
     text-align: center;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
 .score-input:focus {
@@ -3053,6 +3174,72 @@ body {
         font-size: 0.68rem !important;
         min-height: 36px !important;
         width: 100% !important;
+    }
+    
+    /* 대진표 반응형 */
+    .matches-container {
+        padding: 0 6px 120px 6px;
+    }
+    
+    .match-schedule-section {
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .match-schedule {
+        max-height: calc(100vh - 350px);
+    }
+    
+    .match-item {
+        padding: 10px;
+        gap: 8px;
+    }
+    
+    .match-teams {
+        gap: 8px;
+        font-size: 0.8rem;
+    }
+    
+    .team {
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        min-width: 80px;
+        max-width: 120px;
+    }
+    
+    .match-score {
+        gap: 6px;
+        margin-top: 6px;
+    }
+    
+    .score-input {
+        width: 40px;
+        padding: 5px;
+        font-size: 0.85rem;
+    }
+    
+    .save-score-btn {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .match-round {
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .match-round h4 {
+        font-size: 0.9rem;
+    }
+    
+    .time-slot-matches {
+        padding: 15px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .time-slot-matches h3 {
+        font-size: 1rem !important;
+        margin-bottom: 12px !important;
     }
     
     .stats-grid {
