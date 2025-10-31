@@ -62,13 +62,13 @@
                 <i class="fas fa-calendar-alt"></i>
                 <span>예약</span>
             </button>
-            <button class="mobile-tab-btn" data-tab="rankings">
-                <i class="fas fa-trophy"></i>
-                <span>랭킹</span>
-            </button>
             <button class="mobile-tab-btn" data-tab="matches">
                 <i class="fas fa-chess"></i>
                 <span>대진표</span>
+            </button>
+            <button class="mobile-tab-btn" data-tab="rankings">
+                <i class="fas fa-trophy"></i>
+                <span>랭킹</span>
             </button>
             <button class="mobile-tab-btn" data-tab="stats">
                 <i class="fas fa-chart-line"></i>
@@ -84,13 +84,13 @@
                 <i class="fas fa-calendar-alt"></i>
                 <span>예약 현황판</span>
             </button>
-            <button class="desktop-tab-btn" data-tab="rankings">
-                <i class="fas fa-trophy"></i>
-                <span>랭킹 시스템</span>
-            </button>
             <button class="desktop-tab-btn" data-tab="matches">
                 <i class="fas fa-chess"></i>
                 <span>대진표</span>
+            </button>
+            <button class="desktop-tab-btn" data-tab="rankings">
+                <i class="fas fa-trophy"></i>
+                <span>랭킹 시스템</span>
             </button>
             <button class="desktop-tab-btn" data-tab="stats">
                 <i class="fas fa-chart-line"></i>
@@ -137,29 +137,7 @@
                 </div>
             </div>
 
-            <!-- 2. 랭킹 시스템 탭 -->
-            <div class="tab-content" id="rankings-tab">
-                <div class="rankings-container">
-                    <div class="section-header">
-                        <h2><i class="fas fa-trophy"></i> 랭킹 시스템</h2>
-                        <div class="ranking-filters">
-                            <button class="filter-btn active" data-filter="overall">전체</button>
-                            <button class="filter-btn" data-filter="monthly">이번 달</button>
-                            <button class="filter-btn" data-filter="weekly">이번 주</button>
-                        </div>
-                    </div>
-                    <div class="rankings-content">
-                        <div class="rankings-list" id="rankings-list">
-                            <div class="loading-state">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <p>랭킹을 불러오는 중...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. 대진표 탭 -->
+            <!-- 2. 대진표 탭 -->
             <div class="tab-content" id="matches-tab">
                 <div class="matches-container">
                     <div class="section-header">
@@ -185,6 +163,28 @@
                             <div class="empty-state">
                                 <i class="fas fa-calendar-alt"></i>
                                 <p>날짜와 시간을 선택하면 대진표를 볼 수 있습니다</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 랭킹 시스템 탭 -->
+            <div class="tab-content" id="rankings-tab">
+                <div class="rankings-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-trophy"></i> 랭킹 시스템</h2>
+                        <div class="ranking-filters">
+                            <button class="filter-btn active" data-filter="overall">전체</button>
+                            <button class="filter-btn" data-filter="monthly">이번 달</button>
+                            <button class="filter-btn" data-filter="weekly">이번 주</button>
+                        </div>
+                    </div>
+                    <div class="rankings-content">
+                        <div class="rankings-list" id="rankings-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>랭킹을 불러오는 중...</p>
                             </div>
                         </div>
                     </div>
@@ -375,8 +375,7 @@
                         <label for="closing-time">예약 마감 시간 (분)</label>
                         <input type="number" id="closing-time" class="form-control" min="30" max="120" value="60">
                         <small class="form-text">게임 시작 몇 분 전에 예약을 마감할지 설정하세요</small>
-                    <
-                    /div>
+                    </div>
                     
                     <button type="submit" class="btn btn-primary btn-full">설정 저장</button>
                 </form>
