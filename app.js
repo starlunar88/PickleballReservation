@@ -2186,26 +2186,17 @@ async function loadReservationsTimeline() {
                     
                     showLoading();
                     
-                    // 강제 대진표 생성 (마감 여부 무시)
+                    // 강제 대진표 생성 (마감 여부 무시, 기존 대진표 재생성)
                     await generateMatchSchedule(date, timeSlot);
                     
-                    // 대진표 표시
-                    const existingMatches = await db.collection('matches')
-                        .where('date', '==', date)
-                        .where('timeSlot', '==', timeSlot)
-                        .get();
+                    // 타임라인 새로고침
+                    await loadReservationsTimeline();
                     
-                    if (!existingMatches.empty) {
-                        const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        matches.sort((a, b) => {
-                            if (a.roundNumber !== b.roundNumber) {
-                                return a.roundNumber - b.roundNumber;
-                            }
-                            return a.courtNumber - b.courtNumber;
-                        });
-                        await renderMatchSchedule(matches, date, timeSlot);
-                    } else {
-                        showToast('대진표 생성 후 데이터를 찾을 수 없습니다.', 'warning');
+                    // 현재 대진표 탭이 활성화되어 있으면 새로고침
+                    const matchesTab = document.getElementById('matches-tab');
+                    if (matchesTab && matchesTab.classList.contains('active')) {
+                        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+                        await loadMatchesForDate(currentDate);
                     }
                 } catch (error) {
                     console.error('대진표 생성 오류:', error);
@@ -4287,45 +4278,27 @@ async function generateMatchSchedule(date, timeSlot) {
             courtCount = Math.ceil(playerCount / 8); // 8명당 1코트
         }
         
-        // 기존 대진표 확인 (플레이어별 배정된 코트 추적)
+        // 기존 대진표 확인 및 삭제
         const existingMatches = await db.collection('matches')
             .where('date', '==', date)
             .where('timeSlot', '==', timeSlot)
             .get();
         
-        const playerCourtMap = {}; // 플레이어별 배정된 코트 추적
-        existingMatches.forEach(doc => {
-            const match = doc.data();
-            if (match.teamA) {
-                match.teamA.forEach(p => {
-                    if (!playerCourtMap[p.userId]) {
-                        playerCourtMap[p.userId] = match.courtNumber || match.court || 1;
-                    }
-                });
-            }
-            if (match.teamB) {
-                match.teamB.forEach(p => {
-                    if (!playerCourtMap[p.userId]) {
-                        playerCourtMap[p.userId] = match.courtNumber || match.court || 1;
-                    }
-                });
-            }
-        });
-        
-        // 기존 대진표 삭제 (같은 날짜, 같은 시간대)
+        // 기존 대진표 삭제 (같은 날짜, 같은 시간대) - 재생성 전 완전 삭제
         if (!existingMatches.empty) {
             const deleteBatch = db.batch();
             existingMatches.forEach(doc => {
                 deleteBatch.delete(doc.ref);
             });
             await deleteBatch.commit();
-            console.log('기존 대진표 삭제 완료');
+            console.log('기존 대진표 삭제 완료:', existingMatches.size, '개');
         }
         
         const settings = await getSystemSettings();
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
-        const schedule = buildMatchSchedule(players, courtCount, rounds, playerCourtMap);
+        // 완전히 새로 생성 (기존 배정 무시)
+        const schedule = buildMatchSchedule(players, courtCount, rounds, {});
         
         console.log(`대진표 생성: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
 
@@ -4349,20 +4322,7 @@ async function generateMatchSchedule(date, timeSlot) {
         });
         await batch.commit();
         
-        // 생성된 대진표 표시
-        await renderMatchSchedule(schedule.map(match => ({
-            id: `${date}_${timeSlot}_R${match.round}_C${match.court}`,
-            ...match,
-            date,
-            timeSlot,
-            roundNumber: match.round,
-            courtNumber: match.court,
-            scoreA: null,
-            scoreB: null,
-            status: 'scheduled'
-        })), date, timeSlot);
-        
-        showToast('대진표가 생성되었습니다.', 'success');
+        showToast('대진표가 재생성되었습니다.', 'success');
     } catch (error) {
         console.error('스케줄 생성 오류:', error);
         showToast('스케줄 생성 중 오류가 발생했습니다.', 'error');
