@@ -29,6 +29,23 @@ function hideLoading() {
     }
 }
 
+// 토스트 알림 표시 함수 (firebase-config.js에 정의되어 있지만 중복 정의로 안전성 확보)
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    toastContainer.appendChild(toast);
+    
+    // 3초 후 자동 제거
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
 // DOM 요소 참조
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
