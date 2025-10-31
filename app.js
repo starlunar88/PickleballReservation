@@ -3136,7 +3136,7 @@ function drawTeamBarChart(data, canvasId, color) {
     const container = canvas.parentElement;
     let containerWidth = container ? container.offsetWidth : 500;
     // 컨테이너 너비 제한 (너무 넓어지지 않도록)
-    containerWidth = Math.min(containerWidth, 600);
+    containerWidth = Math.min(containerWidth, 550); // 너비 줄임 (600 -> 550)
     const containerHeight = 250; // 높이 줄임 (300 -> 250)
     const dpr = window.devicePixelRatio || 1;
     
@@ -3179,7 +3179,7 @@ function drawTeamBarChart(data, canvasId, color) {
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
     const padding = { 
         top: 15, 
-        right: 40, // 오른쪽 여백 더 줄임
+        right: 50, // 오른쪽 여백 증가 (잘림 방지)
         bottom: 25, // 하단 여백 줄임
         left: Math.max(maxNameWidth + 10, 85) // 이름 너비 + 여백 (최소 85px, 최대 110px로 제한)
     };
@@ -3908,6 +3908,8 @@ async function loadReservationsTimeline() {
             // 만석 상태 제거 - 항상 예약 가능
             
             // 20분 전 마감 체크
+            // 검증: 대진표 생성 버튼을 누르지 않아도, 게임 시작 시간 20분 전에 자동으로 마감됩니다.
+            // 이는 예약을 막는 용도이며, 대진표 생성 버튼은 마감 후에만 표시됩니다.
             const now = new Date();
             
             // timeSlot 객체에서 직접 시작 시간 가져오기
@@ -3917,16 +3919,32 @@ async function loadReservationsTimeline() {
             const closingTime = new Date(gameStartTime.getTime() - 20 * 60 * 1000); // 20분 전
             const isClosed = now > closingTime;
             
+            // 마감까지 남은 시간 계산 (분 단위)
+            let timeUntilClosing = null;
+            if (!isClosed && closingTime > now) {
+                const diffMs = closingTime.getTime() - now.getTime();
+                const diffMinutes = Math.floor(diffMs / (60 * 1000));
+                timeUntilClosing = diffMinutes;
+            }
+            
             let statusClass, statusText;
             if (isClosed) {
                 statusClass = 'closed';
                 statusText = '마감';
             } else if (reservations.length > 0) {
                 statusClass = 'partial';
-                statusText = `${reservations.length}/8명`;
+                if (timeUntilClosing !== null && timeUntilClosing > 0) {
+                    statusText = `${reservations.length}/8명 · ${timeUntilClosing}분 후 마감`;
+                } else {
+                    statusText = `${reservations.length}/8명`;
+                }
             } else {
                 statusClass = 'empty';
-                statusText = '예약 가능';
+                if (timeUntilClosing !== null && timeUntilClosing > 0) {
+                    statusText = `예약 가능 · ${timeUntilClosing}분 후 마감`;
+                } else {
+                    statusText = '예약 가능';
+                }
             }
             
             timelineHTML += `
@@ -4083,6 +4101,18 @@ async function loadReservationsTimeline() {
         console.error('예약 현황 로드 오류:', error);
         timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터를 불러올 수 없습니다</p></div>';
     }
+    
+    // 마감 시간 실시간 업데이트 (1분마다)
+    if (window.closingTimeUpdateInterval) {
+        clearInterval(window.closingTimeUpdateInterval);
+    }
+    window.closingTimeUpdateInterval = setInterval(() => {
+        // 예약 탭이 활성화되어 있을 때만 업데이트
+        const reservationsTab = document.getElementById('reservations-tab');
+        if (reservationsTab && reservationsTab.classList.contains('active')) {
+            loadReservationsTimeline();
+        }
+    }, 60000); // 1분마다 업데이트
 }
 
 // 선택된 정보 업데이트
@@ -4647,28 +4677,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 전체 기록 내보내기 버튼
-    const exportAllRecordsBtn = document.getElementById('export-all-records');
-    if (exportAllRecordsBtn) {
-        exportAllRecordsBtn.addEventListener('click', async () => {
-            try {
-                showLoading();
-                const allRecords = await getAllRecordsForExport();
-                hideLoading();
-                
-                if (allRecords && allRecords.length > 0) {
-                    const today = new Date().toISOString().slice(0, 10);
-                    exportRecordsToCSV(allRecords, `records_all_${today}.csv`);
-                } else {
-                    showToast('내보낼 기록이 없습니다.', 'warning');
-                }
-            } catch (error) {
-                console.error('전체 기록 내보내기 오류:', error);
-                hideLoading();
-                showToast('내보내기 중 오류가 발생했습니다.', 'error');
-            }
-        });
-    }
     
     // 모든 기록 삭제 버튼
     const deleteAllRecordsBtn = document.getElementById('delete-all-records');
@@ -6698,6 +6706,8 @@ async function checkAndShowMatchSchedule() {
         if (!selectedTimeSlot) return;
         
         // 20분 전 마감 확인 (테스트 모드에서는 무시)
+        // 검증: 대진표 생성 버튼을 누르지 않아도, 게임 시작 20분 전에 마감됩니다.
+        // 마감 전에는 대진표를 숨기고, 마감 후에만 대진표를 생성/표시할 수 있습니다.
         const isTestMode = document.getElementById('test-time-select')?.value;
         if (!isTestMode && !isPastClosing(currentDate, selectedTimeSlot, 20)) {
             hideMatchSchedule();
