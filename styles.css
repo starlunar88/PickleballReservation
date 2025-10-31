@@ -4560,29 +4560,53 @@ body {
     }
     
     .performer-item {
-        padding: 12px;
-        gap: 10px;
-        flex-wrap: wrap;
+        padding: 10px 12px;
+        gap: 8px;
+        flex-wrap: nowrap;
     }
     
-    .performer-rank,
+    .performer-rank {
+        width: 25px;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    
     .performer-icon {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         font-size: 1.2rem;
+        flex-shrink: 0;
     }
     
     .performer-name {
-        flex: 1 1 100%;
-        order: 3;
+        flex: 1;
+        font-size: 0.9rem;
+        min-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        order: 0;
     }
     
-    .performer-score,
-    .performer-winrate,
+    .performer-score {
+        font-size: 0.8rem;
+        width: 55px;
+        flex-shrink: 0;
+        text-align: right;
+    }
+    
+    .performer-winrate {
+        font-size: 0.8rem;
+        width: 50px;
+        flex-shrink: 0;
+        text-align: right;
+    }
+    
     .performer-record {
-        font-size: 0.85rem;
-        width: auto;
-        flex: 1;
+        font-size: 0.8rem;
+        width: 45px;
+        flex-shrink: 0;
+        text-align: right;
     }
     
     .match-score {
