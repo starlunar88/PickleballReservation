@@ -66,6 +66,10 @@
                 <i class="fas fa-trophy"></i>
                 <span>랭킹</span>
             </button>
+            <button class="mobile-tab-btn" data-tab="matches">
+                <i class="fas fa-chess"></i>
+                <span>대진표</span>
+            </button>
             <button class="mobile-tab-btn" data-tab="stats">
                 <i class="fas fa-chart-line"></i>
                 <span>통계</span>
@@ -83,6 +87,10 @@
             <button class="desktop-tab-btn" data-tab="rankings">
                 <i class="fas fa-trophy"></i>
                 <span>랭킹 시스템</span>
+            </button>
+            <button class="desktop-tab-btn" data-tab="matches">
+                <i class="fas fa-chess"></i>
+                <span>대진표</span>
             </button>
             <button class="desktop-tab-btn" data-tab="stats">
                 <i class="fas fa-chart-line"></i>
@@ -124,22 +132,6 @@
                             </div>
                         </div>
                         
-                        <!-- 대진표 섹션 (20분 전 마감 시 표시) -->
-                        <div class="match-schedule-section" id="match-schedule-section" style="display: none;">
-                            <div class="section-header">
-                                <h2><i class="fas fa-trophy"></i> 대진표 및 점수 기록</h2>
-                                <div class="match-info">
-                                    <span id="match-date-time">2024-01-01 12:00-13:00</span>
-                                </div>
-                            </div>
-                            <div class="match-schedule" id="match-schedule">
-                                <div class="loading-state">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>대진표를 생성하는 중...</p>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <!-- 예약/취소 버튼 영역 - 제거됨 (타임라인에 통합) -->
                     </div>
                 </div>
@@ -167,7 +159,39 @@
                 </div>
             </div>
 
-            <!-- 3. 승률 그래프 탭 -->
+            <!-- 3. 대진표 탭 -->
+            <div class="tab-content" id="matches-tab">
+                <div class="matches-container">
+                    <div class="section-header">
+                        <h2><i class="fas fa-trophy"></i> 대진표 및 점수 기록</h2>
+                        <div class="date-navigation">
+                            <button class="btn btn-outline" id="matches-prev-day">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span id="matches-current-date-display">오늘</span>
+                            <button class="btn btn-outline" id="matches-next-day">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button class="btn btn-outline" id="refresh-matches" title="새로고침">
+                                <i class="fas fa-rotate-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="match-schedule-section">
+                        <div class="match-info">
+                            <span id="match-date-time">날짜와 시간을 선택하세요</span>
+                        </div>
+                        <div class="match-schedule" id="match-schedule">
+                            <div class="empty-state">
+                                <i class="fas fa-calendar-alt"></i>
+                                <p>날짜와 시간을 선택하면 대진표를 볼 수 있습니다</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 승률 그래프 탭 -->
             <div class="tab-content" id="stats-tab">
                 <div class="stats-container">
                     <div class="section-header">

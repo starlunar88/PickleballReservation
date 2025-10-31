@@ -1391,12 +1391,180 @@ async function loadTabData(tabName) {
         case 'rankings':
             await loadRankingsData();
             break;
+        case 'matches':
+            await loadMatchesData();
+            break;
         case 'stats':
             await loadStatsData();
             break;
         case 'admin':
             await loadAdminData();
             break;
+    }
+}
+
+// 대진표 데이터 로드
+async function loadMatchesData() {
+    try {
+        // 현재 날짜로 대진표 로드
+        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        await loadMatchesForDate(currentDate);
+    } catch (error) {
+        console.error('대진표 데이터 로드 오류:', error);
+    }
+}
+
+// 특정 날짜의 대진표 로드
+async function loadMatchesForDate(date) {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings || !settings.timeSlots) {
+            return;
+        }
+        
+        const matchesContainer = document.getElementById('match-schedule');
+        if (!matchesContainer) return;
+        
+        // 모든 시간대의 대진표를 표시
+        let matchesHTML = '';
+        let hasMatches = false;
+        
+        for (const timeSlot of settings.timeSlots) {
+            const slotKey = `${timeSlot.start}-${timeSlot.end}`;
+            
+            // 해당 시간대의 대진표 확인
+            const existingMatches = await db.collection('matches')
+                .where('date', '==', date)
+                .where('timeSlot', '==', slotKey)
+                .get();
+            
+            if (!existingMatches.empty) {
+                hasMatches = true;
+                const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                matches.sort((a, b) => {
+                    if (a.roundNumber !== b.roundNumber) {
+                        return a.roundNumber - b.roundNumber;
+                    }
+                    return a.courtNumber - b.courtNumber;
+                });
+                
+                // 라운드별로 그룹화
+                const rounds = {};
+                matches.forEach(match => {
+                    if (!rounds[match.roundNumber]) {
+                        rounds[match.roundNumber] = [];
+                    }
+                    rounds[match.roundNumber].push(match);
+                });
+                
+                matchesHTML += `
+                    <div class="time-slot-matches" style="margin-bottom: 30px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.2rem; font-weight: 600;">
+                            <i class="fas fa-clock"></i> ${timeSlot.start} - ${timeSlot.end}
+                        </h3>
+                `;
+                
+                // 각 라운드 렌더링
+                Object.keys(rounds).sort((a, b) => a - b).forEach(roundNum => {
+                    const roundMatches = rounds[roundNum];
+                    matchesHTML += `
+                        <div class="match-round">
+                            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 1rem; font-weight: 600;">${roundNum}경기</h4>
+                            <div class="round-matches">
+                    `;
+                    
+                    roundMatches.forEach(match => {
+                        const teamALabel = match.teamA.map(p => p.userName).join(', ');
+                        const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+                        const scoreA = match.scoreA ?? '';
+                        const scoreB = match.scoreB ?? '';
+                        const isCompleted = match.status === 'completed';
+                        const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
+                        
+                        matchesHTML += `
+                            <div class="match-item">
+                                <div class="match-teams">
+                                    <div class="team">${teamALabel}</div>
+                                    <div class="team vs">vs</div>
+                                    <div class="team">${teamBLabel}</div>
+                                </div>
+                                <div class="match-score">
+                                    <input type="number" class="score-input" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                                    <span class="score-separator">:</span>
+                                    <input type="number" class="score-input" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                                    <button class="save-score-btn" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
+                                        ${isCompleted ? '완료' : '저장'}
+                                    </button>
+                                    <span class="match-status ${isCompleted ? 'completed' : 'pending'}">
+                                        ${isCompleted ? '완료' : '대기'}
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    matchesHTML += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                matchesHTML += `</div>`;
+            }
+        }
+        
+        if (hasMatches) {
+            matchesContainer.innerHTML = matchesHTML;
+            
+            // 저장 버튼 이벤트 리스너 추가
+            matchesContainer.querySelectorAll('.save-score-btn').forEach(btn => {
+                if (!btn.disabled) {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const safeId = btn.id.replace('save-', '');
+                            const originalId = safeId.replace(/_/g, ':').replace(/_/g, '/');
+                            const scoreA = Number(document.getElementById(`scoreA-${safeId}`).value || 0);
+                            const scoreB = Number(document.getElementById(`scoreB-${safeId}`).value || 0);
+                            
+                            // 매치 찾기
+                            const matchDoc = await db.collection('matches').doc(originalId).get();
+                            if (matchDoc.exists) {
+                                await saveMatchScore({ id: originalId, ...matchDoc.data() }, scoreA, scoreB);
+                                // 대진표 새로고침
+                                await loadMatchesForDate(date);
+                            }
+                        } catch (error) {
+                            console.error('점수 저장 오류:', error);
+                            showToast('점수 저장 중 오류가 발생했습니다.', 'error');
+                        }
+                    });
+                }
+            });
+        } else {
+            matchesContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>${date}에 생성된 대진표가 없습니다.</p>
+                </div>
+            `;
+        }
+        
+        // 날짜 표시 업데이트
+        const dateTimeDisplay = document.getElementById('match-date-time');
+        if (dateTimeDisplay) {
+            const dateObj = new Date(date);
+            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+            });
+            dateTimeDisplay.textContent = formattedDate;
+        }
+        
+    } catch (error) {
+        console.error('대진표 로드 오류:', error);
+        showToast('대진표를 불러오는 중 오류가 발생했습니다.', 'error');
     }
 }
 
@@ -1987,6 +2155,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, 50);
             }
+            
+            // 대진표 탭으로 전환 시 대진표 로드
+            if (tabName === 'matches') {
+                setTimeout(async () => {
+                    try {
+                        await loadMatchesData();
+                    } catch (error) {
+                        console.error('탭 전환 시 대진표 로드 오류:', error);
+                        showToast('대진표 로드에 실패했습니다.', 'error');
+                    }
+                }, 50);
+            }
         });
     });
     
@@ -2135,6 +2315,99 @@ document.addEventListener('DOMContentLoaded', function() {
         window.updateCurrentDateDisplay();
     } else {
         console.warn('current-date-display 요소를 찾을 수 없습니다');
+    }
+    
+    // 대진표 탭 날짜 네비게이션 이벤트 리스너
+    const matchesPrevDayBtn = document.getElementById('matches-prev-day');
+    const matchesNextDayBtn = document.getElementById('matches-next-day');
+    const matchesRefreshBtn = document.getElementById('refresh-matches');
+    const matchesCurrentDateDisplay = document.getElementById('matches-current-date-display');
+    
+    // 대진표 탭 날짜 업데이트 함수
+    window.updateMatchesDateDisplay = function() {
+        if (!matchesCurrentDateDisplay) return;
+        
+        const dateObj = new Date(window.currentDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dateObj.setHours(0, 0, 0, 0);
+        
+        const isToday = dateObj.getTime() === today.getTime();
+        
+        if (isToday) {
+            matchesCurrentDateDisplay.textContent = '오늘';
+        } else {
+            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short'
+            });
+            matchesCurrentDateDisplay.textContent = formattedDate;
+        }
+        
+        // 대진표 새로고침
+        loadMatchesForDate(window.currentDate);
+    };
+    
+    // 대진표 탭 이전 날짜 버튼
+    if (matchesPrevDayBtn) {
+        matchesPrevDayBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                if (!window.currentDate) {
+                    window.currentDate = new Date().toISOString().slice(0, 10);
+                }
+                const dateObj = new Date(window.currentDate);
+                dateObj.setDate(dateObj.getDate() - 1);
+                window.currentDate = dateObj.toISOString().slice(0, 10);
+                window.updateMatchesDateDisplay();
+            } catch (error) {
+                console.error('대진표 탭 날짜 변경 오류:', error);
+                showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+    
+    // 대진표 탭 다음 날짜 버튼
+    if (matchesNextDayBtn) {
+        matchesNextDayBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                if (!window.currentDate) {
+                    window.currentDate = new Date().toISOString().slice(0, 10);
+                }
+                const dateObj = new Date(window.currentDate);
+                dateObj.setDate(dateObj.getDate() + 1);
+                window.currentDate = dateObj.toISOString().slice(0, 10);
+                window.updateMatchesDateDisplay();
+            } catch (error) {
+                console.error('대진표 탭 날짜 변경 오류:', error);
+                showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
+    
+    // 대진표 탭 새로고침 버튼
+    if (matchesRefreshBtn) {
+        matchesRefreshBtn.addEventListener('click', async () => {
+            try {
+                showLoading();
+                await loadMatchesForDate(window.currentDate || new Date().toISOString().slice(0, 10));
+                showToast('대진표가 새로고침되었습니다.', 'success');
+            } catch (error) {
+                console.error('대진표 새로고침 오류:', error);
+                showToast('새로고침 중 오류가 발생했습니다.', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+    }
+    
+    // 대진표 탭 초기 날짜 표시
+    if (matchesCurrentDateDisplay) {
+        window.updateMatchesDateDisplay();
     }
     
     // 하단 버튼 초기화 코드 제거됨 (타임라인에 통합)
