@@ -4730,9 +4730,19 @@ async function getRankings(limit = 50) {
             .where('status', '==', 'completed')
             .get();
         
+        console.log(`🔍 랭킹 계산: matches 컬렉션에서 ${matchesSnapshot.size}개의 완료된 경기 발견`);
+        
         matchesSnapshot.forEach(doc => {
             const match = doc.data();
-            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) {
+                console.warn(`⚠️ 매치 데이터 불완전: ${doc.id}`, {
+                    hasTeamA: !!match.teamA,
+                    hasTeamB: !!match.teamB,
+                    hasScoreA: !!match.scoreA,
+                    hasScoreB: !!match.scoreB
+                });
+                return;
+            }
             
             const matchId = doc.id;
             processedMatches.add(matchId); // 처리된 match ID 저장
@@ -4741,58 +4751,88 @@ async function getRankings(limit = 50) {
             const winners = aWins ? match.teamA : match.teamB;
             const losers = aWins ? match.teamB : match.teamA;
             
-            // 승자에게 +10점
-            if (winners && Array.isArray(winners)) {
-                winners.forEach(player => {
-                    const userId = player.userId || player.id;
-                    if (!userId) return;
-                    
-                    if (!userScores[userId]) {
-                        userScores[userId] = { 
-                            score: 0, 
-                            wins: 0, 
-                            losses: 0,
-                            totalGames: 0,
-                            matchIds: new Set() // 각 사용자별 참여한 match ID 추적
-                        };
-                    }
-                    
-                    // 이미 처리한 match인지 확인
-                    if (!userScores[userId].matchIds.has(matchId)) {
-                        userScores[userId].score += 10;
-                        userScores[userId].wins += 1;
-                        userScores[userId].totalGames += 1;
-                        userScores[userId].matchIds.add(matchId);
-                    }
+            // 팀 구조 확인 및 디버깅
+            if (!Array.isArray(winners) || !Array.isArray(losers)) {
+                console.error(`❌ 매치 ${matchId}: 팀이 배열이 아님`, {
+                    winners: winners,
+                    losers: losers
                 });
+                return;
             }
             
+            // 승자에게 +10점
+            winners.forEach(player => {
+                if (!player) {
+                    console.warn(`⚠️ 매치 ${matchId}: 승자 배열에 null/undefined 있음`);
+                    return;
+                }
+                
+                const userId = player.userId || player.id;
+                if (!userId) {
+                    console.warn(`⚠️ 매치 ${matchId}: 플레이어에 userId 없음`, player);
+                    return;
+                }
+                
+                if (!userScores[userId]) {
+                    userScores[userId] = { 
+                        score: 0, 
+                        wins: 0, 
+                        losses: 0,
+                        totalGames: 0,
+                        matchIds: new Set() // 각 사용자별 참여한 match ID 추적
+                    };
+                }
+                
+                // 이미 처리한 match인지 확인
+                if (!userScores[userId].matchIds.has(matchId)) {
+                    userScores[userId].score += 10;
+                    userScores[userId].wins += 1;
+                    userScores[userId].totalGames += 1;
+                    userScores[userId].matchIds.add(matchId);
+                    console.log(`✅ 승리: ${userId} (매치 ${matchId}) -> 점수: +10, 총 점수: ${userScores[userId].score}`);
+                } else {
+                    console.warn(`⚠️ 중복 경기 발견: ${userId} - 매치 ${matchId}`);
+                }
+            });
+            
             // 패자에게 -5점 (최소 0점)
-            if (losers && Array.isArray(losers)) {
-                losers.forEach(player => {
-                    const userId = player.userId || player.id;
-                    if (!userId) return;
-                    
-                    if (!userScores[userId]) {
-                        userScores[userId] = { 
-                            score: 0, 
-                            wins: 0, 
-                            losses: 0,
-                            totalGames: 0,
-                            matchIds: new Set()
-                        };
-                    }
-                    
-                    // 이미 처리한 match인지 확인
-                    if (!userScores[userId].matchIds.has(matchId)) {
-                        userScores[userId].score = Math.max(0, userScores[userId].score - 5);
-                        userScores[userId].losses += 1;
-                        userScores[userId].totalGames += 1;
-                        userScores[userId].matchIds.add(matchId);
-                    }
-                });
-            }
+            losers.forEach(player => {
+                if (!player) {
+                    console.warn(`⚠️ 매치 ${matchId}: 패자 배열에 null/undefined 있음`);
+                    return;
+                }
+                
+                const userId = player.userId || player.id;
+                if (!userId) {
+                    console.warn(`⚠️ 매치 ${matchId}: 플레이어에 userId 없음`, player);
+                    return;
+                }
+                
+                if (!userScores[userId]) {
+                    userScores[userId] = { 
+                        score: 0, 
+                        wins: 0, 
+                        losses: 0,
+                        totalGames: 0,
+                        matchIds: new Set()
+                    };
+                }
+                
+                // 이미 처리한 match인지 확인
+                if (!userScores[userId].matchIds.has(matchId)) {
+                    const oldScore = userScores[userId].score;
+                    userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                    userScores[userId].losses += 1;
+                    userScores[userId].totalGames += 1;
+                    userScores[userId].matchIds.add(matchId);
+                    console.log(`❌ 패배: ${userId} (매치 ${matchId}) -> 점수: -5 (${oldScore} -> ${userScores[userId].score}), 총 점수: ${userScores[userId].score}`);
+                } else {
+                    console.warn(`⚠️ 중복 경기 발견: ${userId} - 매치 ${matchId}`);
+                }
+            });
         });
+        
+        console.log(`📊 matches 처리 완료: ${Object.keys(userScores).length}명의 사용자`);
         
         // 2. gameResults 컬렉션에서 확인 (matches에 없는 데이터만)
         // matches 컬렉션에서 모든 match ID 수집 (중복 방지)
@@ -4804,9 +4844,21 @@ async function getRankings(limit = 50) {
         const gameResultsSnapshot = await db.collection('gameResults').get();
         const processedGameResults = new Set(); // 이미 처리한 gameResults ID
         
+        console.log(`🔍 랭킹 계산: gameResults 컬렉션에서 ${gameResultsSnapshot.size}개의 게임 결과 발견`);
+        
+        let skippedCount = 0;
+        let processedCount = 0;
+        
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
-            if (!game.players || !game.winners || !game.losers) return;
+            if (!game.players || !game.winners || !game.losers) {
+                console.warn(`⚠️ gameResult 데이터 불완전: ${doc.id}`, {
+                    hasPlayers: !!game.players,
+                    hasWinners: !!game.winners,
+                    hasLosers: !!game.losers
+                });
+                return;
+            }
             
             // gameResults의 teamId에서 match ID 추출 (형식: matchId_A 또는 matchId_B)
             let matchIdFromTeamId = null;
@@ -4820,6 +4872,8 @@ async function getRankings(limit = 50) {
             
             // matches에서 이미 처리한 경기인지 확인
             if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) {
+                skippedCount++;
+                console.log(`⏭️ gameResult 건너뛰기: ${doc.id} (이미 matches에서 처리됨: ${matchIdFromTeamId})`);
                 return; // 이미 matches에서 처리한 경기는 건너뛰기
             }
             
@@ -4828,11 +4882,16 @@ async function getRankings(limit = 50) {
             
             // 이미 처리한 gameResult인지 확인 (전역 체크)
             if (processedGameResults.has(gameResultId)) {
+                skippedCount++;
                 return;
             }
             
+            processedCount++;
+            
             // 승자에게 +10점
             game.winners.forEach(userId => {
+                if (!userId) return;
+                
                 if (!userScores[userId]) {
                     userScores[userId] = { 
                         score: 0, 
@@ -4849,11 +4908,14 @@ async function getRankings(limit = 50) {
                     userScores[userId].wins += 1;
                     userScores[userId].totalGames += 1;
                     userScores[userId].matchIds.add(gameResultId);
+                    console.log(`✅ 승리 (gameResult): ${userId} (${gameResultId}) -> 점수: +10`);
                 }
             });
             
             // 패자에게 -5점 (최소 0점)
             game.losers.forEach(userId => {
+                if (!userId) return;
+                
                 if (!userScores[userId]) {
                     userScores[userId] = { 
                         score: 0, 
@@ -4866,10 +4928,12 @@ async function getRankings(limit = 50) {
                 
                 // 사용자별로 이미 처리한 gameResult인지 확인
                 if (!userScores[userId].matchIds.has(gameResultId)) {
+                    const oldScore = userScores[userId].score;
                     userScores[userId].score = Math.max(0, userScores[userId].score - 5);
                     userScores[userId].losses += 1;
                     userScores[userId].totalGames += 1;
                     userScores[userId].matchIds.add(gameResultId);
+                    console.log(`❌ 패배 (gameResult): ${userId} (${gameResultId}) -> 점수: -5`);
                 }
             });
             
@@ -4877,15 +4941,20 @@ async function getRankings(limit = 50) {
             processedGameResults.add(gameResultId);
         });
         
+        console.log(`📊 gameResults 처리 완료: ${processedCount}개 처리, ${skippedCount}개 건너뜀`);
+        
         // 사용자 정보 가져오기
         const rankings = [];
         const userIds = Object.keys(userScores);
+        
+        console.log(`📊 최종 랭킹 계산: ${userIds.length}명의 사용자 중에서 최소 3경기 이상 필터링`);
         
         for (const userId of userIds) {
             const userData = userScores[userId];
             
             // 최소 3경기 이상 참여한 사용자만 포함
             if (userData.totalGames >= 3) {
+                console.log(`📈 사용자 ${userId}: ${userData.wins}승 ${userData.losses}패, 총 ${userData.totalGames}경기, 점수: ${userData.score}`);
                 // 사용자 이름 찾기 (여러 소스에서 시도)
                 let userName = '알 수 없음';
                 
