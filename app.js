@@ -16,7 +16,7 @@ function initializeFirebase() {
     }
 }
 
-// 전역 변수 참조 (firebase-config.js에서 설정된 것을 사용)
+// 전역 변수 참조 (firebase-config.js에서 설정된 window.auth, window.db 사용)
 const auth = window.auth;
 const db = window.db;
 

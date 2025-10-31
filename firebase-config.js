@@ -21,10 +21,6 @@ try {
 window.auth = firebase.auth();
 window.db = firebase.firestore();
 
-// 로컬 참조 (이 파일 내에서 사용)
-const auth = window.auth;
-const db = window.db;
-
 // Firebase 연결 상태 확인
 console.log('Firebase Auth 객체:', window.auth);
 console.log('Firebase Firestore 객체:', window.db);
@@ -32,7 +28,7 @@ console.log('Firebase Firestore 객체:', window.db);
 // 사용자 DUPR 가져오기
 async function getUserDUPR(userId) {
     try {
-        const userDoc = await db.collection('users').doc(userId).get();
+        const userDoc = await window.db.collection('users').doc(userId).get();
         if (userDoc.exists) {
             const userData = userDoc.data();
             return userData.dupr || null;
@@ -48,7 +44,7 @@ async function getUserDUPR(userId) {
 async function isAdmin(user) {
     try {
         // Firestore에서 관리자 목록 확인
-        const adminDoc = await db.collection('admins').doc(user.uid).get();
+        const adminDoc = await window.db.collection('admins').doc(user.uid).get();
         if (adminDoc.exists) {
             return adminDoc.data().isAdmin === true;
         }
@@ -57,7 +53,7 @@ async function isAdmin(user) {
         const defaultAdminEmails = ['admin@pickleball.com', 'starlunar88@gmail.com'];
         if (defaultAdminEmails.includes(user.email)) {
             // 기본 관리자를 Firestore에 등록
-            await db.collection('admins').doc(user.uid).set({
+            await window.db.collection('admins').doc(user.uid).set({
                 email: user.email,
                 isAdmin: true,
                 addedAt: new Date(),
@@ -74,7 +70,7 @@ async function isAdmin(user) {
 }
 
 // 인증 상태 변경 감지
-auth.onAuthStateChanged((user) => {
+window.auth.onAuthStateChanged((user) => {
     if (user) {
         // 사용자가 로그인한 경우
         showUserMenu(user);
@@ -217,7 +213,7 @@ function createReservationElement(id, reservation) {
 // 예약 취소
 function cancelReservation(reservationId) {
     if (confirm('정말로 이 예약을 취소하시겠습니까?')) {
-        db.collection('reservations').doc(reservationId).delete()
+        window.db.collection('reservations').doc(reservationId).delete()
             .then(() => {
                 showToast('예약이 취소되었습니다.', 'success');
             })
@@ -243,7 +239,7 @@ function clearReservations() {
 
 // 예약 생성
 async function createReservation(reservationData) {
-    const user = auth.currentUser;
+    const user = window.auth.currentUser;
     if (!user) {
         showToast('로그인이 필요합니다.', 'warning');
         return null;
@@ -259,7 +255,7 @@ async function createReservation(reservationData) {
     };
     
     try {
-        const docRef = await db.collection('reservations').add(reservation);
+        const docRef = await window.db.collection('reservations').add(reservation);
         console.log('Firestore에 예약 저장 완료:', docRef.id);
         return docRef.id;
     } catch (error) {
