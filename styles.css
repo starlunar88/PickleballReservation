@@ -68,11 +68,12 @@ body {
     color: white;
     font-size: 1rem; /* 더 작게 축소 */
     font-weight: bold;
-    flex-wrap: nowrap; /* 한 줄로 표시 */
+    flex-wrap: nowrap !important; /* 한 줄로 표시 - 강제 */
     gap: 4px; /* 요소 간 간격 */
     max-width: calc(100% - 80px); /* 햄버거 버튼 공간 확보 */
     min-width: 0; /* flex 축소 허용 */
     overflow: hidden; /* 넘치는 내용 숨김 */
+    width: auto; /* 너비 자동 조정 */
 }
 
 .nav-logo i {
@@ -94,13 +95,14 @@ body {
 
 .nav-user-info {
     color: white;
-    white-space: nowrap;
+    white-space: nowrap !important; /* 강제 한 줄 */
     overflow: hidden; /* 넘치는 내용 숨김 */
     text-overflow: ellipsis; /* 넘치는 텍스트는 ... 표시 */
     flex-shrink: 1; /* 필요시 축소 허용 */
     margin-left: 8px; /* 버전 배지와 간격 */
     font-size: 0.85rem;
     opacity: 0.9;
+    max-width: 150px; /* 최대 너비 제한으로 한 줄 유지 */
 }
 
 .nav-menu {
@@ -5472,6 +5474,36 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .time-slot-content {
         padding: 12px !important;
+    }
+}
+
+/* PC 스타일 - 화면이 넓을 때 네비게이션 바 조정 */
+@media (min-width: 481px) {
+    .nav-container {
+        max-width: 480px; /* PC에서는 약간 더 넓게 */
+    }
+    
+    .nav-logo {
+        font-size: 0.95rem; /* PC에서는 약간 더 작게 */
+        flex-wrap: nowrap !important; /* 강제 한 줄 */
+        gap: 6px; /* 간격 약간 증가 */
+    }
+    
+    .nav-logo i {
+        font-size: 1.1rem; /* PC에서는 약간 더 작게 */
+        margin-right: 4px;
+    }
+    
+    .version-badge {
+        font-size: 0.7rem; /* PC에서는 더 작게 */
+        padding: 2px 5px;
+        margin-left: 6px;
+    }
+    
+    .nav-user-info {
+        font-size: 0.8rem; /* PC에서는 약간 더 작게 */
+        margin-left: 6px;
+        max-width: 180px; /* PC에서는 더 넓게 표시 가능 */
     }
 }
 
