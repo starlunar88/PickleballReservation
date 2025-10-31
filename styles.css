@@ -99,7 +99,7 @@ body {
     overflow: hidden; /* 넘치는 내용 숨김 */
     text-overflow: ellipsis; /* 넘치는 텍스트는 ... 표시 */
     flex-shrink: 1; /* 필요시 축소 허용 */
-    margin-left: 8px; /* 버전 배지와 간격 */
+    margin-left: 16px; /* 버전 배지와 간격 늘리기 (8px -> 16px) */
     font-size: 0.85rem;
     opacity: 0.9;
     max-width: 150px; /* 최대 너비 제한으로 한 줄 유지 */
@@ -3781,7 +3781,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         overflow: hidden !important; /* 넘치는 내용 숨김 */
         text-overflow: ellipsis !important; /* 넘치는 텍스트는 ... 표시 */
         flex-shrink: 1 !important; /* 필요시 축소 허용 */
-        margin-left: 8px !important; /* 버전 배지와 간격 */
+        margin-left: 16px !important; /* 버전 배지와 간격 늘리기 (8px -> 16px) */
         white-space: nowrap !important; /* 한 줄로 표시 */
     }
     .nav-logo i { 
@@ -5502,7 +5502,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .nav-user-info {
         font-size: 0.8rem; /* PC에서는 약간 더 작게 */
-        margin-left: 6px;
+        margin-left: 16px; /* 버전 배지와 간격 늘리기 (6px -> 16px) */
         max-width: 180px; /* PC에서는 더 넓게 표시 가능 */
     }
 }
