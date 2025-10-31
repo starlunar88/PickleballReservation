@@ -4402,20 +4402,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         currentDateDisplay.textContent = formattedDate;
         
-        // Today 배지 표시/숨김 (date-navigation의 왼쪽에 배치)
-        const dateNav = currentDateDisplay.parentElement;
-        let todayBadge = dateNav.querySelector('.today-badge');
-        if (isToday) {
-            if (!todayBadge) {
-                todayBadge = document.createElement('span');
-                todayBadge.className = 'today-badge';
-                todayBadge.textContent = 'Today';
-                dateNav.insertBefore(todayBadge, dateNav.firstChild);
-            }
-            todayBadge.style.display = 'inline-block';
-        } else {
-            if (todayBadge) {
-                todayBadge.style.display = 'none';
+        // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
+        const sectionHeader = currentDateDisplay.closest('.section-header');
+        if (sectionHeader) {
+            let todayBadge = sectionHeader.querySelector('.today-badge');
+            if (isToday) {
+                if (!todayBadge) {
+                    todayBadge = document.createElement('span');
+                    todayBadge.className = 'today-badge';
+                    todayBadge.innerHTML = '<span class="today-emoji">📅</span> Today';
+                    sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
+                }
+                todayBadge.style.display = 'flex';
+            } else {
+                if (todayBadge) {
+                    todayBadge.style.display = 'none';
+                }
             }
         }
         
@@ -4544,20 +4546,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         matchesCurrentDateDisplay.textContent = formattedDate;
         
-        // Today 배지 표시/숨김 (date-navigation의 왼쪽에 배치)
-        const dateNav = matchesCurrentDateDisplay.parentElement;
-        let todayBadge = dateNav.querySelector('.today-badge');
-        if (isToday) {
-            if (!todayBadge) {
-                todayBadge = document.createElement('span');
-                todayBadge.className = 'today-badge';
-                todayBadge.textContent = 'Today';
-                dateNav.insertBefore(todayBadge, dateNav.firstChild);
-            }
-            todayBadge.style.display = 'inline-block';
-        } else {
-            if (todayBadge) {
-                todayBadge.style.display = 'none';
+        // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
+        const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');
+        if (sectionHeader) {
+            let todayBadge = sectionHeader.querySelector('.today-badge');
+            if (isToday) {
+                if (!todayBadge) {
+                    todayBadge = document.createElement('span');
+                    todayBadge.className = 'today-badge';
+                    todayBadge.innerHTML = '<span class="today-emoji">📅</span> Today';
+                    sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
+                }
+                todayBadge.style.display = 'flex';
+            } else {
+                if (todayBadge) {
+                    todayBadge.style.display = 'none';
+                }
             }
         }
         
