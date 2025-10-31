@@ -3251,17 +3251,19 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.fillStyle = '#333';
         ctx.font = '12px Arial';
         const labelText = `${item.winRate.toFixed(0)}%`;
+        const labelTextWidth = ctx.measureText(labelText).width;
         const labelX = x + barWidth + 8;
+        const maxLabelX = padding.left + chartWidth - labelTextWidth - 5;
         
         // 레이블이 차트 영역을 벗어나면 막대 안에 표시
-        if (labelX + 30 > padding.left + chartWidth) {
+        if (labelX > maxLabelX) {
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'right';
             ctx.fillText(labelText, x + barWidth - 5, y + actualBarHeight / 2 + 4);
         } else {
             ctx.fillStyle = '#333';
             ctx.textAlign = 'left';
-            ctx.fillText(labelText, labelX, y + actualBarHeight / 2 + 4);
+            ctx.fillText(labelText, Math.min(labelX, maxLabelX), y + actualBarHeight / 2 + 4);
         }
     });
 }
