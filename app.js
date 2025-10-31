@@ -1606,6 +1606,24 @@ async function loadReservationsTimeline() {
                                         </button>`;
                             }
                         })()}
+                        ${(() => {
+                            // 관리자이거나 마감된 경우 대진표 생성 버튼 표시
+                            const currentUser = firebase.auth().currentUser;
+                            const isAdminUser = currentUser && currentUser.email && 
+                                                ['starlunar88@gmail.com', 'admin@pickleball.com'].includes(currentUser.email);
+                            if (isClosed || isAdminUser) {
+                                return `<button class="btn btn-primary force-generate-btn" 
+                                               data-time-slot="${slotKey}" 
+                                               data-date="${targetDate}"
+                                               style="margin-top: 8px; width: 100%;">
+                                            <i class="fas fa-trophy"></i> 대진표 생성
+                                        </button>`;
+                            }
+                            return '';
+                        })()}
+                    </div>
+                    <div class="timeline-match-schedule" id="match-schedule-${targetDate}-${slotKey.replace(/:/g, '-')}" style="display: none; margin-top: 12px;">
+                        <!-- 대진표가 여기에 표시됩니다 -->
                     </div>
                 </div>
             `;
@@ -1635,6 +1653,51 @@ async function loadReservationsTimeline() {
                 const timeSlot = e.target.getAttribute('data-time-slot');
                 const date = e.target.getAttribute('data-date');
                 await handleCancelReservation(timeSlot, date);
+            });
+        });
+        
+        // 타임라인 대진표 생성 버튼 이벤트 리스너 추가
+        timeline.querySelectorAll('.force-generate-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                try {
+                    const timeSlot = btn.getAttribute('data-time-slot');
+                    const date = btn.getAttribute('data-date');
+                    
+                    if (!timeSlot) {
+                        console.error('시간대 정보가 없습니다');
+                        return;
+                    }
+                    
+                    showLoading();
+                    
+                    // 강제 대진표 생성 (마감 여부 무시)
+                    await generateMatchSchedule(date, timeSlot);
+                    
+                    // 대진표 표시
+                    const existingMatches = await db.collection('matches')
+                        .where('date', '==', date)
+                        .where('timeSlot', '==', timeSlot)
+                        .get();
+                    
+                    if (!existingMatches.empty) {
+                        const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        matches.sort((a, b) => {
+                            if (a.roundNumber !== b.roundNumber) {
+                                return a.roundNumber - b.roundNumber;
+                            }
+                            return a.courtNumber - b.courtNumber;
+                        });
+                        await renderMatchSchedule(matches, date, timeSlot);
+                    } else {
+                        showToast('대진표 생성 후 데이터를 찾을 수 없습니다.', 'warning');
+                    }
+                } catch (error) {
+                    console.error('대진표 생성 오류:', error);
+                    showToast('대진표 생성 중 오류', 'error');
+                } finally {
+                    hideLoading();
+                }
             });
         });
         
@@ -3446,17 +3509,25 @@ function addTestButtonEventListeners() {
         });
     });
     
-    // 대진표 강제 생성 버튼들
+    // 대진표 강제 생성 버튼들 (타임라인 버튼 포함)
     document.querySelectorAll('.force-generate-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             try {
-                const timeSlot = e.target.getAttribute('data-time-slot');
-                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                const timeSlot = e.target.closest('.force-generate-btn').getAttribute('data-time-slot');
+                const date = e.target.closest('.force-generate-btn').getAttribute('data-date') || 
+                             window.currentDate || new Date().toISOString().slice(0, 10);
+                
+                if (!timeSlot) {
+                    console.error('시간대 정보가 없습니다');
+                    return;
+                }
+                
+                showLoading();
                 
                 // 강제 대진표 생성 (마감 여부 무시)
                 await generateMatchSchedule(date, timeSlot);
                 
-                // 대진표 표시 (인덱스 오류 방지를 위해 단순화)
+                // 대진표 표시
                 const existingMatches = await db.collection('matches')
                     .where('date', '==', date)
                     .where('timeSlot', '==', timeSlot)
@@ -3471,10 +3542,14 @@ function addTestButtonEventListeners() {
                         return a.courtNumber - b.courtNumber;
                     });
                     await renderMatchSchedule(matches, date, timeSlot);
+                } else {
+                    showToast('대진표 생성 후 데이터를 찾을 수 없습니다.', 'warning');
                 }
             } catch (error) {
                 console.error('강제 대진표 생성 오류:', error);
                 showToast('대진표 생성 중 오류', 'error');
+            } finally {
+                hideLoading();
             }
         });
     });
@@ -3656,16 +3731,17 @@ function buildMatchSchedule(players, courtCount, rounds) {
 // 대진표 렌더링
 async function renderMatchSchedule(matches, date, timeSlot) {
     try {
+        // 타임라인 항목 내부의 대진표 영역 찾기
+        const safeSlotKey = timeSlot.replace(/:/g, '-');
+        const matchScheduleDiv = document.getElementById(`match-schedule-${date}-${safeSlotKey}`);
+        
+        // 기존 별도 섹션도 확인 (하위 호환성)
         const scheduleSection = document.getElementById('match-schedule-section');
-        const scheduleContainer = document.getElementById('match-schedule');
-        const dateTimeDisplay = document.getElementById('match-date-time');
+        const scheduleContainer = matchScheduleDiv || document.getElementById('match-schedule');
         
-        if (!scheduleSection || !scheduleContainer) return;
-        
-        // 날짜/시간 표시
-        if (dateTimeDisplay) {
-            const [startTime] = timeSlot.split('-');
-            dateTimeDisplay.textContent = `${date} ${startTime}-${timeSlot.split('-')[1]}`;
+        if (!scheduleContainer) {
+            console.warn('대진표 컨테이너를 찾을 수 없습니다');
+            return;
         }
         
         if (matches.length === 0) {
@@ -3675,7 +3751,11 @@ async function renderMatchSchedule(matches, date, timeSlot) {
                     <p>대진표가 없습니다.</p>
                 </div>
             `;
-            scheduleSection.style.display = 'block';
+            if (matchScheduleDiv) {
+                matchScheduleDiv.style.display = 'block';
+            } else if (scheduleSection) {
+                scheduleSection.style.display = 'block';
+            }
             return;
         }
         
@@ -3756,7 +3836,12 @@ async function renderMatchSchedule(matches, date, timeSlot) {
             scheduleContainer.appendChild(roundDiv);
         });
         
-        scheduleSection.style.display = 'block';
+        // 타임라인 항목 내부에 표시
+        if (matchScheduleDiv) {
+            matchScheduleDiv.style.display = 'block';
+        } else if (scheduleSection) {
+            scheduleSection.style.display = 'block';
+        }
         
     } catch (error) {
         console.error('대진표 렌더링 오류:', error);
