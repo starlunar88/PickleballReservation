@@ -2516,11 +2516,15 @@ function drawWinRateChart(data) {
         }
     });
     
-    // Y축 레이블
+    // Y축 레이블 (회전시켜 세로로 표시하여 겹침 방지)
+    ctx.save();
     ctx.fillStyle = '#666';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('승률 (%)', 15, height / 2);
+    ctx.translate(15, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('승률 (%)', 0, 0);
+    ctx.restore();
     
     // 데이터 라인 그리기
     ctx.strokeStyle = '#667eea';
