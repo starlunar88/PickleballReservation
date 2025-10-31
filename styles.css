@@ -2704,11 +2704,11 @@ body {
     left: 100% !important;
 }
 
-.court-matches {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 8px 0;
+.time-slot-matches .court-matches {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 8px 0 !important;
 }
 
 .time-slot-matches .match-item-small {
@@ -3166,14 +3166,18 @@ body {
     border-bottom: 2px solid #e0e4ff;
 }
 
-.match-schedule {
-    margin-top: 20px;
-    padding-right: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+.match-schedule,
+#match-schedule {
+    margin-top: 20px !important;
+    padding-right: 5px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 30px !important;
     overflow-y: visible !important;
+    overflow-x: hidden !important;
     max-height: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .match-round {
@@ -3558,83 +3562,84 @@ body {
     /* 대진표 반응형 */
     .time-slot-matches {
         margin-bottom: 20px !important;
-        border-radius: 12px !important;
+        border-radius: 16px !important;
+        border-width: 2px !important;
     }
     
-    .time-slot-header {
+    .time-slot-matches .time-slot-header {
         padding: 12px 16px !important;
     }
     
-    .time-slot-title {
+    .time-slot-matches .time-slot-title {
         font-size: 0.95rem !important;
         gap: 8px !important;
     }
     
-    .time-slot-title i {
+    .time-slot-matches .time-slot-title i {
         font-size: 1rem !important;
     }
     
-    .time-slot-content {
+    .time-slot-matches .time-slot-content {
         padding: 16px !important;
     }
     
-    .court-section {
-        margin-bottom: 15px;
+    .time-slot-matches .court-section {
+        margin-bottom: 15px !important;
     }
     
-    .court-title {
+    .time-slot-matches .court-title {
         font-size: 0.85rem !important;
         padding: 6px 10px !important;
         margin-bottom: 8px !important;
     }
     
-    .court-matches {
-        gap: 6px;
+    .time-slot-matches .court-matches {
+        gap: 6px !important;
     }
     
-    .match-item-small {
-        padding: 8px;
-        gap: 6px;
+    .time-slot-matches .match-item-small {
+        padding: 8px !important;
+        gap: 6px !important;
     }
     
-    .match-round-label {
+    .time-slot-matches .match-round-label {
         font-size: 0.7rem !important;
         padding: 2px 6px !important;
     }
     
-    .match-teams-small {
-        gap: 6px;
+    .time-slot-matches .match-teams-small {
+        gap: 6px !important;
     }
     
-    .team-small {
+    .time-slot-matches .team-small {
         font-size: 0.7rem !important;
         padding: 4px 6px !important;
         min-width: 70px !important;
         max-width: 110px !important;
     }
     
-    .team-vs-small {
+    .time-slot-matches .team-vs-small {
         padding: 4px 8px !important;
         font-size: 0.65rem !important;
     }
     
-    .match-score-small {
-        gap: 4px;
-        margin-top: 4px;
+    .time-slot-matches .match-score-small {
+        gap: 4px !important;
+        margin-top: 4px !important;
     }
     
-    .score-input-small {
+    .time-slot-matches .score-input-small {
         width: 35px !important;
         padding: 3px !important;
         font-size: 0.75rem !important;
     }
     
-    .save-score-btn-small {
+    .time-slot-matches .save-score-btn-small {
         padding: 3px 8px !important;
         font-size: 0.7rem !important;
     }
     
-    .match-status-small {
+    .time-slot-matches .match-status-small {
         padding: 2px 6px !important;
         font-size: 0.65rem !important;
     }
