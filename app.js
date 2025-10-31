@@ -3631,17 +3631,37 @@ function renderRecords(matches) {
         newBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             e.preventDefault();
+            
+            console.log(`🔘 기록 삭제 버튼 클릭 이벤트 발생 (버튼 ${index})`);
+            console.log(`📋 이벤트 객체:`, e);
+            console.log(`📋 버튼 요소:`, newBtn);
+            
             const matchId = newBtn.getAttribute('data-match-id');
             console.log(`🔘 기록 삭제 버튼 클릭됨 (버튼 ${index}): ${matchId}`);
+            console.log(`📋 data-match-id 속성 값:`, matchId);
+            console.log(`📋 모든 data- 속성:`, Array.from(newBtn.attributes).filter(attr => attr.name.startsWith('data-')).map(attr => `${attr.name}="${attr.value}"`));
             
             if (!matchId) {
                 console.error(`❌ 매치 ID를 찾을 수 없습니다!`);
+                console.error(`❌ 버튼의 모든 속성:`, Array.from(newBtn.attributes).map(attr => `${attr.name}="${attr.value}"`));
+                showToast('매치 ID를 찾을 수 없습니다.', 'error');
                 return;
             }
             
-            if (confirm('이 기록을 삭제하시겠습니까?')) {
+            if (confirm('이 기록을 삭제하시겠습니까? (점수만 초기화되고 대진표는 유지됩니다)')) {
                 console.log(`✅ 확인 버튼 클릭, deleteRecord 호출 예정: ${matchId}`);
-                await deleteRecord(matchId);
+                console.log(`⏰ deleteRecord 호출 전 시간:`, new Date().toISOString());
+                console.log(`📋 호출 전 스택 트레이스:`, new Error().stack);
+                
+                try {
+                    await deleteRecord(matchId);
+                    console.log(`✅ deleteRecord 호출 완료: ${matchId}`);
+                } catch (error) {
+                    console.error(`❌ deleteRecord 호출 중 에러 발생:`, error);
+                    console.error(`❌ 에러 상세:`, error.message);
+                    console.error(`❌ 에러 스택:`, error.stack);
+                    showToast('기록 삭제 중 오류가 발생했습니다: ' + error.message, 'error');
+                }
             } else {
                 console.log(`❌ 취소 버튼 클릭, deleteRecord 호출 안함`);
             }
@@ -3655,8 +3675,19 @@ function renderRecords(matches) {
 async function deleteRecord(matchId) {
     try {
         console.log(`🗑️ deleteRecord 호출됨: ${matchId}`);
+        console.log(`⏰ 호출 시간:`, new Date().toISOString());
+        console.log(`📋 window.db 존재 여부:`, !!window.db);
+        console.log(`📋 firebase.firestore 존재 여부:`, typeof firebase !== 'undefined' && typeof firebase.firestore !== 'undefined');
+        
         const db = window.db || firebase.firestore();
-        if (!db) return;
+        if (!db) {
+            console.error(`❌ db 객체를 찾을 수 없습니다!`);
+            console.error(`❌ window.db:`, window.db);
+            console.error(`❌ firebase:`, typeof firebase !== 'undefined' ? '존재' : '없음');
+            showToast('데이터베이스 연결 오류', 'error');
+            return;
+        }
+        console.log(`✅ db 객체 확인됨`);
         
         // match 점수 초기화 (삭제가 아닌 초기화)
         const matchRef = db.collection('matches').doc(matchId);
@@ -3730,21 +3761,38 @@ async function deleteRecord(matchId) {
         }
         
         // 관련 gameResults 삭제
+        console.log(`🔄 gameResults 삭제 시작: ${matchId}`);
         const gameResultsA = await db.collection('gameResults')
             .where('teamId', '==', `${matchId}_A`)
             .get();
+        
+        console.log(`📊 gameResultsA 조회 완료: ${gameResultsA.size}개`);
         
         const gameResultsB = await db.collection('gameResults')
             .where('teamId', '==', `${matchId}_B`)
             .get();
         
+        console.log(`📊 gameResultsB 조회 완료: ${gameResultsB.size}개`);
+        
         const batch = db.batch();
-        gameResultsA.forEach(doc => batch.delete(doc.ref));
-        gameResultsB.forEach(doc => batch.delete(doc.ref));
+        gameResultsA.forEach(doc => {
+            console.log(`🗑️ gameResultsA 삭제 예정: ${doc.id}`);
+            batch.delete(doc.ref);
+        });
+        gameResultsB.forEach(doc => {
+            console.log(`🗑️ gameResultsB 삭제 예정: ${doc.id}`);
+            batch.delete(doc.ref);
+        });
         
         if (!gameResultsA.empty || !gameResultsB.empty) {
+            console.log(`📤 gameResults batch.commit() 호출 시작...`);
             await batch.commit();
-            console.log(`🔄 gameResults 삭제 및 점수 초기화: ${matchId} (${gameResultsA.size + gameResultsB.size}개)`);
+            const totalGameResults = gameResultsA.size + gameResultsB.size;
+            console.log(`✅ gameResults batch.commit() 완료`);
+            console.log(`🔄 gameResults 삭제 및 점수 초기화: ${matchId} (${totalGameResults}개)`);
+            console.log(`📊 gameResults 삭제 상세: A팀 ${gameResultsA.size}개, B팀 ${gameResultsB.size}개`);
+        } else {
+            console.log(`ℹ️ gameResults 없음: ${matchId} - 삭제할 gameResults가 없습니다`);
         }
         
         // 삭제 후 매치 문서가 여전히 존재하는지 확인 (디버깅)
@@ -3850,42 +3898,78 @@ async function deleteRecord(matchId) {
 // 모든 기록 삭제
 async function deleteAllRecords() {
     try {
+        console.log(`🔍 deleteAllRecords 함수 호출됨`);
+        console.log(`⏰ 호출 시간:`, new Date().toISOString());
+        console.log(`📋 호출 스택:`, new Error().stack);
+        
         if (!confirm('모든 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            console.log(`❌ deleteAllRecords: 사용자가 취소함`);
             return;
         }
         
+        console.log(`✅ deleteAllRecords: 사용자가 확인함`);
         showLoading();
         
         const db = window.db || firebase.firestore();
-        if (!db) return;
+        if (!db) {
+            console.error(`❌ deleteAllRecords: db 객체를 찾을 수 없습니다`);
+            hideLoading();
+            return;
+        }
         
+        console.log(`🔍 deleteAllRecords: 완료된 매치 조회 시작...`);
         const matchesSnapshot = await db.collection('matches')
             .where('status', '==', 'completed')
             .get();
         
+        console.log(`📊 deleteAllRecords: 완료된 매치 ${matchesSnapshot.size}개 발견`);
+        
         if (matchesSnapshot.empty) {
+            console.log(`ℹ️ deleteAllRecords: 삭제할 기록이 없습니다`);
             showToast('삭제할 기록이 없습니다.', 'info');
             hideLoading();
             return;
         }
         
-        // matches 삭제
+        // matches 삭제 (주의: status가 'completed'인 매치만 삭제)
+        console.log(`⚠️ deleteAllRecords: 이 함수는 status='completed'인 매치를 완전히 삭제합니다!`);
+        
         const batch = db.batch();
         matchesSnapshot.forEach(doc => {
+            const matchData = doc.data();
+            console.log(`🗑️ deleteAllRecords: 매치 삭제 예정: ${doc.id}`, {
+                status: matchData.status,
+                date: matchData.date,
+                timeSlot: matchData.timeSlot,
+                scoreA: matchData.scoreA,
+                scoreB: matchData.scoreB
+            });
             batch.delete(doc.ref);
         });
+        
+        console.log(`📤 deleteAllRecords: matches batch.commit() 호출 시작...`);
         await batch.commit();
+        console.log(`✅ deleteAllRecords: matches batch.commit() 완료`);
+        console.log(`🗑️ deleteAllRecords: 완료된 매치 ${matchesSnapshot.size}개 삭제 완료`);
         
         // 모든 gameResults 삭제
+        console.log(`🔍 deleteAllRecords: 모든 gameResults 조회 시작...`);
         const gameResultsSnapshot = await db.collection('gameResults').get();
+        console.log(`📊 deleteAllRecords: gameResults 총 ${gameResultsSnapshot.size}개 발견`);
+        
         const gameResultsBatch = db.batch();
         gameResultsSnapshot.forEach(doc => {
+            console.log(`🗑️ deleteAllRecords: gameResults 삭제 예정: ${doc.id}`);
             gameResultsBatch.delete(doc.ref);
         });
         
         if (!gameResultsSnapshot.empty) {
+            console.log(`📤 deleteAllRecords: gameResults batch.commit() 호출 시작...`);
             await gameResultsBatch.commit();
-            console.log(`🗑️ 모든 gameResults 삭제: ${gameResultsSnapshot.size}개`);
+            console.log(`✅ deleteAllRecords: gameResults batch.commit() 완료`);
+            console.log(`🗑️ deleteAllRecords: 모든 gameResults 삭제 완료 (${gameResultsSnapshot.size}개)`);
+        } else {
+            console.log(`ℹ️ deleteAllRecords: 삭제할 gameResults가 없습니다`);
         }
         
         showToast('모든 기록이 삭제되었습니다.', 'success');
