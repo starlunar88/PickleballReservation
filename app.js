@@ -1491,24 +1491,9 @@ async function loadMatchesForDate(date) {
                     courts[courtNum].sort((a, b) => a.roundNumber - b.roundNumber);
                 });
                 
-                matchesHTML += `
-                    <div class="time-slot-matches">
-                        <div class="time-slot-header">
-                            <h3 class="time-slot-title">
-                                <i class="fas fa-clock"></i> ${timeSlot.start} - ${timeSlot.end}
-                            </h3>
-                        </div>
-                        <div class="time-slot-content">
-                `;
-                
-                // 각 코트 렌더링
+                // 각 코트 렌더링 - 더 이상 time-slot 구조 제거, 바로 경기만 표시
                 Object.keys(courts).sort((a, b) => a - b).forEach(courtNum => {
                     const courtMatches = courts[courtNum];
-                    matchesHTML += `
-                        <div class="court-section">
-                            <h4 class="court-title">${courtNum}코트</h4>
-                            <div class="court-matches">
-                    `;
                     
                     // 각 경기 렌더링
                     courtMatches.forEach(match => {
@@ -1520,41 +1505,44 @@ async function loadMatchesForDate(date) {
                         const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
                         const roundNum = match.roundNumber || 1;
                         
+                        // 경기 시간 계산 (각 경기는 15분으로 가정)
+                        const timeSlotStart = timeSlot.start.split(':');
+                        const startHour = parseInt(timeSlotStart[0]);
+                        const startMin = parseInt(timeSlotStart[1]);
+                        const minutesPerGame = 15;
+                        const gameStartMinutes = (roundNum - 1) * minutesPerGame;
+                        const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+                        const gameStartHour = Math.floor(totalStartMinutes / 60);
+                        const gameStartMin = totalStartMinutes % 60;
+                        const totalEndMinutes = totalStartMinutes + minutesPerGame;
+                        const gameEndHour = Math.floor(totalEndMinutes / 60);
+                        const gameEndMin = totalEndMinutes % 60;
+                        
+                        const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+                        const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                        
                         matchesHTML += `
-                            <div class="match-item-small">
-                                <div class="match-header-small">
-                                    <span class="match-round-label">${roundNum}경기</span>
+                            <div class="match-item-compact">
+                                <div class="match-header-compact">
+                                    <span class="match-info-compact">${roundNum}경기 (${courtNum}코트) ${gameStart} ~ ${gameEnd}</span>
                                 </div>
-                                <div class="match-teams-small">
-                                    <div class="team-small">${teamALabel}</div>
-                                    <div class="team-vs-small">vs</div>
-                                    <div class="team-small">${teamBLabel}</div>
+                                <div class="match-teams-compact">
+                                    <span class="team-name-compact">${teamALabel}</span>
+                                    <span class="team-vs-compact">vs</span>
+                                    <span class="team-name-compact">${teamBLabel}</span>
                                 </div>
-                                <div class="match-score-small">
-                                    <input type="number" class="score-input-small" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
-                                    <span class="score-separator-small">:</span>
-                                    <input type="number" class="score-input-small" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
-                                    <button class="save-score-btn-small" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
+                                <div class="match-score-compact">
+                                    <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                                    <span class="score-separator-compact">:</span>
+                                    <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                                    <button class="save-score-btn-compact" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                                         ${isCompleted ? '완료' : '저장'}
                                     </button>
-                                    <span class="match-status-small ${isCompleted ? 'completed' : 'pending'}">
-                                        ${isCompleted ? '완료' : '대기'}
-                                    </span>
                                 </div>
                             </div>
                         `;
                     });
-                    
-                    matchesHTML += `
-                            </div>
-                        </div>
-                    `;
                 });
-                
-                matchesHTML += `
-                        </div>
-                    </div>
-                `;
             }
         }
         
@@ -1568,210 +1556,89 @@ async function loadMatchesForDate(date) {
             matchesContainer.innerHTML = matchesHTML;
             console.log('✅ HTML 삽입 완료');
             
-            // 스타일 강제 적용
+            // 컴팩트 스타일 강제 적용
             setTimeout(() => {
-                const timeSlotMatches = matchesContainer.querySelectorAll('.time-slot-matches');
-                timeSlotMatches.forEach(el => {
-                    el.style.marginBottom = '30px';
-                    el.style.background = 'white';
-                    el.style.borderRadius = '20px';
-                    el.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.15)';
-                    el.style.overflow = 'hidden';
-                    el.style.border = '3px solid #e0e4ff';
-                    el.style.position = 'relative';
-                    el.style.display = 'block';
-                    el.style.width = '100%';
-                });
-                
-                const timeSlotHeaders = matchesContainer.querySelectorAll('.time-slot-header');
-                timeSlotHeaders.forEach(el => {
-                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    el.style.padding = '18px 24px';
-                    el.style.borderBottom = '4px solid rgba(255, 255, 255, 0.3)';
-                    el.style.position = 'relative';
-                    el.style.overflow = 'hidden';
-                    el.style.display = 'block';
-                    el.style.width = '100%';
-                });
-                
-                const timeSlotTitles = matchesContainer.querySelectorAll('.time-slot-title');
-                timeSlotTitles.forEach(el => {
-                    el.style.color = 'white';
-                    el.style.margin = '0';
-                    el.style.fontSize = '1.15rem';
-                    el.style.fontWeight = '800';
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '12px';
-                });
-                
-                const timeSlotContents = matchesContainer.querySelectorAll('.time-slot-content');
-                timeSlotContents.forEach(el => {
-                    el.style.padding = '24px';
-                    el.style.background = 'linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)';
-                    el.style.minHeight = '100px';
-                    el.style.width = '100%';
-                });
-                
-                const courtSections = matchesContainer.querySelectorAll('.court-section');
-                courtSections.forEach(el => {
-                    el.style.marginBottom = '28px';
-                    el.style.background = 'white';
-                    el.style.borderRadius = '16px';
-                    el.style.padding = '16px';
-                    el.style.border = '2px solid #f0f0f0';
-                    el.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.05)';
-                    el.style.display = 'block';
-                    el.style.width = '100%';
-                });
-                
-                const courtTitles = matchesContainer.querySelectorAll('.court-title');
-                courtTitles.forEach(el => {
-                    el.style.color = 'white';
-                    el.style.margin = '0 0 16px 0';
-                    el.style.fontSize = '1rem';
-                    el.style.fontWeight = '700';
-                    el.style.padding = '12px 18px';
-                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    el.style.borderRadius = '14px';
-                    el.style.border = 'none';
-                    el.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '10px';
-                    el.style.position = 'relative';
-                    el.style.overflow = 'hidden';
-                    el.style.width = '100%';
-                });
-                
-                const matchItems = matchesContainer.querySelectorAll('.match-item-small');
+                const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
                 matchItems.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.flexDirection = 'column';
-                    el.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)';
-                    el.style.borderRadius = '16px';
-                    el.style.padding = '16px';
-                    el.style.border = '2px solid #e0e4ff';
-                    el.style.gap = '12px';
-                    el.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.1)';
-                    el.style.marginBottom = '0';
-                    el.style.position = 'relative';
-                    el.style.overflow = 'hidden';
+                    el.style.padding = '4px 8px';
+                    el.style.marginBottom = '4px';
+                    el.style.borderBottom = '1px solid #e0e0e0';
                     el.style.width = '100%';
+                    el.style.boxSizing = 'border-box';
                 });
                 
-                const matchRoundLabels = matchesContainer.querySelectorAll('.match-round-label');
-                matchRoundLabels.forEach(el => {
-                    el.style.fontSize = '0.75rem';
-                    el.style.fontWeight = '700';
-                    el.style.color = 'white';
-                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    el.style.padding = '4px 10px';
-                    el.style.borderRadius = '8px';
-                    el.style.border = 'none';
-                    el.style.boxShadow = '0 2px 6px rgba(102, 126, 234, 0.3)';
-                    el.style.display = 'inline-flex';
+                const matchHeaders = matchesContainer.querySelectorAll('.match-header-compact');
+                matchHeaders.forEach(el => {
+                    el.style.padding = '2px 0';
+                    el.style.marginBottom = '2px';
+                });
+                
+                const matchInfos = matchesContainer.querySelectorAll('.match-info-compact');
+                matchInfos.forEach(el => {
+                    el.style.fontSize = '0.7rem';
+                    el.style.color = '#666';
+                    el.style.fontWeight = '500';
+                });
+                
+                const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
+                matchTeams.forEach(el => {
+                    el.style.display = 'flex';
                     el.style.alignItems = 'center';
-                    el.style.gap = '4px';
+                    el.style.gap = '6px';
+                    el.style.padding = '2px 0';
+                    el.style.marginBottom = '2px';
                 });
                 
-                const teamSmalls = matchesContainer.querySelectorAll('.team-small');
-                teamSmalls.forEach(el => {
+                const teamNames = matchesContainer.querySelectorAll('.team-name-compact');
+                teamNames.forEach(el => {
+                    el.style.fontSize = '0.8rem';
+                    el.style.color = '#333';
+                    el.style.fontWeight = '500';
+                });
+                
+                const teamVs = matchesContainer.querySelectorAll('.team-vs-compact');
+                teamVs.forEach(el => {
+                    el.style.fontSize = '0.7rem';
+                    el.style.color = '#999';
+                    el.style.fontWeight = '500';
+                });
+                
+                const matchScores = matchesContainer.querySelectorAll('.match-score-compact');
+                matchScores.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
                     el.style.gap = '4px';
-                    el.style.padding = '8px 12px';
-                    el.style.background = 'linear-gradient(135deg, #f6f7fb 0%, #ffffff 100%)';
-                    el.style.borderRadius = '10px';
-                    el.style.fontWeight = '600';
-                    el.style.color = '#2d3748';
-                    el.style.fontSize = '0.75rem';
-                    el.style.minWidth = '85px';
-                    el.style.maxWidth = '130px';
-                    el.style.wordBreak = 'break-word';
-                    el.style.whiteSpace = 'normal';
+                    el.style.padding = '2px 0';
+                });
+                
+                const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
+                scoreInputs.forEach(el => {
+                    el.style.width = '35px';
+                    el.style.padding = '2px 4px';
+                    el.style.border = '1px solid #ccc';
+                    el.style.borderRadius = '4px';
                     el.style.textAlign = 'center';
-                    el.style.border = '2px solid #e9ecef';
-                    el.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.05)';
-                });
-                
-                const teamVsSmalls = matchesContainer.querySelectorAll('.team-vs-small');
-                teamVsSmalls.forEach(el => {
-                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    el.style.color = 'white';
-                    el.style.fontWeight = '700';
-                    el.style.padding = '6px 12px';
-                    el.style.borderRadius = '10px';
-                    el.style.fontSize = '0.75rem';
-                    el.style.boxShadow = '0 3px 8px rgba(102, 126, 234, 0.3)';
-                    el.style.border = 'none';
-                });
-                
-                const matchScoreSmalls = matchesContainer.querySelectorAll('.match-score-small');
-                matchScoreSmalls.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '10px';
-                    el.style.justifyContent = 'center';
-                    el.style.flexWrap = 'wrap';
-                    el.style.marginTop = '10px';
-                    el.style.padding = '14px';
-                    el.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)';
-                    el.style.borderRadius = '12px';
-                    el.style.border = '2px solid #e9ecef';
-                    el.style.boxShadow = 'inset 0 2px 6px rgba(0, 0, 0, 0.03)';
-                    el.style.position = 'relative';
-                });
-                
-                const scoreInputSmalls = matchesContainer.querySelectorAll('.score-input-small');
-                scoreInputSmalls.forEach(el => {
-                    el.style.width = '50px';
-                    el.style.padding = '6px';
-                    el.style.border = '2px solid #e9ecef';
-                    el.style.borderRadius = '8px';
-                    el.style.textAlign = 'center';
-                    el.style.fontWeight = '700';
-                    el.style.fontSize = '0.9rem';
-                    el.style.color = '#2d3748';
+                    el.style.fontSize = '0.8rem';
                     el.style.background = 'white';
                 });
                 
-                const saveScoreBtns = matchesContainer.querySelectorAll('.save-score-btn-small');
-                saveScoreBtns.forEach(el => {
-                    el.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
+                saveBtns.forEach(el => {
+                    el.style.background = '#28a745';
                     el.style.color = 'white';
                     el.style.border = 'none';
-                    el.style.padding = '6px 14px';
-                    el.style.borderRadius = '8px';
-                    el.style.fontSize = '0.8rem';
-                    el.style.fontWeight = '600';
+                    el.style.padding = '2px 8px';
+                    el.style.borderRadius = '4px';
+                    el.style.fontSize = '0.75rem';
+                    el.style.fontWeight = '500';
                     el.style.cursor = 'pointer';
-                    el.style.boxShadow = '0 2px 6px rgba(40, 167, 69, 0.3)';
                 });
                 
-                const matchStatusSmalls = matchesContainer.querySelectorAll('.match-status-small');
-                matchStatusSmalls.forEach(el => {
-                    el.style.padding = '4px 10px';
-                    el.style.borderRadius = '10px';
-                    el.style.fontSize = '0.7rem';
-                    el.style.fontWeight = '600';
-                    el.style.border = '2px solid';
-                    if (el.classList.contains('pending')) {
-                        el.style.background = '#fff3cd';
-                        el.style.color = '#856404';
-                        el.style.borderColor = '#ffc107';
-                    } else if (el.classList.contains('completed')) {
-                        el.style.background = '#d4edda';
-                        el.style.color = '#155724';
-                        el.style.borderColor = '#28a745';
-                    }
-                });
-                
-                console.log('✅ 스타일 강제 적용 완료');
+                console.log('✅ 컴팩트 스타일 적용 완료');
             }, 100);
             
             // 저장 버튼 이벤트 리스너 추가
-            const saveButtons = matchesContainer.querySelectorAll('.save-score-btn-small');
+            const saveButtons = matchesContainer.querySelectorAll('.save-score-btn-compact');
             console.log('💾 저장 버튼 수:', saveButtons.length);
             saveButtons.forEach(btn => {
                 if (!btn.disabled) {
