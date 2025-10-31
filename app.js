@@ -1441,61 +1441,66 @@ async function loadMatchesForDate(date) {
             if (!existingMatches.empty) {
                 hasMatches = true;
                 const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                matches.sort((a, b) => {
-                    if (a.roundNumber !== b.roundNumber) {
-                        return a.roundNumber - b.roundNumber;
+                
+                // 코트별로 먼저 그룹화
+                const courts = {};
+                matches.forEach(match => {
+                    const courtNum = match.courtNumber || 1;
+                    if (!courts[courtNum]) {
+                        courts[courtNum] = [];
                     }
-                    return a.courtNumber - b.courtNumber;
+                    courts[courtNum].push(match);
                 });
                 
-                // 라운드별로 그룹화
-                const rounds = {};
-                matches.forEach(match => {
-                    if (!rounds[match.roundNumber]) {
-                        rounds[match.roundNumber] = [];
-                    }
-                    rounds[match.roundNumber].push(match);
+                // 각 코트 내에서 라운드순으로 정렬
+                Object.keys(courts).forEach(courtNum => {
+                    courts[courtNum].sort((a, b) => a.roundNumber - b.roundNumber);
                 });
                 
                 matchesHTML += `
-                    <div class="time-slot-matches" style="margin-bottom: 30px; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1.2rem; font-weight: 600;">
+                    <div class="time-slot-matches">
+                        <h3 class="time-slot-title">
                             <i class="fas fa-clock"></i> ${timeSlot.start} - ${timeSlot.end}
                         </h3>
                 `;
                 
-                // 각 라운드 렌더링
-                Object.keys(rounds).sort((a, b) => a - b).forEach(roundNum => {
-                    const roundMatches = rounds[roundNum];
+                // 각 코트 렌더링
+                Object.keys(courts).sort((a, b) => a - b).forEach(courtNum => {
+                    const courtMatches = courts[courtNum];
                     matchesHTML += `
-                        <div class="match-round">
-                            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 1rem; font-weight: 600;">${roundNum}경기</h4>
-                            <div class="round-matches">
+                        <div class="court-section">
+                            <h4 class="court-title">${courtNum}코트</h4>
+                            <div class="court-matches">
                     `;
                     
-                    roundMatches.forEach(match => {
+                    // 각 경기 렌더링
+                    courtMatches.forEach(match => {
                         const teamALabel = match.teamA.map(p => p.userName).join(', ');
                         const teamBLabel = match.teamB.map(p => p.userName).join(', ');
                         const scoreA = match.scoreA ?? '';
                         const scoreB = match.scoreB ?? '';
                         const isCompleted = match.status === 'completed';
                         const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
+                        const roundNum = match.roundNumber || 1;
                         
                         matchesHTML += `
-                            <div class="match-item">
-                                <div class="match-teams">
-                                    <div class="team">${teamALabel}</div>
-                                    <div class="team vs">vs</div>
-                                    <div class="team">${teamBLabel}</div>
+                            <div class="match-item-small">
+                                <div class="match-header-small">
+                                    <span class="match-round-label">${roundNum}경기</span>
                                 </div>
-                                <div class="match-score">
-                                    <input type="number" class="score-input" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
-                                    <span class="score-separator">:</span>
-                                    <input type="number" class="score-input" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
-                                    <button class="save-score-btn" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
+                                <div class="match-teams-small">
+                                    <div class="team-small">${teamALabel}</div>
+                                    <div class="team-vs-small">vs</div>
+                                    <div class="team-small">${teamBLabel}</div>
+                                </div>
+                                <div class="match-score-small">
+                                    <input type="number" class="score-input-small" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                                    <span class="score-separator-small">:</span>
+                                    <input type="number" class="score-input-small" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                                    <button class="save-score-btn-small" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                                         ${isCompleted ? '완료' : '저장'}
                                     </button>
-                                    <span class="match-status ${isCompleted ? 'completed' : 'pending'}">
+                                    <span class="match-status-small ${isCompleted ? 'completed' : 'pending'}">
                                         ${isCompleted ? '완료' : '대기'}
                                     </span>
                                 </div>
