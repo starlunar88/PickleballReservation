@@ -1,11 +1,13 @@
-// Firebase 전역 변수
-let auth, db;
-
 // Firebase 초기화 확인 및 전역 변수 설정
 function initializeFirebase() {
     if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
-        auth = firebase.auth();
-        db = firebase.firestore();
+        // firebase-config.js에서 이미 설정된 window.auth와 window.db 사용
+        if (!window.auth) {
+            window.auth = firebase.auth();
+        }
+        if (!window.db) {
+            window.db = firebase.firestore();
+        }
         console.log('✅ Firebase 전역 변수 설정 완료');
         return true;
     } else {
@@ -13,6 +15,10 @@ function initializeFirebase() {
         return false;
     }
 }
+
+// 전역 변수 참조 (firebase-config.js에서 설정된 것을 사용)
+const auth = window.auth;
+const db = window.db;
 
 // 로딩 표시/숨김 함수 (firebase-config.js에 정의되어 있지만 중복 정의로 안전성 확보)
 function showLoading() {
@@ -580,6 +586,10 @@ async function isAdmin(user) {
 // 시스템 설정 가져오기
 async function getSystemSettings() {
     try {
+        if (!db) {
+            console.error('Firestore가 초기화되지 않았습니다');
+            throw new Error('Firestore가 초기화되지 않았습니다');
+        }
         const settingsDoc = await db.collection('settings').doc('system').get();
         if (settingsDoc.exists) {
             return settingsDoc.data();
@@ -629,6 +639,10 @@ async function saveSystemSettings(settings) {
 // 이메일 링크 확인 및 로그인 처리
 function handleEmailLinkSignIn() {
     // URL에서 이메일 링크 확인
+    if (!auth) {
+        console.error('Firebase Auth가 초기화되지 않았습니다');
+        return;
+    }
     if (auth.isSignInWithEmailLink(window.location.href)) {
         let email = localStorage.getItem('emailForSignIn');
         let userName = localStorage.getItem('userNameForSignIn');

@@ -17,17 +17,17 @@ try {
     console.error('Firebase 초기화 실패:', error);
 }
 
-// Firebase 서비스 참조 (전역 변수로 설정)
+// Firebase 서비스 참조 (전역 변수로만 설정 - app.js에서 사용)
 window.auth = firebase.auth();
 window.db = firebase.firestore();
 
-// 전역 변수로도 설정 (app.js 호환성)
+// 로컬 참조 (이 파일 내에서 사용)
 const auth = window.auth;
 const db = window.db;
 
 // Firebase 연결 상태 확인
-console.log('Firebase Auth 객체:', auth);
-console.log('Firebase Firestore 객체:', db);
+console.log('Firebase Auth 객체:', window.auth);
+console.log('Firebase Firestore 객체:', window.db);
 
 // 사용자 DUPR 가져오기
 async function getUserDUPR(userId) {
