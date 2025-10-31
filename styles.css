@@ -68,6 +68,10 @@ body {
     color: white;
     font-size: 1rem; /* 더 작게 축소 */
     font-weight: bold;
+    overflow: hidden; /* 글자 잘림 방지 */
+    text-overflow: ellipsis; /* 넘치는 텍스트 처리 */
+    white-space: nowrap; /* 한 줄로 표시 */
+    max-width: calc(100% - 80px); /* 햄버거 버튼 공간 확보 */
 }
 
 .nav-logo i {
@@ -2022,7 +2026,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 @media (max-width: 480px) {
     .main-container {
-        padding-top: 65px !important; /* 메뉴바와 예약현황 사이 여백 확보 (글자 잘림 방지) */
+        padding-top: 80px !important; /* 메뉴바와 예약현황 사이 여백 충분히 확보 (글자 잘림 방지) */
+    }
+    
+    /* 네비게이션 바 높이 확인 및 여백 확보 */
+    .navbar {
+        margin-bottom: 0 !important;
+    }
+    
+    .nav-container {
+        margin: 8px auto !important;
+        height: 60px !important;
     }
 }
 
@@ -3715,24 +3729,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
     }
     
-    .section-header {
-        padding: 15px;
-        margin: 0 0 15px 0;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    .section-header h2 {
-        font-size: 1.3rem;
-        text-align: center !important;
-        justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-        margin: 0 auto !important;
-        display: flex !important;
-    }
+    /* .section-header는 아래 더 구체적인 스타일로 덮어씀 */
     
     .admin-stat-card {
         padding: 15px;
@@ -3757,9 +3754,22 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
     }
     /* 모바일 컴팩트 사이징 */
-    .nav-container { height: 52px; }
-    .nav-logo { font-size: 0.9rem; }
-    .nav-logo i { font-size: 1.05rem; }
+    .nav-container { 
+        height: 52px !important; 
+        padding: 0 10px !important; /* 좌우 패딩 확보 */
+        overflow: hidden !important; /* 내용 잘림 방지 */
+    }
+    .nav-logo { 
+        font-size: 0.85rem !important; /* 작은 화면에서 더 작게 */
+        max-width: calc(100% - 60px) !important; /* 햄버거 버튼 공간 확보 */
+        overflow: hidden !important; /* 글자 잘림 방지 */
+        text-overflow: ellipsis !important; /* 넘치는 텍스트 처리 */
+        white-space: nowrap !important; /* 한 줄로 표시 */
+    }
+    .nav-logo i { 
+        font-size: 1rem !important; 
+        flex-shrink: 0 !important; /* 아이콘 크기 고정 */
+    }
     .mobile-nav-tabs { 
         padding: 8px 0 !important; /* 패딩 줄임 */
         min-height: 75px !important; /* 높이 줄임 */
@@ -3773,25 +3783,29 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 8px !important; /* 패딩 최소화 */
     }
     .section-header { 
-        padding: 4px 8px !important; /* padding 조정 (글자 잘림 방지) */
-        margin-bottom: 6px !important; /* margin 조정 */
-        position: relative;
+        padding: 8px 12px !important; /* padding 충분히 확보 (글자 잘림 방지) */
+        margin-bottom: 8px !important; /* margin 조정 */
+        margin-top: 8px !important; /* 상단 여백 확보 */
+        position: relative !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         gap: 4px !important;
         min-height: auto !important; /* 높이 자동 */
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     
     /* Today 배지와 제목을 같은 줄에 배치 */
     .section-header > .today-badge {
         position: absolute !important; /* 절대 위치 */
-        top: 4px !important;
-        left: 8px !important;
+        top: 8px !important;
+        left: 12px !important;
         font-size: 0.55rem !important; /* 더 작게 */
         padding: 2px 5px !important; /* padding 최소화 */
         margin: 0 !important;
         z-index: 10 !important;
+        flex-shrink: 0 !important; /* 크기 고정 */
     }
     
     .section-header > h2 {
@@ -3800,11 +3814,24 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         justify-content: center !important;
         align-items: center !important;
         width: 100% !important;
-        margin: 0 !important;
-        display: flex !important;
-        /* Today 배지가 있어도 제목이 중앙에 오도록 */
-        margin-top: 0 !important;
+        margin: 0 auto !important; /* 가운데 정렬 */
         padding: 0 !important;
+        display: flex !important;
+        position: relative !important; /* Today 배지와 독립적으로 중앙 정렬 */
+        /* Today 배지가 있어도 제목이 완전히 중앙에 오도록 */
+        left: 0 !important;
+        transform: none !important;
+        z-index: 1 !important; /* Today 배지 위에 표시되도록 */
+        pointer-events: none !important; /* 클릭 이벤트는 Today 배지가 받도록 */
+    }
+    
+    /* Today 배지가 있을 때도 제목이 중앙에 오도록 보장 */
+    .section-header:has(.today-badge) > h2 {
+        position: relative !important;
+        left: 0 !important;
+        transform: none !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
     
     .section-header > .date-navigation {
