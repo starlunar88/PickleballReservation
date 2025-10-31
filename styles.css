@@ -85,6 +85,14 @@ body {
     border-radius: 4px;
 }
 
+.nav-user-info {
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
 .nav-menu {
     display: none; /* 기본 숨김 - 햄버거로 열기 */
     align-items: center;
@@ -1557,6 +1565,33 @@ body {
 .modal-footer {
     text-align: center;
     margin-top: 20px;
+    padding: 20px 30px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.team-mode-option {
+    transition: all 0.3s ease;
+}
+
+.team-mode-option:hover {
+    border-color: #667eea !important;
+    background-color: #f8f9ff !important;
+}
+
+.team-mode-option input[type="radio"] {
+    cursor: pointer;
+}
+
+.team-mode-option input[type="radio"]:checked {
+    accent-color: #667eea;
+}
+
+label.team-mode-option:has(input[type="radio"]:checked) {
+    border-color: #667eea !important;
+    background-color: #f8f9ff !important;
 }
 
 .modal-footer a {
@@ -2575,8 +2610,9 @@ body {
     margin-bottom: 40px;
     width: 100%;
     box-sizing: border-box;
-    overflow: visible;
+    overflow: hidden;
     padding-right: 0;
+    max-width: 100%;
 }
 
 .top-performers-header h2 {
@@ -2600,26 +2636,28 @@ body {
     border-radius: 12px;
     border: 1px solid #333;
     padding: 12px;
-    padding-right: 24px;
-    overflow: visible;
+    padding-right: 16px;
+    overflow: hidden;
     box-sizing: border-box;
     width: 100%;
+    max-width: 100%;
 }
 
 .performer-item {
     background: #fff;
     border: 1px solid #333 !important;
     border-radius: 8px;
-    padding: 12px 20px;
-    padding-right: 28px;
+    padding: 12px 16px;
+    padding-right: 20px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     transition: background 0.2s ease;
     box-sizing: border-box;
-    overflow: visible;
+    overflow: hidden;
     width: 100%;
     margin: 0;
+    max-width: 100%;
 }
 
 .performer-item:hover {
@@ -2645,47 +2683,50 @@ body {
 }
 
 .performer-name {
-    flex: 1;
+    flex: 0 1 auto;
     font-size: 1rem;
     font-weight: 700;
     color: #000;
     white-space: nowrap;
-    overflow: visible;
+    overflow: hidden;
     text-overflow: ellipsis;
     min-width: 80px;
-    max-width: 200px;
-    margin-right: 4px;
+    max-width: 150px;
+    margin-right: 8px;
 }
 
 .performer-score {
     font-size: 0.95rem;
     color: #000;
-    width: 70px;
+    width: 65px;
     text-align: right;
     flex-shrink: 0;
     font-weight: 600;
+    margin-left: 0;
 }
 
 .performer-winrate {
     font-size: 0.9rem;
     color: #000;
+    width: 65px;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 600;
+    overflow: visible;
+    white-space: nowrap;
+    margin-left: 4px;
+}
+
+.performer-record {
+    font-size: 0.9rem;
+    color: #000;
     width: 70px;
     text-align: right;
     flex-shrink: 0;
     font-weight: 600;
     overflow: visible;
     white-space: nowrap;
-}
-
-.performer-record {
-    font-size: 0.9rem;
-    color: #000;
-    width: 75px;
-    text-align: right;
-    flex-shrink: 0;
-    font-weight: 600;
-    overflow: visible;
-    white-space: nowrap;
+    margin-left: 4px;
 }
 
 .stats-container {

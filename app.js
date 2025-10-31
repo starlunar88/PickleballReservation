@@ -4058,10 +4058,8 @@ async function loadReservationsTimeline() {
                         return;
                     }
                     
-                    showLoading();
-                    
-                    // 강제 대진표 생성 (마감 여부 무시, 기존 대진표 재생성)
-                    await generateMatchSchedule(date, timeSlot);
+                    // 모달 열기 (옵션 선택)
+                    openMatchScheduleOptionsModal(date, timeSlot);
                     
                     // 타임라인 새로고침
                     await loadReservationsTimeline();
@@ -6393,6 +6391,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
     
+    // 모달 확인 버튼 이벤트 리스너 설정
+    const confirmBtn = document.getElementById('confirm-match-schedule-btn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            const date = window.matchScheduleModalDate;
+            const timeSlot = window.matchScheduleModalTimeSlot;
+            const selectedMode = document.querySelector('input[name="teamMode"]:checked')?.value || 'random';
+            
+            if (!date || !timeSlot) {
+                showToast('날짜와 시간대 정보가 없습니다.', 'error');
+                return;
+            }
+            
+            closeMatchScheduleOptionsModal();
+            
+            try {
+                showLoading();
+                await generateMatchSchedule(date, timeSlot, selectedMode);
+                
+                // 타임라인 새로고침
+                await loadReservationsTimeline();
+                
+                // 현재 대진표 탭이 활성화되어 있으면 새로고침
+                const matchesTab = document.getElementById('matches-tab');
+                if (matchesTab && matchesTab.classList.contains('active')) {
+                    const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+                    await loadMatchesForDate(currentDate);
+                }
+            } catch (error) {
+                console.error('대진표 생성 오류:', error);
+                showToast('대진표 생성 중 오류', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    const modal = document.getElementById('match-schedule-options-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeMatchScheduleOptionsModal();
+            }
+        });
+    }
+    
     // 모바일에서 여러 번 재시도 (더 강화된 재시도 로직)
     let retryCount = 0;
     const maxRetries = 5;
@@ -6637,10 +6682,8 @@ function addTestButtonEventListeners() {
                     return;
                 }
                 
-                showLoading();
-                
-                // 강제 대진표 생성 (마감 여부 무시)
-                await generateMatchSchedule(date, timeSlot);
+                // 모달 열기 (옵션 선택)
+                openMatchScheduleOptionsModal(date, timeSlot);
                 
                 // 대진표 표시
                 const existingMatches = await db.collection('matches')
@@ -6668,6 +6711,26 @@ function addTestButtonEventListeners() {
             }
         });
     });
+}
+
+// 대진표 생성 옵션 모달 열기
+function openMatchScheduleOptionsModal(date, timeSlot) {
+    window.matchScheduleModalDate = date;
+    window.matchScheduleModalTimeSlot = timeSlot;
+    const modal = document.getElementById('match-schedule-options-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// 대진표 생성 옵션 모달 닫기
+function closeMatchScheduleOptionsModal() {
+    const modal = document.getElementById('match-schedule-options-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    window.matchScheduleModalDate = null;
+    window.matchScheduleModalTimeSlot = null;
 }
 
 // 무작위 한국어 이름 생성 (간단 버전)
@@ -6749,7 +6812,7 @@ async function checkAndShowMatchSchedule() {
 }
 
 // 스케줄 생성
-async function generateMatchSchedule(date, timeSlot) {
+async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
     try {
         showLoading();
         // 예약 수집
@@ -6764,7 +6827,35 @@ async function generateMatchSchedule(date, timeSlot) {
         }
         const reservations = [];
         reservationsSnapshot.forEach(doc => reservations.push({ id: doc.id, ...doc.data() }));
-        const players = reservations.map(r => ({ userId: r.userId, userName: r.userName }));
+        
+        // 플레이어 정보 수집 (DUPR 및 내부 점수 포함)
+        const players = [];
+        for (const res of reservations) {
+            let dupr = res.userDupr || 0;
+            let internalRating = 1000; // 기본값
+            
+            // 내부 점수 조회 시도 (사용자 문서에서)
+            try {
+                const userDoc = await db.collection('users').doc(res.userId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    // 점수 시스템에서 점수 가져오기
+                    if (userData.score !== undefined) {
+                        internalRating = userData.score || 1000;
+                    }
+                }
+            } catch (error) {
+                console.warn(`사용자 ${res.userId} 정보 조회 실패:`, error);
+            }
+            
+            players.push({
+                userId: res.userId,
+                userName: res.userName,
+                dupr: dupr,
+                internalRating: internalRating
+            });
+        }
+        
         if (players.length < 4) {
             showToast('최소 4명이 필요합니다.', 'error');
             return;
@@ -6805,8 +6896,8 @@ async function generateMatchSchedule(date, timeSlot) {
         const settings = await getSystemSettings();
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
-        // 완전히 새로 생성 (기존 배정 무시)
-        const schedule = buildMatchSchedule(players, courtCount, rounds, {});
+        // teamMode에 따라 대진표 생성
+        const schedule = buildMatchSchedule(players, courtCount, rounds, {}, teamMode);
         
         console.log(`대진표 생성: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
 
@@ -6848,13 +6939,21 @@ const pairingPatterns = [
 ];
 
 // 매치 스케줄 빌드 (간단 로테이션, 동적 코트 지원, 코트 배정 유지)
-function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}) {
+function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, teamMode = 'random') {
+    // Player 객체로 변환
+    const playerObjects = players.map(p => new Player(
+        p.userId,
+        p.userName,
+        p.dupr || 0,
+        p.internalRating || 1000
+    ));
+    
     // 플레이어를 코트별로 분류
     const courtPlayers = {};
     const unassignedPlayers = [];
     
     // 이미 배정된 플레이어는 해당 코트로 배정
-    players.forEach(player => {
+    playerObjects.forEach(player => {
         const assignedCourt = playerCourtMap[player.userId];
         if (assignedCourt && assignedCourt <= courtCount) {
             if (!courtPlayers[assignedCourt]) {
@@ -6866,14 +6965,56 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}) {
         }
     });
     
-    // 미배정 플레이어를 코트별로 균등 분배
-    unassignedPlayers.forEach((player, index) => {
-        const court = (index % courtCount) + 1;
-        if (!courtPlayers[court]) {
-            courtPlayers[court] = [];
+    // teamMode에 따라 미배정 플레이어를 코트별로 분배
+    if (teamMode === 'grouped') {
+        // 그룹 모드: 잘하는 사람과 못하는 사람을 코트별로 분배
+        const sortedPlayers = [...unassignedPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+        const midPoint = Math.floor(sortedPlayers.length / 2);
+        
+        // 상위 그룹을 1코트부터, 하위 그룹을 마지막 코트부터 배정
+        for (let i = 0; i < sortedPlayers.length; i++) {
+            const player = sortedPlayers[i];
+            let court;
+            if (i < midPoint) {
+                // 잘하는 사람 - 1코트부터 배정
+                court = (i % Math.min(courtCount, Math.ceil(sortedPlayers.length / 2))) + 1;
+            } else {
+                // 못하는 사람 - 마지막 코트부터 배정
+                const lowerIndex = i - midPoint;
+                court = courtCount - (lowerIndex % Math.min(courtCount, Math.ceil(sortedPlayers.length / 2)));
+                if (court < 1) court = 1;
+            }
+            
+            if (!courtPlayers[court]) {
+                courtPlayers[court] = [];
+            }
+            courtPlayers[court].push(player);
         }
-        courtPlayers[court].push(player);
-    });
+    } else if (teamMode === 'balanced') {
+        // 밸런스 모드: 점수 순으로 정렬하여 균등 분배
+        const sortedPlayers = [...unassignedPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+        sortedPlayers.forEach((player, index) => {
+            // 스네이크 드래프트 방식으로 분배
+            const row = Math.floor(index / courtCount);
+            const col = row % 2 === 0 ? (index % courtCount) : (courtCount - 1 - (index % courtCount));
+            const court = col + 1;
+            
+            if (!courtPlayers[court]) {
+                courtPlayers[court] = [];
+            }
+            courtPlayers[court].push(player);
+        });
+    } else {
+        // 랜덤 모드: 무작위로 균등 분배
+        const shuffled = [...unassignedPlayers].sort(() => Math.random() - 0.5);
+        shuffled.forEach((player, index) => {
+            const court = (index % courtCount) + 1;
+            if (!courtPlayers[court]) {
+                courtPlayers[court] = [];
+            }
+            courtPlayers[court].push(player);
+        });
+    }
     
     const schedule = [];
     
@@ -6886,22 +7027,49 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}) {
             continue;
         }
         
-        // 코트별 플레이어를 섞어서 로테이션
-        const queue = [...courtPlayerList].sort(() => Math.random() - 0.5);
-        
-        for (let r = 1; r <= rounds; r++) {
-            if (queue.length < 4) {
-                // 큐에 4명 미만이면 루프 초기화
-                queue.push(...courtPlayerList);
+        // teamMode에 따라 코트별 팀 구성
+        let teams = [];
+        if (teamMode === 'balanced') {
+            // 밸런스 모드: 잘하는 사람과 못하는 사람을 같은 편에 배치
+            const sortedPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
+            // 스네이크 드래프트로 팀 구성
+            for (let i = 0; i < sortedPlayers.length; i += 4) {
+                const fourPlayers = sortedPlayers.slice(i, i + 4);
+                if (fourPlayers.length === 4) {
+                    teams.push([fourPlayers[0], fourPlayers[3], fourPlayers[1], fourPlayers[2]]);
+                }
             }
-            
-            const group = queue.splice(0, 4);
-            // 사용된 인원은 맨 뒤로 이동하여 다음 라운드에 로테이션
-            queue.push(...group);
+        } else if (teamMode === 'grouped') {
+            // 그룹 모드: 각 코트 내에서 랜덤
+            const shuffled = [...courtPlayerList].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < shuffled.length; i += 4) {
+                const fourPlayers = shuffled.slice(i, i + 4);
+                if (fourPlayers.length === 4) {
+                    teams.push(fourPlayers);
+                }
+            }
+        } else {
+            // 랜덤 모드: 무작위 섞기
+            const shuffled = [...courtPlayerList].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < shuffled.length; i += 4) {
+                const fourPlayers = shuffled.slice(i, i + 4);
+                if (fourPlayers.length === 4) {
+                    teams.push(fourPlayers);
+                }
+            }
+        }
+        
+        // 각 팀에서 라운드별 경기 생성
+        for (let r = 1; r <= rounds; r++) {
+            const teamIndex = (r - 1) % teams.length;
+            if (teamIndex >= teams.length) continue;
+            const fourPlayers = teams[teamIndex];
             
             const p = pairingPatterns[(r - 1) % pairingPatterns.length];
-            const teamA = [group[p[0]], group[p[1]]];
-            const teamB = [group[p[2]], group[p[3]]];
+            const teamA = [{ userId: fourPlayers[p[0]].userId, userName: fourPlayers[p[0]].userName },
+                          { userId: fourPlayers[p[1]].userId, userName: fourPlayers[p[1]].userName }];
+            const teamB = [{ userId: fourPlayers[p[2]].userId, userName: fourPlayers[p[2]].userName },
+                          { userId: fourPlayers[p[3]].userId, userName: fourPlayers[p[3]].userName }];
             schedule.push({ round: r, court: c, teamA, teamB });
         }
     }

@@ -89,6 +89,7 @@ async function showUserMenu(user) {
     const userName = document.getElementById('user-name');
     const userDupr = document.getElementById('user-dupr');
     const adminSettingsBtn = document.getElementById('admin-settings-btn');
+    const navUserInfo = document.getElementById('nav-user-info');
     
     if (authButtons && userMenu && userName) {
         authButtons.style.display = 'none';
@@ -102,6 +103,14 @@ async function showUserMenu(user) {
             userDupr.style.display = 'block';
         } else if (userDupr) {
             userDupr.style.display = 'none';
+        }
+        
+        // 네비게이션 바에 사용자 정보 표시
+        if (navUserInfo) {
+            const displayName = user.displayName || user.email?.split('@')[0] || '사용자';
+            const duprText = dupr ? `DUPR: ${dupr.toFixed(1)}` : '';
+            navUserInfo.textContent = `${displayName}${dupr ? ' · ' + duprText : ''}`;
+            navUserInfo.style.display = 'inline';
         }
         
         // 관리자 버튼 표시 (async 처리)
@@ -148,6 +157,12 @@ function showAuthButtons() {
     if (authButtons && userMenu) {
         authButtons.style.display = 'flex';
         userMenu.style.display = 'none';
+        
+        // 네비게이션 바 사용자 정보 숨기기
+        const navUserInfo = document.getElementById('nav-user-info');
+        if (navUserInfo) {
+            navUserInfo.style.display = 'none';
+        }
     }
 }
 
