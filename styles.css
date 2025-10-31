@@ -3716,12 +3716,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding-top: 50px; /* Today 배지를 위한 공간 확보 */
         margin-bottom: 16px; 
         position: relative;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     .section-header h2 { 
         font-size: 1.1rem; 
         text-align: center;
         justify-content: center;
+        align-items: center;
         width: 100%;
+        margin: 0 auto;
+        display: flex;
     }
     .date-navigation { gap: 8px; }
     .date-navigation button { padding: 6px 8px; font-size: 0.85rem; }
