@@ -4866,9 +4866,140 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .rank-tier-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.3rem;
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+    }
+    
+    .rank-tier-icon::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transform: rotate(45deg);
+        transition: all 0.5s ease;
+        opacity: 0;
+    }
+    
+    .rank-tier-card:hover .rank-tier-icon::before {
+        opacity: 1;
+        animation: shine 1.5s ease-in-out;
+    }
+    
+    .beginner-icon {
+        background: linear-gradient(135deg, #d4d4d4 0%, #a0a0a0 100%);
+        color: #555;
+        border: 2px solid #bbb;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    
+    .player-icon {
+        background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+        box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+    }
+    
+    .player-icon i {
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+    
+    .pro-icon {
+        background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+        color: #333;
+        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.5);
+    }
+    
+    .pro-icon i {
+        filter: drop-shadow(0 2px 6px rgba(255, 215, 0, 0.8));
+        animation: sparkle 2s ease-in-out infinite;
+    }
+    
+    .champion-icon {
+        background: linear-gradient(135deg, #cd7f32 0%, #8b4513 100%);
+        box-shadow: 0 6px 25px rgba(205, 127, 50, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.2);
+    }
+    
+    .champion-icon i {
+        color: #ffd700;
+        font-size: 1.9rem;
+        filter: drop-shadow(0 3px 8px rgba(255, 215, 0, 0.6));
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+    
+    .master-icon {
+        background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+        box-shadow: 0 6px 25px rgba(192, 192, 192, 0.5), inset 0 2px 10px rgba(255, 255, 255, 0.3);
+    }
+    
+    .master-icon i {
+        color: #ffffff;
+        font-size: 1.9rem;
+        filter: drop-shadow(0 3px 8px rgba(255, 255, 255, 0.6));
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    
+    .legend-icon {
+        background: linear-gradient(135deg, #ffd700 0%, #ffaa00 50%, #ff8c00 100%);
+        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.6), inset 0 2px 10px rgba(255, 255, 255, 0.4);
+    }
+    
+    .legend-icon i {
+        color: #fff;
+        font-size: 2.1rem;
+        filter: drop-shadow(0 4px 10px rgba(255, 215, 0, 0.8));
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+    
+    .goat-icon {
+        background: linear-gradient(135deg, #764ba2 0%, #ffd700 50%, #764ba2 100%);
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease infinite;
+        box-shadow: 0 10px 40px rgba(118, 75, 162, 0.6), 0 0 30px rgba(255, 215, 0, 0.5), inset 0 2px 15px rgba(255, 255, 255, 0.4);
+    }
+    
+    .goat-icon i {
+        color: #fff;
+        font-size: 2.3rem;
+        filter: drop-shadow(0 5px 15px rgba(255, 215, 0, 1));
+        text-shadow: 0 0 20px rgba(255, 255, 255, 1);
+        animation: goat-glow 2s ease-in-out infinite alternate, rotate-glow 4s linear infinite;
+    }
+    
+    .rank-tier-card.goat-card {
+        background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+        border: 2px solid #ffd700;
+    }
+    
+    .rank-tier-card.legend-card {
+        background: linear-gradient(135deg, #fffef0 0%, #fffce8 100%);
+        border: 2px solid #ffd700;
+    }
+    
+    .rank-tier-card.master-card {
+        background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        border: 2px solid #c0c0c0;
+    }
+    
+    .rank-tier-card.champion-card {
+        background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+        border: 2px solid #cd7f32;
+    }
+    
+    .rank-tier-card.pro-card {
+        background: linear-gradient(135deg, #fffef0 0%, #fffce8 100%);
+        border: 2px solid #ffd700;
+    }
+    
+    .rank-tier-card.player-card {
+        background: linear-gradient(135deg, #fff0f8 0%, #ffe0f0 100%);
+        border: 2px solid #ff69b4;
     }
     
     .performer-item {
