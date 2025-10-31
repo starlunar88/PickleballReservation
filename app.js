@@ -1568,6 +1568,208 @@ async function loadMatchesForDate(date) {
             matchesContainer.innerHTML = matchesHTML;
             console.log('✅ HTML 삽입 완료');
             
+            // 스타일 강제 적용
+            setTimeout(() => {
+                const timeSlotMatches = matchesContainer.querySelectorAll('.time-slot-matches');
+                timeSlotMatches.forEach(el => {
+                    el.style.marginBottom = '30px';
+                    el.style.background = 'white';
+                    el.style.borderRadius = '20px';
+                    el.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.15)';
+                    el.style.overflow = 'hidden';
+                    el.style.border = '3px solid #e0e4ff';
+                    el.style.position = 'relative';
+                    el.style.display = 'block';
+                    el.style.width = '100%';
+                });
+                
+                const timeSlotHeaders = matchesContainer.querySelectorAll('.time-slot-header');
+                timeSlotHeaders.forEach(el => {
+                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    el.style.padding = '18px 24px';
+                    el.style.borderBottom = '4px solid rgba(255, 255, 255, 0.3)';
+                    el.style.position = 'relative';
+                    el.style.overflow = 'hidden';
+                    el.style.display = 'block';
+                    el.style.width = '100%';
+                });
+                
+                const timeSlotTitles = matchesContainer.querySelectorAll('.time-slot-title');
+                timeSlotTitles.forEach(el => {
+                    el.style.color = 'white';
+                    el.style.margin = '0';
+                    el.style.fontSize = '1.15rem';
+                    el.style.fontWeight = '800';
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '12px';
+                });
+                
+                const timeSlotContents = matchesContainer.querySelectorAll('.time-slot-content');
+                timeSlotContents.forEach(el => {
+                    el.style.padding = '24px';
+                    el.style.background = 'linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)';
+                    el.style.minHeight = '100px';
+                    el.style.width = '100%';
+                });
+                
+                const courtSections = matchesContainer.querySelectorAll('.court-section');
+                courtSections.forEach(el => {
+                    el.style.marginBottom = '28px';
+                    el.style.background = 'white';
+                    el.style.borderRadius = '16px';
+                    el.style.padding = '16px';
+                    el.style.border = '2px solid #f0f0f0';
+                    el.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.05)';
+                    el.style.display = 'block';
+                    el.style.width = '100%';
+                });
+                
+                const courtTitles = matchesContainer.querySelectorAll('.court-title');
+                courtTitles.forEach(el => {
+                    el.style.color = 'white';
+                    el.style.margin = '0 0 16px 0';
+                    el.style.fontSize = '1rem';
+                    el.style.fontWeight = '700';
+                    el.style.padding = '12px 18px';
+                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    el.style.borderRadius = '14px';
+                    el.style.border = 'none';
+                    el.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '10px';
+                    el.style.position = 'relative';
+                    el.style.overflow = 'hidden';
+                    el.style.width = '100%';
+                });
+                
+                const matchItems = matchesContainer.querySelectorAll('.match-item-small');
+                matchItems.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)';
+                    el.style.borderRadius = '16px';
+                    el.style.padding = '16px';
+                    el.style.border = '2px solid #e0e4ff';
+                    el.style.gap = '12px';
+                    el.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.1)';
+                    el.style.marginBottom = '0';
+                    el.style.position = 'relative';
+                    el.style.overflow = 'hidden';
+                    el.style.width = '100%';
+                });
+                
+                const matchRoundLabels = matchesContainer.querySelectorAll('.match-round-label');
+                matchRoundLabels.forEach(el => {
+                    el.style.fontSize = '0.75rem';
+                    el.style.fontWeight = '700';
+                    el.style.color = 'white';
+                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    el.style.padding = '4px 10px';
+                    el.style.borderRadius = '8px';
+                    el.style.border = 'none';
+                    el.style.boxShadow = '0 2px 6px rgba(102, 126, 234, 0.3)';
+                    el.style.display = 'inline-flex';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '4px';
+                });
+                
+                const teamSmalls = matchesContainer.querySelectorAll('.team-small');
+                teamSmalls.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '4px';
+                    el.style.padding = '8px 12px';
+                    el.style.background = 'linear-gradient(135deg, #f6f7fb 0%, #ffffff 100%)';
+                    el.style.borderRadius = '10px';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#2d3748';
+                    el.style.fontSize = '0.75rem';
+                    el.style.minWidth = '85px';
+                    el.style.maxWidth = '130px';
+                    el.style.wordBreak = 'break-word';
+                    el.style.whiteSpace = 'normal';
+                    el.style.textAlign = 'center';
+                    el.style.border = '2px solid #e9ecef';
+                    el.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.05)';
+                });
+                
+                const teamVsSmalls = matchesContainer.querySelectorAll('.team-vs-small');
+                teamVsSmalls.forEach(el => {
+                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    el.style.color = 'white';
+                    el.style.fontWeight = '700';
+                    el.style.padding = '6px 12px';
+                    el.style.borderRadius = '10px';
+                    el.style.fontSize = '0.75rem';
+                    el.style.boxShadow = '0 3px 8px rgba(102, 126, 234, 0.3)';
+                    el.style.border = 'none';
+                });
+                
+                const matchScoreSmalls = matchesContainer.querySelectorAll('.match-score-small');
+                matchScoreSmalls.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '10px';
+                    el.style.justifyContent = 'center';
+                    el.style.flexWrap = 'wrap';
+                    el.style.marginTop = '10px';
+                    el.style.padding = '14px';
+                    el.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)';
+                    el.style.borderRadius = '12px';
+                    el.style.border = '2px solid #e9ecef';
+                    el.style.boxShadow = 'inset 0 2px 6px rgba(0, 0, 0, 0.03)';
+                    el.style.position = 'relative';
+                });
+                
+                const scoreInputSmalls = matchesContainer.querySelectorAll('.score-input-small');
+                scoreInputSmalls.forEach(el => {
+                    el.style.width = '50px';
+                    el.style.padding = '6px';
+                    el.style.border = '2px solid #e9ecef';
+                    el.style.borderRadius = '8px';
+                    el.style.textAlign = 'center';
+                    el.style.fontWeight = '700';
+                    el.style.fontSize = '0.9rem';
+                    el.style.color = '#2d3748';
+                    el.style.background = 'white';
+                });
+                
+                const saveScoreBtns = matchesContainer.querySelectorAll('.save-score-btn-small');
+                saveScoreBtns.forEach(el => {
+                    el.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                    el.style.color = 'white';
+                    el.style.border = 'none';
+                    el.style.padding = '6px 14px';
+                    el.style.borderRadius = '8px';
+                    el.style.fontSize = '0.8rem';
+                    el.style.fontWeight = '600';
+                    el.style.cursor = 'pointer';
+                    el.style.boxShadow = '0 2px 6px rgba(40, 167, 69, 0.3)';
+                });
+                
+                const matchStatusSmalls = matchesContainer.querySelectorAll('.match-status-small');
+                matchStatusSmalls.forEach(el => {
+                    el.style.padding = '4px 10px';
+                    el.style.borderRadius = '10px';
+                    el.style.fontSize = '0.7rem';
+                    el.style.fontWeight = '600';
+                    el.style.border = '2px solid';
+                    if (el.classList.contains('pending')) {
+                        el.style.background = '#fff3cd';
+                        el.style.color = '#856404';
+                        el.style.borderColor = '#ffc107';
+                    } else if (el.classList.contains('completed')) {
+                        el.style.background = '#d4edda';
+                        el.style.color = '#155724';
+                        el.style.borderColor = '#28a745';
+                    }
+                });
+                
+                console.log('✅ 스타일 강제 적용 완료');
+            }, 100);
+            
             // 저장 버튼 이벤트 리스너 추가
             const saveButtons = matchesContainer.querySelectorAll('.save-score-btn-small');
             console.log('💾 저장 버튼 수:', saveButtons.length);
