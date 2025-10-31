@@ -2663,13 +2663,18 @@ body {
 /* 경기 통계 섹션 */
 .game-stats-section {
     margin-bottom: 40px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 .stats-section-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
 }
 
 .stats-section-header i {
@@ -2682,14 +2687,16 @@ body {
     font-weight: 700;
     color: #333;
     margin: 0;
+    white-space: nowrap;
 }
 
 /* 기간 선택 버튼 */
 .stats-period-filter-buttons {
     display: flex;
     gap: 10px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    align-items: center;
 }
 
 .stats-period-btn {
@@ -2933,8 +2940,14 @@ body {
 
 /* 모바일 반응형 */
 @media (max-width: 768px) {
+    .game-stats-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
     .stats-period-filter-buttons {
         gap: 8px;
+        flex-wrap: wrap;
     }
     
     .stats-period-btn {

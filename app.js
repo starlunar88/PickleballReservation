@@ -1979,7 +1979,9 @@ async function loadStatsData() {
         
         // 차트 렌더링을 위한 약간의 지연 (레이아웃이 완료된 후)
         setTimeout(async () => {
-            await loadTeamAnalysis();
+            const activePeriodBtn = document.querySelector('.stats-period-btn.active');
+            const period = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
+            await loadTeamAnalysis(period);
         }, 300);
         
         await setupStatsEventListeners();
@@ -2011,7 +2013,8 @@ function setupStatsEventListeners() {
             e.target.classList.add('active');
             const period = e.target.getAttribute('data-period');
             await loadGameStats(period);
-            await loadWinRateChart(); // 사용자 선택 차트도 업데이트
+            await loadWinRateChart(); // 개인 성장 분석 업데이트
+            await loadTeamAnalysis(period); // 팀별 분석 업데이트
         });
     });
     
@@ -2873,13 +2876,38 @@ function drawParticipationBarChart(data) {
 }
 
 // 팀별 분석 로드
-async function loadTeamAnalysis() {
+async function loadTeamAnalysis(period = null) {
     try {
-        console.log('팀별 분석 로드 시작');
+        console.log('팀별 분석 로드 시작', period ? `(기간: ${period})` : '');
         const db = window.db || firebase.firestore();
         if (!db) {
             console.warn('팀별 분석: 데이터베이스가 없습니다');
             return;
+        }
+        
+        // 기간 계산
+        let startDate = null;
+        if (period) {
+            const now = new Date();
+            startDate = new Date();
+            
+            switch (period) {
+                case 'today':
+                    startDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'week1':
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case 'week2':
+                    startDate.setDate(now.getDate() - 14);
+                    break;
+                case 'month':
+                    startDate.setMonth(now.getMonth() - 1);
+                    break;
+                case 'all':
+                    startDate = new Date(0); // 모든 기간
+                    break;
+            }
         }
         
         const teamStats = {};
@@ -2893,6 +2921,16 @@ async function loadTeamAnalysis() {
         matchesSnapshot.forEach(doc => {
             const match = doc.data();
             if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) return;
+            
+            // 기간 필터링 (loadTeamAnalysis 함수 내부)
+            if (startDate !== null) {
+                const matchDate = match.date ? (match.date.toDate ? match.date.toDate() : new Date(match.date)) : 
+                                  match.recordedAt ? (match.recordedAt.toDate ? match.recordedAt.toDate() : new Date(match.recordedAt)) :
+                                  doc.data().createdAt?.toDate?.() || new Date(0);
+                if (period !== 'all' && matchDate < startDate) {
+                    return; // 기간에 맞지 않으면 건너뛰기
+                }
+            }
             
             const aWins = match.scoreA > match.scoreB;
             const winners = aWins ? match.teamA : match.teamB;
@@ -2955,6 +2993,14 @@ async function loadTeamAnalysis() {
         gameResultsSnapshot.forEach(doc => {
             const game = doc.data();
             if (!game.winners || !game.losers) return;
+            
+            // 기간 필터링 (loadTeamAnalysis 함수 내부)
+            if (startDate !== null) {
+                const gameDate = game.recordedAt ? (game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt)) : new Date();
+                if (period !== 'all' && gameDate < startDate) {
+                    return; // 기간에 맞지 않으면 건너뛰기
+                }
+            }
             
             // matches에서 이미 처리한 경기인지 확인
             let matchIdFromTeamId = null;
