@@ -3436,7 +3436,27 @@ async function deleteRecord(matchId) {
         const db = window.db || firebase.firestore();
         if (!db) return;
         
+        // matches 삭제
         await db.collection('matches').doc(matchId).delete();
+        
+        // 관련 gameResults도 삭제 (teamId가 matchId로 시작하는 모든 문서)
+        const gameResultsA = await db.collection('gameResults')
+            .where('teamId', '==', `${matchId}_A`)
+            .get();
+        
+        const gameResultsB = await db.collection('gameResults')
+            .where('teamId', '==', `${matchId}_B`)
+            .get();
+        
+        const batch = db.batch();
+        gameResultsA.forEach(doc => batch.delete(doc.ref));
+        gameResultsB.forEach(doc => batch.delete(doc.ref));
+        
+        if (!gameResultsA.empty || !gameResultsB.empty) {
+            await batch.commit();
+            console.log(`🗑️ gameResults 삭제: ${matchId} (${gameResultsA.size + gameResultsB.size}개)`);
+        }
+        
         showToast('기록이 삭제되었습니다.', 'success');
         
         const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
@@ -3470,12 +3490,24 @@ async function deleteAllRecords() {
             return;
         }
         
+        // matches 삭제
         const batch = db.batch();
         matchesSnapshot.forEach(doc => {
             batch.delete(doc.ref);
         });
-        
         await batch.commit();
+        
+        // 모든 gameResults 삭제
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        const gameResultsBatch = db.batch();
+        gameResultsSnapshot.forEach(doc => {
+            gameResultsBatch.delete(doc.ref);
+        });
+        
+        if (!gameResultsSnapshot.empty) {
+            await gameResultsBatch.commit();
+            console.log(`🗑️ 모든 gameResults 삭제: ${gameResultsSnapshot.size}개`);
+        }
         
         showToast('모든 기록이 삭제되었습니다.', 'success');
         
@@ -4610,6 +4642,26 @@ async function recordGameResult(teamId, gameResult) {
         if (!db) {
             console.error('db 객체를 찾을 수 없습니다');
             return;
+        }
+        
+        // teamId에서 match ID 추출 (형식: matchId_A 또는 matchId_B)
+        const matchId = teamId ? teamId.replace(/_A$/, '').replace(/_B$/, '') : null;
+        
+        // 기존 gameResult 확인 및 삭제 (중복 방지)
+        if (matchId) {
+            const existingGameResults = await db.collection('gameResults')
+                .where('teamId', '==', teamId)
+                .get();
+            
+            if (!existingGameResults.empty) {
+                // 기존 gameResults 삭제
+                const batch = db.batch();
+                existingGameResults.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                console.log(`🔄 기존 gameResult 삭제: ${matchId} (${existingGameResults.size}개)`);
+            }
         }
         
         const gameData = {
