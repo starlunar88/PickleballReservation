@@ -1577,7 +1577,7 @@ async function loadMatchesForDate(date) {
                 // 시간대별 섹션 헤더 추가 (배정 정보 포함)
                 matchesHTML += `
                     <div class="time-slot-section">
-                        <div class="time-slot-header-compact">${timeSlot.start} ~ ${timeSlot.end}</div>
+                        <div class="time-slot-header-compact" style="color: #000;">${timeSlot.start} ~ ${timeSlot.end}</div>
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
                 `;
                 
@@ -1587,8 +1587,10 @@ async function loadMatchesForDate(date) {
                     if (players.length > 0) {
                         matchesHTML += `
                             <div style="margin-bottom: 8px;">
-                                <strong style="color: #667eea;">${courtNum}코트에 배정된 인원 (${players.length}명):</strong>
-                                <span style="color: #555; margin-left: 8px;">${players.join(', ')}</span>
+                                <strong style="color: #667eea;">${courtNum}코트에 배정된 인원 (${players.length}명)</strong>
+                                <div style="color: #555; margin-left: 12px; margin-top: 4px;">
+                                    - ${players.join(', ')}
+                                </div>
                             </div>
                         `;
                     }
@@ -1598,8 +1600,10 @@ async function loadMatchesForDate(date) {
                 if (unassignedPlayers.length > 0) {
                     matchesHTML += `
                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
-                            <strong style="color: #dc3545;">아쉽지만 배정되지 않은 인원 (${unassignedPlayers.length}명):</strong>
-                            <span style="color: #666; margin-left: 8px;">${unassignedPlayers.join(', ')}</span>
+                            <strong style="color: #dc3545;">배정되지 않은 인원 (${unassignedPlayers.length}명)</strong>
+                            <div style="color: #666; margin-left: 12px; margin-top: 4px;">
+                                - ${unassignedPlayers.join(', ')}
+                            </div>
                         </div>
                     `;
                 }
@@ -1757,7 +1761,7 @@ async function loadMatchesForDate(date) {
                 timeSlotHeaders.forEach(el => {
                     el.style.fontSize = '0.85rem';
                     el.style.fontWeight = '600';
-                    el.style.color = '#667eea';
+                    el.style.color = '#000'; // 검은색으로 설정
                     el.style.padding = '4px 8px';
                     el.style.marginBottom = '4px';
                     el.style.background = '#f0f4ff';
@@ -4985,13 +4989,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const isToday = dateObj.getTime() === today.getTime();
             
-            // 항상 날짜 형식으로 표시
-            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            // 항상 날짜 형식으로 표시 (요일은 괄호로 표시)
+            const datePart = dateObj.toLocaleDateString('ko-KR', {
                 month: 'long',
-                day: 'numeric',
-                weekday: 'short'
+                day: 'numeric'
             });
-            currentDateDisplay.textContent = formattedDate;
+            const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
+                weekday: 'long'
+            });
+            currentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
             
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = currentDateDisplay.closest('.section-header');
@@ -5179,13 +5185,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const isToday = dateObj.getTime() === today.getTime();
             
-            // 항상 날짜 형식으로 표시
-            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            // 항상 날짜 형식으로 표시 (요일은 괄호로 표시)
+            const datePart = dateObj.toLocaleDateString('ko-KR', {
                 month: 'long',
-                day: 'numeric',
-                weekday: 'short'
+                day: 'numeric'
             });
-            matchesCurrentDateDisplay.textContent = formattedDate;
+            const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
+                weekday: 'long'
+            });
+            matchesCurrentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
+            matchesCurrentDateDisplay.style.color = '#000'; // 검은색으로 설정
             
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');
