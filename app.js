@@ -1574,26 +1574,11 @@ async function loadMatchesForDate(date) {
                     }
                 });
                 
-                // 날짜 객체 생성 및 포맷팅
-                const dateObj = new Date(date + 'T00:00');
-                const datePart = dateObj.toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
-                    weekday: 'long'
-                });
-                const fullDate = `${datePart} (${weekdayPart})`;
-                
                 // 시간대별 섹션 헤더 추가 (배정 정보 포함)
                 matchesHTML += `
                     <div class="time-slot-section">
-                        <div style="padding: 12px 20px; font-size: 1.1rem; font-weight: bold; color: #000; background: #fff;">
-                            ${fullDate}
-                        </div>
-                        <div class="time-slot-header-compact" style="color: #000;">${timeSlot.start} ~ ${timeSlot.end}</div>
-                        <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
+                        <div class="time-slot-header-compact" style="color: #000; margin-bottom: 0;">${timeSlot.start} ~ ${timeSlot.end}</div>
+                        <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
                 `;
                 
                 // 코트별 배정 정보 표시
@@ -1767,9 +1752,9 @@ async function loadMatchesForDate(date) {
             setTimeout(() => {
                 const timeSlotSections = matchesContainer.querySelectorAll('.time-slot-section');
                 timeSlotSections.forEach(el => {
-                    el.style.marginBottom = '8px';
-                    el.style.paddingBottom = '4px';
-                    el.style.borderBottom = '2px solid #e0e0e0';
+                    el.style.marginBottom = '0';
+                    el.style.paddingBottom = '0';
+                    el.style.borderBottom = 'none';
                 });
                 
                 const timeSlotHeaders = matchesContainer.querySelectorAll('.time-slot-header-compact');
@@ -4672,17 +4657,12 @@ async function loadReservationsTimeline() {
         </div>`;
     }
     
-    // 마감 시간 실시간 업데이트 (1분마다)
+    // 자동 새로고침 기능 제거됨 - 수동 새로고침 버튼 사용
+    // 기존 interval 정리
     if (window.closingTimeUpdateInterval) {
         clearInterval(window.closingTimeUpdateInterval);
+        window.closingTimeUpdateInterval = null;
     }
-    window.closingTimeUpdateInterval = setInterval(() => {
-        // 예약 탭이 활성화되어 있을 때만 업데이트
-        const reservationsTab = document.getElementById('reservations-tab');
-        if (reservationsTab && reservationsTab.classList.contains('active')) {
-            loadReservationsTimeline();
-        }
-    }, 60000); // 1분마다 업데이트
 }
 
 // 선택된 정보 업데이트
@@ -5202,6 +5182,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 항상 날짜 형식으로 표시 (요일은 괄호로 표시)
             const datePart = dateObj.toLocaleDateString('ko-KR', {
+                year: 'numeric',
                 month: 'long',
                 day: 'numeric'
             });
