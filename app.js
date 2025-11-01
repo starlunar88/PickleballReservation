@@ -5637,7 +5637,31 @@ function calculateRatingChange(currentRating, won) {
     return Math.round(K * (actualScore - expectedScore));
 }
 
-// 사용자 점수 계산 헬퍼 함수 (승리 +10점, 패배 -5점)
+// 레더 시스템 기반 점수 계산 (상대방 점수 차이에 따라 가변)
+function calculateLadderScoreChange(winnerAvgScore, loserAvgScore, isWinner) {
+    // 점수 차이 계산
+    const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
+    
+    if (isWinner) {
+        // 승리 시: 고수를 이기면 더 많은 점수, 약자를 이기면 적은 점수
+        const basePoints = 10;
+        // 점수 차이가 클수록 (약자가 고수를 이김) 더 많은 보너스
+        const bonus = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 +2점
+        // 최대 보너스 제한 (+20점까지)
+        const totalPoints = basePoints + Math.min(bonus, 20);
+        return totalPoints;
+    } else {
+        // 패배 시: 고수가 약자에게 지면 큰 손실, 약자가 고수에게 지면 작은 손실
+        const basePenalty = 5;
+        // 점수 차이가 클수록 (고수가 약자에게 짐) 더 큰 패널티
+        const penalty = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 -2점 추가
+        // 최대 패널티 제한 (-20점까지)
+        const totalPenalty = basePenalty + Math.min(penalty, 15);
+        return -totalPenalty;
+    }
+}
+
+// 사용자 점수 계산 헬퍼 함수 (레더 시스템 적용)
 async function calculateUserScores() {
     try {
         const db = window.db || firebase.firestore();
@@ -5646,11 +5670,56 @@ async function calculateUserScores() {
         const userScores = {};
         const processedMatches = new Set();
         
+        // 먼저 모든 사용자의 현재 점수를 계산 (순환 참조 방지를 위해 먼저 수집)
+        const allUserScores = {};
+        
         // matches 컬렉션에서 완료된 경기 확인
         const matchesSnapshot = await db.collection('matches')
             .where('status', '==', 'completed')
             .get();
         
+        // 첫 번째 패스: 모든 경기의 기본 점수 계산 (기존 방식으로 초기 점수 설정)
+        matchesSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) {
+                return;
+            }
+            
+            const matchId = doc.id;
+            if (processedMatches.has(matchId)) return;
+            
+            const aWins = match.scoreA > match.scoreB;
+            const winners = aWins ? match.teamA : match.teamB;
+            const losers = aWins ? match.teamB : match.teamA;
+            
+            if (!Array.isArray(winners) || !Array.isArray(losers)) return;
+            
+            // 기본 점수 계산 (초기 점수 설정용)
+            winners.forEach(player => {
+                const userId = player.userId || player.id;
+                if (!userId) return;
+                if (!allUserScores[userId]) {
+                    allUserScores[userId] = { score: 0, wins: 0, losses: 0 };
+                }
+                allUserScores[userId].score += 10;
+                allUserScores[userId].wins += 1;
+            });
+            
+            losers.forEach(player => {
+                const userId = player.userId || player.id;
+                if (!userId) return;
+                if (!allUserScores[userId]) {
+                    allUserScores[userId] = { score: 0, wins: 0, losses: 0 };
+                }
+                allUserScores[userId].score = Math.max(0, allUserScores[userId].score - 5);
+                allUserScores[userId].losses += 1;
+            });
+            
+            processedMatches.add(matchId);
+        });
+        
+        // 두 번째 패스: 레더 시스템으로 점수 재계산
+        processedMatches.clear();
         matchesSnapshot.forEach(doc => {
             const match = doc.data();
             if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) {
@@ -5667,26 +5736,60 @@ async function calculateUserScores() {
             
             if (!Array.isArray(winners) || !Array.isArray(losers)) return;
             
+            // 팀의 평균 점수 계산 (경기 전 점수 기준)
+            const winnerScores = winners.map(p => {
+                const userId = p.userId || p.id;
+                return allUserScores[userId] ? allUserScores[userId].score : 0;
+            });
+            const loserScores = losers.map(p => {
+                const userId = p.userId || p.id;
+                return allUserScores[userId] ? allUserScores[userId].score : 0;
+            });
+            
+            const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
+            const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
+            
+            // 승자 점수 계산 (승리 전 점수 기준으로 약자인지 강자인지 판단)
+            const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
+            const winnerScoreChange = calculateLadderScoreChange(
+                winnerIsUnderdog ? winnerAvgScore : loserAvgScore,
+                winnerIsUnderdog ? loserAvgScore : winnerAvgScore,
+                true
+            );
+            
+            // 패자 점수 계산
+            const loserScoreChange = calculateLadderScoreChange(
+                winnerAvgScore,
+                loserAvgScore,
+                false
+            );
+            
+            // 최종 점수 업데이트
             winners.forEach(player => {
                 const userId = player.userId || player.id;
                 if (!userId) return;
-                
                 if (!userScores[userId]) {
                     userScores[userId] = { score: 0, wins: 0, losses: 0 };
                 }
-                userScores[userId].score += 10;
-                userScores[userId].wins += 1;
+                // 기존 점수에서 기본 점수 차감 후 레더 점수 추가
+                userScores[userId].score = allUserScores[userId].score - 10 + winnerScoreChange;
+                userScores[userId].score = Math.max(0, userScores[userId].score);
+                userScores[userId].wins = allUserScores[userId].wins;
+                userScores[userId].losses = allUserScores[userId].losses;
             });
             
             losers.forEach(player => {
                 const userId = player.userId || player.id;
                 if (!userId) return;
-                
                 if (!userScores[userId]) {
                     userScores[userId] = { score: 0, wins: 0, losses: 0 };
                 }
-                userScores[userId].score = Math.max(0, userScores[userId].score - 5);
-                userScores[userId].losses += 1;
+                // 기존 점수에서 기본 패널티 제거 후 레더 패널티 적용
+                const oldScore = allUserScores[userId].score;
+                const newScore = oldScore + 5 + loserScoreChange; // 기본 패널티(-5)를 되돌리고 레더 패널티 적용
+                userScores[userId].score = Math.max(0, newScore);
+                userScores[userId].wins = allUserScores[userId].wins;
+                userScores[userId].losses = allUserScores[userId].losses;
             });
         });
         
@@ -5697,13 +5800,13 @@ async function calculateUserScores() {
     }
 }
 
-// 랭킹 순위 가져오기 (점수 기준: 승리 +10점, 패배 -5점)
+// 랭킹 순위 가져오기 (레더 시스템 적용)
 async function getRankings(limit = 50) {
     try {
         const db = window.db || firebase.firestore();
         if (!db) return [];
         
-        // 사용자별 점수 계산 (승리 +10점, 패배 -5점)
+        // 사용자별 점수 계산 (레더 시스템 적용)
         const userScores = {};
         const userInfoMap = {}; // userId -> userName 매핑 (matches/gameResults에서 수집)
         const processedMatches = new Set(); // 중복 방지를 위한 처리된 match ID 집합
@@ -5715,10 +5818,20 @@ async function getRankings(limit = 50) {
         
         console.log(`🔍 랭킹 계산: matches 컬렉션에서 ${matchesSnapshot.size}개의 완료된 경기 발견`);
         
+        // 경기를 시간 순서대로 정렬 (레더 시스템을 위해 중요)
+        const matchesArray = [];
         matchesSnapshot.forEach(doc => {
             const match = doc.data();
+            const matchDate = match.recordedAt ? (match.recordedAt.toDate ? match.recordedAt.toDate() : new Date(match.recordedAt)) : 
+                           match.date ? new Date(match.date + 'T12:00:00') : new Date();
+            matchesArray.push({ id: doc.id, data: match, date: matchDate });
+        });
+        matchesArray.sort((a, b) => a.date.getTime() - b.date.getTime()); // 시간 순서대로 정렬
+        
+        // 시간 순서대로 경기 처리
+        matchesArray.forEach(({ id: matchId, data: match }) => {
             if (!match.teamA || !match.teamB || !match.scoreA || !match.scoreB) {
-                console.warn(`⚠️ 매치 데이터 불완전: ${doc.id}`, {
+                console.warn(`⚠️ 매치 데이터 불완전: ${matchId}`, {
                     hasTeamA: !!match.teamA,
                     hasTeamB: !!match.teamB,
                     hasScoreA: !!match.scoreA,
@@ -5727,7 +5840,6 @@ async function getRankings(limit = 50) {
                 return;
             }
             
-            const matchId = doc.id;
             processedMatches.add(matchId); // 처리된 match ID 저장
             
             const aWins = match.scoreA > match.scoreB;
@@ -5743,7 +5855,39 @@ async function getRankings(limit = 50) {
                 return;
             }
             
-            // 승자에게 +10점
+            // 레더 시스템: 경기 당시의 점수를 기준으로 계산
+            // 승자 팀의 평균 점수 계산 (경기 전 점수 기준)
+            const winnerScores = winners.map(p => {
+                const userId = p.userId || p.id;
+                return userScores[userId] ? userScores[userId].score : 0;
+            });
+            const loserScores = losers.map(p => {
+                const userId = p.userId || p.id;
+                return userScores[userId] ? userScores[userId].score : 0;
+            });
+            
+            const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
+            const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
+            
+            // 약자가 강자를 이겼는지 확인
+            const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
+            const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
+            
+            // 승자 점수 변화 계산
+            const winnerScoreChange = calculateLadderScoreChange(
+                winnerIsUnderdog ? winnerAvgScore : loserAvgScore,
+                winnerIsUnderdog ? loserAvgScore : winnerAvgScore,
+                true
+            );
+            
+            // 패자 점수 변화 계산
+            const loserScoreChange = calculateLadderScoreChange(
+                winnerAvgScore,
+                loserAvgScore,
+                false
+            );
+            
+            // 승자에게 점수 부여
             winners.forEach(player => {
                 if (!player) {
                     console.warn(`⚠️ 매치 ${matchId}: 승자 배열에 null/undefined 있음`);
@@ -5773,17 +5917,18 @@ async function getRankings(limit = 50) {
                 
                 // 이미 처리한 match인지 확인
                 if (!userScores[userId].matchIds.has(matchId)) {
-                    userScores[userId].score += 10;
+                    const oldScore = userScores[userId].score;
+                    userScores[userId].score = Math.max(0, userScores[userId].score + winnerScoreChange);
                     userScores[userId].wins += 1;
                     userScores[userId].totalGames += 1;
                     userScores[userId].matchIds.add(matchId);
-                    console.log(`✅ 승리: ${userId} (매치 ${matchId}) -> 점수: +10, 총 점수: ${userScores[userId].score}`);
+                    console.log(`✅ 승리: ${userId} (매치 ${matchId}) -> 점수: ${winnerScoreChange > 0 ? '+' : ''}${winnerScoreChange} (${oldScore} -> ${userScores[userId].score}), 점수차: ${scoreDiff.toFixed(1)}`);
                 } else {
                     console.warn(`⚠️ 중복 경기 발견: ${userId} - 매치 ${matchId}`);
                 }
             });
             
-            // 패자에게 -5점 (최소 0점)
+            // 패자에게 레더 시스템 패널티 적용
             losers.forEach(player => {
                 if (!player) {
                     console.warn(`⚠️ 매치 ${matchId}: 패자 배열에 null/undefined 있음`);
@@ -5814,11 +5959,11 @@ async function getRankings(limit = 50) {
                 // 이미 처리한 match인지 확인
                 if (!userScores[userId].matchIds.has(matchId)) {
                     const oldScore = userScores[userId].score;
-                    userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                    userScores[userId].score = Math.max(0, userScores[userId].score + loserScoreChange);
                     userScores[userId].losses += 1;
                     userScores[userId].totalGames += 1;
                     userScores[userId].matchIds.add(matchId);
-                    console.log(`❌ 패배: ${userId} (매치 ${matchId}) -> 점수: -5 (${oldScore} -> ${userScores[userId].score}), 총 점수: ${userScores[userId].score}`);
+                    console.log(`❌ 패배: ${userId} (매치 ${matchId}) -> 점수: ${loserScoreChange} (${oldScore} -> ${userScores[userId].score}), 점수차: ${scoreDiff.toFixed(1)}`);
                 } else {
                     console.warn(`⚠️ 중복 경기 발견: ${userId} - 매치 ${matchId}`);
                 }
@@ -5881,7 +6026,33 @@ async function getRankings(limit = 50) {
             
             processedCount++;
             
-            // 승자에게 +10점
+            // 레더 시스템: gameResults도 경기 당시의 점수를 기준으로 계산
+            const winnerScores = game.winners.map(userId => {
+                return userScores[userId] ? userScores[userId].score : 0;
+            });
+            const loserScores = game.losers.map(userId => {
+                return userScores[userId] ? userScores[userId].score : 0;
+            });
+            
+            const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
+            const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
+            
+            const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
+            const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
+            
+            const winnerScoreChange = calculateLadderScoreChange(
+                winnerIsUnderdog ? winnerAvgScore : loserAvgScore,
+                winnerIsUnderdog ? loserAvgScore : winnerAvgScore,
+                true
+            );
+            
+            const loserScoreChange = calculateLadderScoreChange(
+                winnerAvgScore,
+                loserAvgScore,
+                false
+            );
+            
+            // 승자에게 레더 시스템 점수 부여
             game.winners.forEach(userId => {
                 if (!userId) return;
                 
@@ -5897,15 +6068,16 @@ async function getRankings(limit = 50) {
                 
                 // 사용자별로 이미 처리한 gameResult인지 확인
                 if (!userScores[userId].matchIds.has(gameResultId)) {
-                    userScores[userId].score += 10;
+                    const oldScore = userScores[userId].score;
+                    userScores[userId].score = Math.max(0, userScores[userId].score + winnerScoreChange);
                     userScores[userId].wins += 1;
                     userScores[userId].totalGames += 1;
                     userScores[userId].matchIds.add(gameResultId);
-                    console.log(`✅ 승리 (gameResult): ${userId} (${gameResultId}) -> 점수: +10`);
+                    console.log(`✅ 승리 (gameResult): ${userId} (${gameResultId}) -> 점수: ${winnerScoreChange > 0 ? '+' : ''}${winnerScoreChange} (${oldScore} -> ${userScores[userId].score}), 점수차: ${scoreDiff.toFixed(1)}`);
                 }
             });
             
-            // 패자에게 -5점 (최소 0점)
+            // 패자에게 레더 시스템 패널티 적용
             game.losers.forEach(userId => {
                 if (!userId) return;
                 
@@ -5922,11 +6094,11 @@ async function getRankings(limit = 50) {
                 // 사용자별로 이미 처리한 gameResult인지 확인
                 if (!userScores[userId].matchIds.has(gameResultId)) {
                     const oldScore = userScores[userId].score;
-                    userScores[userId].score = Math.max(0, userScores[userId].score - 5);
+                    userScores[userId].score = Math.max(0, userScores[userId].score + loserScoreChange);
                     userScores[userId].losses += 1;
                     userScores[userId].totalGames += 1;
                     userScores[userId].matchIds.add(gameResultId);
-                    console.log(`❌ 패배 (gameResult): ${userId} (${gameResultId}) -> 점수: -5`);
+                    console.log(`❌ 패배 (gameResult): ${userId} (${gameResultId}) -> 점수: ${loserScoreChange} (${oldScore} -> ${userScores[userId].score})`);
                 }
             });
             
