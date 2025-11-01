@@ -1230,7 +1230,6 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 showToast('데이터를 새로고침하는 중...', 'info');
                 await loadReservationsTimeline();
-                await checkAndShowMatchSchedule();
                 showToast('새로고침 완료!', 'success');
             } catch (error) {
                 console.error('새로고침 오류:', error);
@@ -4519,9 +4518,6 @@ async function loadReservationsTimeline() {
                             return buttons;
                         })()}
                     </div>
-                    <div class="timeline-match-schedule" id="match-schedule-${targetDate}-${slotKey.replace(/:/g, '-')}" style="display: none; margin-top: 12px;">
-                        <!-- 대진표가 여기에 표시됩니다 -->
-                    </div>
                 </div>
             `;
         }
@@ -4629,8 +4625,7 @@ async function loadReservationsTimeline() {
                 // 선택된 정보 업데이트
                 updateSelectedInfo(date, timeSlot);
                 
-                // 대진표 확인 및 표시
-                await checkAndShowMatchSchedule();
+                // 예약 탭에서는 대진표를 표시하지 않음 (대진표 탭에서만 표시)
             });
         });
         
@@ -7374,7 +7369,6 @@ function addTestButtonEventListeners() {
                 
                 await addRandomReservation(date, timeSlot);
                 await loadReservationsTimeline();
-                await checkAndShowMatchSchedule();
             } catch (error) {
                 console.error('무작위 예약자 추가 오류:', error);
                 showToast('무작위 예약 추가 중 오류', 'error');
@@ -8022,18 +8016,9 @@ async function renderMatchSchedule(matches, date, timeSlot) {
         const isReservationsTabActive = reservationsTab && reservationsTab.classList.contains('active');
         const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
         
-        // 예약 탭에서는 타임라인 내부의 대진표 영역만 사용
+        // 예약 탭에서는 대진표를 표시하지 않음 (대진표 탭에서만 표시)
         if (isReservationsTabActive) {
-            const safeSlotKey = timeSlot.replace(/:/g, '-');
-            const matchScheduleDiv = document.getElementById(`match-schedule-${date}-${safeSlotKey}`);
-            
-            if (!matchScheduleDiv) {
-                console.warn(`예약 탭 대진표 컨테이너를 찾을 수 없습니다: match-schedule-${date}-${safeSlotKey}`);
-                return;
-            }
-            
-            await renderMatchScheduleToContainer(matches, date, timeSlot, matchScheduleDiv);
-            matchScheduleDiv.style.display = 'block';
+            console.log('예약 탭에서는 대진표를 표시하지 않습니다.');
             return;
         }
         
@@ -8240,8 +8225,12 @@ async function saveMatchScore(match, scoreA, scoreB) {
 
         showToast('점수가 저장되었습니다.', 'success');
         
-        // 대진표 다시 렌더링
-        await checkAndShowMatchSchedule();
+        // 대진표 탭이 활성화되어 있으면 대진표 새로고침
+        const matchesTab = document.getElementById('matches-tab');
+        if (matchesTab && matchesTab.classList.contains('active')) {
+            const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+            await loadMatchesForDate(currentDate);
+        }
         
     } catch (error) {
         console.error('점수 저장 오류:', error);
