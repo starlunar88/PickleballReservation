@@ -5189,8 +5189,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
                 weekday: 'long'
             });
+            // 요일을 괄호로 감싸서 표시
             matchesCurrentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
             matchesCurrentDateDisplay.style.color = '#000'; // 검은색으로 설정
+            matchesCurrentDateDisplay.style.fontWeight = '700'; // 굵게
             
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');

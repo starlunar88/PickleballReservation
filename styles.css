@@ -3396,7 +3396,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 .date-navigation span {
     font-weight: 700; /* 더 굵게 */
-    color: #764ba2; /* 보라색으로 변경하여 강조 */
+    color: #000 !important; /* 검은색으로 변경 */
     min-width: 100px;
     text-align: center;
     background: rgba(118, 75, 162, 0.1); /* 배경색 추가로 강조 */
@@ -3889,7 +3889,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.75rem !important; /* 날짜 텍스트 크기 */
         min-width: auto !important;
         padding: 4px 10px !important; /* 패딩 추가 */
-        color: #764ba2 !important; /* 보라색 유지 */
+        color: #000 !important; /* 검은색으로 변경 */
         background: rgba(118, 75, 162, 0.1) !important; /* 배경색 유지 */
         border-radius: 6px !important; /* 둥근 모서리 */
         font-weight: 700 !important; /* 굵게 */
