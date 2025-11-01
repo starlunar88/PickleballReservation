@@ -8001,9 +8001,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         match.teamB.forEach(p => assignedPlayerIds.add(p.userId));
     });
     
-    const unassignedPlayers = playerObjects.filter(p => !assignedPlayerIds.has(p.userId));
+    // 이미 선언된 unassignedPlayers 배열을 필터링하여 업데이트
+    // (코트 배정은 되었지만 실제 경기에 포함되지 않은 플레이어)
+    const finalUnassignedPlayers = playerObjects.filter(p => !assignedPlayerIds.has(p.userId));
     
-    return { schedule, unassignedPlayers };
+    return { schedule, unassignedPlayers: finalUnassignedPlayers };
 }
 
 // 대진표 렌더링
