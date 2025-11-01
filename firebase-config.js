@@ -126,6 +126,9 @@ async function checkAdminStatus(user) {
         
         const isUserAdmin = await isAdmin(user);
         
+        // window.adminStatus에 저장 (다른 함수에서 사용)
+        window.adminStatus = isUserAdmin;
+        
         // 관리자 버튼 표시
         if (isUserAdmin && adminSettingsBtn) {
             adminSettingsBtn.style.display = 'inline-block';
@@ -146,6 +149,7 @@ async function checkAdminStatus(user) {
         
     } catch (error) {
         console.error('관리자 상태 확인 오류:', error);
+        window.adminStatus = false;
     }
 }
 

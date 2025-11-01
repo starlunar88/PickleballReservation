@@ -1450,6 +1450,14 @@ let lastLoadedDate = null;
 
 async function loadMatchesForDate(date) {
     try {
+        // 관리자 상태 확인 (버튼 표시를 위해)
+        const user = firebase.auth().currentUser;
+        if (user) {
+            window.adminStatus = await isAdmin(user);
+        } else {
+            window.adminStatus = false;
+        }
+        
         console.log('📋 loadMatchesForDate 호출됨, 날짜:', date);
         
         // 중복 호출 방지: 이미 같은 날짜를 로딩 중이면 스킵
@@ -1595,13 +1603,17 @@ async function loadMatchesForDate(date) {
                 
                 // 시간대별 섹션 헤더 추가 (배정 정보 포함)
                 const safeSlotKey = slotKey.replace(/:/g, '-').replace(/\//g, '_');
+                // 관리자 여부 확인 (비동기 확인 결과 저장)
+                const isAdminUser = window.adminStatus === true;
+                const deleteButtonHTML = isAdminUser ? 
+                    `<button class="delete-timeslot-btn" data-date="${date}" data-time-slot="${slotKey}" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-left: 10px;" title="이 시간대의 대진표와 기록 삭제">
+                        <i class="fas fa-trash-alt"></i> 삭제
+                    </button>` : '';
                 matchesHTML += `
                     <div class="time-slot-section" data-time-slot="${slotKey}" data-date="${date}">
                         <div class="time-slot-header-compact" style="color: #000; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>${timeSlot.start} ~ ${timeSlot.end}</span>
-                            <button class="delete-timeslot-btn" data-date="${date}" data-time-slot="${slotKey}" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-left: 10px;" title="이 시간대의 대진표와 기록 삭제">
-                                <i class="fas fa-trash-alt"></i> 삭제
-                            </button>
+                            ${deleteButtonHTML}
                         </div>
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
                 `;
@@ -2127,11 +2139,25 @@ async function loadMatchesForDate(date) {
         });
     });
     
-    // 시간대별 삭제 버튼 이벤트 리스너 추가
+    // 시간대별 삭제 버튼 이벤트 리스너 추가 (관리자만 사용 가능)
     const deleteButtons = matchesContainer.querySelectorAll('.delete-timeslot-btn');
     deleteButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
+            
+            // 관리자 권한 확인
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                showToast('로그인이 필요합니다.', 'warning');
+                return;
+            }
+            
+            const isAdminUser = await isAdmin(user);
+            if (!isAdminUser) {
+                showToast('관리자만 사용할 수 있는 기능입니다.', 'error');
+                return;
+            }
+            
             const date = btn.getAttribute('data-date');
             const timeSlot = btn.getAttribute('data-time-slot');
             
@@ -3734,7 +3760,7 @@ async function loadRecordsForPeriod(period) {
             return;
         }
         
-        renderRecords(matches);
+        await renderRecords(matches);
         
     } catch (error) {
         console.error('기간별 기록 로드 오류:', error);
@@ -3814,7 +3840,7 @@ async function loadRecordsForCustomPeriod() {
             return;
         }
         
-        renderRecords(matches);
+        await renderRecords(matches);
         
     } catch (error) {
         console.error('커스텀 기간 기록 로드 오류:', error);
@@ -3823,7 +3849,15 @@ async function loadRecordsForCustomPeriod() {
 }
 
 // 기록 카드 렌더링
-function renderRecords(matches) {
+async function renderRecords(matches) {
+    // 관리자 상태 확인 (버튼 표시를 위해)
+    const user = firebase.auth().currentUser;
+    if (user) {
+        window.adminStatus = await isAdmin(user);
+    } else {
+        window.adminStatus = false;
+    }
+    
     const recordsList = document.getElementById('records-list');
     if (!recordsList) return;
     
@@ -3890,6 +3924,12 @@ function renderRecords(matches) {
         const scoreA = match.scoreA ?? 0;
         const scoreB = match.scoreB ?? 0;
         
+        // 관리자 여부 확인 (비동기 확인 결과 저장)
+        const isAdminUser = window.adminStatus === true;
+        const deleteButtonHTML = isAdminUser ? 
+            `<button class="record-delete-btn" data-match-id="${match.id}" title="삭제">
+                <i class="fas fa-trash"></i>
+            </button>` : '';
         recordsHTML += `
             <div class="record-card" data-match-id="${match.id}">
                 <div class="record-header">
@@ -3897,9 +3937,7 @@ function renderRecords(matches) {
                         <div class="record-date">${formattedDate}</div>
                         <div class="record-time">${displayTime}</div>
                     </div>
-                    <button class="record-delete-btn" data-match-id="${match.id}" title="삭제">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    ${deleteButtonHTML}
                 </div>
                 <div class="record-teams">
                     <div class="record-team team-a">
@@ -3932,10 +3970,23 @@ function renderRecords(matches) {
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         
-        // 새 이벤트 리스너 추가
+        // 새 이벤트 리스너 추가 (관리자만 사용 가능)
         newBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             e.preventDefault();
+            
+            // 관리자 권한 확인
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                showToast('로그인이 필요합니다.', 'warning');
+                return;
+            }
+            
+            const isAdminUser = await isAdmin(user);
+            if (!isAdminUser) {
+                showToast('관리자만 사용할 수 있는 기능입니다.', 'error');
+                return;
+            }
             
             console.log(`🔘 기록 삭제 버튼 클릭 이벤트 발생 (버튼 ${index})`);
             console.log(`📋 이벤트 객체:`, e);
@@ -4449,6 +4500,14 @@ async function loadReservationsTimeline() {
     console.log('화면 크기:', window.innerWidth + 'x' + window.innerHeight);
     console.log('디바이스 픽셀 비율:', window.devicePixelRatio);
     
+    // 관리자 상태 확인 (버튼 표시를 위해)
+    const user = firebase.auth().currentUser;
+    if (user) {
+        window.adminStatus = await isAdmin(user);
+    } else {
+        window.adminStatus = false;
+    }
+    
     const timeline = document.getElementById('reservations-timeline');
     if (!timeline) {
         console.error('❌ 타임라인 요소를 찾을 수 없습니다');
@@ -4653,27 +4712,33 @@ async function loadReservationsTimeline() {
                                         </button>`;
                             }
                             
-                            // 대진표 생성 버튼 표시 (4명 이상일 때만 활성화)
-                            const canGenerate = reservations.length >= 4;
-                            const buttonDisabled = !canGenerate ? 'disabled' : '';
-                            const buttonStyle = 'margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;' + (!canGenerate ? ' opacity: 0.5;' : '');
-                            const buttonTitle = !canGenerate ? '최소 4명이 필요합니다' : '';
-                            buttons += `<button class="btn btn-primary force-generate-btn" 
+                            // 관리자 여부 확인 (동기적으로 처리하기 위해 window.isAdminUser 사용)
+                            // 실제 확인은 비동기로 처리되지만, 버튼 표시 시에는 window.adminStatus 사용
+                            const isAdminUser = window.adminStatus === true;
+                            
+                            // 대진표 생성 버튼 (관리자만 표시/활성화)
+                            if (isAdminUser) {
+                                const canGenerate = reservations.length >= 4;
+                                const buttonDisabled = !canGenerate ? 'disabled' : '';
+                                const buttonStyle = 'margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;' + (!canGenerate ? ' opacity: 0.5;' : '');
+                                const buttonTitle = !canGenerate ? '최소 4명이 필요합니다' : '';
+                                buttons += `<button class="btn btn-primary force-generate-btn" 
+                                                   data-time-slot="${slotKey}" 
+                                                   data-date="${targetDate}"
+                                                   ${buttonDisabled}
+                                                   style="${buttonStyle}"
+                                                   title="${buttonTitle}">
+                                                <i class="fas fa-calendar-alt"></i> 대진표 생성
+                                            </button>`;
+                                
+                                // 테스트용 임시 사람 추가 버튼 (관리자만 표시)
+                                buttons += `<button class="btn btn-primary add-random-btn" 
                                                data-time-slot="${slotKey}" 
                                                data-date="${targetDate}"
-                                               ${buttonDisabled}
-                                               style="${buttonStyle}"
-                                               title="${buttonTitle}">
-                                            <i class="fas fa-calendar-alt"></i> 대진표 생성
+                                               style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
+                                            <i class="fas fa-user-plus"></i> 테스트 추가
                                         </button>`;
-                            
-                            // 테스트용 임시 사람 추가 버튼 (항상 표시)
-                            buttons += `<button class="btn btn-primary add-random-btn" 
-                                           data-time-slot="${slotKey}" 
-                                           data-date="${targetDate}"
-                                           style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
-                                        <i class="fas fa-user-plus"></i> 테스트 추가
-                                    </button>`;
+                            }
                             
                             return buttons;
                         })()}
@@ -7782,12 +7847,25 @@ async function createTestButtons() {
 
 // 테스트 버튼 이벤트 리스너 추가
 function addTestButtonEventListeners() {
-    // 무작위 추가 버튼들
+    // 무작위 추가 버튼들 (관리자만 사용 가능)
     document.querySelectorAll('.add-random-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
+            // 관리자 권한 확인
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                showToast('로그인이 필요합니다.', 'warning');
+                return;
+            }
+            
+            const isAdminUser = await isAdmin(user);
+            if (!isAdminUser) {
+                showToast('관리자만 사용할 수 있는 기능입니다.', 'error');
+                return;
+            }
+            
             try {
-                const timeSlot = e.target.getAttribute('data-time-slot');
-                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                const timeSlot = e.target.getAttribute('data-time-slot') || e.target.closest('.add-random-btn')?.getAttribute('data-time-slot');
+                const date = e.target.getAttribute('data-date') || e.target.closest('.add-random-btn')?.getAttribute('data-date') || window.currentDate || new Date().toISOString().slice(0, 10);
                 
                 await addRandomReservation(date, timeSlot);
                 await loadReservationsTimeline();
