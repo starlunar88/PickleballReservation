@@ -1631,24 +1631,23 @@ async function loadMatchesForDate(date) {
                         // 계급 아이콘 생성 헬퍼 함수 (점수 기준: 승리 +10점, 패배 -5점)
                         // 실제 게임 점수만 사용 (internalRating은 사용하지 않음)
                         const getTierIcon = (score) => {
-                            // score가 없거나 0이면 NEW로 표시
                             // 점수는 승리 +10점, 패배 -5점으로 계산되므로 0 이상의 정수값만 사용
                             const actualScore = score || 0;
                             
-                            if (actualScore >= 2500) {
-                                return '<i class="fas fa-trophy" style="font-size: 0.75rem; color: #764ba2; margin-right: 3px;"></i>';
-                            } else if (actualScore >= 1800) {
-                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>';
-                            } else if (actualScore >= 1200) {
-                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #c0c0c0; margin-right: 3px;"></i>';
-                            } else if (actualScore >= 800) {
-                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #cd7f32; margin-right: 3px;"></i>';
-                            } else if (actualScore >= 400) {
-                                return '<i class="fas fa-star" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>';
-                            } else if (actualScore >= 30) {
-                                return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>';
+                            if (actualScore >= 2000) {
+                                return '<i class="fas fa-trophy" style="font-size: 0.75rem; color: #764ba2; margin-right: 3px;"></i>'; // GOAT
+                            } else if (actualScore >= 1500) {
+                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>'; // 레전드
+                            } else if (actualScore >= 1000) {
+                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #c0c0c0; margin-right: 3px;"></i>'; // 마스터
+                            } else if (actualScore >= 500) {
+                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #cd7f32; margin-right: 3px;"></i>'; // 챔피언
+                            } else if (actualScore >= 300) {
+                                return '<i class="fas fa-star" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>'; // 프로
+                            } else if (actualScore >= 100) {
+                                return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>'; // 플레이어
                             } else {
-                                // 점수가 0이거나 없으면 초보자로 표시 (새싹 아이콘)
+                                // 점수가 0-99면 초보자로 표시 (새싹 아이콘)
                                 return '<i class="fas fa-seedling" style="font-size: 0.75rem; color: #51cf66; margin-right: 3px;"></i>';
                             }
                         };
@@ -6219,17 +6218,17 @@ async function loadTopPerformers() {
             let tierIcon = '';
             const score = ranking.score || 0;
             
-            if (score >= 2500) {
+            if (score >= 2000) {
                 tierIcon = '<i class="fas fa-trophy" style="color: #764ba2;"></i>'; // GOAT
-            } else if (score >= 1800) {
+            } else if (score >= 1500) {
                 tierIcon = '<i class="fas fa-medal" style="color: #ffd700;"></i>'; // 레전드
-            } else if (score >= 1200) {
+            } else if (score >= 1000) {
                 tierIcon = '<i class="fas fa-medal" style="color: #c0c0c0;"></i>'; // 마스터
-            } else if (score >= 800) {
+            } else if (score >= 500) {
                 tierIcon = '<i class="fas fa-medal" style="color: #cd7f32;"></i>'; // 챔피언
-            } else if (score >= 400) {
+            } else if (score >= 300) {
                 tierIcon = '<i class="fas fa-star" style="color: #ffd700;"></i>'; // 프로
-            } else if (score >= 30) {
+            } else if (score >= 100) {
                 tierIcon = '<i class="fas fa-table-tennis" style="color: #ff69b4;"></i>'; // 플레이어
             } else {
                 tierIcon = '<i class="fas fa-seedling" style="font-size: 1rem; color: #51cf66;"></i>'; // 초보자 (새싹 아이콘)
