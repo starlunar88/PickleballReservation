@@ -5360,14 +5360,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    
-    // 모든 기록 삭제 버튼
-    const deleteAllRecordsBtn = document.getElementById('delete-all-records');
-    if (deleteAllRecordsBtn) {
-        deleteAllRecordsBtn.addEventListener('click', async () => {
-            await deleteAllRecords();
-        });
-    }
 });
 
 // 시간 슬롯 로드
@@ -5984,13 +5976,38 @@ async function getRankings(limit = 50) {
         
         console.log(`🔍 랭킹 계산: gameResults 컬렉션에서 ${gameResultsSnapshot.size}개의 게임 결과 발견`);
         
+        // gameResults도 시간 순서대로 정렬 (입력 순서와 무관하게)
+        const gameResultsArray = [];
+        gameResultsSnapshot.forEach(doc => {
+            const game = doc.data();
+            const gameDate = game.recordedAt ? (game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt)) :
+                           game.date ? new Date(game.date + 'T12:00:00') : new Date();
+            
+            // matches에서 이미 처리한 경기는 제외
+            let matchIdFromTeamId = null;
+            if (game.teamId) {
+                const parts = game.teamId.split('_');
+                if (parts.length >= 2) {
+                    matchIdFromTeamId = parts.slice(0, -1).join('_');
+                }
+            }
+            
+            // matches에서 이미 처리한 경기는 제외
+            if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) {
+                return;
+            }
+            
+            gameResultsArray.push({ id: doc.id, data: game, date: gameDate });
+        });
+        gameResultsArray.sort((a, b) => a.date.getTime() - b.date.getTime()); // 시간 순서대로 정렬
+        
         let skippedCount = 0;
         let processedCount = 0;
         
-        gameResultsSnapshot.forEach(doc => {
-            const game = doc.data();
+        // 시간 순서대로 gameResults 처리
+        gameResultsArray.forEach(({ id: gameResultId, data: game }) => {
             if (!game.players || !game.winners || !game.losers) {
-                console.warn(`⚠️ gameResult 데이터 불완전: ${doc.id}`, {
+                console.warn(`⚠️ gameResult 데이터 불완전: ${gameResultId}`, {
                     hasPlayers: !!game.players,
                     hasWinners: !!game.winners,
                     hasLosers: !!game.losers
