@@ -5180,18 +5180,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const isToday = dateObj.getTime() === today.getTime();
             
-            // 항상 날짜 형식으로 표시 (요일은 괄호로 표시)
-            const year = dateObj.getFullYear();
-            const month = dateObj.getMonth() + 1;
-            const day = dateObj.getDate();
-            
-            // 요일 이름 배열
-            const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-            const weekdayIndex = dateObj.getDay();
-            const weekdayName = weekdays[weekdayIndex];
-            
-            // 날짜와 요일을 괄호로 감싸서 표시
-            matchesCurrentDateDisplay.textContent = `${year}년 ${month}월 ${day}일 (${weekdayName})`;
+            // 예약 탭과 동일한 형식으로 표시 (월 일만 표시, 요일은 괄호로)
+            const datePart = dateObj.toLocaleDateString('ko-KR', {
+                month: 'long',
+                day: 'numeric'
+            });
+            const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
+                weekday: 'long'
+            });
+            matchesCurrentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
             matchesCurrentDateDisplay.style.color = '#000'; // 검은색으로 설정
             matchesCurrentDateDisplay.style.fontWeight = '700'; // 굵게
             
