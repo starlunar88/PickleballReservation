@@ -2677,12 +2677,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .beginner-icon {
-    background: linear-gradient(135deg, #d4d4d4 0%, #a0a0a0 100%);
-    color: #555;
-    border: 2px solid #bbb;
-    font-size: 0.9rem;
-    font-weight: 800;
-    text-transform: uppercase;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #2e7d32;
+    border: 2px solid #66bb6a;
+    box-shadow: 0 4px 15px rgba(81, 207, 102, 0.3);
+}
+
+.beginner-icon i {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .player-icon {
@@ -5255,12 +5257,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .beginner-icon {
-        background: linear-gradient(135deg, #d4d4d4 0%, #a0a0a0 100%);
-        color: #555;
-        border: 2px solid #bbb;
-        font-size: 0.8rem;
-        font-weight: 800;
-        text-transform: uppercase;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        color: #2e7d32;
+        border: 2px solid #66bb6a;
+        box-shadow: 0 4px 15px rgba(81, 207, 102, 0.3);
+    }
+    
+    .beginner-icon i {
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     }
     
     .player-icon {
