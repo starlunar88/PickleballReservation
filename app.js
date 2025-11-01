@@ -1712,9 +1712,9 @@ async function loadMatchesForDate(date) {
                                     </div>
                                 </div>
                                 <div class="match-score-input-compact">
-                                    <input type="number" class="score-input-compact" min="0" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                    <input type="number" class="score-input-compact" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
                                     <span class="score-separator-compact">-</span>
-                                    <input type="number" class="score-input-compact" min="0" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                    <input type="number" class="score-input-compact" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
                                 </div>
                                 <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
                                     ${isCompleted ? '수정하기' : '경기 기록하기'}
@@ -1900,9 +1900,17 @@ async function loadMatchesForDate(date) {
                     el.setAttribute('inputmode', 'numeric');
                     el.setAttribute('pattern', '[0-9]*');
                     
-                    // 숫자만 입력 허용
+                    // 숫자만 입력 허용 및 15점 초과 제한
                     el.addEventListener('input', function(e) {
+                        // 숫자만 입력 허용
                         this.value = this.value.replace(/[^0-9]/g, '');
+                        
+                        // 15점 초과 입력 방지
+                        const value = parseInt(this.value);
+                        if (!isNaN(value) && value > 15) {
+                            this.value = '15';
+                            showToast('점수는 15점을 초과할 수 없습니다.', 'warning');
+                        }
                     });
                     
                     // 클릭 시 초기화 (readonly가 아닌 경우)
@@ -2033,6 +2041,12 @@ async function loadMatchesForDate(date) {
                             
                             if (scoreA === 0 && scoreB === 0) {
                                 showToast('점수를 입력해주세요.', 'warning');
+                                return;
+                            }
+                            
+                            // 15점 초과 차단
+                            if (scoreA > 15 || scoreB > 15) {
+                                showToast('점수는 15점을 초과할 수 없습니다.', 'warning');
                                 return;
                             }
                             
@@ -5635,21 +5649,41 @@ function calculateLadderScoreChange(winnerAvgScore, loserAvgScore, isWinner) {
     const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
     
     if (isWinner) {
-        // 승리 시: 고수를 이기면 더 많은 점수, 약자를 이기면 적은 점수
+        // 승리 시: 약자가 고수를 이기면 더 많은 점수, 고수가 약자를 이기면 적은 점수
         const basePoints = 10;
-        // 점수 차이가 클수록 (약자가 고수를 이김) 더 많은 보너스
-        const bonus = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 +2점
-        // 최대 보너스 제한 (+20점까지)
-        const totalPoints = basePoints + Math.min(bonus, 20);
-        return totalPoints;
+        
+        // 약자인지 확인 (승자가 약자인 경우)
+        const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
+        
+        if (winnerIsUnderdog) {
+            // 약자가 고수를 이김: 기본 점수 + 보너스
+            const bonus = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 +2점
+            const totalPoints = basePoints + Math.min(bonus, 20); // 최대 보너스 +20점까지
+            return totalPoints;
+        } else {
+            // 고수가 약자를 이김: 기본 점수 - 보너스 (적은 점수)
+            const bonus = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 -2점
+            const totalPoints = Math.max(3, basePoints - Math.min(bonus, 7)); // 최소 3점
+            return totalPoints;
+        }
     } else {
         // 패배 시: 고수가 약자에게 지면 큰 손실, 약자가 고수에게 지면 작은 손실
         const basePenalty = 5;
-        // 점수 차이가 클수록 (고수가 약자에게 짐) 더 큰 패널티
-        const penalty = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 -2점 추가
-        // 최대 패널티 제한 (-20점까지)
-        const totalPenalty = basePenalty + Math.min(penalty, 15);
-        return -totalPenalty;
+        
+        // 패자가 고수인지 확인 (패자가 고수인 경우 = 고수가 약자에게 짐)
+        const loserIsHigher = loserAvgScore > winnerAvgScore;
+        
+        if (loserIsHigher) {
+            // 고수가 약자에게 짐: 기본 패널티 + 추가 패널티
+            const penalty = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 -2점 추가
+            const totalPenalty = basePenalty + Math.min(penalty, 15); // 최대 패널티 -20점까지
+            return -totalPenalty;
+        } else {
+            // 약자가 고수에게 짐: 기본 패널티 - 추가 패널티 (작은 손실)
+            const penalty = Math.floor(scoreDiff / 50) * 2; // 점수 차이 50당 -2점 감소
+            const totalPenalty = Math.max(1, basePenalty - Math.min(penalty, 3)); // 최소 -1점
+            return -totalPenalty;
+        }
     }
 }
 
@@ -5741,11 +5775,10 @@ async function calculateUserScores() {
             const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
             const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
             
-            // 승자 점수 계산 (승리 전 점수 기준으로 약자인지 강자인지 판단)
-            const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
+            // 승자 점수 계산 (승자 평균 점수, 패자 평균 점수 전달 - 함수 내부에서 약자인지 확인)
             const winnerScoreChange = calculateLadderScoreChange(
-                winnerIsUnderdog ? winnerAvgScore : loserAvgScore,
-                winnerIsUnderdog ? loserAvgScore : winnerAvgScore,
+                winnerAvgScore,
+                loserAvgScore,
                 true
             );
             
@@ -5861,14 +5894,10 @@ async function getRankings(limit = 50) {
             const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
             const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
             
-            // 약자가 강자를 이겼는지 확인
-            const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
-            const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
-            
-            // 승자 점수 변화 계산
+            // 승자 점수 변화 계산 (승자 평균 점수, 패자 평균 점수 전달)
             const winnerScoreChange = calculateLadderScoreChange(
-                winnerIsUnderdog ? winnerAvgScore : loserAvgScore,
-                winnerIsUnderdog ? loserAvgScore : winnerAvgScore,
+                winnerAvgScore,
+                loserAvgScore,
                 true
             );
             
@@ -6054,15 +6083,14 @@ async function getRankings(limit = 50) {
             const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
             const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
             
-            const winnerIsUnderdog = winnerAvgScore < loserAvgScore;
-            const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
-            
+            // 승자 점수 변화 계산
             const winnerScoreChange = calculateLadderScoreChange(
-                winnerIsUnderdog ? winnerAvgScore : loserAvgScore,
-                winnerIsUnderdog ? loserAvgScore : winnerAvgScore,
+                winnerAvgScore,
+                loserAvgScore,
                 true
             );
             
+            // 패자 점수 변화 계산
             const loserScoreChange = calculateLadderScoreChange(
                 winnerAvgScore,
                 loserAvgScore,
@@ -8306,9 +8334,9 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                         <div class="team">${teamBLabel}</div>
                     </div>
                     <div class="match-score">
-                        <input type="number" class="score-input" min="0" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                        <input type="number" class="score-input" min="0" max="15" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
                         <span class="score-separator">:</span>
-                        <input type="number" class="score-input" min="0" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                        <input type="number" class="score-input" min="0" max="15" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
                         <button class="save-score-btn" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                             ${isCompleted ? '완료' : '저장'}
                         </button>
@@ -8326,6 +8354,19 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                     saveBtn.addEventListener('click', async () => {
                         const scoreA = Number(document.getElementById(`scoreA-${safeId}`).value || 0);
                         const scoreB = Number(document.getElementById(`scoreB-${safeId}`).value || 0);
+                        
+                        // 15점 초과 차단
+                        if (scoreA > 15 || scoreB > 15) {
+                            showToast('점수는 15점을 초과할 수 없습니다.', 'warning');
+                            return;
+                        }
+                        
+                        // 동점 점수 차단
+                        if (scoreA === scoreB) {
+                            showToast('동점 점수는 입력할 수 없습니다. 한 팀이 반드시 이겨야 합니다.', 'warning');
+                            return;
+                        }
+                        
                         await saveMatchScore(match, scoreA, scoreB);
                     });
                 }
@@ -8356,6 +8397,18 @@ async function saveMatchScore(match, scoreA, scoreB) {
     try {
         if (Number.isNaN(scoreA) || Number.isNaN(scoreB)) {
             showToast('점수를 올바르게 입력하세요.', 'error');
+            return;
+        }
+        
+        // 15점 초과 차단
+        if (scoreA > 15 || scoreB > 15) {
+            showToast('점수는 15점을 초과할 수 없습니다.', 'warning');
+            return;
+        }
+        
+        // 동점 점수 차단
+        if (scoreA === scoreB) {
+            showToast('동점 점수는 입력할 수 없습니다. 한 팀이 반드시 이겨야 합니다.', 'warning');
             return;
         }
         const db = window.db || firebase.firestore();
