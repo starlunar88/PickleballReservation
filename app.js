@@ -4906,59 +4906,76 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 현재 날짜 표시 업데이트 함수 (전역으로 사용 가능하도록)
-    window.updateCurrentDateDisplay = function() {
-        if (!currentDateDisplay) {
-            console.warn('날짜 표시 요소를 찾을 수 없습니다');
-            return;
-        }
-        
-        const dateObj = new Date(window.currentDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        dateObj.setHours(0, 0, 0, 0);
-        
-        const isToday = dateObj.getTime() === today.getTime();
-        
-        // 항상 날짜 형식으로 표시
-        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-            month: 'long',
-            day: 'numeric',
-            weekday: 'short'
-        });
-        currentDateDisplay.textContent = formattedDate;
-        
-        // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
-        const sectionHeader = currentDateDisplay.closest('.section-header');
-        if (sectionHeader) {
-            let todayBadge = sectionHeader.querySelector('.today-badge');
-            if (isToday) {
-                if (!todayBadge) {
-                    todayBadge = document.createElement('span');
-                    todayBadge.className = 'today-badge';
-                    sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
-                }
-                // 이모티콘 제거: 기존 innerHTML 제거하고 textContent로 설정
-                todayBadge.innerHTML = '';
-                todayBadge.textContent = 'Today';
-                todayBadge.style.display = 'flex';
-            } else {
-                if (todayBadge) {
-                    todayBadge.style.display = 'none';
+    if (!window.updateCurrentDateDisplay) {
+        window.updateCurrentDateDisplay = function() {
+            if (!currentDateDisplay) {
+                console.warn('날짜 표시 요소를 찾을 수 없습니다');
+                return;
+            }
+            
+            const dateObj = new Date(window.currentDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dateObj.setHours(0, 0, 0, 0);
+            
+            const isToday = dateObj.getTime() === today.getTime();
+            
+            // 항상 날짜 형식으로 표시
+            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+            });
+            currentDateDisplay.textContent = formattedDate;
+            
+            // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
+            const sectionHeader = currentDateDisplay.closest('.section-header');
+            if (sectionHeader) {
+                let todayBadge = sectionHeader.querySelector('.today-badge');
+                if (isToday) {
+                    if (!todayBadge) {
+                        todayBadge = document.createElement('span');
+                        todayBadge.className = 'today-badge';
+                        sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
+                    }
+                    // 이모티콘 제거: 기존 innerHTML 제거하고 textContent로 설정
+                    todayBadge.innerHTML = '';
+                    todayBadge.textContent = 'Today';
+                    todayBadge.style.display = 'flex';
+                } else {
+                    if (todayBadge) {
+                        todayBadge.style.display = 'none';
+                    }
                 }
             }
-        }
-        
-        // 타임라인 새로고침
-        loadReservationsTimeline();
-    };
+            
+            // 타임라인 새로고침
+            loadReservationsTimeline();
+        };
+    }
     
-    // 이전 날짜 버튼
-    if (prevDayBtn) {
-        prevDayBtn.addEventListener('click', (e) => {
+    // 이전 날짜 버튼 - 중복 등록 방지
+    if (prevDayBtn && !prevDayBtn.hasAttribute('data-listener-attached')) {
+        // 기존 이벤트 리스너 제거를 위해 클론
+        const newPrevBtn = prevDayBtn.cloneNode(true);
+        prevDayBtn.parentNode.replaceChild(newPrevBtn, prevDayBtn);
+        
+        newPrevBtn.setAttribute('data-listener-attached', 'true');
+        newPrevBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            
+            // 처리 중이면 무시
+            if (newPrevBtn.disabled || newPrevBtn.classList.contains('processing')) {
+                return false;
+            }
+            
             console.log('이전 날짜 버튼 클릭됨');
             try {
+                // 처리 중 플래그 설정
+                newPrevBtn.disabled = true;
+                newPrevBtn.classList.add('processing');
+                
                 // currentDate가 없으면 오늘 날짜로 초기화
                 if (!window.currentDate) {
                     window.currentDate = new Date().toISOString().slice(0, 10);
@@ -4976,24 +4993,47 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 직접 타임라인 새로고침
                     loadReservationsTimeline();
                 }
+                
+                // 처리 완료 후 버튼 활성화 (약간의 지연 후)
+                setTimeout(() => {
+                    newPrevBtn.disabled = false;
+                    newPrevBtn.classList.remove('processing');
+                }, 300);
             } catch (error) {
                 console.error('날짜 변경 오류:', error);
                 showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+                newPrevBtn.disabled = false;
+                newPrevBtn.classList.remove('processing');
             }
             return false;
         });
         console.log('이전 날짜 버튼 이벤트 리스너 등록 완료');
-    } else {
+    } else if (!prevDayBtn) {
         console.error('prev-day 버튼을 찾을 수 없습니다');
     }
     
-    // 다음 날짜 버튼
-    if (nextDayBtn) {
-        nextDayBtn.addEventListener('click', (e) => {
+    // 다음 날짜 버튼 - 중복 등록 방지
+    if (nextDayBtn && !nextDayBtn.hasAttribute('data-listener-attached')) {
+        // 기존 이벤트 리스너 제거를 위해 클론
+        const newNextBtn = nextDayBtn.cloneNode(true);
+        nextDayBtn.parentNode.replaceChild(newNextBtn, nextDayBtn);
+        
+        newNextBtn.setAttribute('data-listener-attached', 'true');
+        newNextBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            
+            // 처리 중이면 무시
+            if (newNextBtn.disabled || newNextBtn.classList.contains('processing')) {
+                return false;
+            }
+            
             console.log('다음 날짜 버튼 클릭됨');
             try {
+                // 처리 중 플래그 설정
+                newNextBtn.disabled = true;
+                newNextBtn.classList.add('processing');
+                
                 // currentDate가 없으면 오늘 날짜로 초기화
                 if (!window.currentDate) {
                     window.currentDate = new Date().toISOString().slice(0, 10);
@@ -5011,14 +5051,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 직접 타임라인 새로고침
                     loadReservationsTimeline();
                 }
+                
+                // 처리 완료 후 버튼 활성화 (약간의 지연 후)
+                setTimeout(() => {
+                    newNextBtn.disabled = false;
+                    newNextBtn.classList.remove('processing');
+                }, 300);
             } catch (error) {
                 console.error('날짜 변경 오류:', error);
                 showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+                newNextBtn.disabled = false;
+                newNextBtn.classList.remove('processing');
             }
             return false;
         });
         console.log('다음 날짜 버튼 이벤트 리스너 등록 완료');
-    } else {
+    } else if (!nextDayBtn) {
         console.error('next-day 버튼을 찾을 수 없습니다');
     }
     
@@ -5055,55 +5103,72 @@ document.addEventListener('DOMContentLoaded', function() {
     const matchesCurrentDateDisplay = document.getElementById('matches-current-date-display');
     
     // 대진표 탭 날짜 업데이트 함수
-    window.updateMatchesDateDisplay = function() {
-        if (!matchesCurrentDateDisplay) return;
-        
-        const dateObj = new Date(window.currentDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        dateObj.setHours(0, 0, 0, 0);
-        
-        const isToday = dateObj.getTime() === today.getTime();
-        
-        // 항상 날짜 형식으로 표시
-        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-            month: 'long',
-            day: 'numeric',
-            weekday: 'short'
-        });
-        matchesCurrentDateDisplay.textContent = formattedDate;
-        
-        // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
-        const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');
-        if (sectionHeader) {
-            let todayBadge = sectionHeader.querySelector('.today-badge');
-            if (isToday) {
-                if (!todayBadge) {
-                    todayBadge = document.createElement('span');
-                    todayBadge.className = 'today-badge';
-                    sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
-                }
-                // 이모티콘 제거: 기존 innerHTML 제거하고 textContent로 설정
-                todayBadge.innerHTML = '';
-                todayBadge.textContent = 'Today';
-                todayBadge.style.display = 'flex';
-            } else {
-                if (todayBadge) {
-                    todayBadge.style.display = 'none';
+    if (!window.updateMatchesDateDisplay) {
+        window.updateMatchesDateDisplay = function() {
+            if (!matchesCurrentDateDisplay) return;
+            
+            const dateObj = new Date(window.currentDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            dateObj.setHours(0, 0, 0, 0);
+            
+            const isToday = dateObj.getTime() === today.getTime();
+            
+            // 항상 날짜 형식으로 표시
+            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+            });
+            matchesCurrentDateDisplay.textContent = formattedDate;
+            
+            // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
+            const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');
+            if (sectionHeader) {
+                let todayBadge = sectionHeader.querySelector('.today-badge');
+                if (isToday) {
+                    if (!todayBadge) {
+                        todayBadge = document.createElement('span');
+                        todayBadge.className = 'today-badge';
+                        sectionHeader.insertBefore(todayBadge, sectionHeader.firstChild);
+                    }
+                    // 이모티콘 제거: 기존 innerHTML 제거하고 textContent로 설정
+                    todayBadge.innerHTML = '';
+                    todayBadge.textContent = 'Today';
+                    todayBadge.style.display = 'flex';
+                } else {
+                    if (todayBadge) {
+                        todayBadge.style.display = 'none';
+                    }
                 }
             }
-        }
-        
-        // 대진표 새로고침
-        loadMatchesForDate(window.currentDate);
-    };
+            
+            // 대진표 새로고침
+            loadMatchesForDate(window.currentDate);
+        };
+    }
     
-    // 대진표 탭 이전 날짜 버튼
-    if (matchesPrevDayBtn) {
-        matchesPrevDayBtn.addEventListener('click', (e) => {
+    // 대진표 탭 이전 날짜 버튼 - 중복 등록 방지
+    if (matchesPrevDayBtn && !matchesPrevDayBtn.hasAttribute('data-listener-attached')) {
+        // 기존 이벤트 리스너 제거를 위해 클론
+        const newMatchesPrevBtn = matchesPrevDayBtn.cloneNode(true);
+        matchesPrevDayBtn.parentNode.replaceChild(newMatchesPrevBtn, matchesPrevDayBtn);
+        
+        newMatchesPrevBtn.setAttribute('data-listener-attached', 'true');
+        newMatchesPrevBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            
+            // 처리 중이면 무시
+            if (newMatchesPrevBtn.disabled || newMatchesPrevBtn.classList.contains('processing')) {
+                return false;
+            }
+            
             try {
+                // 처리 중 플래그 설정
+                newMatchesPrevBtn.disabled = true;
+                newMatchesPrevBtn.classList.add('processing');
+                
                 if (!window.currentDate) {
                     window.currentDate = new Date().toISOString().slice(0, 10);
                 }
@@ -5111,19 +5176,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 dateObj.setDate(dateObj.getDate() - 1);
                 window.currentDate = dateObj.toISOString().slice(0, 10);
                 window.updateMatchesDateDisplay();
+                
+                // 처리 완료 후 버튼 활성화 (약간의 지연 후)
+                setTimeout(() => {
+                    newMatchesPrevBtn.disabled = false;
+                    newMatchesPrevBtn.classList.remove('processing');
+                }, 300);
             } catch (error) {
                 console.error('대진표 탭 날짜 변경 오류:', error);
                 showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+                newMatchesPrevBtn.disabled = false;
+                newMatchesPrevBtn.classList.remove('processing');
             }
         });
     }
     
-    // 대진표 탭 다음 날짜 버튼
-    if (matchesNextDayBtn) {
-        matchesNextDayBtn.addEventListener('click', (e) => {
+    // 대진표 탭 다음 날짜 버튼 - 중복 등록 방지
+    if (matchesNextDayBtn && !matchesNextDayBtn.hasAttribute('data-listener-attached')) {
+        // 기존 이벤트 리스너 제거를 위해 클론
+        const newMatchesNextBtn = matchesNextDayBtn.cloneNode(true);
+        matchesNextDayBtn.parentNode.replaceChild(newMatchesNextBtn, matchesNextDayBtn);
+        
+        newMatchesNextBtn.setAttribute('data-listener-attached', 'true');
+        newMatchesNextBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            
+            // 처리 중이면 무시
+            if (newMatchesNextBtn.disabled || newMatchesNextBtn.classList.contains('processing')) {
+                return false;
+            }
+            
             try {
+                // 처리 중 플래그 설정
+                newMatchesNextBtn.disabled = true;
+                newMatchesNextBtn.classList.add('processing');
+                
                 if (!window.currentDate) {
                     window.currentDate = new Date().toISOString().slice(0, 10);
                 }
@@ -5131,9 +5219,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 dateObj.setDate(dateObj.getDate() + 1);
                 window.currentDate = dateObj.toISOString().slice(0, 10);
                 window.updateMatchesDateDisplay();
+                
+                // 처리 완료 후 버튼 활성화 (약간의 지연 후)
+                setTimeout(() => {
+                    newMatchesNextBtn.disabled = false;
+                    newMatchesNextBtn.classList.remove('processing');
+                }, 300);
             } catch (error) {
                 console.error('대진표 탭 날짜 변경 오류:', error);
                 showToast('날짜 변경 중 오류가 발생했습니다.', 'error');
+                newMatchesNextBtn.disabled = false;
+                newMatchesNextBtn.classList.remove('processing');
             }
         });
     }
