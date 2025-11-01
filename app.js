@@ -2197,34 +2197,36 @@ async function deleteTimeSlotMatches(date, timeSlot) {
         // 해당 matches와 연결된 gameResults 찾아서 삭제
         // teamId 형식: matchId_A 또는 matchId_B
         const gameResultsSnapshot = await db.collection('gameResults').get();
-        let deletedGameResultsCount = 0;
+        const deletedGameResultRefs = new Set(); // 중복 삭제 방지
         
         gameResultsSnapshot.forEach(doc => {
             const gameResult = doc.data();
+            let shouldDelete = false;
+            
+            // teamId로 matchId 확인
             if (gameResult.teamId) {
-                // teamId에서 matchId 추출
                 const teamId = gameResult.teamId;
                 const matchIdFromTeamId = teamId.replace(/_A$/, '').replace(/_B$/, '');
                 
                 // 해당 matchId가 삭제 대상 목록에 있으면 gameResult도 삭제
                 if (matchIds.includes(matchIdFromTeamId)) {
-                    batch.delete(doc.ref);
-                    deletedGameResultsCount++;
+                    shouldDelete = true;
                 }
             }
             
-            // 또는 date와 timeSlot으로 직접 확인 (추가 안전장치)
-            if (gameResult.date === date && gameResult.timeSlot === timeSlot) {
-                // 이미 위에서 삭제되지 않은 경우에만 삭제
-                const teamId = gameResult.teamId;
-                const matchIdFromTeamId = teamId ? teamId.replace(/_A$/, '').replace(/_B$/, '') : null;
-                if (!matchIdFromTeamId || !matchIds.includes(matchIdFromTeamId)) {
-                    batch.delete(doc.ref);
-                    deletedGameResultsCount++;
-                }
+            // date와 timeSlot으로 직접 확인 (추가 안전장치)
+            if (!shouldDelete && gameResult.date === date && gameResult.timeSlot === timeSlot) {
+                shouldDelete = true;
+            }
+            
+            // 삭제 대상이고 아직 삭제되지 않은 경우에만 삭제
+            if (shouldDelete && !deletedGameResultRefs.has(doc.ref)) {
+                batch.delete(doc.ref);
+                deletedGameResultRefs.add(doc.ref);
             }
         });
         
+        const deletedGameResultsCount = deletedGameResultRefs.size;
         console.log(`삭제할 gameResults 수: ${deletedGameResultsCount}개`);
         
         // 배치 커밋
