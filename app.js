@@ -6003,6 +6003,7 @@ async function getRankings(limit = 50) {
             
             const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
             const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
+            const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
             
             // 승자 점수 변화 계산 (승자 평균 점수, 패자 평균 점수 전달)
             const winnerScoreChange = calculateLadderScoreChange(
@@ -6189,6 +6190,7 @@ async function getRankings(limit = 50) {
             
             const winnerAvgScore = winnerScores.reduce((a, b) => a + b, 0) / winnerScores.length;
             const loserAvgScore = loserScores.reduce((a, b) => a + b, 0) / loserScores.length;
+            const scoreDiff = Math.abs(winnerAvgScore - loserAvgScore);
             
             // 승자 점수 변화 계산
             const winnerScoreChange = calculateLadderScoreChange(
