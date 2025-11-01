@@ -7496,6 +7496,21 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         // 모든 사용자 점수 미리 계산 (승리 +10점, 패배 -5점)
         const userScores = await calculateUserScores();
         
+        // 배정 실패 이력 조회 (우선순위 확인)
+        const unassignedHistory = await db.collection('unassigned_players')
+            .where('resolved', '==', false)
+            .get();
+        
+        // 사용자별 우선순위 맵 생성
+        const userPriorityMap = {};
+        unassignedHistory.forEach(doc => {
+            const data = doc.data();
+            const userId = data.userId;
+            if (!userPriorityMap[userId] || userPriorityMap[userId] < data.priority) {
+                userPriorityMap[userId] = data.priority;
+            }
+        });
+        
         for (const res of reservations) {
             let dupr = res.userDupr || 0;
             let internalRating = 1000; // 기본값
@@ -7525,9 +7540,19 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
                 userName: res.userName,
                 dupr: dupr,
                 internalRating: internalRating,
-                score: gameScore // 게임 점수 추가
+                score: gameScore, // 게임 점수 추가
+                priority: userPriorityMap[res.userId] || 0 // 우선순위 (높을수록 우선 배정)
             });
         }
+        
+        // 우선순위가 높은 플레이어를 먼저 배정하기 위해 정렬
+        // 우선순위가 같으면 기존 순서 유지 (예약 순서)
+        players.sort((a, b) => {
+            if (a.priority !== b.priority) {
+                return b.priority - a.priority; // 우선순위 높은 순
+            }
+            return 0; // 우선순위가 같으면 기존 순서 유지
+        });
         
         if (players.length < 4) {
             showToast('최소 4명이 필요합니다.', 'error');
@@ -7567,12 +7592,101 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
         // teamMode에 따라 대진표 생성
-        const schedule = buildMatchSchedule(players, courtCount, rounds, {}, teamMode);
+        const { schedule, unassignedPlayers } = buildMatchSchedule(players, courtCount, rounds, {}, teamMode);
         
         console.log(`대진표 생성: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
+        
+        // 배정되지 않은 플레이어가 있으면 DB에 저장
+        if (unassignedPlayers.length > 0) {
+            console.log(`배정되지 않은 플레이어 ${unassignedPlayers.length}명:`, unassignedPlayers.map(p => p.userName));
+            
+            // 기존 배정 실패 기록 삭제 (같은 날짜, 같은 시간대)
+            const existingUnassigned = await db.collection('unassigned_players')
+                .where('date', '==', date)
+                .where('timeSlot', '==', timeSlot)
+                .get();
+            
+            if (!existingUnassigned.empty) {
+                const deleteBatch = db.batch();
+                existingUnassigned.forEach(doc => {
+                    deleteBatch.delete(doc.ref);
+                });
+                await deleteBatch.commit();
+            }
+            
+            // 배정 실패 정보 저장 (우선순위 계산)
+            const unassignedBatch = db.batch();
+            
+            // 모든 미해결 배정 실패 기록 조회 (우선순위 계산용)
+            const allUnresolvedHistory = await db.collection('unassigned_players')
+                .where('resolved', '==', false)
+                .get();
+            
+            // 사용자별 최대 우선순위 맵 생성
+            const userMaxPriorityMap = {};
+            allUnresolvedHistory.forEach(doc => {
+                const data = doc.data();
+                const userId = data.userId;
+                if (!userMaxPriorityMap[userId] || userMaxPriorityMap[userId] < data.priority) {
+                    userMaxPriorityMap[userId] = data.priority;
+                }
+            });
+            
+            unassignedPlayers.forEach(player => {
+                const unassignedRef = db.collection('unassigned_players').doc();
+                // 기존 우선순위가 있으면 증가 (최대 5까지), 없으면 1
+                const currentPriority = userMaxPriorityMap[player.userId] || 0;
+                const newPriority = Math.min(currentPriority + 1, 5);
+                
+                unassignedBatch.set(unassignedRef, {
+                    userId: player.userId,
+                    userName: player.userName,
+                    date: date,
+                    timeSlot: timeSlot,
+                    reason: 'insufficient_capacity', // 용량 부족
+                    priority: newPriority, // 우선순위 (높을수록 우선 배정, 최대 5)
+                    createdAt: new Date(),
+                    resolved: false // 해결 여부
+                });
+            });
+            await unassignedBatch.commit();
+            console.log(`배정 실패 정보 저장 완료: ${unassignedPlayers.length}명`);
+        }
 
         // 시간대 시작 시간 파싱
         const [startHour, startMin] = timeSlot.split('-')[0].split(':').map(Number);
+        
+        // 배정 성공한 플레이어들의 우선순위 기록 해결 처리
+        if (schedule.length > 0) {
+            const assignedPlayerIds = new Set();
+            schedule.forEach(match => {
+                match.teamA.forEach(p => assignedPlayerIds.add(p.userId));
+                match.teamB.forEach(p => assignedPlayerIds.add(p.userId));
+            });
+            
+            // 배정 성공한 플레이어들의 우선순위 기록을 해결 상태로 변경
+            const assignedUnassignedHistory = await db.collection('unassigned_players')
+                .where('resolved', '==', false)
+                .get();
+            
+            const updateBatch = db.batch();
+            assignedUnassignedHistory.forEach(doc => {
+                const data = doc.data();
+                if (assignedPlayerIds.has(data.userId)) {
+                    // 배정 성공 시 우선순위 기록을 해결 상태로 변경
+                    updateBatch.update(doc.ref, {
+                        resolved: true,
+                        resolvedAt: new Date(),
+                        resolvedDate: date,
+                        resolvedTimeSlot: timeSlot
+                    });
+                }
+            });
+            if (assignedUnassignedHistory.size > 0) {
+                await updateBatch.commit();
+                console.log('배정 성공한 플레이어들의 우선순위 기록 해결 처리 완료');
+            }
+        }
         
         const batch = db.batch();
         schedule.forEach(match => {
@@ -7815,7 +7929,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         }
     }
     
-    return schedule;
+    // 배정되지 않은 플레이어 찾기
+    const assignedPlayerIds = new Set();
+    schedule.forEach(match => {
+        match.teamA.forEach(p => assignedPlayerIds.add(p.userId));
+        match.teamB.forEach(p => assignedPlayerIds.add(p.userId));
+    });
+    
+    const unassignedPlayers = playerObjects.filter(p => !assignedPlayerIds.has(p.userId));
+    
+    return { schedule, unassignedPlayers };
 }
 
 // 대진표 렌더링
