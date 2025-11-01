@@ -7417,19 +7417,16 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         }
         
         // 예약자 수에 따라 코트 수 동적 결정
-        // 4-5명: 1코트, 6-8명: 1코트, 9-12명: 2코트, 13-16명: 2코트, 17-20명: 3코트...
+        // 4~7명: 1코트, 8~11명: 2코트
         const playerCount = players.length;
         let courtCount = 1;
-        if (playerCount >= 9 && playerCount <= 12) {
+        if (playerCount >= 4 && playerCount <= 7) {
+            courtCount = 1;
+        } else if (playerCount >= 8 && playerCount <= 11) {
             courtCount = 2;
-        } else if (playerCount >= 13 && playerCount <= 16) {
-            courtCount = 2;
-        } else if (playerCount >= 17 && playerCount <= 20) {
-            courtCount = 3;
-        } else if (playerCount >= 21 && playerCount <= 24) {
-            courtCount = 3;
-        } else if (playerCount >= 25) {
-            courtCount = Math.ceil(playerCount / 8); // 8명당 1코트
+        } else if (playerCount >= 12) {
+            // 12명 이상은 3코트 이상 필요 (추가 조건 필요시 확장 가능)
+            courtCount = Math.ceil(playerCount / 4);
         }
         
         // 기존 대진표 확인 및 삭제
