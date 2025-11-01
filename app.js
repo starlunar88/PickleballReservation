@@ -1574,9 +1574,24 @@ async function loadMatchesForDate(date) {
                     }
                 });
                 
+                // 날짜 객체 생성 및 포맷팅
+                const dateObj = new Date(date + 'T00:00');
+                const datePart = dateObj.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
+                    weekday: 'long'
+                });
+                const fullDate = `${datePart} (${weekdayPart})`;
+                
                 // 시간대별 섹션 헤더 추가 (배정 정보 포함)
                 matchesHTML += `
                     <div class="time-slot-section">
+                        <div style="padding: 12px 20px; font-size: 1.1rem; font-weight: bold; color: #000; background: #fff;">
+                            ${fullDate}
+                        </div>
                         <div class="time-slot-header-compact" style="color: #000;">${timeSlot.start} ~ ${timeSlot.end}</div>
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
                 `;
