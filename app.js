@@ -8033,8 +8033,12 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             return;
         }
         
+        // 시스템 설정에서 최대 코트 수 가져오기
+        const settings = await getSystemSettings();
+        const maxCourts = settings?.courtCount || 2; // 기본값 2
+        
         // 예약자 수에 따라 코트 수 동적 결정
-        // 4~7명: 1코트, 8~11명: 2코트
+        // 4~7명: 1코트, 8~11명: 2코트, 12명 이상: 계산값 (최대 코트 수 제한 적용)
         const playerCount = players.length;
         let courtCount = 1;
         if (playerCount >= 4 && playerCount <= 7) {
@@ -8042,9 +8046,11 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         } else if (playerCount >= 8 && playerCount <= 11) {
             courtCount = 2;
         } else if (playerCount >= 12) {
-            // 12명 이상은 3코트 이상 필요 (추가 조건 필요시 확장 가능)
-            courtCount = Math.ceil(playerCount / 4);
+            // 12명 이상은 계산된 코트 수 필요하지만, 시스템 설정의 최대 코트 수를 초과할 수 없음
+            courtCount = Math.min(Math.ceil(playerCount / 4), maxCourts);
         }
+        
+        console.log(`📊 코트 배정: 예약자 ${playerCount}명, 계산된 코트 수: ${Math.ceil(playerCount / 4)}, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}`);
         
         // 기존 대진표 확인 및 삭제
         const existingMatches = await db.collection('matches')
@@ -8061,8 +8067,6 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             await deleteBatch.commit();
             console.log('기존 대진표 삭제 완료:', existingMatches.size, '개');
         }
-        
-        const settings = await getSystemSettings();
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
         // teamMode에 따라 대진표 생성
