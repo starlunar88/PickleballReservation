@@ -199,7 +199,13 @@
                             <i class="fas fa-medal"></i>
                             <h2>계급 시스템</h2>
                         </div>
-                        <p class="rank-system-description">승리 시 +10점, 패배 시 -5점으로 점수가 누적됩니다.</p>
+                        <p class="rank-system-description">
+                            <strong>레더 시스템</strong>: 상대방과의 점수 차이에 따라 동적으로 점수가 계산됩니다.<br>
+                            • 약자가 고수를 이기면: 기본 +10점 + 보너스 (최대 +30점)<br>
+                            • 고수가 약자를 이기면: 기본 +10점 - 보너스 (최소 +3점)<br>
+                            • 고수가 약자에게 지면: 기본 -5점 - 패널티 (최대 -20점)<br>
+                            • 약자가 고수에게 지면: 기본 -5점 - 패널티 감소 (최소 -1점)
+                        </p>
                         <div class="rank-tiers" id="rank-tiers">
                             <div class="rank-tier-card">
                                 <div class="rank-tier-icon beginner-icon">

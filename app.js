@@ -1574,9 +1574,15 @@ async function loadMatchesForDate(date) {
                 });
                 
                 // 시간대별 섹션 헤더 추가 (배정 정보 포함)
+                const safeSlotKey = slotKey.replace(/:/g, '-').replace(/\//g, '_');
                 matchesHTML += `
-                    <div class="time-slot-section">
-                        <div class="time-slot-header-compact" style="color: #000; margin-bottom: 0;">${timeSlot.start} ~ ${timeSlot.end}</div>
+                    <div class="time-slot-section" data-time-slot="${slotKey}" data-date="${date}">
+                        <div class="time-slot-header-compact" style="color: #000; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
+                            <span>${timeSlot.start} ~ ${timeSlot.end}</span>
+                            <button class="delete-timeslot-btn" data-date="${date}" data-time-slot="${slotKey}" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-left: 10px;" title="이 시간대의 대진표와 기록 삭제">
+                                <i class="fas fa-trash-alt"></i> 삭제
+                            </button>
+                        </div>
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
                 `;
                 
@@ -2094,13 +2100,38 @@ async function loadMatchesForDate(date) {
                             scoreAInput.style.cursor = 'not-allowed';
                             scoreBInput.style.cursor = 'not-allowed';
                         }
-                    } catch (error) {
-                        console.error('점수 저장 오류:', error);
-                        showToast('점수 저장 중 오류가 발생했습니다.', 'error');
-                    }
-                });
-            });
-        } else {
+            } catch (error) {
+                console.error('점수 저장 오류:', error);
+                showToast('점수 저장 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    });
+    
+    // 시간대별 삭제 버튼 이벤트 리스너 추가
+    const deleteButtons = matchesContainer.querySelectorAll('.delete-timeslot-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const date = btn.getAttribute('data-date');
+            const timeSlot = btn.getAttribute('data-time-slot');
+            
+            // 확인 메시지
+            if (!confirm(`${timeSlot} 시간대의 대진표와 모든 기록을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
+            }
+            
+            try {
+                await deleteTimeSlotMatches(date, timeSlot);
+                showToast('시간대 대진표와 기록이 삭제되었습니다.', 'success');
+                // 대진표 다시 로드
+                await loadMatchesForDate(date);
+            } catch (error) {
+                console.error('시간대 삭제 오류:', error);
+                showToast('삭제 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    });
+} else {
             matchesContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-calendar-times"></i>
@@ -2129,6 +2160,83 @@ async function loadMatchesForDate(date) {
         // 로딩 완료
         isLoadingMatches = false;
         console.log('✅ 로딩 완료:', date);
+    }
+}
+
+// 시간대별 대진표 및 기록 삭제
+async function deleteTimeSlotMatches(date, timeSlot) {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            throw new Error('데이터베이스 연결 오류');
+        }
+        
+        // 해당 시간대의 모든 matches 조회
+        const matchesSnapshot = await db.collection('matches')
+            .where('date', '==', date)
+            .where('timeSlot', '==', timeSlot)
+            .get();
+        
+        if (matchesSnapshot.empty) {
+            console.log('삭제할 대진표가 없습니다.');
+            return;
+        }
+        
+        const batch = db.batch();
+        const matchIds = [];
+        
+        // matches 삭제
+        matchesSnapshot.forEach(doc => {
+            const matchId = doc.id;
+            matchIds.push(matchId);
+            batch.delete(doc.ref);
+        });
+        
+        console.log(`삭제할 matches 수: ${matchIds.length}개`);
+        
+        // 해당 matches와 연결된 gameResults 찾아서 삭제
+        // teamId 형식: matchId_A 또는 matchId_B
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        let deletedGameResultsCount = 0;
+        
+        gameResultsSnapshot.forEach(doc => {
+            const gameResult = doc.data();
+            if (gameResult.teamId) {
+                // teamId에서 matchId 추출
+                const teamId = gameResult.teamId;
+                const matchIdFromTeamId = teamId.replace(/_A$/, '').replace(/_B$/, '');
+                
+                // 해당 matchId가 삭제 대상 목록에 있으면 gameResult도 삭제
+                if (matchIds.includes(matchIdFromTeamId)) {
+                    batch.delete(doc.ref);
+                    deletedGameResultsCount++;
+                }
+            }
+            
+            // 또는 date와 timeSlot으로 직접 확인 (추가 안전장치)
+            if (gameResult.date === date && gameResult.timeSlot === timeSlot) {
+                // 이미 위에서 삭제되지 않은 경우에만 삭제
+                const teamId = gameResult.teamId;
+                const matchIdFromTeamId = teamId ? teamId.replace(/_A$/, '').replace(/_B$/, '') : null;
+                if (!matchIdFromTeamId || !matchIds.includes(matchIdFromTeamId)) {
+                    batch.delete(doc.ref);
+                    deletedGameResultsCount++;
+                }
+            }
+        });
+        
+        console.log(`삭제할 gameResults 수: ${deletedGameResultsCount}개`);
+        
+        // 배치 커밋
+        await batch.commit();
+        
+        console.log(`✅ 시간대 ${timeSlot}의 대진표와 기록 삭제 완료`);
+        console.log(`   - 삭제된 matches: ${matchIds.length}개`);
+        console.log(`   - 삭제된 gameResults: ${deletedGameResultsCount}개`);
+        
+    } catch (error) {
+        console.error('시간대 삭제 오류:', error);
+        throw error;
     }
 }
 
@@ -6057,12 +6165,9 @@ async function getRankings(limit = 50) {
             // matches에서 이미 처리한 경기인지 확인
             if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) {
                 skippedCount++;
-                console.log(`⏭️ gameResult 건너뛰기: ${doc.id} (이미 matches에서 처리됨: ${matchIdFromTeamId})`);
+                console.log(`⏭️ gameResult 건너뛰기: ${gameResultId} (이미 matches에서 처리됨: ${matchIdFromTeamId})`);
                 return; // 이미 matches에서 처리한 경기는 건너뛰기
             }
-            
-            // gameResults의 경우 고유한 gameResult ID로 추적
-            const gameResultId = doc.id;
             
             // 이미 처리한 gameResult인지 확인 (전역 체크)
             if (processedGameResults.has(gameResultId)) {
