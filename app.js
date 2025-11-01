@@ -1426,6 +1426,12 @@ async function loadMatchesData() {
             window.currentDate = currentDate;
         }
         console.log('📅 현재 날짜:', currentDate);
+        
+        // 대진표 탭 날짜 표시 업데이트
+        if (window.updateMatchesDateDisplay) {
+            window.updateMatchesDateDisplay();
+        }
+        
         await loadMatchesForDate(currentDate);
     } catch (error) {
         console.error('❌ 대진표 데이터 로드 오류:', error);
