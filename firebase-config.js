@@ -147,6 +147,30 @@ async function checkAdminStatus(user) {
             });
         }
         
+        // 로그인 후 현재 활성화된 탭 자동 새로고침
+        setTimeout(() => {
+            const reservationsTab = document.getElementById('reservations-tab');
+            const matchesTab = document.getElementById('matches-tab');
+            const recordsTab = document.getElementById('records-tab');
+            
+            if (reservationsTab && reservationsTab.classList.contains('active')) {
+                // 예약 탭이 활성화되어 있으면 예약 현황 다시 로드
+                if (typeof loadReservationsTimeline === 'function') {
+                    loadReservationsTimeline().catch(err => console.error('예약 현황 다시 로드 오류:', err));
+                }
+            } else if (matchesTab && matchesTab.classList.contains('active')) {
+                // 대진표 탭이 활성화되어 있으면 대진표 다시 로드
+                if (typeof loadMatchesData === 'function') {
+                    loadMatchesData().catch(err => console.error('대진표 다시 로드 오류:', err));
+                }
+            } else if (recordsTab && recordsTab.classList.contains('active')) {
+                // 기록 탭이 활성화되어 있으면 기록 다시 로드
+                if (typeof loadRecordsData === 'function') {
+                    loadRecordsData().catch(err => console.error('기록 다시 로드 오류:', err));
+                }
+            }
+        }, 300);
+        
     } catch (error) {
         console.error('관리자 상태 확인 오류:', error);
         window.adminStatus = false;

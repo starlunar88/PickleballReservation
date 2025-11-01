@@ -1335,8 +1335,16 @@ function closeAllModals() {
 }
 
 // 탭 전환 기능
-function switchMainTab(tabName) {
+async function switchMainTab(tabName) {
     console.log('메인 탭 전환:', tabName);
+    
+    // 관리자 상태 확인 (탭 전환 시)
+    const user = firebase.auth().currentUser;
+    if (user && window.isAdmin) {
+        window.adminStatus = await window.isAdmin(user);
+    } else {
+        window.adminStatus = false;
+    }
     
     // 모든 탭 버튼 비활성화
     document.querySelectorAll('.mobile-tab-btn, .desktop-tab-btn').forEach(btn => {
@@ -5119,9 +5127,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 탭 버튼 이벤트 리스너
     document.querySelectorAll('.mobile-tab-btn, .desktop-tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
             const tabName = e.currentTarget.getAttribute('data-tab');
-            switchMainTab(tabName);
+            await switchMainTab(tabName);
             
             // 예약 현황 탭으로 전환 시 강제 재로딩
             if (tabName === 'reservations') {
