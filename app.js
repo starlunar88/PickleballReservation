@@ -1527,13 +1527,6 @@ async function loadMatchesForDate(date) {
                     console.log(`📋 매치 ${match.id}: status=${match.status}, scoreA=${match.scoreA}, scoreB=${match.scoreB}`);
                 });
                 
-                // 시간대별 섹션 헤더 추가
-                matchesHTML += `
-                    <div class="time-slot-section">
-                        <div class="time-slot-header-compact">${timeSlot.start} ~ ${timeSlot.end}</div>
-                        <div class="courts-container">
-                `;
-                
                 // 코트별로 그룹화
                 const courts = {};
                 matches.forEach(match => {
@@ -1543,6 +1536,78 @@ async function loadMatchesForDate(date) {
                     }
                     courts[courtNum].push(match);
                 });
+                
+                // 코트별 배정된 플레이어 추출
+                const courtPlayers = {};
+                const assignedPlayerIds = new Set();
+                matches.forEach(match => {
+                    const courtNum = match.courtNumber || 1;
+                    if (!courtPlayers[courtNum]) {
+                        courtPlayers[courtNum] = [];
+                    }
+                    match.teamA.forEach(p => {
+                        if (!assignedPlayerIds.has(p.userId)) {
+                            assignedPlayerIds.add(p.userId);
+                            courtPlayers[courtNum].push(p.userName);
+                        }
+                    });
+                    match.teamB.forEach(p => {
+                        if (!assignedPlayerIds.has(p.userId)) {
+                            assignedPlayerIds.add(p.userId);
+                            courtPlayers[courtNum].push(p.userName);
+                        }
+                    });
+                });
+                
+                // 미배정 플레이어 확인
+                const allReservations = await db.collection('reservations')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', slotKey)
+                    .where('status', 'in', ['pending', 'confirmed'])
+                    .get();
+                
+                const unassignedPlayers = [];
+                allReservations.forEach(doc => {
+                    const reservation = doc.data();
+                    if (!assignedPlayerIds.has(reservation.userId)) {
+                        unassignedPlayers.push(reservation.userName || reservation.userId);
+                    }
+                });
+                
+                // 시간대별 섹션 헤더 추가 (배정 정보 포함)
+                matchesHTML += `
+                    <div class="time-slot-section">
+                        <div class="time-slot-header-compact">${timeSlot.start} ~ ${timeSlot.end}</div>
+                        <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0;">
+                `;
+                
+                // 코트별 배정 정보 표시
+                Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
+                    const players = courtPlayers[courtNum];
+                    if (players.length > 0) {
+                        matchesHTML += `
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #667eea;">${courtNum}코트에 배정된 인원 (${players.length}명):</strong>
+                                <span style="color: #555; margin-left: 8px;">${players.join(', ')}</span>
+                            </div>
+                        `;
+                    }
+                });
+                
+                // 미배정 인원 표시
+                if (unassignedPlayers.length > 0) {
+                    matchesHTML += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+                            <strong style="color: #dc3545;">아쉽지만 배정되지 않은 인원 (${unassignedPlayers.length}명):</strong>
+                            <span style="color: #666; margin-left: 8px;">${unassignedPlayers.join(', ')}</span>
+                        </div>
+                    `;
+                }
+                
+                matchesHTML += `
+                        </div>
+                        <div class="courts-container">
+                `;
                 
                 // 각 코트 내에서 경기 번호 순으로 정렬
                 Object.keys(courts).forEach(courtNum => {
