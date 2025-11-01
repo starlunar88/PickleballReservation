@@ -1040,6 +1040,12 @@ async function handleAdminSettings() {
     const courtCount = parseInt(document.getElementById('court-count').value);
     const closingTime = parseInt(document.getElementById('closing-time').value);
     
+    // 마감 시간 유효성 검사 (1분 이상)
+    if (!closingTime || closingTime < 1) {
+        showToast('예약 마감 시간은 1분 이상이어야 합니다.', 'error');
+        return;
+    }
+    
     // 시간 슬롯 수집
     const timeSlots = [];
     const timeSlotItems = document.querySelectorAll('.time-slot-item');
