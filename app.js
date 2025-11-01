@@ -1415,8 +1415,16 @@ async function loadTabData(tabName) {
 async function loadMatchesData() {
     try {
         console.log('📋 loadMatchesData 호출됨');
-        // 현재 날짜로 대진표 로드
-        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        // 현재 날짜로 대진표 로드 (로컬 시간대 기준)
+        let currentDate = window.currentDate;
+        if (!currentDate) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            currentDate = `${year}-${month}-${day}`;
+            window.currentDate = currentDate;
+        }
         console.log('📅 현재 날짜:', currentDate);
         await loadMatchesForDate(currentDate);
     } catch (error) {
@@ -4280,7 +4288,16 @@ async function deleteAllRecords() {
         const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
         if (isMatchesTabActive) {
             console.log(`🔄 deleteAllRecords: 대진표 탭이 활성화되어 있어 새로고침...`);
-            const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+            // 로컬 시간대 기준으로 날짜 계산
+            let currentDate = window.currentDate;
+            if (!currentDate) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                currentDate = `${year}-${month}-${day}`;
+                window.currentDate = currentDate;
+            }
             await loadMatchesForDate(currentDate);
             console.log(`✅ deleteAllRecords: 대진표 새로고침 완료`);
         }
@@ -4448,8 +4465,16 @@ async function loadReservationsTimeline() {
         }
         console.log('✅ db 객체 확인됨');
         
-        // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨)
-        const targetDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨, 로컬 시간대 기준)
+        let targetDate = window.currentDate;
+        if (!targetDate) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            targetDate = `${year}-${month}-${day}`;
+            window.currentDate = targetDate;
+        }
         console.log('📅 대상 날짜:', targetDate);
         
         // 시스템 설정 로드 (재시도 포함)
@@ -5082,8 +5107,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshTimelineBtn = document.getElementById('refresh-timeline');
     const currentDateDisplay = document.getElementById('current-date-display');
     
-    // 전역 currentDate 변수 설정 (오늘 날짜로 초기화)
-    const today = new Date().toISOString().slice(0, 10);
+    // 전역 currentDate 변수 설정 (오늘 날짜로 초기화 - 로컬 시간대 기준)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
     window.currentDate = today;
     
     // 현재 날짜 표시 업데이트 함수 (전역으로 사용 가능하도록)
@@ -5159,14 +5188,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 newPrevBtn.disabled = true;
                 newPrevBtn.classList.add('processing');
                 
-                // currentDate가 없으면 오늘 날짜로 초기화
+                // currentDate가 없으면 오늘 날짜로 초기화 (로컬 시간대 기준)
                 if (!window.currentDate) {
-                    window.currentDate = new Date().toISOString().slice(0, 10);
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    window.currentDate = `${year}-${month}-${day}`;
                 }
                 
-                const dateObj = new Date(window.currentDate);
+                const dateObj = new Date(window.currentDate + 'T12:00:00');
                 dateObj.setDate(dateObj.getDate() - 1);
-                window.currentDate = dateObj.toISOString().slice(0, 10);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                window.currentDate = `${year}-${month}-${day}`;
                 console.log('이전 날짜로 이동:', window.currentDate);
                 
                 if (window.updateCurrentDateDisplay) {
@@ -5217,14 +5253,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 newNextBtn.disabled = true;
                 newNextBtn.classList.add('processing');
                 
-                // currentDate가 없으면 오늘 날짜로 초기화
+                // currentDate가 없으면 오늘 날짜로 초기화 (로컬 시간대 기준)
                 if (!window.currentDate) {
-                    window.currentDate = new Date().toISOString().slice(0, 10);
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    window.currentDate = `${year}-${month}-${day}`;
                 }
                 
-                const dateObj = new Date(window.currentDate);
+                const dateObj = new Date(window.currentDate + 'T12:00:00');
                 dateObj.setDate(dateObj.getDate() + 1);
-                window.currentDate = dateObj.toISOString().slice(0, 10);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                window.currentDate = `${year}-${month}-${day}`;
                 console.log('다음 날짜로 이동:', window.currentDate);
                 
                 if (window.updateCurrentDateDisplay) {
@@ -5285,9 +5328,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const matchesRefreshBtn = document.getElementById('refresh-matches');
     const matchesCurrentDateDisplay = document.getElementById('matches-current-date-display');
     
-    // 대진표 탭 날짜도 오늘 날짜로 초기화
+    // 대진표 탭 날짜도 오늘 날짜로 초기화 (로컬 시간대 기준)
     if (!window.currentDate) {
-        const today = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         window.currentDate = today;
     }
     
@@ -5362,12 +5409,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 newMatchesPrevBtn.disabled = true;
                 newMatchesPrevBtn.classList.add('processing');
                 
+                // 로컬 시간대 기준으로 날짜 계산
                 if (!window.currentDate) {
-                    window.currentDate = new Date().toISOString().slice(0, 10);
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    window.currentDate = `${year}-${month}-${day}`;
                 }
-                const dateObj = new Date(window.currentDate);
+                const dateObj = new Date(window.currentDate + 'T12:00:00');
                 dateObj.setDate(dateObj.getDate() - 1);
-                window.currentDate = dateObj.toISOString().slice(0, 10);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                window.currentDate = `${year}-${month}-${day}`;
                 window.updateMatchesDateDisplay();
                 
                 // 처리 완료 후 버튼 활성화 (약간의 지연 후)
@@ -5405,12 +5460,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 newMatchesNextBtn.disabled = true;
                 newMatchesNextBtn.classList.add('processing');
                 
+                // 로컬 시간대 기준으로 날짜 계산
                 if (!window.currentDate) {
-                    window.currentDate = new Date().toISOString().slice(0, 10);
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    window.currentDate = `${year}-${month}-${day}`;
                 }
-                const dateObj = new Date(window.currentDate);
+                const dateObj = new Date(window.currentDate + 'T12:00:00');
                 dateObj.setDate(dateObj.getDate() + 1);
-                window.currentDate = dateObj.toISOString().slice(0, 10);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                window.currentDate = `${year}-${month}-${day}`;
                 window.updateMatchesDateDisplay();
                 
                 // 처리 완료 후 버튼 활성화 (약간의 지연 후)
@@ -5432,7 +5495,17 @@ document.addEventListener('DOMContentLoaded', function() {
         matchesRefreshBtn.addEventListener('click', async () => {
             try {
                 showLoading();
-                await loadMatchesForDate(window.currentDate || new Date().toISOString().slice(0, 10));
+                // 로컬 시간대 기준으로 날짜 계산
+                let currentDate = window.currentDate;
+                if (!currentDate) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    currentDate = `${year}-${month}-${day}`;
+                    window.currentDate = currentDate;
+                }
+                await loadMatchesForDate(currentDate);
                 showToast('대진표가 새로고침되었습니다.', 'success');
             } catch (error) {
                 console.error('대진표 새로고침 오류:', error);
@@ -7460,7 +7533,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    if (!window.currentDate) window.currentDate = new Date().toISOString().slice(0, 10);
+    // 오늘 날짜를 로컬 시간대 기준으로 설정
+    if (!window.currentDate) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        window.currentDate = `${year}-${month}-${day}`;
+    }
     
     // 모달 확인 버튼 이벤트 리스너 설정
     const confirmBtn = document.getElementById('confirm-match-schedule-btn');
