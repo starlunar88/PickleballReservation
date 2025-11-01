@@ -7733,11 +7733,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         let teams = [];
         if (teamMode === 'balanced') {
             // 밸런스 모드: 잘하는 사람과 못하는 사람을 같은 편에 배치
+            // 점수 순으로 정렬 (내림차순: 최강, 차강, 차약, 최약)
             const sortedPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
-            // 스네이크 드래프트로 팀 구성
+            // 밸런스 팀 구성: [최강, 최약, 차강, 차약] 순서로 배치
+            // → 팀A: [최강, 최약], 팀B: [차강, 차약] (pairingPatterns[0] 사용 시)
             for (let i = 0; i < sortedPlayers.length; i += 4) {
                 const fourPlayers = sortedPlayers.slice(i, i + 4);
                 if (fourPlayers.length === 4) {
+                    // [최강(0), 최약(3), 차강(1), 차약(2)] 순서로 재배치
+                    // pairingPatterns[0] = [0,1,2,3] 사용 시 → 팀A: [최강, 최약], 팀B: [차강, 차약]
                     teams.push([fourPlayers[0], fourPlayers[3], fourPlayers[1], fourPlayers[2]]);
                 }
             }
@@ -7767,7 +7771,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             if (teamIndex >= teams.length) continue;
             const fourPlayers = teams[teamIndex];
             
-            const p = pairingPatterns[(r - 1) % pairingPatterns.length];
+            // 밸런스 모드일 때는 항상 밸런스 패턴 [0,1,2,3] 사용 (최강+최약 vs 차강+차약)
+            // 다른 모드일 때는 라운드별로 다른 패턴 사용하여 다양한 조합 제공
+            let patternIndex;
+            if (teamMode === 'balanced') {
+                // 밸런스 모드: 항상 밸런스 패턴 사용 (팀A: [0,1]=[최강,최약], 팀B: [2,3]=[차강,차약])
+                patternIndex = 0; // pairingPatterns[0] = [0,1,2,3]
+            } else {
+                // 랜덤/그룹 모드: 라운드별로 다양한 패턴 사용
+                patternIndex = (r - 1) % pairingPatterns.length;
+            }
+            
+            const p = pairingPatterns[patternIndex];
             const teamA = [
                 { 
                     userId: fourPlayers[p[0]].userId, 
