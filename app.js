@@ -4425,15 +4425,19 @@ async function loadReservationsTimeline() {
                                         </button>`;
                             }
                             
-                            // 마감 후: 대진표 생성 버튼 표시
-                            if (isClosed) {
-                                buttons += `<button class="btn btn-primary force-generate-btn" 
+                            // 대진표 생성 버튼 표시 (4명 이상일 때만 활성화)
+                            const canGenerate = reservations.length >= 4;
+                            const buttonDisabled = !canGenerate ? 'disabled' : '';
+                            const buttonStyle = 'margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;' + (!canGenerate ? ' opacity: 0.5;' : '');
+                            const buttonTitle = !canGenerate ? '최소 4명이 필요합니다' : '';
+                            buttons += `<button class="btn btn-primary force-generate-btn" 
                                                data-time-slot="${slotKey}" 
                                                data-date="${targetDate}"
-                                               style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
+                                               ${buttonDisabled}
+                                               style="${buttonStyle}"
+                                               title="${buttonTitle}">
                                             <i class="fas fa-calendar-alt"></i> 대진표 생성
                                         </button>`;
-                            }
                             
                             // 테스트용 임시 사람 추가 버튼 (항상 표시)
                             buttons += `<button class="btn btn-primary add-random-btn" 
@@ -7215,6 +7219,12 @@ function addTestButtonEventListeners() {
     // 대진표 강제 생성 버튼들 (타임라인 버튼 포함)
     document.querySelectorAll('.force-generate-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
+            // 비활성화된 버튼은 클릭 무시
+            if (e.target.closest('.force-generate-btn').disabled) {
+                showToast('최소 4명이 필요합니다.', 'warning');
+                return;
+            }
+            
             try {
                 const timeSlot = e.target.closest('.force-generate-btn').getAttribute('data-time-slot');
                 const date = e.target.closest('.force-generate-btn').getAttribute('data-date') || 
@@ -7222,6 +7232,18 @@ function addTestButtonEventListeners() {
                 
                 if (!timeSlot) {
                     console.error('시간대 정보가 없습니다');
+                    return;
+                }
+                
+                // 예약자 수 확인
+                const reservationsSnapshot = await db.collection('reservations')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .where('status', '==', 'pending')
+                    .get();
+                
+                if (reservationsSnapshot.empty || reservationsSnapshot.size < 4) {
+                    showToast('최소 4명이 필요합니다.', 'warning');
                     return;
                 }
                 
