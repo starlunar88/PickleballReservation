@@ -5082,10 +5082,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshTimelineBtn = document.getElementById('refresh-timeline');
     const currentDateDisplay = document.getElementById('current-date-display');
     
-    // 전역 currentDate 변수 설정
-    if (!window.currentDate) {
-        window.currentDate = new Date().toISOString().slice(0, 10);
-    }
+    // 전역 currentDate 변수 설정 (오늘 날짜로 초기화)
+    const today = new Date().toISOString().slice(0, 10);
+    window.currentDate = today;
     
     // 현재 날짜 표시 업데이트 함수 (전역으로 사용 가능하도록)
     if (!window.updateCurrentDateDisplay) {
@@ -5285,6 +5284,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const matchesNextDayBtn = document.getElementById('matches-next-day');
     const matchesRefreshBtn = document.getElementById('refresh-matches');
     const matchesCurrentDateDisplay = document.getElementById('matches-current-date-display');
+    
+    // 대진표 탭 날짜도 오늘 날짜로 초기화
+    if (!window.currentDate) {
+        const today = new Date().toISOString().slice(0, 10);
+        window.currentDate = today;
+    }
     
     // 대진표 탭 날짜 업데이트 함수
     if (!window.updateMatchesDateDisplay) {
