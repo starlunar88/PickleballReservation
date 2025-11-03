@@ -8304,6 +8304,7 @@ async function checkAndShowMatchSchedule() {
 // 스케줄 생성
 async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
     try {
+        console.log(`📅 대진표 생성 시작: date=${date}, timeSlot=${timeSlot}, teamMode=${teamMode}`);
         showLoading();
         // 예약 수집
         const reservationsSnapshot = await db.collection('reservations')
@@ -8311,7 +8312,9 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             .where('timeSlot', '==', timeSlot)
             .where('status', 'in', ['pending', 'confirmed'])
             .get();
+        console.log(`📋 예약 조회 결과: ${reservationsSnapshot.size}개`);
         if (reservationsSnapshot.empty) {
+            console.warn('⚠️ 예약된 인원이 없습니다.');
             showToast('해당 시간에 예약된 인원이 없습니다.', 'warning');
             return;
         }
@@ -8426,7 +8429,14 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         // teamMode에 따라 대진표 생성
         const { schedule, unassignedPlayers } = buildMatchSchedule(players, courtCount, rounds, {}, teamMode);
         
-        console.log(`대진표 생성: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
+        console.log(`📊 대진표 생성 결과: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
+        
+        // 생성된 경기가 없으면 경고
+        if (schedule.length === 0) {
+            console.error('❌ 생성된 경기가 없습니다! schedule이 비어있습니다.');
+            showToast('대진표 생성에 실패했습니다. 경기가 생성되지 않았습니다.', 'error');
+            return;
+        }
         
         // 배정되지 않은 플레이어가 있으면 DB에 저장
         if (unassignedPlayers.length > 0) {
@@ -8564,9 +8574,11 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         });
         await batch.commit();
         
-        showToast('대진표가 재생성되었습니다.', 'success');
+        console.log(`✅ 대진표 저장 완료: ${schedule.length}개 경기`);
+        showToast(`대진표가 생성되었습니다. (${schedule.length}개 경기)`, 'success');
     } catch (error) {
-        console.error('스케줄 생성 오류:', error);
+        console.error('❌ 스케줄 생성 오류:', error);
+        console.error('오류 상세:', error.stack);
         showToast('스케줄 생성 중 오류가 발생했습니다.', 'error');
     } finally {
         hideLoading();
