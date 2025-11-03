@@ -8422,6 +8422,15 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             courtCount = 1;
         }
         
+        // 플레이어 수가 코트 수의 4배보다 작으면 모든 플레이어를 1코트에 배정
+        // 예: 5명, 2코트 → 1코트에 5명 모두 배정 (로테이션 방식)
+        //     7명, 2코트 → 1코트에 7명 모두 배정 (로테이션 방식)
+        //     8명, 2코트 → 코트 1: 4명, 코트 2: 4명 (정상)
+        if (playerCount < courtCount * 4) {
+            console.log(`⚠️ 플레이어 수(${playerCount}명)가 코트 수(${courtCount})의 4배보다 적어서 1코트에 모두 배정합니다.`);
+            courtCount = 1;
+        }
+        
         console.log(`📊 코트 배정: 예약자 ${playerCount}명, 계산된 코트 수: ${Math.ceil(playerCount / 4)}, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}`);
         
         // 기존 대진표 확인 및 삭제
