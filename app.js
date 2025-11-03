@@ -744,6 +744,7 @@ function handleEmailLinkSignIn() {
                             await db.collection('users').doc(user.uid).set({
                                 email: user.email,
                                 displayName: user.displayName || userName,
+                                name: userName || user.displayName || null, // name 필드도 저장
                                 createdAt: new Date(),
                                 dupr: null
                             }, { merge: true });

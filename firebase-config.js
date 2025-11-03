@@ -73,16 +73,56 @@ async function isAdmin(user) {
 window.auth.onAuthStateChanged(async (user) => {
     if (user) {
         // 사용자가 로그인한 경우 users 컬렉션에 문서가 없으면 생성
+        // 또는 이름이 없으면 approvedSignups에서 확인하여 업데이트
         try {
             const userDoc = await window.db.collection('users').doc(user.uid).get();
             if (!userDoc.exists) {
+                // users 컬렉션에 문서가 없으면 생성
+                let userName = user.displayName;
+                
+                // approvedSignups에서 이름 확인
+                if (!userName) {
+                    try {
+                        const approvedDoc = await window.db.collection('approvedSignups').doc(user.email).get();
+                        if (approvedDoc.exists) {
+                            const approvedData = approvedDoc.data();
+                            if (approvedData.name) {
+                                userName = approvedData.name;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('approvedSignups 조회 오류:', error);
+                    }
+                }
+                
                 await window.db.collection('users').doc(user.uid).set({
                     email: user.email,
-                    displayName: user.displayName,
+                    displayName: userName || user.displayName,
+                    name: userName || user.displayName || null,
                     createdAt: new Date(),
                     dupr: null
                 }, { merge: true });
                 console.log('users 컬렉션에 사용자 문서 생성 완료 (onAuthStateChanged)');
+            } else {
+                // users 컬렉션에 문서가 있지만 이름이 없으면 approvedSignups에서 확인
+                const userData = userDoc.data();
+                if (!userData.displayName && !userData.name) {
+                    try {
+                        const approvedDoc = await window.db.collection('approvedSignups').doc(user.email).get();
+                        if (approvedDoc.exists) {
+                            const approvedData = approvedDoc.data();
+                            if (approvedData.name) {
+                                await window.db.collection('users').doc(user.uid).update({
+                                    displayName: approvedData.name,
+                                    name: approvedData.name
+                                });
+                                console.log('users 컬렉션에 이름 업데이트 완료 (onAuthStateChanged)');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('approvedSignups 조회 오류:', error);
+                    }
+                }
             }
         } catch (error) {
             console.error('users 컬렉션 문서 확인/생성 오류:', error);
@@ -144,8 +184,40 @@ async function showUserMenu(user) {
                 const userData = userDoc.data();
                 // users 컬렉션에서 이름 우선순위: displayName > name > email의 @ 앞부분
                 userDisplayName = userData.displayName || userData.name || user.email?.split('@')[0] || user.email;
-            } else {
-                // users 컬렉션에 없으면 displayName 또는 이메일 사용
+            }
+            
+            // users 컬렉션에 없거나 이름이 없으면 approvedSignups 확인
+            if (!userDisplayName || userDisplayName === user.email?.split('@')[0] || userDisplayName === user.email) {
+                try {
+                    const approvedDoc = await window.db.collection('approvedSignups').doc(user.email).get();
+                    if (approvedDoc.exists) {
+                        const approvedData = approvedDoc.data();
+                        if (approvedData.name) {
+                            userDisplayName = approvedData.name;
+                            // users 컬렉션에도 업데이트
+                            if (userDoc.exists) {
+                                await window.db.collection('users').doc(user.uid).update({
+                                    displayName: approvedData.name,
+                                    name: approvedData.name
+                                });
+                            } else {
+                                await window.db.collection('users').doc(user.uid).set({
+                                    email: user.email,
+                                    displayName: approvedData.name,
+                                    name: approvedData.name,
+                                    createdAt: new Date(),
+                                    dupr: null
+                                }, { merge: true });
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('approvedSignups 조회 오류:', error);
+                }
+            }
+            
+            // 여전히 이름이 없으면 displayName 또는 이메일 사용
+            if (!userDisplayName || userDisplayName === user.email?.split('@')[0] || userDisplayName === user.email) {
                 userDisplayName = user.displayName || user.email?.split('@')[0] || user.email;
             }
         } catch (error) {
