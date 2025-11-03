@@ -342,7 +342,7 @@ async function handleSignup() {
             .get();
         
         if (!existingRequest.empty) {
-            showToast('이미 승인 요청이 접수되어 있습니다. 관리자 탭에서 승인 요청을 확인 중입니다. 승인 후 회원가입 메일이 발송됩니다.', 'warning');
+            showToast('이미 승인 요청이 접수되어 있습니다. 관리자가 관리자 설정에서 승인/거부를 처리 중입니다. 승인되면 회원가입 메일이 발송됩니다.', 'warning');
             hideLoading();
             return;
         }
@@ -411,7 +411,7 @@ async function handleSignup() {
             // 에러가 있어도 회원가입 요청은 성공적으로 저장되므로 계속 진행
         }
         
-        showToast('회원가입 요청이 접수되었습니다. 관리자 탭에서 승인 요청을 확인 중입니다. 승인 후 회원가입 메일이 발송됩니다.', 'success');
+        showToast('회원가입 요청이 접수되었습니다. 관리자가 관리자 설정에서 승인/거부를 처리합니다. 승인되면 회원가입 메일이 발송됩니다.', 'success');
         closeModal('signup');
         signupForm.reset();
         
@@ -9735,21 +9735,11 @@ async function loadSignupRequests() {
         
         console.log('승인 요청 목록 로드 시작...');
         
-        // 먼저 orderBy 없이 테스트
-        let requestsSnapshot;
-        try {
-            // orderBy를 사용하려고 시도
-            requestsSnapshot = await db.collection('signupRequests')
-                .where('status', '==', 'pending')
-                .orderBy('requestedAt', 'desc')
-                .get();
-        } catch (orderByError) {
-            console.warn('orderBy 오류, orderBy 없이 재시도:', orderByError);
-            // orderBy 실패 시 orderBy 없이 재시도
-            requestsSnapshot = await db.collection('signupRequests')
-                .where('status', '==', 'pending')
-                .get();
-        }
+        // orderBy 없이 조회 (인덱스 문제 방지)
+        // 클라이언트에서 정렬 처리
+        const requestsSnapshot = await db.collection('signupRequests')
+            .where('status', '==', 'pending')
+            .get();
         
         console.log(`승인 요청 개수: ${requestsSnapshot.size}`);
         
@@ -9759,17 +9749,24 @@ async function loadSignupRequests() {
             return;
         }
         
-        // 데이터를 배열로 변환하여 정렬 (orderBy 실패 시를 대비)
+        // 데이터를 배열로 변환하여 정렬 (Firestore 인덱스 없이 처리)
         const requests = [];
         requestsSnapshot.forEach(doc => {
             requests.push({ id: doc.id, ...doc.data() });
         });
         
-        // requestedAt 기준으로 정렬 (orderBy 실패 시)
+        // requestedAt 기준으로 클라이언트에서 정렬 (최신순)
         requests.sort((a, b) => {
-            const aDate = a.requestedAt ? a.requestedAt.toDate().getTime() : 0;
-            const bDate = b.requestedAt ? b.requestedAt.toDate().getTime() : 0;
-            return bDate - aDate; // 최신순
+            try {
+                const aDate = a.requestedAt && a.requestedAt.toDate ? a.requestedAt.toDate().getTime() : 
+                              a.requestedAt ? new Date(a.requestedAt).getTime() : 0;
+                const bDate = b.requestedAt && b.requestedAt.toDate ? b.requestedAt.toDate().getTime() : 
+                              b.requestedAt ? new Date(b.requestedAt).getTime() : 0;
+                return bDate - aDate; // 최신순
+            } catch (error) {
+                console.error('정렬 오류:', error);
+                return 0; // 정렬 실패 시 원래 순서 유지
+            }
         });
         
         console.log('승인 요청 목록:', requests);

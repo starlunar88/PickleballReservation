@@ -135,7 +135,26 @@ async function showUserMenu(user) {
     if (authButtons && userMenu && userName) {
         authButtons.style.display = 'none';
         userMenu.style.display = 'flex';
-        userName.textContent = user.displayName || user.email;
+        
+        // users 컬렉션에서 사용자 이름 가져오기
+        let userDisplayName = user.displayName;
+        try {
+            const userDoc = await window.db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                // users 컬렉션에서 이름 우선순위: displayName > name > email의 @ 앞부분
+                userDisplayName = userData.displayName || userData.name || user.email?.split('@')[0] || user.email;
+            } else {
+                // users 컬렉션에 없으면 displayName 또는 이메일 사용
+                userDisplayName = user.displayName || user.email?.split('@')[0] || user.email;
+            }
+        } catch (error) {
+            console.error('사용자 정보 가져오기 오류:', error);
+            // 에러 발생 시 기본값 사용
+            userDisplayName = user.displayName || user.email?.split('@')[0] || user.email;
+        }
+        
+        userName.textContent = userDisplayName;
         
         // DUPR 정보 가져오기
         const dupr = await getUserDUPR(user.uid);
@@ -148,9 +167,8 @@ async function showUserMenu(user) {
         
         // 네비게이션 바에 사용자 정보 표시
         if (navUserInfo) {
-            const displayName = user.displayName || user.email?.split('@')[0] || '사용자';
             // DUPR 텍스트 제거하고 이름(점수) 형식으로 표시
-            navUserInfo.textContent = dupr ? `${displayName}(${dupr.toFixed(1)})` : displayName;
+            navUserInfo.textContent = dupr ? `${userDisplayName}(${dupr.toFixed(1)})` : userDisplayName;
             navUserInfo.style.display = 'inline';
         }
         
