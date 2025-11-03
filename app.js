@@ -7879,28 +7879,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             const timeSlot = window.matchScheduleModalTimeSlot;
             const selectedMode = document.querySelector('input[name="teamMode"]:checked')?.value || 'random';
             
+            console.log(`📅 모달 확인 버튼 클릭: date=${date}, timeSlot=${timeSlot}, mode=${selectedMode}`);
+            
             if (!date || !timeSlot) {
+                console.error('❌ 날짜 또는 시간대 정보가 없습니다!', { date, timeSlot });
                 showToast('날짜와 시간대 정보가 없습니다.', 'error');
                 return;
             }
             
             closeMatchScheduleOptionsModal();
+            console.log('✅ 모달 닫기 완료, 대진표 생성 시작...');
             
             try {
                 showLoading();
                 await generateMatchSchedule(date, timeSlot, selectedMode);
                 
                 // 타임라인 새로고침
+                console.log('🔄 타임라인 새로고침 시작...');
                 await loadReservationsTimeline();
+                console.log('✅ 타임라인 새로고침 완료');
                 
                 // 현재 대진표 탭이 활성화되어 있으면 새로고침
                 const matchesTab = document.getElementById('matches-tab');
                 if (matchesTab && matchesTab.classList.contains('active')) {
                     const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+                    console.log(`🔄 대진표 탭 새로고침: ${currentDate}`);
                     await loadMatchesForDate(currentDate);
+                    console.log('✅ 대진표 탭 새로고침 완료');
+                } else {
+                    console.log('ℹ️ 대진표 탭이 비활성화되어 있어 새로고침하지 않음');
                 }
             } catch (error) {
-                console.error('대진표 생성 오류:', error);
+                console.error('❌ 대진표 생성 오류:', error);
+                console.error('오류 상세:', error.stack);
                 showToast('대진표 생성 중 오류', 'error');
             } finally {
                 hideLoading();
@@ -8204,11 +8215,15 @@ function addTestButtonEventListeners() {
 
 // 대진표 생성 옵션 모달 열기
 function openMatchScheduleOptionsModal(date, timeSlot) {
+    console.log(`📅 대진표 생성 모달 열기: date=${date}, timeSlot=${timeSlot}`);
     window.matchScheduleModalDate = date;
     window.matchScheduleModalTimeSlot = timeSlot;
     const modal = document.getElementById('match-schedule-options-modal');
     if (modal) {
         modal.style.display = 'flex';
+        console.log('✅ 모달 표시 완료');
+    } else {
+        console.error('❌ 모달 요소를 찾을 수 없습니다!');
     }
 }
 
