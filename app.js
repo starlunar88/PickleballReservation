@@ -363,6 +363,9 @@ async function handleSignup() {
         await db.collection('signupRequests').add(requestData);
         
         // 관리자들에게 이메일 알림 발송
+        // 참고: 클라이언트 사이드에서는 직접 이메일을 보낼 수 없으므로,
+        // 관리자 알림은 관리자 페이지에서 실시간으로 확인하거나
+        // Firebase Cloud Functions를 통해 처리해야 합니다.
         try {
             // 모든 관리자 목록 가져오기
             const adminsSnapshot = await db.collection('admins')
@@ -378,41 +381,25 @@ async function handleSignup() {
                     }
                 });
                 
-                // 각 관리자에게 회원가입 요청 알림 이메일 발송
-                // Firebase Auth의 sendSignInLinkToEmail을 사용하여 알림 링크 전송
-                const actionCodeSettings = {
-                    url: window.location.origin + window.location.pathname + '?adminNotification=true',
-                    handleCodeInApp: true,
-                };
+                console.log(`회원가입 요청: ${name}(${email})`);
+                console.log(`관리자 ${adminEmails.length}명에게 알림 필요:`, adminEmails);
                 
-                let sentCount = 0;
-                const sendPromises = adminEmails.map(async (adminEmail) => {
-                    try {
-                        // 관리자가 로그인할 수 있는 이메일 링크 전송 (알림 용도)
-                        await auth.sendSignInLinkToEmail(adminEmail, actionCodeSettings);
-                        sentCount++;
-                        console.log(`관리자 ${adminEmail}에게 알림 이메일 발송 완료`);
-                    } catch (error) {
-                        console.error(`관리자 ${adminEmail}에게 이메일 발송 실패:`, error);
-                        // 일부 관리자에게 발송 실패해도 계속 진행
-                    }
-                });
-                
-                // 모든 관리자에게 발송 시도
-                await Promise.all(sendPromises);
-                
-                console.log(`${sentCount}/${adminEmails.length}명의 관리자에게 알림 이메일 발송 완료`);
-                
-                // 관리자 알림 로그 저장
+                // 관리자 알림 저장 (실제 이메일 발송은 Cloud Functions에서 처리)
+                // 관리자 페이지에서 이 알림을 확인하여 승인/거부 처리
                 await db.collection('adminNotifications').add({
                     type: 'signupRequest',
                     requestName: name,
                     requestEmail: email,
                     adminEmails: adminEmails,
-                    sentCount: sentCount,
                     totalCount: adminEmails.length,
+                    status: 'pending',
                     createdAt: new Date()
                 });
+                
+                console.log(`관리자 알림이 저장되었습니다. (관리자 ${adminEmails.length}명)`);
+                
+                // 참고: 실제 이메일 발송은 Firebase Cloud Functions에서 처리해야 합니다.
+                // 현재는 관리자 페이지에서 실시간으로 확인하여 승인/거부 처리할 수 있습니다.
                 
             } else {
                 console.warn('등록된 관리자가 없습니다.');
