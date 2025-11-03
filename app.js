@@ -305,7 +305,7 @@ async function handleLogin() {
     }
 }
 
-// 회원가입 처리 (이메일 링크 방식)
+// 회원가입 처리 (관리자 승인 방식)
 async function handleSignup() {
     const name = document.getElementById('signup-name').value;
     const email = document.getElementById('signup-email').value;
@@ -323,51 +323,55 @@ async function handleSignup() {
     try {
         showLoading();
         
-        // 이메일 링크 전송 (회원가입용)
-        const actionCodeSettings = {
-            url: window.location.origin + window.location.pathname + '?mode=signup',
-            handleCodeInApp: true,
+        // 이미 존재하는 이메일인지 확인
+        try {
+            const existingUser = await auth.fetchSignInMethodsForEmail(email);
+            if (existingUser && existingUser.length > 0) {
+                showToast('이미 등록된 이메일입니다.', 'error');
+                hideLoading();
+                return;
+            }
+        } catch (error) {
+            // 에러 무시 (이메일이 없을 수도 있음)
+        }
+        
+        // 이미 승인 대기 중인 요청이 있는지 확인
+        const existingRequest = await db.collection('signupRequests')
+            .where('email', '==', email)
+            .where('status', '==', 'pending')
+            .get();
+        
+        if (!existingRequest.empty) {
+            showToast('이미 승인 요청이 접수되어 있습니다. 관리자의 승인을 기다려주세요.', 'warning');
+            hideLoading();
+            return;
+        }
+        
+        // 회원가입 요청 저장
+        const requestData = {
+            name: name,
+            email: email,
+            status: 'pending', // pending, approved, rejected
+            requestedAt: new Date(),
+            approvedAt: null,
+            approvedBy: null,
+            rejectedAt: null,
+            rejectedBy: null,
+            rejectionReason: null
         };
         
-        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+        await db.collection('signupRequests').add(requestData);
         
-        // 사용자 정보를 localStorage에 저장
-        localStorage.setItem('emailForSignIn', email);
-        localStorage.setItem('userNameForSignIn', name);
-        localStorage.setItem('isSignup', 'true');
+        // 관리자들에게 알림 (실제 이메일 발송은 Cloud Functions에서 처리)
+        // 여기서는 Firestore에 저장만 하고, 관리자 페이지에서 확인하도록 함
         
-        showToast('회원가입 링크가 이메일로 전송되었습니다! 이메일을 확인해주세요.', 'success');
+        showToast('회원가입 요청이 접수되었습니다. 관리자의 승인을 기다려주세요.', 'success');
         closeModal('signup');
         signupForm.reset();
         
     } catch (error) {
-        console.error('회원가입 링크 전송 오류:', error);
-        console.error('오류 코드:', error.code);
-        console.error('오류 메시지:', error.message);
-        
-        let errorMessage = '회원가입 링크 전송 중 오류가 발생했습니다.';
-        
-        switch (error.code) {
-            case 'auth/invalid-email':
-                errorMessage = '유효하지 않은 이메일입니다.';
-                break;
-            case 'auth/operation-not-allowed':
-                errorMessage = '이메일 링크 인증이 비활성화되어 있습니다.';
-                break;
-            case 'auth/network-request-failed':
-                errorMessage = '네트워크 오류가 발생했습니다.';
-                break;
-            case 'auth/invalid-api-key':
-                errorMessage = 'Firebase API 키가 올바르지 않습니다.';
-                break;
-            case 'auth/project-not-found':
-                errorMessage = 'Firebase 프로젝트를 찾을 수 없습니다.';
-                break;
-            default:
-                errorMessage = `오류: ${error.message} (코드: ${error.code})`;
-        }
-        
-        showToast(errorMessage, 'error');
+        console.error('회원가입 요청 오류:', error);
+        showToast('회원가입 요청 중 오류가 발생했습니다.', 'error');
     } finally {
         hideLoading();
     }
@@ -648,6 +652,10 @@ function handleEmailLinkSignIn() {
         let userName = localStorage.getItem('userNameForSignIn');
         let isSignup = localStorage.getItem('isSignup') === 'true';
         
+        // URL 파라미터에서 승인 여부 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const isApproved = urlParams.get('approved') === 'true';
+        
         if (!email) {
             // 이메일이 localStorage에 없는 경우 사용자에게 입력 요청
             email = window.prompt('이메일 주소를 입력해주세요:');
@@ -657,10 +665,22 @@ function handleEmailLinkSignIn() {
             showLoading();
             
             auth.signInWithEmailLink(email, window.location.href)
-                .then((result) => {
+                .then(async (result) => {
                     console.log('이메일 링크 로그인 성공:', result);
                     
-                    if (isSignup) {
+                    // 승인된 회원가입인 경우 approvedSignups에서 이름 가져오기
+                    if (isApproved && !userName) {
+                        try {
+                            const approvedDoc = await db.collection('approvedSignups').doc(email).get();
+                            if (approvedDoc.exists) {
+                                userName = approvedDoc.data().name;
+                            }
+                        } catch (error) {
+                            console.error('승인된 사용자 정보 가져오기 오류:', error);
+                        }
+                    }
+                    
+                    if (isSignup || isApproved) {
                         // 회원가입인 경우 사용자 이름 설정
                         if (userName && !result.user.displayName) {
                             return result.user.updateProfile({
@@ -672,7 +692,7 @@ function handleEmailLinkSignIn() {
                 .then(async () => {
                     const user = auth.currentUser;
                     
-                    if (isSignup && user) {
+                    if ((isSignup || isApproved) && user) {
                         // 회원가입인 경우 users 컬렉션에 문서 생성
                         try {
                             await db.collection('users').doc(user.uid).set({
@@ -946,6 +966,9 @@ async function openAdminSettingsModal() {
         
         // 관리자 목록 로드
         await loadAdminList();
+        
+        // 회원가입 승인 요청 목록 로드
+        await loadSignupRequests();
         
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -9611,6 +9634,165 @@ async function removeAdmin(adminId, email) {
     } catch (error) {
         console.error('관리자 제거 오류:', error);
         showToast('관리자 제거 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 회원가입 승인 요청 목록 로드
+async function loadSignupRequests() {
+    try {
+        const requestsList = document.getElementById('signup-requests-list');
+        if (!requestsList) return;
+        
+        requestsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>승인 요청을 불러오는 중...</p></div>';
+        
+        const requestsSnapshot = await db.collection('signupRequests')
+            .where('status', '==', 'pending')
+            .orderBy('requestedAt', 'desc')
+            .get();
+        
+        if (requestsSnapshot.empty) {
+            requestsList.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>승인 대기 중인 요청이 없습니다</p></div>';
+            return;
+        }
+        
+        requestsList.innerHTML = '';
+        requestsSnapshot.forEach(doc => {
+            const request = { id: doc.id, ...doc.data() };
+            const requestElement = createSignupRequestElement(request);
+            requestsList.appendChild(requestElement);
+        });
+        
+    } catch (error) {
+        console.error('승인 요청 목록 로드 오류:', error);
+        const requestsList = document.getElementById('signup-requests-list');
+        if (requestsList) {
+            requestsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>승인 요청을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 회원가입 승인 요청 요소 생성
+function createSignupRequestElement(request) {
+    const div = document.createElement('div');
+    div.className = 'signup-request-item';
+    
+    const requestedDate = request.requestedAt ? request.requestedAt.toDate().toLocaleString() : '알 수 없음';
+    
+    div.innerHTML = `
+        <div class="request-info">
+            <div class="request-name"><strong>${request.name}</strong></div>
+            <div class="request-email">${request.email}</div>
+            <div class="request-meta">요청일: ${requestedDate}</div>
+        </div>
+        <div class="request-actions">
+            <button class="btn btn-primary btn-small" onclick="approveSignupRequest('${request.id}', '${request.email}', '${request.name.replace(/'/g, "\\'")}')">
+                <i class="fas fa-check"></i> 승인
+            </button>
+            <button class="btn btn-outline btn-small" onclick="rejectSignupRequest('${request.id}', '${request.email}')">
+                <i class="fas fa-times"></i> 거부
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// 회원가입 승인
+async function approveSignupRequest(requestId, email, name) {
+    try {
+        if (!confirm(`정말로 ${name}(${email})의 회원가입을 승인하시겠습니까?`)) {
+            return;
+        }
+        
+        showLoading();
+        const currentUser = auth.currentUser;
+        
+        // 승인 상태 업데이트
+        await db.collection('signupRequests').doc(requestId).update({
+            status: 'approved',
+            approvedAt: new Date(),
+            approvedBy: currentUser ? currentUser.email : 'unknown'
+        });
+        
+        // 사용자 계정 생성 및 비밀번호 설정 링크 발송
+        try {
+            // Firebase Authentication에 사용자 계정 생성 (비밀번호 없이)
+            // 주의: 클라이언트에서는 createUserWithEmailAndPassword를 사용할 수 없으므로
+            // 이메일 링크 인증으로 비밀번호 설정 링크 발송
+            const actionCodeSettings = {
+                url: window.location.origin + window.location.pathname + '?mode=signup&approved=true',
+                handleCodeInApp: true,
+            };
+            
+            // 이메일 링크 전송 (비밀번호 설정용)
+            await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+            
+            // users 컬렉션에 승인된 사용자 정보 저장 (임시)
+            // 실제 사용자는 이메일 링크를 통해 비밀번호를 설정할 때 생성됨
+            await db.collection('approvedSignups').doc(email).set({
+                email: email,
+                name: name,
+                approvedAt: new Date(),
+                approvedBy: currentUser ? currentUser.email : 'unknown',
+                passwordSetupLinkSent: true
+            }, { merge: true });
+            
+            showToast(`회원가입이 승인되었습니다. ${email}로 비밀번호 설정 링크가 전송되었습니다.`, 'success');
+            
+        } catch (error) {
+            console.error('사용자 계정 생성 오류:', error);
+            // 승인은 완료되었으므로 계속 진행
+            showToast('회원가입이 승인되었지만 이메일 발송 중 오류가 발생했습니다. 관리자가 수동으로 처리해주세요.', 'warning');
+        }
+        
+        // 승인 요청 목록 새로고침
+        await loadSignupRequests();
+        
+    } catch (error) {
+        console.error('회원가입 승인 오류:', error);
+        showToast('회원가입 승인 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 회원가입 거부
+async function rejectSignupRequest(requestId, email) {
+    try {
+        const rejectionReason = prompt(`${email}의 회원가입을 거부하는 이유를 입력하세요 (선택사항):`);
+        
+        if (rejectionReason === null) {
+            // 사용자가 취소
+            return;
+        }
+        
+        if (!confirm(`정말로 ${email}의 회원가입을 거부하시겠습니까?`)) {
+            return;
+        }
+        
+        showLoading();
+        const currentUser = auth.currentUser;
+        
+        // 거부 상태 업데이트
+        await db.collection('signupRequests').doc(requestId).update({
+            status: 'rejected',
+            rejectedAt: new Date(),
+            rejectedBy: currentUser ? currentUser.email : 'unknown',
+            rejectionReason: rejectionReason || null
+        });
+        
+        // TODO: 거부된 사용자에게 이메일 발송 (Cloud Functions 필요)
+        
+        showToast('회원가입 요청이 거부되었습니다.', 'success');
+        
+        // 승인 요청 목록 새로고침
+        await loadSignupRequests();
+        
+    } catch (error) {
+        console.error('회원가입 거부 오류:', error);
+        showToast('회원가입 거부 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
     }
 }
 
