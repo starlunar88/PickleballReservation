@@ -342,7 +342,7 @@ async function handleSignup() {
             .get();
         
         if (!existingRequest.empty) {
-            showToast('이미 승인 요청이 접수되어 있습니다. 관리자의 승인 이후 회원가입 메일이 발송됩니다.', 'warning');
+            showToast('이미 승인 요청이 접수되어 있습니다. 관리자에게 승인 메시지가 전달되었습니다. 승인 후 회원가입 메일이 발송됩니다.', 'warning');
             hideLoading();
             return;
         }
@@ -422,7 +422,7 @@ async function handleSignup() {
             // 에러가 있어도 회원가입 요청은 성공적으로 저장되므로 계속 진행
         }
         
-        showToast('회원가입 요청이 접수되었습니다. 관리자의 승인 이후 회원가입 메일이 발송됩니다.', 'success');
+        showToast('회원가입 요청이 접수되었습니다. 관리자에게 승인 메시지가 전달되었습니다. 승인 후 회원가입 메일이 발송됩니다.', 'success');
         closeModal('signup');
         signupForm.reset();
         
