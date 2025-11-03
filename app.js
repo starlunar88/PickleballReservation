@@ -8292,16 +8292,16 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         const maxCourts = settings?.courtCount || 2; // 기본값 2
         
         // 예약자 수에 따라 코트 수 동적 결정
-        // 4~7명: 1코트, 8~11명: 2코트, 12명 이상: 계산값 (최대 코트 수 제한 적용)
+        // 모든 플레이어가 배정되도록 코트 수 계산
+        // 최소 코트 수: Math.ceil(플레이어 수 / 4) (4명당 1코트)
+        // 최대 코트 수 제한 적용
         const playerCount = players.length;
-        let courtCount = 1;
-        if (playerCount >= 4 && playerCount <= 7) {
+        let courtCount = Math.ceil(playerCount / 4); // 모든 플레이어를 배정하기 위한 최소 코트 수
+        courtCount = Math.min(courtCount, maxCourts); // 최대 코트 수 제한
+        
+        // 최소 1코트는 보장
+        if (courtCount < 1) {
             courtCount = 1;
-        } else if (playerCount >= 8 && playerCount <= 11) {
-            courtCount = 2;
-        } else if (playerCount >= 12) {
-            // 12명 이상은 계산된 코트 수 필요하지만, 시스템 설정의 최대 코트 수를 초과할 수 없음
-            courtCount = Math.min(Math.ceil(playerCount / 4), maxCourts);
         }
         
         console.log(`📊 코트 배정: 예약자 ${playerCount}명, 계산된 코트 수: ${Math.ceil(playerCount / 4)}, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}`);
@@ -8768,9 +8768,97 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         match.teamB.forEach(p => assignedPlayerIds.add(p.userId));
     });
     
-    // 이미 선언된 unassignedPlayers 배열을 필터링하여 업데이트
-    // (코트 배정은 되었지만 실제 경기에 포함되지 않은 플레이어)
+    // 배정되지 않은 플레이어 찾기
     const finalUnassignedPlayers = playerObjects.filter(p => !assignedPlayerIds.has(p.userId));
+    
+    // 배정되지 않은 플레이어가 있으면 모든 플레이어가 참여하도록 추가 라운드 생성
+    if (finalUnassignedPlayers.length > 0) {
+        console.log(`⚠️ 배정되지 않은 플레이어 ${finalUnassignedPlayers.length}명 발견. 추가 경기 생성 중...`);
+        
+        // 각 코트별로 모든 플레이어가 참여하도록 추가 라운드 생성
+        for (let c = 1; c <= courtCount; c++) {
+            const courtPlayerList = [...(courtPlayers[c] || [])];
+            
+            // 이 코트에 배정된 플레이어 중 경기에 포함되지 않은 플레이어 찾기
+            const courtAssignedIds = new Set(
+                schedule
+                    .filter(m => m.court === c)
+                    .flatMap(m => [...m.teamA.map(p => p.userId), ...m.teamB.map(p => p.userId)])
+            );
+            
+            const courtUnassigned = courtPlayerList.filter(p => !courtAssignedIds.has(p.userId));
+            
+            // 배정되지 않은 플레이어가 있고, 코트에 4명 이상 있으면 추가 라운드 생성
+            if (courtUnassigned.length > 0 && courtPlayerList.length >= 4) {
+                // 모든 플레이어를 포함하여 로테이션으로 추가 라운드 생성
+                const allPlayers = [...courtPlayerList];
+                const existingRounds = Math.max(...[0, ...schedule.filter(m => m.court === c).map(m => m.round)]);
+                
+                // 모든 플레이어가 최소 1회 이상 참여하도록 추가 라운드 생성
+                const roundsNeeded = Math.ceil(courtPlayerList.length / 4);
+                
+                for (let extraRound = 1; extraRound <= roundsNeeded; extraRound++) {
+                    // 로테이션 방식: 각 추가 라운드마다 시작 인덱스를 이동
+                    const startIndex = ((existingRounds + extraRound - 1) * 4) % allPlayers.length;
+                    const fourPlayers = [];
+                    
+                    // 4명 선택 (순환 방식)
+                    for (let i = 0; i < 4; i++) {
+                        const index = (startIndex + i) % allPlayers.length;
+                        fourPlayers.push(allPlayers[index]);
+                    }
+                    
+                    if (fourPlayers.length === 4) {
+                        let teamA, teamB;
+                        if (teamMode === 'balanced') {
+                            // 점수 순으로 정렬
+                            const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+                            teamA = [sorted[0], sorted[3]];
+                            teamB = [sorted[1], sorted[2]];
+                        } else {
+                            const p = pairingPatterns[(existingRounds + extraRound - 1) % pairingPatterns.length];
+                            teamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                            teamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
+                        }
+                        
+                        schedule.push({
+                            round: existingRounds + extraRound,
+                            court: c,
+                            teamA: teamA.map(player => ({
+                                userId: player.userId,
+                                userName: player.userName,
+                                internalRating: player.internalRating || 0,
+                                score: player.score || 0
+                            })),
+                            teamB: teamB.map(player => ({
+                                userId: player.userId,
+                                userName: player.userName,
+                                internalRating: player.internalRating || 0,
+                                score: player.score || 0
+                            }))
+                        });
+                    }
+                }
+            }
+        }
+        
+        // 다시 배정 확인
+        const newAssignedIds = new Set();
+        schedule.forEach(match => {
+            match.teamA.forEach(p => newAssignedIds.add(p.userId));
+            match.teamB.forEach(p => newAssignedIds.add(p.userId));
+        });
+        
+        const stillUnassigned = playerObjects.filter(p => !newAssignedIds.has(p.userId));
+        
+        if (stillUnassigned.length > 0) {
+            console.warn(`⚠️ 여전히 배정되지 않은 플레이어 ${stillUnassigned.length}명:`, stillUnassigned.map(p => p.userName));
+        } else {
+            console.log(`✅ 모든 플레이어 배정 완료!`);
+        }
+        
+        return { schedule, unassignedPlayers: stillUnassigned };
+    }
     
     return { schedule, unassignedPlayers: finalUnassignedPlayers };
 }
