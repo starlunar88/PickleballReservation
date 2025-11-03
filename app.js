@@ -5127,6 +5127,44 @@ async function handleTimelineReservation(timeSlot, date) {
         // 선택된 정보 업데이트
         updateSelectedInfo(date, timeSlot);
         
+        // 마감 시간 전이면 대진표 재생성 체크
+        // 마감 시간 확인: 게임 시작 시간에서 설정된 마감 시간(분) 전
+        try {
+            const settings = await getSystemSettings();
+            if (settings) {
+                const [slotStart] = timeSlot.split('-');
+                const gameStartTime = new Date(`${date}T${slotStart}:00`);
+                const closingTime = new Date(gameStartTime.getTime() - (settings.closingTime * 60 * 1000));
+                const now = new Date();
+                
+                // 마감 시간 전이고 대진표가 이미 생성되어 있으면 재생성
+                if (now < closingTime) {
+                    const existingMatches = await db.collection('matches')
+                        .where('date', '==', date)
+                        .where('timeSlot', '==', timeSlot)
+                        .get();
+                    
+                    if (!existingMatches.empty) {
+                        console.log('📅 새로운 예약으로 인해 대진표 재생성 중...');
+                        // 기존 대진표 삭제
+                        const deleteBatch = db.batch();
+                        existingMatches.forEach(doc => {
+                            deleteBatch.delete(doc.ref);
+                        });
+                        await deleteBatch.commit();
+                        console.log('기존 대진표 삭제 완료 (예약 추가로 인한 재생성)');
+                        
+                        // 대진표 재생성 (밸런스 모드)
+                        await generateMatchSchedule(date, timeSlot, 'balanced');
+                        console.log('대진표 재생성 완료 (예약 추가 반영)');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('대진표 재생성 체크 오류:', error);
+            // 에러가 있어도 예약은 완료되었으므로 계속 진행
+        }
+        
         // 타임라인 새로고침 (타임라인에 버튼이 포함되어 있음)
         await loadReservationsTimeline();
         
@@ -7538,16 +7576,7 @@ async function checkAndProcessReservations() {
 // 특정 시간 슬롯의 예약 처리
 async function processTimeSlotReservations(date, timeSlot) {
     try {
-        // 이미 처리된 시간 슬롯인지 확인
-        const processedKey = `processed_${date}_${timeSlot}`;
-        const isProcessed = localStorage.getItem(processedKey);
-        
-        if (isProcessed) {
-            console.log(`이미 처리된 시간 슬롯: ${date} ${timeSlot}`);
-            return;
-        }
-        
-        // 해당 시간 슬롯의 예약 가져오기
+        // 해당 시간 슬롯의 예약 가져오기 (모든 pending 예약)
         const reservationsSnapshot = await db.collection('reservations')
             .where('date', '==', date)
             .where('timeSlot', '==', timeSlot)
@@ -7556,7 +7585,6 @@ async function processTimeSlotReservations(date, timeSlot) {
         
         if (reservationsSnapshot.empty) {
             console.log(`처리할 예약이 없음: ${date} ${timeSlot}`);
-            localStorage.setItem(processedKey, 'true');
             return;
         }
         
@@ -7571,7 +7599,6 @@ async function processTimeSlotReservations(date, timeSlot) {
             
             // 예약 취소 처리
             await cancelInsufficientReservations(reservations, date, timeSlot);
-            localStorage.setItem(processedKey, 'true');
             return;
         }
         
@@ -7581,8 +7608,45 @@ async function processTimeSlotReservations(date, timeSlot) {
         // 팀 배정 결과 저장
         await saveTeamAssignments(date, timeSlot, teams, TEAM_MODE.BALANCED);
         
-        // 처리 완료 표시
-        localStorage.setItem(processedKey, 'true');
+        // 대진표 재생성 (마감 시간 전이면 계속 업데이트)
+        try {
+            const settings = await getSystemSettings();
+            if (settings) {
+                const [slotStart] = timeSlot.split('-');
+                const gameStartTime = new Date(`${date}T${slotStart}:00`);
+                const closingTime = new Date(gameStartTime.getTime() - (settings.closingTime * 60 * 1000));
+                const now = new Date();
+                
+                // 마감 시간 전이면 대진표 재생성 (새로운 예약 반영)
+                if (now < closingTime) {
+                    console.log('📅 마감 시간 전 - 대진표 재생성 중...');
+                    // 기존 대진표 삭제 후 재생성
+                    const existingMatches = await db.collection('matches')
+                        .where('date', '==', date)
+                        .where('timeSlot', '==', timeSlot)
+                        .get();
+                    
+                    if (!existingMatches.empty) {
+                        const deleteBatch = db.batch();
+                        existingMatches.forEach(doc => {
+                            deleteBatch.delete(doc.ref);
+                        });
+                        await deleteBatch.commit();
+                        console.log('기존 대진표 삭제 완료 (자동 재생성)');
+                    }
+                    
+                    // 대진표 재생성 (밸런스 모드)
+                    await generateMatchSchedule(date, timeSlot, 'balanced');
+                    console.log('대진표 자동 재생성 완료 (새로운 예약 반영)');
+                } else {
+                    // 마감 시간 후에는 대진표를 생성하지 않음 (이미 생성되었을 것으로 가정)
+                    console.log('마감 시간 후 - 대진표는 이미 생성되어 있음');
+                }
+            }
+        } catch (error) {
+            console.error('대진표 재생성 오류:', error);
+            // 에러가 있어도 팀 배정은 완료되었으므로 계속 진행
+        }
         
         // 알림 전송
         await sendTeamAssignmentNotifications(reservations, teams, date, timeSlot);
