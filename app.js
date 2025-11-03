@@ -9542,40 +9542,58 @@ async function addAdminByUid() {
                 userEmail = currentUser.email;
                 userName = currentUser.displayName;
             } else {
-                // UID만으로는 이메일을 알 수 없으므로 사용자에게 입력 요청
-                userEmail = prompt(`사용자 UID: ${uid.substring(0, 20)}...\n이메일을 찾을 수 없습니다. 사용자의 이메일 주소를 입력해주세요:`);
-                if (!userEmail) {
-                    showToast('이메일이 필요합니다.', 'error');
-                    return;
-                }
-                if (!isValidEmail(userEmail)) {
-                    showToast('유효한 이메일 주소를 입력해주세요.', 'error');
-                    return;
+                // UID만으로는 이메일을 알 수 없지만, 이메일 없이도 관리자로 추가 가능
+                // 사용자에게 이메일 입력을 선택적으로 요청 (필수 아님)
+                const emailPrompt = prompt(`사용자 UID: ${uid.substring(0, 20)}...\n이메일을 찾을 수 없습니다. 이메일 주소를 입력하시겠습니까? (선택사항, 취소하면 UID만으로 등록됩니다):`);
+                if (emailPrompt && emailPrompt.trim()) {
+                    const trimmedEmail = emailPrompt.trim();
+                    if (isValidEmail(trimmedEmail)) {
+                        userEmail = trimmedEmail;
+                    } else {
+                        showToast('유효하지 않은 이메일입니다. UID만으로 등록합니다.', 'warning');
+                        userEmail = null; // 이메일 없이 등록
+                    }
+                } else {
+                    // 사용자가 취소하거나 입력하지 않으면 이메일 없이 등록
+                    userEmail = null;
                 }
             }
         }
         
-        // 관리자 추가
+        // 관리자 추가 (이메일이 없어도 가능)
         const currentUser = auth.currentUser;
-        await db.collection('admins').doc(uid).set({
-            email: userEmail,
+        const adminData = {
+            email: userEmail || `UID: ${uid.substring(0, 20)}...`,
             isAdmin: true,
             addedAt: new Date(),
             addedBy: currentUser ? currentUser.email : 'unknown'
-        });
+        };
+        
+        // 이메일이 유효한 경우에만 이메일 필드 추가
+        if (userEmail && isValidEmail(userEmail)) {
+            adminData.email = userEmail;
+        } else {
+            adminData.email = null; // 이메일 없음
+            adminData.uid = uid; // UID 저장
+        }
+        
+        await db.collection('admins').doc(uid).set(adminData);
         
         // users 컬렉션에 문서가 없으면 생성
         const userDocCheck = await db.collection('users').doc(uid).get();
         if (!userDocCheck.exists) {
             await db.collection('users').doc(uid).set({
-                email: userEmail,
+                email: userEmail || null,
                 displayName: userName || null,
                 createdAt: new Date(),
                 dupr: null
             }, { merge: true });
         }
         
-        showToast(`관리자가 추가되었습니다. (UID: ${uid.substring(0, 20)}..., 이메일: ${userEmail})`, 'success');
+        const successMessage = userEmail 
+            ? `관리자가 추가되었습니다. (UID: ${uid.substring(0, 20)}..., 이메일: ${userEmail})`
+            : `관리자가 추가되었습니다. (UID: ${uid.substring(0, 20)}...)`;
+        showToast(successMessage, 'success');
         uidInput.value = '';
         
         // 관리자 목록 새로고침
