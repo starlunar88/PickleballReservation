@@ -360,7 +360,9 @@ async function handleSignup() {
             rejectionReason: null
         };
         
-        await db.collection('signupRequests').add(requestData);
+        const requestRef = await db.collection('signupRequests').add(requestData);
+        console.log('회원가입 요청 저장 완료:', requestRef.id);
+        console.log('저장된 데이터:', requestData);
         
         // 관리자들에게 이메일 알림 발송
         // 참고: 클라이언트 사이드에서는 직접 이메일을 보낼 수 없으므로,
@@ -1014,6 +1016,38 @@ async function openAdminSettingsModal() {
         // 회원가입 승인 요청 목록 로드
         await loadSignupRequests();
         
+        // 실시간으로 승인 요청 목록 업데이트 구독
+        // 기존 구독이 있으면 먼저 해제
+        if (window.unsubscribeSignupRequests) {
+            window.unsubscribeSignupRequests();
+        }
+        
+        // orderBy 없이 실시간 구독 (인덱스 문제 방지)
+        const unsubscribeSignupRequests = db.collection('signupRequests')
+            .where('status', '==', 'pending')
+            .onSnapshot((snapshot) => {
+                console.log('승인 요청 실시간 업데이트:', snapshot.size, '개');
+                if (snapshot.empty) {
+                    const requestsList = document.getElementById('signup-requests-list');
+                    if (requestsList) {
+                        requestsList.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>승인 대기 중인 요청이 없습니다</p></div>';
+                    }
+                } else {
+                    loadSignupRequests(); // 목록 새로고침
+                }
+            }, (error) => {
+                console.error('승인 요청 실시간 구독 오류:', error);
+                // 에러가 있어도 계속 진행 (에러 시에는 주기적으로 확인)
+                setTimeout(() => {
+                    if (document.getElementById('admin-settings-modal').style.display === 'block') {
+                        loadSignupRequests();
+                    }
+                }, 5000);
+            });
+        
+        // 모달이 닫힐 때 구독 해제를 위한 저장
+        window.unsubscribeSignupRequests = unsubscribeSignupRequests;
+        
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
     }
@@ -1025,6 +1059,13 @@ function closeAdminSettingsModal() {
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
+        
+        // 실시간 구독 해제
+        if (window.unsubscribeSignupRequests) {
+            window.unsubscribeSignupRequests();
+            window.unsubscribeSignupRequests = null;
+            console.log('승인 요청 실시간 구독 해제됨');
+        }
     }
 }
 
@@ -9685,32 +9726,72 @@ async function removeAdmin(adminId, email) {
 async function loadSignupRequests() {
     try {
         const requestsList = document.getElementById('signup-requests-list');
-        if (!requestsList) return;
+        if (!requestsList) {
+            console.warn('signup-requests-list 요소를 찾을 수 없습니다.');
+            return;
+        }
         
         requestsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>승인 요청을 불러오는 중...</p></div>';
         
-        const requestsSnapshot = await db.collection('signupRequests')
-            .where('status', '==', 'pending')
-            .orderBy('requestedAt', 'desc')
-            .get();
+        console.log('승인 요청 목록 로드 시작...');
+        
+        // 먼저 orderBy 없이 테스트
+        let requestsSnapshot;
+        try {
+            // orderBy를 사용하려고 시도
+            requestsSnapshot = await db.collection('signupRequests')
+                .where('status', '==', 'pending')
+                .orderBy('requestedAt', 'desc')
+                .get();
+        } catch (orderByError) {
+            console.warn('orderBy 오류, orderBy 없이 재시도:', orderByError);
+            // orderBy 실패 시 orderBy 없이 재시도
+            requestsSnapshot = await db.collection('signupRequests')
+                .where('status', '==', 'pending')
+                .get();
+        }
+        
+        console.log(`승인 요청 개수: ${requestsSnapshot.size}`);
         
         if (requestsSnapshot.empty) {
+            console.log('승인 대기 중인 요청이 없습니다.');
             requestsList.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>승인 대기 중인 요청이 없습니다</p></div>';
             return;
         }
         
-        requestsList.innerHTML = '';
+        // 데이터를 배열로 변환하여 정렬 (orderBy 실패 시를 대비)
+        const requests = [];
         requestsSnapshot.forEach(doc => {
-            const request = { id: doc.id, ...doc.data() };
+            requests.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // requestedAt 기준으로 정렬 (orderBy 실패 시)
+        requests.sort((a, b) => {
+            const aDate = a.requestedAt ? a.requestedAt.toDate().getTime() : 0;
+            const bDate = b.requestedAt ? b.requestedAt.toDate().getTime() : 0;
+            return bDate - aDate; // 최신순
+        });
+        
+        console.log('승인 요청 목록:', requests);
+        
+        requestsList.innerHTML = '';
+        requests.forEach(request => {
             const requestElement = createSignupRequestElement(request);
             requestsList.appendChild(requestElement);
         });
         
+        console.log(`${requests.length}개의 승인 요청을 표시했습니다.`);
+        
     } catch (error) {
         console.error('승인 요청 목록 로드 오류:', error);
+        console.error('오류 상세:', error.code, error.message);
         const requestsList = document.getElementById('signup-requests-list');
         if (requestsList) {
-            requestsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>승인 요청을 불러올 수 없습니다</p></div>';
+            requestsList.innerHTML = `<div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>승인 요청을 불러올 수 없습니다</p>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">오류: ${error.message}</p>
+            </div>`;
         }
     }
 }
