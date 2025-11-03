@@ -905,6 +905,91 @@ body {
     color: #721c24;
 }
 
+/* 회원가입 승인 요청 스타일 */
+.signup-requests-section {
+    margin-top: 10px;
+}
+
+.signup-requests-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.signup-request-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 4px solid #ff9800;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.signup-request-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.request-info {
+    flex: 1;
+}
+
+.request-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 1rem;
+}
+
+.request-email {
+    font-weight: 500;
+    color: #667eea;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.request-meta {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.request-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.request-actions .btn {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.request-actions .btn-primary {
+    background: #28a745;
+    color: white;
+    border: none;
+}
+
+.request-actions .btn-primary:hover {
+    background: #218838;
+}
+
+.request-actions .btn-outline {
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
+.request-actions .btn-outline:hover {
+    background: #dc3545;
+    color: white;
+}
+
 /* 알림 시스템 스타일 */
 .notifications-btn {
     position: relative;

@@ -593,7 +593,12 @@
                 </div>
                 
                 <div class="admin-section">
-                    <h3>회원가입 승인 요청</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>회원가입 승인 요청</h3>
+                        <button type="button" class="btn btn-outline btn-small" onclick="loadSignupRequests()" style="white-space: nowrap;">
+                            <i class="fas fa-sync-alt"></i> 새로고침
+                        </button>
+                    </div>
                     <div class="signup-requests-section">
                         <div class="signup-requests-list" id="signup-requests-list">
                             <div class="loading-state">
