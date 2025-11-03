@@ -362,8 +362,65 @@ async function handleSignup() {
         
         await db.collection('signupRequests').add(requestData);
         
-        // 관리자들에게 알림 (실제 이메일 발송은 Cloud Functions에서 처리)
-        // 여기서는 Firestore에 저장만 하고, 관리자 페이지에서 확인하도록 함
+        // 관리자들에게 이메일 알림 발송
+        try {
+            // 모든 관리자 목록 가져오기
+            const adminsSnapshot = await db.collection('admins')
+                .where('isAdmin', '==', true)
+                .get();
+            
+            if (!adminsSnapshot.empty) {
+                const adminEmails = [];
+                adminsSnapshot.forEach(doc => {
+                    const adminData = doc.data();
+                    if (adminData.email && isValidEmail(adminData.email)) {
+                        adminEmails.push(adminData.email);
+                    }
+                });
+                
+                // 각 관리자에게 회원가입 요청 알림 이메일 발송
+                // Firebase Auth의 sendSignInLinkToEmail을 사용하여 알림 링크 전송
+                const actionCodeSettings = {
+                    url: window.location.origin + window.location.pathname + '?adminNotification=true',
+                    handleCodeInApp: true,
+                };
+                
+                let sentCount = 0;
+                const sendPromises = adminEmails.map(async (adminEmail) => {
+                    try {
+                        // 관리자가 로그인할 수 있는 이메일 링크 전송 (알림 용도)
+                        await auth.sendSignInLinkToEmail(adminEmail, actionCodeSettings);
+                        sentCount++;
+                        console.log(`관리자 ${adminEmail}에게 알림 이메일 발송 완료`);
+                    } catch (error) {
+                        console.error(`관리자 ${adminEmail}에게 이메일 발송 실패:`, error);
+                        // 일부 관리자에게 발송 실패해도 계속 진행
+                    }
+                });
+                
+                // 모든 관리자에게 발송 시도
+                await Promise.all(sendPromises);
+                
+                console.log(`${sentCount}/${adminEmails.length}명의 관리자에게 알림 이메일 발송 완료`);
+                
+                // 관리자 알림 로그 저장
+                await db.collection('adminNotifications').add({
+                    type: 'signupRequest',
+                    requestName: name,
+                    requestEmail: email,
+                    adminEmails: adminEmails,
+                    sentCount: sentCount,
+                    totalCount: adminEmails.length,
+                    createdAt: new Date()
+                });
+                
+            } else {
+                console.warn('등록된 관리자가 없습니다.');
+            }
+        } catch (error) {
+            console.error('관리자 알림 처리 오류:', error);
+            // 에러가 있어도 회원가입 요청은 성공적으로 저장되므로 계속 진행
+        }
         
         showToast('회원가입 요청이 접수되었습니다. 관리자의 승인 이후 회원가입 메일이 발송됩니다.', 'success');
         closeModal('signup');
