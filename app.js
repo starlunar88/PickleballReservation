@@ -669,13 +669,44 @@ function handleEmailLinkSignIn() {
                         }
                     }
                 })
-                .then(() => {
-                    if (isSignup) {
+                .then(async () => {
+                    const user = auth.currentUser;
+                    
+                    if (isSignup && user) {
+                        // 회원가입인 경우 users 컬렉션에 문서 생성
+                        try {
+                            await db.collection('users').doc(user.uid).set({
+                                email: user.email,
+                                displayName: user.displayName || userName,
+                                createdAt: new Date(),
+                                dupr: null
+                            }, { merge: true });
+                            console.log('users 컬렉션에 사용자 문서 생성 완료');
+                        } catch (error) {
+                            console.error('users 컬렉션 문서 생성 오류:', error);
+                        }
+                        
                         // 회원가입인 경우 비밀번호 설정 모달 표시
                         showPasswordSetupModal(email);
                         showToast('회원가입이 완료되었습니다! 비밀번호를 설정해주세요.', 'success');
                     } else {
-                        // 로그인인 경우
+                        // 로그인인 경우 users 컬렉션에 문서가 없으면 생성
+                        if (user) {
+                            try {
+                                const userDoc = await db.collection('users').doc(user.uid).get();
+                                if (!userDoc.exists) {
+                                    await db.collection('users').doc(user.uid).set({
+                                        email: user.email,
+                                        displayName: user.displayName,
+                                        createdAt: new Date(),
+                                        dupr: null
+                                    }, { merge: true });
+                                    console.log('users 컬렉션에 사용자 문서 생성 완료 (로그인 시)');
+                                }
+                            } catch (error) {
+                                console.error('users 컬렉션 문서 확인/생성 오류:', error);
+                            }
+                        }
                         showToast('로그인되었습니다!', 'success');
                     }
                     
@@ -9368,18 +9399,46 @@ async function addAdmin() {
             return;
         }
         
-        // 사용자 ID 찾기 (이메일로)
+        let userId = null;
+        
+        // 1. users 컬렉션에서 이메일로 사용자 찾기
         const usersSnapshot = await db.collection('users')
             .where('email', '==', email)
             .get();
         
-        if (usersSnapshot.empty) {
-            showToast('해당 이메일로 가입된 사용자가 없습니다.', 'error');
-            return;
+        if (!usersSnapshot.empty) {
+            // users 컬렉션에 문서가 있는 경우
+            const userDoc = usersSnapshot.docs[0];
+            userId = userDoc.id;
+        } else {
+            // 2. users 컬렉션에 없으면 admins 컬렉션에서 이메일로 찾기
+            const adminsSnapshot = await db.collection('admins')
+                .where('email', '==', email)
+                .get();
+            
+            if (!adminsSnapshot.empty) {
+                const adminDoc = adminsSnapshot.docs[0];
+                userId = adminDoc.id;
+            } else {
+                // 3. 둘 다 없으면 현재 로그인한 사용자 중 해당 이메일이 있는지 확인
+                const currentUser = auth.currentUser;
+                if (currentUser && currentUser.email === email) {
+                    userId = currentUser.uid;
+                    // users 컬렉션에 문서 생성
+                    await db.collection('users').doc(userId).set({
+                        email: email,
+                        displayName: currentUser.displayName,
+                        createdAt: new Date(),
+                        dupr: null
+                    }, { merge: true });
+                } else {
+                    // 4. 마지막 방법: 이메일로 Firebase Authentication에서 사용자를 찾을 수 없으므로
+                    // 사용자에게 먼저 로그인하도록 안내
+                    showToast('해당 이메일로 가입된 사용자를 찾을 수 없습니다. 사용자가 먼저 로그인해야 관리자로 추가할 수 있습니다.', 'error');
+                    return;
+                }
+            }
         }
-        
-        const userDoc = usersSnapshot.docs[0];
-        const userId = userDoc.id;
         
         // 이미 관리자인지 확인
         const adminDoc = await db.collection('admins').doc(userId).get();
@@ -9396,6 +9455,16 @@ async function addAdmin() {
             addedAt: new Date(),
             addedBy: currentUser ? currentUser.email : 'unknown'
         });
+        
+        // users 컬렉션에 문서가 없으면 생성
+        const userDocCheck = await db.collection('users').doc(userId).get();
+        if (!userDocCheck.exists) {
+            await db.collection('users').doc(userId).set({
+                email: email,
+                createdAt: new Date(),
+                dupr: null
+            }, { merge: true });
+        }
         
         showToast('관리자가 추가되었습니다.', 'success');
         emailInput.value = '';

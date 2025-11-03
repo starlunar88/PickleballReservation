@@ -70,8 +70,24 @@ async function isAdmin(user) {
 }
 
 // 인증 상태 변경 감지
-window.auth.onAuthStateChanged((user) => {
+window.auth.onAuthStateChanged(async (user) => {
     if (user) {
+        // 사용자가 로그인한 경우 users 컬렉션에 문서가 없으면 생성
+        try {
+            const userDoc = await window.db.collection('users').doc(user.uid).get();
+            if (!userDoc.exists) {
+                await window.db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    displayName: user.displayName,
+                    createdAt: new Date(),
+                    dupr: null
+                }, { merge: true });
+                console.log('users 컬렉션에 사용자 문서 생성 완료 (onAuthStateChanged)');
+            }
+        } catch (error) {
+            console.error('users 컬렉션 문서 확인/생성 오류:', error);
+        }
+        
         // 사용자가 로그인한 경우
         showUserMenu(user);
         loadUserReservations(user.uid);
