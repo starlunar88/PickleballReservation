@@ -8569,8 +8569,24 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
     for (let c = 1; c <= courtCount; c++) {
         const courtPlayerList = [...(courtPlayers[c] || [])];
         
+        if (courtPlayerList.length === 0) {
+            // 코트에 플레이어가 없으면 스킵
+            continue;
+        }
+        
+        // 4명 미만인 경우도 처리 (로테이션 방식)
+        // 하지만 피클볼은 4명이 필요하므로, 4명 미만인 경우는 다른 코트로 재배정하거나
+        // 가능한 한 다른 코트와 합쳐야 함
+        // 일단 4명 미만인 코트는 스킵하고, 해당 플레이어는 다른 코트로 재배정 필요
+        // 하지만 현재 구조에서는 코트별로 독립적으로 처리하므로,
+        // 4명 미만인 코트의 플레이어는 나중에 다시 배정되어야 함
+        // 우선은 4명 미만인 코트는 스킵하고, 상위 레벨에서 처리하도록 함
         if (courtPlayerList.length < 4) {
-            // 이 코트에 4명 미만이면 스킵
+            // 4명 미만인 경우는 이 코트에서 경기를 만들 수 없으므로 스킵
+            // 이 플레이어들은 상위 레벨(코트 분배 단계)에서 다른 코트로 재배정되어야 함
+            // 하지만 현재 구조상 코트별로 독립적으로 처리하므로, 
+            // 4명 미만인 코트는 경기를 생성하지 않고 스킵
+            // 이 경우 unassignedPlayers에 포함되어 나중에 다시 배정될 수 있음
             continue;
         }
         
@@ -8580,15 +8596,33 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 밸런스 모드: 잘하는 사람과 못하는 사람을 같은 편에 배치
             // 점수 순으로 정렬 (내림차순: 최강, 차강, 차약, 최약)
             const sortedPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
-            // 밸런스 팀 구성: [최강, 최약, 차강, 차약] 순서로 배치
-            // → 팀A: [최강, 최약], 팀B: [차강, 차약] (pairingPatterns[0] 사용 시)
+            
+            // 4명 단위로 팀을 구성하되, 남는 플레이어도 포함하여 로테이션 방식으로 처리
+            // 모든 플레이어를 4명씩 그룹으로 나누고, 남는 인원도 포함하여 라운드마다 로테이션
             for (let i = 0; i < sortedPlayers.length; i += 4) {
                 const fourPlayers = sortedPlayers.slice(i, i + 4);
                 if (fourPlayers.length === 4) {
                     // [최강(0), 최약(3), 차강(1), 차약(2)] 순서로 재배치
-                    // pairingPatterns[0] = [0,1,2,3] 사용 시 → 팀A: [최강, 최약], 팀B: [차강, 차약]
                     teams.push([fourPlayers[0], fourPlayers[3], fourPlayers[1], fourPlayers[2]]);
+                } else if (fourPlayers.length > 0) {
+                    // 4명 미만인 마지막 그룹의 경우, 이전 그룹과 합쳐서 로테이션하거나
+                    // 별도로 처리해야 하지만, 현재 로직상 4명 미만은 스킵되므로
+                    // 이 부분은 상위 레벨에서 처리 (다음 코트로 재배정)
+                    // 일단 마지막 그룹도 포함시켜서 최대한 많은 라운드에서 참여하도록
+                    // 하지만 4명 미만은 경기를 만들 수 없으므로, 로테이션 풀에 포함
+                    // 이 경우는 별도 처리 필요
                 }
+            }
+            
+            // 남는 플레이어가 있으면 (4명 단위로 나누어떨어지지 않는 경우)
+            // 예: 7명이면 4명 + 3명 → 3명은 로테이션 풀에 포함하여 다음 라운드에 배정
+            const remainingPlayers = sortedPlayers.slice(Math.floor(sortedPlayers.length / 4) * 4);
+            if (remainingPlayers.length > 0 && remainingPlayers.length < 4) {
+                // 남는 플레이어를 포함하여 추가 팀 구성 시도
+                // 하지만 4명 미만이면 경기를 만들 수 없으므로,
+                // 실제로는 로테이션 방식으로 처리해야 함
+                // 일단은 남는 플레이어를 다음 라운드의 로테이션 풀에 포함시키는 방식으로 처리
+                // 이는 라운드 생성 부분에서 처리
             }
         } else if (teamMode === 'grouped') {
             // 그룹 모드: 각 코트 내에서 랜덤
@@ -8610,11 +8644,76 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             }
         }
         
-        // 각 팀에서 라운드별 경기 생성
-        for (let r = 1; r <= rounds; r++) {
-            const teamIndex = (r - 1) % teams.length;
-            if (teamIndex >= teams.length) continue;
-            const fourPlayers = teams[teamIndex];
+        // 4명 단위로 나누어떨어지지 않는 경우 로테이션 방식으로 처리
+        // 모든 플레이어가 최소 1회 이상 참여하도록 라운드 구성
+        const totalPlayers = courtPlayerList.length;
+        const remainingCount = totalPlayers % 4; // 남는 인원
+        
+        // 남는 인원이 있으면 로테이션 방식으로 모든 플레이어 포함
+        if (remainingCount > 0) {
+            // 모든 플레이어를 포함하여 라운드별로 로테이션 생성
+            // 예: 7명이면 각 라운드마다 다른 4명 조합으로 구성하여 모든 플레이어 참여 보장
+            // 모든 플레이어를 정렬된 배열로 유지
+            let sortedAllPlayers;
+            if (teamMode === 'balanced') {
+                sortedAllPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
+            } else {
+                sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
+            }
+            
+            // 각 라운드마다 4명씩 선택하여 경기 생성
+            // 모든 플레이어가 최소 1회 이상 참여하도록 로테이션
+            for (let r = 1; r <= rounds; r++) {
+                // 로테이션 방식: 각 라운드마다 시작 인덱스를 이동
+                // 예: 7명이면 라운드1: 0-3, 라운드2: 1-4, 라운드3: 2-5, 라운드4: 3-6 (mod 7)
+                const startIndex = ((r - 1) * 4) % sortedAllPlayers.length;
+                const fourPlayers = [];
+                
+                // 4명 선택 (순환 방식)
+                for (let i = 0; i < 4; i++) {
+                    const index = (startIndex + i) % sortedAllPlayers.length;
+                    fourPlayers.push(sortedAllPlayers[index]);
+                }
+                
+                // 팀 구성
+                if (fourPlayers.length === 4) {
+                    let teamA, teamB;
+                    if (teamMode === 'balanced') {
+                        // 밸런스 모드: [최강, 최약] vs [차강, 차약]
+                        teamA = [fourPlayers[0], fourPlayers[3]];
+                        teamB = [fourPlayers[1], fourPlayers[2]];
+                    } else {
+                        // 랜덤/그룹 모드: 기본 패턴 사용
+                        const p = pairingPatterns[(r - 1) % pairingPatterns.length];
+                        teamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                        teamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
+                    }
+                    
+                    schedule.push({
+                        round: r,
+                        court: c,
+                        teamA: teamA.map(player => ({
+                            userId: player.userId,
+                            userName: player.userName,
+                            internalRating: player.internalRating || 0,
+                            score: player.score || 0
+                        })),
+                        teamB: teamB.map(player => ({
+                            userId: player.userId,
+                            userName: player.userName,
+                            internalRating: player.internalRating || 0,
+                            score: player.score || 0
+                        }))
+                    });
+                }
+            }
+        } else {
+            // 4명 단위로 나누어떨어지는 경우 기존 로직 사용
+            // 각 팀에서 라운드별 경기 생성
+            for (let r = 1; r <= rounds; r++) {
+                const teamIndex = (r - 1) % teams.length;
+                if (teamIndex >= teams.length) continue;
+                const fourPlayers = teams[teamIndex];
             
             // 밸런스 모드일 때는 항상 밸런스 패턴 [0,1,2,3] 사용 (최강+최약 vs 차강+차약)
             // 다른 모드일 때는 라운드별로 다른 패턴 사용하여 다양한 조합 제공
@@ -8657,6 +8756,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 }
             ];
             schedule.push({ round: r, court: c, teamA, teamB });
+            }
         }
     }
     
