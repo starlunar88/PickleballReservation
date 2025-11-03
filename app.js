@@ -342,7 +342,7 @@ async function handleSignup() {
             .get();
         
         if (!existingRequest.empty) {
-            showToast('이미 승인 요청이 접수되어 있습니다. 관리자의 승인을 기다려주세요.', 'warning');
+            showToast('이미 승인 요청이 접수되어 있습니다. 관리자의 승인 이후 회원가입 메일이 발송됩니다.', 'warning');
             hideLoading();
             return;
         }
@@ -365,7 +365,7 @@ async function handleSignup() {
         // 관리자들에게 알림 (실제 이메일 발송은 Cloud Functions에서 처리)
         // 여기서는 Firestore에 저장만 하고, 관리자 페이지에서 확인하도록 함
         
-        showToast('회원가입 요청이 접수되었습니다. 관리자의 승인을 기다려주세요.', 'success');
+        showToast('회원가입 요청이 접수되었습니다. 관리자의 승인 이후 회원가입 메일이 발송됩니다.', 'success');
         closeModal('signup');
         signupForm.reset();
         
