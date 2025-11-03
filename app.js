@@ -9381,16 +9381,19 @@ function createAdminElement(admin) {
     const addedDate = admin.addedAt ? admin.addedAt.toDate().toLocaleDateString() : '알 수 없음';
     const addedBy = admin.addedBy === 'system' ? '시스템' : admin.addedBy;
     
+    // 이메일이 null이거나 없으면 UID로 표시
+    const displayEmail = admin.email || `UID: ${admin.id.substring(0, 20)}...`;
+    
     div.innerHTML = `
         <div class="admin-info">
-            <div class="admin-email">${admin.email}</div>
+            <div class="admin-email">${displayEmail}</div>
             <div class="admin-meta">추가일: ${addedDate} | 추가자: ${addedBy}</div>
         </div>
         <div class="admin-actions">
             <span class="admin-status ${admin.isAdmin ? 'active' : 'inactive'}">
                 ${admin.isAdmin ? '활성' : '비활성'}
             </span>
-            <button class="remove-admin-btn" onclick="removeAdmin('${admin.id}', '${admin.email}')">
+            <button class="remove-admin-btn" onclick="removeAdmin('${admin.id}', ${admin.email ? `'${admin.email}'` : 'null'})">
                 <i class="fas fa-trash"></i> 제거
             </button>
         </div>
@@ -9591,7 +9594,10 @@ async function addAdminByUid() {
 // 관리자 제거
 async function removeAdmin(adminId, email) {
     try {
-        if (!confirm(`정말로 ${email}의 관리자 권한을 제거하시겠습니까?`)) {
+        // 이메일이 null이거나 없으면 UID로 표시
+        const displayName = email && email !== 'null' ? email : `UID: ${adminId.substring(0, 20)}...`;
+        
+        if (!confirm(`정말로 ${displayName}의 관리자 권한을 제거하시겠습니까?`)) {
             return;
         }
         
