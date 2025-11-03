@@ -1315,6 +1315,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // UID로 관리자 추가 버튼
+    const addAdminByUidBtn = document.getElementById('add-admin-by-uid-btn');
+    if (addAdminByUidBtn) {
+        addAdminByUidBtn.addEventListener('click', addAdminByUid);
+    }
+    
+    // 관리자 UID 입력 엔터키
+    const adminUidInput = document.getElementById('admin-uid');
+    if (adminUidInput) {
+        adminUidInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addAdminByUid();
+            }
+        });
+    }
+    
     // 로그아웃 버튼
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
@@ -9433,8 +9449,13 @@ async function addAdmin() {
                     }, { merge: true });
                 } else {
                     // 4. 마지막 방법: 이메일로 Firebase Authentication에서 사용자를 찾을 수 없으므로
-                    // 사용자에게 먼저 로그인하도록 안내
-                    showToast('해당 이메일로 가입된 사용자를 찾을 수 없습니다. 사용자가 먼저 로그인해야 관리자로 추가할 수 있습니다.', 'error');
+                    // 사용자에게 UID를 직접 입력하도록 안내
+                    showToast(`해당 이메일(${email})로 가입된 사용자를 Firestore에서 찾을 수 없습니다. Firebase Authentication에는 등록되어 있을 수 있습니다. 아래 UID 입력 필드에 사용자 UID를 입력하여 관리자를 추가하세요. (Firebase 콘솔 > Authentication > Users에서 확인)`, 'error');
+                    // UID 입력 필드로 포커스 이동
+                    const uidInput = document.getElementById('admin-uid');
+                    if (uidInput) {
+                        uidInput.focus();
+                    }
                     return;
                 }
             }
@@ -9474,6 +9495,94 @@ async function addAdmin() {
         
     } catch (error) {
         console.error('관리자 추가 오류:', error);
+        showToast('관리자 추가 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// UID로 관리자 추가
+async function addAdminByUid() {
+    try {
+        const uidInput = document.getElementById('admin-uid');
+        const uid = uidInput.value.trim();
+        
+        if (!uid) {
+            showToast('사용자 UID를 입력해주세요.', 'error');
+            return;
+        }
+        
+        // UID 형식 검증 (최소 길이)
+        if (uid.length < 10) {
+            showToast('유효한 사용자 UID를 입력해주세요.', 'error');
+            return;
+        }
+        
+        // 이미 관리자인지 확인
+        const adminDoc = await db.collection('admins').doc(uid).get();
+        if (adminDoc.exists) {
+            const adminData = adminDoc.data();
+            showToast(`이미 관리자로 등록된 사용자입니다. (이메일: ${adminData.email || '알 수 없음'})`, 'warning');
+            uidInput.value = '';
+            return;
+        }
+        
+        // users 컬렉션에서 사용자 정보 가져오기
+        let userEmail = null;
+        let userName = null;
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            userEmail = userData.email;
+            userName = userData.displayName || userData.name;
+        }
+        
+        // 사용자 정보가 없으면 현재 로그인한 사용자의 이메일 사용 시도
+        if (!userEmail) {
+            const currentUser = auth.currentUser;
+            if (currentUser && currentUser.uid === uid) {
+                userEmail = currentUser.email;
+                userName = currentUser.displayName;
+            } else {
+                // UID만으로는 이메일을 알 수 없으므로 사용자에게 입력 요청
+                userEmail = prompt(`사용자 UID: ${uid.substring(0, 20)}...\n이메일을 찾을 수 없습니다. 사용자의 이메일 주소를 입력해주세요:`);
+                if (!userEmail) {
+                    showToast('이메일이 필요합니다.', 'error');
+                    return;
+                }
+                if (!isValidEmail(userEmail)) {
+                    showToast('유효한 이메일 주소를 입력해주세요.', 'error');
+                    return;
+                }
+            }
+        }
+        
+        // 관리자 추가
+        const currentUser = auth.currentUser;
+        await db.collection('admins').doc(uid).set({
+            email: userEmail,
+            isAdmin: true,
+            addedAt: new Date(),
+            addedBy: currentUser ? currentUser.email : 'unknown'
+        });
+        
+        // users 컬렉션에 문서가 없으면 생성
+        const userDocCheck = await db.collection('users').doc(uid).get();
+        if (!userDocCheck.exists) {
+            await db.collection('users').doc(uid).set({
+                email: userEmail,
+                displayName: userName || null,
+                createdAt: new Date(),
+                dupr: null
+            }, { merge: true });
+        }
+        
+        showToast(`관리자가 추가되었습니다. (UID: ${uid.substring(0, 20)}..., 이메일: ${userEmail})`, 'success');
+        uidInput.value = '';
+        
+        // 관리자 목록 새로고침
+        await loadAdminList();
+        
+    } catch (error) {
+        console.error('UID로 관리자 추가 오류:', error);
         showToast('관리자 추가 중 오류가 발생했습니다.', 'error');
     }
 }

@@ -569,6 +569,19 @@
                                 <input type="email" id="admin-email" class="form-control" placeholder="이메일 주소를 입력하세요">
                                 <button type="button" class="btn btn-primary" id="add-admin-btn">추가</button>
                             </div>
+                            <small class="form-text" style="margin-top: 8px; display: block;">
+                                <i class="fas fa-info-circle"></i> 이메일로 찾을 수 없으면 UID를 직접 입력하세요
+                            </small>
+                        </div>
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="admin-uid">또는 사용자 UID 직접 입력</label>
+                            <div class="input-group">
+                                <input type="text" id="admin-uid" class="form-control" placeholder="사용자 UID를 입력하세요 (선택사항)">
+                                <button type="button" class="btn btn-outline" id="add-admin-by-uid-btn">UID로 추가</button>
+                            </div>
+                            <small class="form-text" style="margin-top: 8px; display: block;">
+                                <i class="fas fa-info-circle"></i> Firebase Authentication의 사용자 UID를 입력하세요
+                            </small>
                         </div>
                         <div class="admin-list" id="admin-list">
                             <div class="loading-state">
