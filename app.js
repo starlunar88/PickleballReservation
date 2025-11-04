@@ -8743,19 +8743,39 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
             }
             
+            // 공평한 분배를 위한 플레이어 참여 횟수 추적
+            // 주의: 이것은 현재 생성 중인 대진표(해당 날짜, 해당 시간대) 내에서만의 참여 횟수입니다
+            // 예: 7명이 4라운드 대진표를 생성할 때, 각 플레이어가 몇 경기에 참여하는지 추적
+            const playerPlayCount = {};
+            sortedAllPlayers.forEach(player => {
+                playerPlayCount[player.userId] = 0; // 각 플레이어의 참여 횟수를 0으로 초기화
+            });
+            
             // 각 라운드마다 4명씩 선택하여 경기 생성
-            // 모든 플레이어가 최소 1회 이상 참여하도록 로테이션
+            // 모든 플레이어가 최대한 공평하게 참여하도록 로테이션
             for (let r = 1; r <= rounds; r++) {
-                // 로테이션 방식: 각 라운드마다 시작 인덱스를 1씩 이동하여 모든 플레이어가 참여하도록
-                // 예: 5명이면 라운드1: 0-3, 라운드2: 1-4, 라운드3: 2-6(0), 라운드4: 3-7(1) (mod 5)
-                const startIndex = (r - 1) % sortedAllPlayers.length;
-                const fourPlayers = [];
+                // 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
+                // 각 라운드마다 현재까지 참여 횟수가 가장 적은 4명을 선택
+                const availablePlayers = [...sortedAllPlayers];
                 
-                // 4명 선택 (순환 방식)
-                for (let i = 0; i < 4; i++) {
-                    const index = (startIndex + i) % sortedAllPlayers.length;
-                    fourPlayers.push(sortedAllPlayers[index]);
-                }
+                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 원래 순서 유지)
+                availablePlayers.sort((a, b) => {
+                    const countA = playerPlayCount[a.userId] || 0; // 현재 대진표 내 참여 횟수
+                    const countB = playerPlayCount[b.userId] || 0; // 현재 대진표 내 참여 횟수
+                    if (countA !== countB) {
+                        return countA - countB; // 참여 횟수가 적은 순
+                    }
+                    // 같은 횟수면 원래 순서 유지
+                    return 0;
+                });
+                
+                // 현재 대진표 내 참여 횟수가 가장 적은 4명 선택
+                const fourPlayers = availablePlayers.slice(0, 4);
+                
+                // 선택된 플레이어의 현재 대진표 내 참여 횟수 증가
+                fourPlayers.forEach(player => {
+                    playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
+                });
                 
                 // 팀 구성
                 if (fourPlayers.length === 4) {
@@ -8790,6 +8810,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     });
                 }
             }
+            
+            // 공평 분배 결과 로그 (현재 대진표 내 참여 횟수)
+            console.log(`📊 공평 분배 결과 (${totalPlayers}명, ${rounds}라운드, 현재 대진표 내):`, 
+                Object.entries(playerPlayCount)
+                    .map(([userId, count]) => {
+                        const player = sortedAllPlayers.find(p => p.userId === userId);
+                        return `${player?.userName || userId}: ${count}경기`;
+                    })
+                    .join(', ')
+            );
         } else {
             // 4명 단위로 나누어떨어지는 경우 기존 로직 사용
             // teamMode에 따라 코트별 팀 구성
