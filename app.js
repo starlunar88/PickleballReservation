@@ -3105,10 +3105,14 @@ async function loadWinRateChart() {
         if (!db) return;
         
         const userSelect = document.getElementById('growth-user-select');
+        const periodSelect = document.getElementById('growth-period-select');
         
         // 현재 선택된 기간 버튼 확인
         const activePeriodBtn = document.querySelector('.stats-period-btn.active');
         const selectedPeriod = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
+        
+        // 주별/월별/전체 선택 확인
+        const groupBy = periodSelect?.value || 'all'; // weekly, monthly, all
         
         const selectedUserId = userSelect?.value;
         
@@ -3218,11 +3222,29 @@ async function loadWinRateChart() {
             });
         });
         
-        // 날짜별 승률 계산
+        // 날짜별 승률 계산 (그룹화 방식에 따라)
         const dateStats = {};
         
         gameResults.sort((a, b) => a.date - b.date).forEach((game, index) => {
-            const dateKey = game.date.toISOString().split('T')[0];
+            let dateKey;
+            
+            // 그룹화 방식에 따라 날짜 키 생성
+            if (groupBy === 'weekly') {
+                // 주별 그룹화: 해당 주의 월요일 날짜를 키로 사용
+                const date = new Date(game.date);
+                const day = date.getDay();
+                const diff = date.getDate() - day + (day === 0 ? -6 : 1); // 월요일로 조정
+                const monday = new Date(date.getFullYear(), date.getMonth(), diff);
+                dateKey = monday.toISOString().split('T')[0];
+            } else if (groupBy === 'monthly') {
+                // 월별 그룹화: 해당 월의 첫 날을 키로 사용
+                const date = new Date(game.date);
+                dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+            } else {
+                // 전체: 일별 그룹화
+                dateKey = game.date.toISOString().split('T')[0];
+            }
+            
             if (!dateStats[dateKey]) {
                 dateStats[dateKey] = { wins: 0, total: 0 };
             }
