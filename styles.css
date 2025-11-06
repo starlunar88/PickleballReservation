@@ -2612,17 +2612,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: linear-gradient(180deg, #ffeb3b 0%, #ffc107 100%);
     width: 133px; /* 200px * 2/3 */
     min-width: 120px; /* 180px * 2/3 */
-    height: 213px; /* 320px * 2/3 */
+    height: 213px; /* 320px * 2/3 - PC 기본값, 모바일에서 덮어씀 */
     order: 2;
 }
-
-/* 모바일에서만 height를 덮어쓰기 위해 기본 스타일은 유지 */
 
 .podium-card.second-place {
     background: #e0e0e0;
     width: 120px; /* 180px * 2/3 */
     min-width: 107px; /* 160px * 2/3 */
-    height: 187px; /* 280px * 2/3 */
+    height: 187px; /* 280px * 2/3 - PC 기본값, 모바일에서 덮어씀 */
     order: 1;
 }
 
@@ -2630,7 +2628,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: linear-gradient(180deg, #d4a574 0%, #cd7f32 100%);
     width: 120px; /* 180px * 2/3 */
     min-width: 107px; /* 160px * 2/3 */
-    height: 160px; /* 240px * 2/3 */
+    height: 160px; /* 240px * 2/3 - PC 기본값, 모바일에서 덮어씀 */
     order: 3;
 }
 
@@ -3589,6 +3587,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         text-align: center !important;
         box-sizing: border-box !important;
         height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
         line-height: 1.4 !important;
         display: flex !important;
         align-items: center !important;
@@ -3606,6 +3606,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         text-align: center !important;
         box-sizing: border-box !important;
         height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
         line-height: 1.4 !important;
         display: flex !important;
         align-items: center !important;
@@ -4039,16 +4041,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .podium-card.first-place {
         width: 110px !important; /* 133px에서 더 줄임 */
         min-width: 100px !important; /* 120px에서 더 줄임 */
+        height: 213px !important; /* PC에서는 기본 높이 유지 */
     }
     
     .podium-card.second-place {
         width: 100px !important; /* 120px에서 더 줄임 */
         min-width: 90px !important; /* 107px에서 더 줄임 */
+        height: 187px !important; /* PC에서는 기본 높이 유지 */
     }
     
     .podium-card.third-place {
         width: 100px !important; /* 120px에서 더 줄임 */
         min-width: 90px !important; /* 107px에서 더 줄임 */
+        height: 160px !important; /* PC에서는 기본 높이 유지 */
     }
     
     .podium-card {
@@ -4273,6 +4278,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         text-align: center !important;
         box-sizing: border-box !important;
         height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
         line-height: 1.4 !important;
         display: flex !important;
         align-items: center !important;
@@ -4294,6 +4301,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         text-align: center !important;
         box-sizing: border-box !important;
         height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
         line-height: 1.4 !important;
         display: flex !important;
         align-items: center !important;
@@ -5804,6 +5813,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         text-align: center !important;
         box-sizing: border-box !important;
         height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
         line-height: 1.4 !important;
         display: flex !important;
         align-items: center !important;
