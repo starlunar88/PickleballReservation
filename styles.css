@@ -5704,15 +5704,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 16px;
     }
     
-    /* 랭킹 탭 반응형 - 모바일에서 메달 카드 세로로만 길게 */
+    /* 랭킹 탭 반응형 - 모바일에서 메달 카드 세로로 3배 크게 */
     .podium-wrapper {
         flex-direction: row;
         align-items: flex-end;
         justify-content: center;
         gap: 8px;
         padding: 15px 8px;
-        min-height: 280px;
-        max-height: 300px;
+        min-height: 840px !important; /* 3배 */
+        max-height: 900px !important; /* 3배 */
         max-width: 100%;
         box-sizing: border-box;
     }
@@ -5723,7 +5723,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100px !important; /* 너비는 유지 */
         max-width: 100px !important;
         height: auto !important;
-        min-height: 240px; /* 세로로 더 길게 */
+        min-height: 720px !important; /* 3배 */
         padding: 12px 8px;
         gap: 8px;
     }
@@ -5732,8 +5732,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 110px !important; /* 너비는 유지 */
         min-width: 100px !important;
         max-width: 110px !important;
-        min-height: 280px; /* 세로로 더 길게 */
-        max-height: 300px;
+        min-height: 840px !important; /* 3배 */
+        max-height: 900px !important; /* 3배 */
         order: 2;
     }
     
@@ -5741,8 +5741,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100px !important; /* 너비는 유지 */
         min-width: 90px !important;
         max-width: 100px !important;
-        min-height: 260px; /* 세로로 더 길게 */
-        max-height: 280px;
+        min-height: 780px !important; /* 3배 */
+        max-height: 840px !important; /* 3배 */
         order: 1;
     }
     
@@ -5750,8 +5750,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100px !important; /* 너비는 유지 */
         min-width: 90px !important;
         max-width: 100px !important;
-        min-height: 240px; /* 세로로 더 길게 */
-        max-height: 260px;
+        min-height: 720px !important; /* 3배 */
+        max-height: 780px !important; /* 3배 */
         order: 3;
     }
     
