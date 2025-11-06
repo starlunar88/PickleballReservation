@@ -3596,11 +3596,25 @@ function drawWinRateDonutChart(data) {
     
     const ctx = canvas.getContext('2d');
     
-    // Canvas 크기 설정
-    const containerWidth = canvas.parentElement?.offsetWidth || 400;
+    // Canvas 크기 설정 (고해상도 지원)
+    const container = canvas.parentElement;
+    const containerWidth = container?.offsetWidth || 400;
     const containerHeight = 220;
-    const width = canvas.width = containerWidth;
-    const height = canvas.height = containerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    
+    // 실제 캔버스 크기 (픽셀)
+    canvas.width = containerWidth * dpr;
+    canvas.height = containerHeight * dpr;
+    
+    // CSS 크기 설정
+    canvas.style.width = containerWidth + 'px';
+    canvas.style.height = containerHeight + 'px';
+    
+    // 컨텍스트 스케일 조정
+    ctx.scale(dpr, dpr);
+    
+    const width = containerWidth;
+    const height = containerHeight;
     
     ctx.clearRect(0, 0, width, height);
     
@@ -3616,9 +3630,12 @@ function drawWinRateDonutChart(data) {
         return;
     }
     
-    const centerX = width / 2;
+    // 도넛 차트 영역 (왼쪽)
+    const chartAreaWidth = width * 0.55; // 차트가 차지할 너비
+    const centerX = chartAreaWidth / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) / 2 - 30;
+    const maxRadius = Math.min(chartAreaWidth, height) / 2 - 20;
+    const radius = maxRadius;
     const innerRadius = radius * 0.6;
     
     const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
@@ -3640,19 +3657,19 @@ function drawWinRateDonutChart(data) {
         currentAngle += sliceAngle;
     });
     
-    // 범례 그리기 (작게)
-    const legendX = width - 120;
-    const legendY = 15;
-    const legendItemHeight = 20;
+    // 범례 그리기 (오른쪽)
+    const legendX = chartAreaWidth + 15;
+    const legendY = (height - (data.length * 25)) / 2; // 중앙 정렬
+    const legendItemHeight = 25;
     
     data.forEach((item, index) => {
         ctx.fillStyle = colors[index % colors.length];
-        ctx.fillRect(legendX, legendY + index * legendItemHeight, 12, 12);
+        ctx.fillRect(legendX, legendY + index * legendItemHeight, 15, 15);
         
         ctx.fillStyle = '#333';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 16, legendY + index * legendItemHeight + 9);
+        ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 20, legendY + index * legendItemHeight + 12);
     });
 }
 
@@ -3663,11 +3680,25 @@ function drawParticipationBarChart(data) {
     
     const ctx = canvas.getContext('2d');
     
-    // Canvas 크기 설정
-    const containerWidth = canvas.parentElement?.offsetWidth || 400;
+    // Canvas 크기 설정 (고해상도 지원)
+    const container = canvas.parentElement;
+    const containerWidth = container?.offsetWidth || 400;
     const containerHeight = 220;
-    const width = canvas.width = containerWidth;
-    const height = canvas.height = containerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    
+    // 실제 캔버스 크기 (픽셀)
+    canvas.width = containerWidth * dpr;
+    canvas.height = containerHeight * dpr;
+    
+    // CSS 크기 설정
+    canvas.style.width = containerWidth + 'px';
+    canvas.style.height = containerHeight + 'px';
+    
+    // 컨텍스트 스케일 조정
+    ctx.scale(dpr, dpr);
+    
+    const width = containerWidth;
+    const height = containerHeight;
     
     ctx.clearRect(0, 0, width, height);
     
@@ -3683,65 +3714,78 @@ function drawParticipationBarChart(data) {
         return;
     }
     
-    const padding = { top: 15, right: 30, bottom: 50, left: 60 };
+    const maxValue = Math.max(...data.map(d => d.total), 1);
+    
+    // Y축 최대값을 적절한 간격으로 조정 (10의 배수로)
+    const yMax = Math.ceil(maxValue / 10) * 10;
+    const yStep = Math.max(1, Math.ceil(yMax / 10)); // 최대 10개 눈금
+    
+    // 패딩 조정 (X축 레이블이 잘리지 않도록)
+    const padding = { top: 15, right: 20, bottom: 60, left: 50 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
-    const maxValue = Math.max(...data.map(d => d.total), 1);
     const barWidth = chartWidth / data.length;
-    const barSpacing = barWidth * 0.2;
+    const barSpacing = barWidth * 0.15;
     
     // 그리드 그리기
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     
-    for (let i = 0; i <= 5; i++) {
-        const y = padding.top + (i / 5) * chartHeight;
+    const gridLines = Math.ceil(yMax / yStep);
+    for (let i = 0; i <= gridLines; i++) {
+        const value = yMax - (i * yStep);
+        const y = padding.top + (i / gridLines) * chartHeight;
+        
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
         
+        // Y축 레이블
         ctx.fillStyle = '#666';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(Math.round(maxValue * (1 - i / 5)), padding.left - 8, y + 3);
+        ctx.fillText(value.toString(), padding.left - 8, y + 4);
     }
     
     // 바 차트 그리기
     data.forEach((item, index) => {
-        const barHeight = (item.total / maxValue) * chartHeight;
+        const barHeight = (item.total / yMax) * chartHeight;
         const x = padding.left + index * barWidth + barSpacing;
         const y = padding.top + chartHeight - barHeight;
+        const actualBarWidth = barWidth - barSpacing * 2;
         
         ctx.fillStyle = '#667eea';
-        ctx.fillRect(x, y, barWidth - barSpacing * 2, barHeight);
+        ctx.fillRect(x, y, actualBarWidth, barHeight);
         
-        // 이름 레이블
+        // 값 레이블 (막대 위)
         ctx.fillStyle = '#333';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.total.toString(), x + actualBarWidth / 2, y - 5);
+        
+        // 이름 레이블 (X축, 45도 회전)
+        ctx.fillStyle = '#333';
+        ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.save();
-        ctx.translate(x + (barWidth - barSpacing * 2) / 2, height - padding.bottom + 12);
+        const labelX = x + actualBarWidth / 2;
+        const labelY = height - padding.bottom + 15;
+        ctx.translate(labelX, labelY);
         ctx.rotate(-Math.PI / 4);
         ctx.fillText(item.userName, 0, 0);
         ctx.restore();
-        
-        // 값 레이블
-        ctx.fillStyle = '#333';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(item.total, x + (barWidth - barSpacing * 2) / 2, y - 4);
     });
     
-    // Y축 레이블
+    // Y축 레이블 (회전)
     ctx.fillStyle = '#666';
-    ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
+    ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.save();
-    ctx.translate(12, height / 2);
+    ctx.translate(15, height / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText('횟수', 0, 0);
+    ctx.fillText('수', 0, 0);
     ctx.restore();
 }
 
