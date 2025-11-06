@@ -3381,12 +3381,29 @@ function drawWinRateChart(data, groupBy = 'all') {
             
             // 그룹화 방식에 따라 레이블 형식 변경
             if (groupBy === 'weekly') {
-                // 주별: 해당 주의 월요일 날짜 표시 "11/2" 형식
+                // 주별: "11월 1주차" 형식
                 const weekStart = new Date(date);
                 const day = weekStart.getDay();
                 const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
                 const monday = new Date(weekStart.getFullYear(), weekStart.getMonth(), diff);
-                dateStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
+                const month = monday.getMonth() + 1;
+                // 해당 월의 첫 번째 월요일 찾기
+                const firstDayOfMonth = new Date(monday.getFullYear(), monday.getMonth(), 1);
+                const firstDayWeekday = firstDayOfMonth.getDay(); // 0(일) ~ 6(토)
+                let firstMondayDate;
+                if (firstDayWeekday === 0) {
+                    // 일요일이면 다음 날이 월요일
+                    firstMondayDate = 2;
+                } else if (firstDayWeekday === 1) {
+                    // 월요일이면 그대로
+                    firstMondayDate = 1;
+                } else {
+                    // 화~토요일이면 다음 주 월요일
+                    firstMondayDate = 9 - firstDayWeekday;
+                }
+                // 주차 계산
+                const weekNumber = Math.floor((monday.getDate() - firstMondayDate) / 7) + 1;
+                dateStr = `${month}월 ${weekNumber}주차`;
             } else if (groupBy === 'monthly') {
                 // 월별: "11월" 형식
                 dateStr = `${date.getMonth() + 1}월`;
@@ -4176,31 +4193,39 @@ function drawTeamBarChart(data, canvasId, color) {
         console.warn('차트 영역이 너무 작습니다');
     }
     
-    const maxValue = 100; // 승률이므로 최대 100%
+    // 실제 데이터의 최대 승률 계산
+    const maxWinRate = Math.max(...data.map(d => d.winRate), 0);
+    // 차트 영역을 데이터에 맞게 조정 (불필요한 여백 제거)
+    const maxValue = Math.max(Math.ceil(maxWinRate / 10) * 10, 10); // 10의 배수로 올림, 최소 10
     const barHeight = chartHeight / Math.max(data.length, 1);
     const barSpacing = barHeight * 0.1; // spacing 감소
     
-    // 그리드 그리기 (20% 간격으로 여유있게)
+    // 그리드 그리기 (동적 간격)
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     
-    // 그리드 라인 (20% 간격: 0%, 20%, 40%, 60%, 80%, 100%)
-    for (let i = 0; i <= 5; i++) {
-        const x = padding.left + (i / 5) * chartWidth;
+    // 그리드 간격 계산 (최대 5개 눈금)
+    const gridStep = Math.max(10, Math.ceil(maxValue / 5));
+    const gridCount = Math.ceil(maxValue / gridStep);
+    
+    for (let i = 0; i <= gridCount; i++) {
+        const value = i * gridStep;
+        const x = padding.left + (value / maxValue) * chartWidth;
         ctx.beginPath();
         ctx.moveTo(x, padding.top);
         ctx.lineTo(x, padding.top + chartHeight);
         ctx.stroke();
     }
     
-    // 퍼센테이지 레이블 (20% 간격으로 표시, 차트 영역 끝에 맞춤)
+    // 퍼센테이지 레이블 (동적 간격으로 표시, 차트 영역 끝에 맞춤)
     ctx.fillStyle = '#666';
     ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
-    for (let i = 0; i <= 5; i++) {
-        // 차트 영역 내에서 정확히 배치 (100%는 차트 영역 끝에)
-        const x = padding.left + (i / 5) * chartWidth;
-        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 15);
+    for (let i = 0; i <= gridCount; i++) {
+        const value = i * gridStep;
+        // 차트 영역 내에서 정확히 배치 (최대값은 차트 영역 끝에)
+        const x = padding.left + (value / maxValue) * chartWidth;
+        ctx.fillText(`${value}%`, x, height - padding.bottom + 15);
     }
     
     // 바 차트 그리기
@@ -4209,7 +4234,7 @@ function drawTeamBarChart(data, canvasId, color) {
         // 0%일 때도 최소 1% 너비로 표시하여 막대가 보이도록 함
         let winRateForBar = item.winRate === 0 ? 1 : item.winRate;
         let barWidth = (winRateForBar / maxValue) * chartWidth;
-        barWidth = Math.min(barWidth, chartWidth - 2); // 2px 여유
+        barWidth = Math.min(barWidth, chartWidth); // 여유 제거
         // 0%일 때 최소 너비 보장 (약 4px 정도)
         if (item.winRate === 0) {
             barWidth = Math.max(barWidth, 4);
