@@ -8954,27 +8954,208 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             courtPlayers[court].push(player);
         });
     } else {
-        // 랜덤 모드: 무작위로 균등 분배
-        const shuffled = [...unassignedPlayers].sort(() => Math.random() - 0.5);
-        shuffled.forEach((player, index) => {
-            const court = (index % courtCount) + 1;
-            if (!courtPlayers[court]) {
-                courtPlayers[court] = [];
-            }
-            courtPlayers[court].push(player);
-        });
+        // 랜덤 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급 (나중에 전체 랜덤으로 섞음)
+        // 코트별 분배는 하지 않고, 모든 플레이어를 unassignedPlayers에 유지
+        // 실제 코트 배정은 경기 생성 시 동적으로 결정
     }
     
     const schedule = [];
     
-    // 각 코트별로 라운드별 경기 생성
-    for (let c = 1; c <= courtCount; c++) {
-        const courtPlayerList = [...(courtPlayers[c] || [])];
-        
-        if (courtPlayerList.length === 0) {
-            // 코트에 플레이어가 없으면 스킵
-            continue;
+    // 랜덤 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급
+    if (teamMode === 'random') {
+        // 모든 플레이어를 하나의 풀로 합치기 (이미 배정된 플레이어도 포함)
+        const allPlayersPool = [];
+        for (let c = 1; c <= courtCount; c++) {
+            if (courtPlayers[c]) {
+                allPlayersPool.push(...courtPlayers[c]);
+            }
         }
+        allPlayersPool.push(...unassignedPlayers);
+        
+        // 전체 플레이어 랜덤 섞기
+        const shuffledAllPlayers = [...allPlayersPool].sort(() => Math.random() - 0.5);
+        
+        // 공평한 분배를 위한 플레이어 참여 횟수 추적
+        const playerPlayCount = {};
+        shuffledAllPlayers.forEach(player => {
+            playerPlayCount[player.userId] = 0;
+        });
+        
+        // 이전 경기 조합을 추적하여 중복 방지
+        const previousMatchConfigs = [];
+        
+        // 전체 경기 생성 (코트는 동적으로 배정)
+        let currentCourt = 1;
+        const totalMatches = Math.floor(shuffledAllPlayers.length / 4) * rounds;
+        
+        for (let r = 1; r <= rounds; r++) {
+            // 현재 라운드에서 경기할 수 있는 최대 경기 수
+            const availablePlayers = [...shuffledAllPlayers];
+            
+            // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
+            availablePlayers.sort((a, b) => {
+                const countA = playerPlayCount[a.userId] || 0;
+                const countB = playerPlayCount[b.userId] || 0;
+                if (countA !== countB) {
+                    return countA - countB;
+                }
+                return Math.random() - 0.5;
+            });
+            
+            // 현재 라운드에서 생성 가능한 경기 수
+            const matchesThisRound = Math.floor(availablePlayers.length / 4);
+            
+            // 현재 라운드에서 이미 선택된 플레이어 추적
+            const selectedPlayersThisRound = new Set();
+            
+            for (let m = 0; m < matchesThisRound; m++) {
+                // 현재 라운드에서 아직 선택되지 않은 플레이어만 필터링
+                const availableThisMatch = availablePlayers.filter(p => !selectedPlayersThisRound.has(p.userId));
+                
+                if (availableThisMatch.length < 4) {
+                    // 4명이 안 되면 경기 생성 중단
+                    break;
+                }
+                
+                // 참여 횟수가 적은 플레이어들을 우선 선택
+                const minCount = Math.min(...availableThisMatch.map(p => playerPlayCount[p.userId] || 0));
+                const candidatesWithMinCount = availableThisMatch.filter(p => 
+                    (playerPlayCount[p.userId] || 0) === minCount && !selectedPlayersThisRound.has(p.userId)
+                );
+                
+                // 랜덤하게 섞어서 4명 선택
+                const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
+                let fourPlayers = shuffled.slice(0, 4);
+                
+                // 4명이 안 되면 상위 플레이어 추가
+                if (fourPlayers.length < 4) {
+                    const needed = 4 - fourPlayers.length;
+                    const additionalPlayers = availableThisMatch
+                        .filter(p => (playerPlayCount[p.userId] || 0) > minCount && !selectedPlayersThisRound.has(p.userId))
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, needed);
+                    fourPlayers = [...fourPlayers, ...additionalPlayers].slice(0, 4);
+                }
+                
+                if (fourPlayers.length < 4) {
+                    break;
+                }
+                
+                // 팀 구성 생성 (모든 패턴 시도)
+                const teamConfigs = [];
+                for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
+                    const p = pairingPatterns[patternIdx];
+                    const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
+                    const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
+                    teamConfigs.push({ teamA, teamB });
+                }
+                
+                // 이전 경기와 다른 조합 찾기
+                let found = false;
+                for (const config of teamConfigs) {
+                    const teamAKey = config.teamA.join(',');
+                    const teamBKey = config.teamB.join(',');
+                    const matchKey = `${teamAKey}|${teamBKey}`;
+                    
+                    const isUnique = previousMatchConfigs.every(prev => {
+                        const prevKey1 = `${prev.teamAIds}|${prev.teamBIds}`;
+                        const prevKey2 = `${prev.teamBIds}|${prev.teamAIds}`;
+                        return matchKey !== prevKey1 && matchKey !== prevKey2;
+                    });
+                    
+                    if (isUnique || previousMatchConfigs.length === 0) {
+                        const selectedTeamA = config.teamA.map(id => fourPlayers.find(p => p.userId === id));
+                        const selectedTeamB = config.teamB.map(id => fourPlayers.find(p => p.userId === id));
+                        
+                        // 참여 횟수 증가
+                        fourPlayers.forEach(player => {
+                            playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
+                        });
+                        
+                        // 이전 경기 조합에 추가
+                        previousMatchConfigs.push({ teamAIds: teamAKey, teamBIds: teamBKey });
+                        
+                        // 경기 생성
+                        schedule.push({
+                            round: r,
+                            court: currentCourt,
+                            teamA: selectedTeamA.map(player => ({
+                                userId: player.userId,
+                                userName: player.userName,
+                                internalRating: player.internalRating || 0,
+                                score: player.score || 0
+                            })),
+                            teamB: selectedTeamB.map(player => ({
+                                userId: player.userId,
+                                userName: player.userName,
+                                internalRating: player.internalRating || 0,
+                                score: player.score || 0
+                            }))
+                        });
+                        
+                        // 코트 번호 증가 (다음 코트로)
+                        currentCourt = (currentCourt % courtCount) + 1;
+                        
+                        // 선택된 플레이어들을 현재 라운드에서 선택된 것으로 표시
+                        fourPlayers.forEach(player => {
+                            selectedPlayersThisRound.add(player.userId);
+                        });
+                        
+                        found = true;
+                        break;
+                    }
+                }
+                
+                // 고유한 조합을 찾지 못했으면 첫 번째 패턴 사용
+                if (!found) {
+                    const p = pairingPatterns[0];
+                    const selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                    const selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
+                    
+                    fourPlayers.forEach(player => {
+                        playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
+                    });
+                    
+                    const teamAIds = selectedTeamA.map(p => p.userId).sort().join(',');
+                    const teamBIds = selectedTeamB.map(p => p.userId).sort().join(',');
+                    previousMatchConfigs.push({ teamAIds, teamBIds });
+                    
+                    schedule.push({
+                        round: r,
+                        court: currentCourt,
+                        teamA: selectedTeamA.map(player => ({
+                            userId: player.userId,
+                            userName: player.userName,
+                            internalRating: player.internalRating || 0,
+                            score: player.score || 0
+                        })),
+                        teamB: selectedTeamB.map(player => ({
+                            userId: player.userId,
+                            userName: player.userName,
+                            internalRating: player.internalRating || 0,
+                            score: player.score || 0
+                        }))
+                    });
+                    
+                    currentCourt = (currentCourt % courtCount) + 1;
+                    
+                    // 선택된 플레이어들을 현재 라운드에서 선택된 것으로 표시
+                    fourPlayers.forEach(player => {
+                        selectedPlayersThisRound.add(player.userId);
+                    });
+                }
+            }
+        }
+    } else {
+        // 밸런스 모드와 그룹 모드: 기존 로직 (코트별로 경기 생성)
+        // 각 코트별로 라운드별 경기 생성
+        for (let c = 1; c <= courtCount; c++) {
+            const courtPlayerList = [...(courtPlayers[c] || [])];
+            
+            if (courtPlayerList.length === 0) {
+                // 코트에 플레이어가 없으면 스킵
+                continue;
+            }
         
         // 4명 미만인 경우도 처리 (로테이션 방식)
         // 하지만 피클볼은 4명이 필요하므로, 4명 미만인 경우는 다른 코트로 재배정하거나
@@ -9372,6 +9553,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     }))
                 });
             }
+        }
         }
     }
     
