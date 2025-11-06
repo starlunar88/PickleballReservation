@@ -3276,7 +3276,7 @@ function drawWinRateChart(data) {
         ctx.fillRect(0, 0, width, height);
         
         ctx.fillStyle = '#999';
-        ctx.font = '16px Arial';
+        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('데이터가 없습니다', width / 2, height / 2);
         return;
@@ -3309,7 +3309,7 @@ function drawWinRateChart(data) {
         
         // Y축 레이블
         ctx.fillStyle = '#666';
-        ctx.font = '12px Arial';
+        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(`${100 - i * 10}%`, padding.left - 10, y + 4);
     }
@@ -3323,7 +3323,7 @@ function drawWinRateChart(data) {
             const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
             
             ctx.fillStyle = '#666';
-            ctx.font = '11px Arial';
+            ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(dateStr, x, height - padding.bottom + 20);
             
@@ -3339,7 +3339,7 @@ function drawWinRateChart(data) {
     // Y축 레이블 (회전시켜 세로로 표시하여 겹침 방지)
     ctx.save();
     ctx.fillStyle = '#666';
-    ctx.font = '12px Arial';
+    ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.translate(15, height / 2);
     ctx.rotate(-Math.PI / 2);
@@ -3557,7 +3557,7 @@ function drawWinRateDonutChart(data) {
         ctx.fillRect(0, 0, width, height);
         
         ctx.fillStyle = '#999';
-        ctx.font = '16px Arial';
+        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('데이터가 없습니다', width / 2, height / 2);
         return;
@@ -3597,7 +3597,7 @@ function drawWinRateDonutChart(data) {
         ctx.fillRect(legendX, legendY + index * legendItemHeight, 15, 15);
         
         ctx.fillStyle = '#333';
-        ctx.font = '12px Arial';
+        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 20, legendY + index * legendItemHeight + 12);
     });
@@ -3624,7 +3624,7 @@ function drawParticipationBarChart(data) {
         ctx.fillRect(0, 0, width, height);
         
         ctx.fillStyle = '#999';
-        ctx.font = '16px Arial';
+        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('데이터가 없습니다', width / 2, height / 2);
         return;
@@ -3650,7 +3650,7 @@ function drawParticipationBarChart(data) {
         ctx.stroke();
         
         ctx.fillStyle = '#666';
-        ctx.font = '11px Arial';
+        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(Math.round(maxValue * (1 - i / 5)), padding.left - 10, y + 4);
     }
@@ -3666,7 +3666,7 @@ function drawParticipationBarChart(data) {
         
         // 이름 레이블
         ctx.fillStyle = '#333';
-        ctx.font = '11px Arial';
+        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.save();
         ctx.translate(x + (barWidth - barSpacing * 2) / 2, height - padding.bottom + 15);
@@ -3676,14 +3676,14 @@ function drawParticipationBarChart(data) {
         
         // 값 레이블
         ctx.fillStyle = '#333';
-        ctx.font = '12px Arial';
+        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(item.total, x + (barWidth - barSpacing * 2) / 2, y - 5);
     });
     
     // Y축 레이블
     ctx.fillStyle = '#666';
-    ctx.font = '12px Arial';
+    ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.save();
     ctx.translate(15, height / 2);
@@ -3952,9 +3952,18 @@ function drawTeamBarChart(data, canvasId, color) {
     // Canvas 크기 설정 (고해상도 지원)
     const container = canvas.parentElement;
     let containerWidth = container ? container.offsetWidth : 500;
-    // 컨테이너 너비 제한 (너무 넓어지지 않도록)
-    containerWidth = Math.min(containerWidth, 550); // 너비 줄임 (600 -> 550)
-    const containerHeight = 250; // 높이 줄임 (300 -> 250)
+    
+    // 모바일/데스크톱 구분
+    const isMobile = window.innerWidth <= 768;
+    
+    // 컨테이너 너비 제한 (PC에서는 더 넓게, 모바일에서는 전체 너비 사용)
+    if (!isMobile) {
+        // PC: 최대 너비 제한하여 영역을 벗어나지 않도록
+        containerWidth = Math.min(containerWidth, 600);
+    }
+    
+    // 높이 설정 (모바일에서는 더 높게)
+    const containerHeight = isMobile ? 300 : 280;
     const dpr = window.devicePixelRatio || 1;
     
     // 실제 캔버스 크기 (픽셀)
@@ -3979,14 +3988,15 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.fillRect(0, 0, width, height);
         
         ctx.fillStyle = '#999';
-        ctx.font = '16px Arial';
+        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('데이터가 없습니다', width / 2, height / 2);
         return;
     }
     
-    // 팀 이름 가로로 표시할 때 필요한 공간 계산
-    ctx.font = '11px Arial';
+    // 팀 이름 가로로 표시할 때 필요한 공간 계산 (모바일에서는 더 큰 폰트)
+    const nameFontSize = isMobile ? '13px' : '12px';
+    ctx.font = `${nameFontSize} "Malgun Gothic", Arial, sans-serif`;
     let maxNameWidth = 0;
     data.forEach(item => {
         const textWidth = ctx.measureText(item.playerNames).width;
@@ -3994,14 +4004,19 @@ function drawTeamBarChart(data, canvasId, color) {
     });
     
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
+    // PC에서는 영역을 벗어나지 않도록, 모바일에서는 여유있게
     const padding = { 
-        top: 15, 
-        right: 60, // 오른쪽 여백 더 증가 (잘림 방지)
-        bottom: 25, // 하단 여백 줄임
-        left: Math.max(maxNameWidth + 10, 85) // 이름 너비 + 여백 (최소 85px, 최대 110px로 제한)
+        top: isMobile ? 20 : 15, 
+        right: isMobile ? 50 : 60, 
+        bottom: isMobile ? 30 : 25, 
+        left: isMobile ? Math.max(maxNameWidth + 15, 100) : Math.max(maxNameWidth + 12, 90)
     };
-    // 너무 넓지 않도록 최대값 제한
-    padding.left = Math.min(padding.left, 110);
+    
+    // PC에서 너무 넓지 않도록 최대값 제한
+    if (!isMobile) {
+        padding.left = Math.min(padding.left, 120);
+    }
+    
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
@@ -4029,7 +4044,7 @@ function drawTeamBarChart(data, canvasId, color) {
     
     // 퍼센테이지 레이블 (20% 간격으로 표시)
     ctx.fillStyle = '#666';
-    ctx.font = '11px Arial';
+    ctx.font = isMobile ? '12px "Malgun Gothic", Arial, sans-serif' : '12px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i <= 5; i++) {
         const x = padding.left + (i / 5) * chartWidth;
@@ -4057,11 +4072,11 @@ function drawTeamBarChart(data, canvasId, color) {
         
         // 팀 이름 레이블 (가로로 표시, 한 줄)
         ctx.fillStyle = '#333';
-        ctx.font = '11px Arial';
+        ctx.font = `${nameFontSize} "Malgun Gothic", Arial, sans-serif`;
         ctx.textAlign = 'right';
         // 이름이 너무 길면 자르기
         let displayName = item.playerNames;
-        const maxNameDisplayWidth = padding.left - 15;
+        const maxNameDisplayWidth = padding.left - (isMobile ? 10 : 15);
         if (ctx.measureText(displayName).width > maxNameDisplayWidth) {
             while (displayName.length > 0 && ctx.measureText(displayName + '...').width > maxNameDisplayWidth) {
                 displayName = displayName.slice(0, -1);
@@ -4072,10 +4087,11 @@ function drawTeamBarChart(data, canvasId, color) {
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
         ctx.fillStyle = '#333';
-        ctx.font = '12px Arial';
+        const labelFontSize = isMobile ? '13px' : '12px';
+        ctx.font = `${labelFontSize} "Malgun Gothic", Arial, sans-serif`;
         const labelText = `${item.winRate.toFixed(0)}%`;
         const labelTextWidth = ctx.measureText(labelText).width;
-        const labelX = x + barWidth + 8;
+        const labelX = x + barWidth + (isMobile ? 10 : 8);
         const maxLabelX = padding.left + chartWidth - labelTextWidth - 5;
         
         // 레이블이 차트 영역을 벗어나면 막대 안에 표시

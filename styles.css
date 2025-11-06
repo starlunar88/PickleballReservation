@@ -3298,7 +3298,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 20px;
     max-width: 100%;
-    overflow: visible;
+    overflow: hidden;
     padding-right: 20px;
     box-sizing: border-box;
 }
@@ -3314,6 +3314,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     min-height: 400px;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .team-chart-header {
@@ -3340,6 +3341,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     height: 300px;
     max-height: 400px;
     flex: 1;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* 모바일 반응형 */
@@ -3383,7 +3386,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     #participation-bar-chart,
     #strongest-teams-chart,
     #weakest-teams-chart {
-        height: 250px;
+        height: 300px;
+    }
+    
+    .team-chart-card {
+        min-height: 350px;
+        padding: 15px;
+    }
+    
+    .team-charts {
+        grid-template-columns: 1fr;
+        padding-right: 0;
     }
 }
 
