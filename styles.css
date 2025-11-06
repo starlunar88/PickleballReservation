@@ -3315,6 +3315,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    position: relative;
+}
+
+.team-chart-card canvas {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .team-chart-header {
