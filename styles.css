@@ -2328,8 +2328,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-align: center;
     box-sizing: border-box;
     min-width: 0;
-    height: auto;
+    height: 38px;
     line-height: 1.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .records-container .stats-period-btn:hover {
@@ -3578,8 +3581,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         white-space: nowrap !important; /* 텍스트 줄바꿈 방지 */
         text-align: center !important;
         box-sizing: border-box !important;
-        height: auto !important;
+        height: 32px !important;
         line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     /* 기록탭 버튼도 통계탭과 동일하게 */
@@ -3592,8 +3598,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         white-space: nowrap !important;
         text-align: center !important;
         box-sizing: border-box !important;
-        height: auto !important;
+        height: 32px !important;
         line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     .stats-cards-grid {
@@ -4083,8 +4092,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         white-space: nowrap !important;
         text-align: center !important;
         box-sizing: border-box !important;
-        height: auto !important;
+        height: 38px !important;
         line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 }
     
@@ -4228,8 +4240,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         white-space: nowrap !important;
         text-align: center !important;
         box-sizing: border-box !important;
-        height: auto !important;
+        height: 28px !important;
         line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     /* 480px 이하에서도 기록탭 기간 선택 버튼 한 줄로 (통계탭과 동일) */
@@ -4246,8 +4261,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         white-space: nowrap !important;
         text-align: center !important;
         box-sizing: border-box !important;
-        height: auto !important;
+        height: 28px !important;
         line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     /* 메달 시상식 모바일 최적화 - 세로 크기를 현재의 1/3로 조정 (480px 이하) */
@@ -4256,12 +4274,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 15px 8px !important;
         min-height: 93px !important; /* 현재의 1/3 */
         max-height: 100px !important; /* 현재의 1/3 */
+        height: auto !important;
     }
     
     .podium-card {
         padding: 12px 8px !important;
         gap: 8px !important;
         min-height: 80px !important; /* 현재의 1/3 */
+        height: 80px !important; /* 현재의 1/3 - 명시적 설정 */
         width: 100px !important; /* 너비는 유지 */
         max-width: 100px !important;
     }
@@ -4272,6 +4292,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 110px !important;
         min-height: 93px !important; /* 현재의 1/3 */
         max-height: 100px !important; /* 현재의 1/3 */
+        height: 93px !important; /* 현재의 1/3 - 명시적 설정 */
     }
     
     .podium-card.second-place {
@@ -4280,6 +4301,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 100px !important;
         min-height: 87px !important; /* 현재의 1/3 */
         max-height: 93px !important; /* 현재의 1/3 */
+        height: 87px !important; /* 현재의 1/3 - 명시적 설정 */
     }
     
     .podium-card.third-place {
@@ -4288,6 +4310,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 100px !important;
         min-height: 80px !important; /* 현재의 1/3 */
         max-height: 87px !important; /* 현재의 1/3 */
+        height: 80px !important; /* 현재의 1/3 - 명시적 설정 */
     }
     
     .medal-icon {
@@ -5723,8 +5746,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         white-space: nowrap !important; /* 텍스트 줄바꿈 방지 */
         text-align: center !important;
         box-sizing: border-box !important;
-        height: auto !important;
+        height: 32px !important;
         line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     .custom-period-section {
@@ -5786,6 +5812,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 15px 8px;
         min-height: 93px !important; /* 현재의 1/3 */
         max-height: 100px !important; /* 현재의 1/3 */
+        height: auto !important;
         max-width: 100%;
         box-sizing: border-box;
     }
@@ -5795,7 +5822,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         min-width: 0;
         width: 100px !important; /* 너비는 유지 */
         max-width: 100px !important;
-        height: auto !important;
+        height: 80px !important; /* 현재의 1/3 - 명시적 설정 */
         min-height: 80px !important; /* 현재의 1/3 */
         padding: 12px 8px;
         gap: 8px;
@@ -5807,6 +5834,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 110px !important;
         min-height: 93px !important; /* 현재의 1/3 */
         max-height: 100px !important; /* 현재의 1/3 */
+        height: 93px !important; /* 현재의 1/3 - 명시적 설정 */
         order: 2;
     }
     
@@ -5816,6 +5844,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 100px !important;
         min-height: 87px !important; /* 현재의 1/3 */
         max-height: 93px !important; /* 현재의 1/3 */
+        height: 87px !important; /* 현재의 1/3 - 명시적 설정 */
         order: 1;
     }
     
@@ -5825,6 +5854,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 100px !important;
         min-height: 80px !important; /* 현재의 1/3 */
         max-height: 87px !important; /* 현재의 1/3 */
+        height: 80px !important; /* 현재의 1/3 - 명시적 설정 */
         order: 3;
     }
     
