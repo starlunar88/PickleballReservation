@@ -4781,54 +4781,132 @@ async function deleteAllRecords() {
 }
 
 // CSV 내보내기
-function exportRecordsToCSV(matches, filename = 'records.csv') {
+async function exportRecordsToCSV(matches, filename = 'records.csv') {
     if (!matches || matches.length === 0) {
         showToast('내보낼 기록이 없습니다.', 'warning');
         return;
     }
     
-    const headers = ['날짜', '시간', '팀A', '팀B', '팀A점수', '팀B점수'];
-    const csvRows = [headers.join(',')];
+    const db = window.db || firebase.firestore();
+    if (!db) {
+        showToast('데이터베이스 연결 오류', 'error');
+        return;
+    }
     
-    matches.forEach(match => {
-        const matchDate = match.date;
-        const timeSlot = match.timeSlot || '';
-        const [startTime] = timeSlot.split('-');
+    // 경기 결과가 입력된 경기만 필터링
+    const completedMatches = matches.filter(match => 
+        match.scoreA !== null && match.scoreA !== undefined && 
+        match.scoreB !== null && match.scoreB !== undefined &&
+        match.teamA && match.teamA.length >= 2 &&
+        match.teamB && match.teamB.length >= 2
+    );
+    
+    if (completedMatches.length === 0) {
+        showToast('내보낼 기록이 없습니다.', 'warning');
+        return;
+    }
+    
+    const csvRows = [];
+    
+    // 플레이어의 DUPR Name과 ID를 가져오는 헬퍼 함수
+    const getPlayerDuprInfo = async (player) => {
+        if (!player || !player.userId) {
+            return { duprName: '', duprId: '' };
+        }
         
-        const dateObj = new Date(matchDate + 'T' + (startTime || '12:00'));
-        const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric'
-        });
-        const formattedTime = dateObj.toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        }).replace(' ', '');
+        try {
+            const userDoc = await db.collection('users').doc(player.userId).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                return {
+                    duprName: userData.duprName || '',
+                    duprId: userData.duprId || ''
+                };
+            }
+        } catch (error) {
+            console.warn(`플레이어 ${player.userId}의 DUPR 정보 조회 실패:`, error);
+        }
         
-        const teamANames = match.teamA ? match.teamA.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
-        const teamBNames = match.teamB ? match.teamB.map(p => p.userName || p.name || '알 수 없음').join(', ') : '알 수 없음';
+        return { duprName: '', duprId: '' };
+    };
+    
+    // CSV 이스케이프 함수
+    const escapeCSV = (str) => {
+        if (str === null || str === undefined) {
+            return '';
+        }
+        const strValue = String(str);
+        if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+            return `"${strValue.replace(/"/g, '""')}"`;
+        }
+        return strValue;
+    };
+    
+    // 각 경기 처리
+    for (const match of completedMatches) {
+        const teamA = match.teamA || [];
+        const teamB = match.teamB || [];
+        
+        // 플레이어 정보 가져오기
+        const player1 = teamA[0] || {};
+        const player2 = teamA[1] || {};
+        const player3 = teamB[0] || {};
+        const player4 = teamB[1] || {};
+        
+        const player1Info = await getPlayerDuprInfo(player1);
+        const player2Info = await getPlayerDuprInfo(player2);
+        const player3Info = await getPlayerDuprInfo(player3);
+        const player4Info = await getPlayerDuprInfo(player4);
         
         const scoreA = match.scoreA ?? 0;
         const scoreB = match.scoreB ?? 0;
         
-        const escapeCSV = (str) => {
-            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                return `"${str.replace(/"/g, '""')}"`;
-            }
-            return str;
-        };
+        // CSV 행 생성 (A열부터 U열까지)
+        // A, B, C: 빈칸
+        // D: "D"
+        // E: "ATI Pickleball Club Match Doubles"
+        // F: 빈칸
+        // G: DUPR Name (플레이어 1)
+        // H: DUPR ID (플레이어 1)
+        // I: 빈칸
+        // J: DUPR Name (플레이어 2)
+        // K: DUPR ID (플레이어 2)
+        // L: 빈칸
+        // M: DUPR Name (플레이어 3)
+        // N: DUPR ID (플레이어 3)
+        // O: 빈칸
+        // P: DUPR Name (플레이어 4)
+        // Q: DUPR ID (플레이어 4)
+        // R: 빈칸
+        // S: 빈칸
+        // T: 점수 1
+        // U: 점수 2
+        const row = [
+            '', // A
+            '', // B
+            '', // C
+            'D', // D
+            'ATI Pickleball Club Match Doubles', // E
+            '', // F
+            escapeCSV(player1Info.duprName), // G
+            escapeCSV(player1Info.duprId), // H
+            '', // I
+            escapeCSV(player2Info.duprName), // J
+            escapeCSV(player2Info.duprId), // K
+            '', // L
+            escapeCSV(player3Info.duprName), // M
+            escapeCSV(player3Info.duprId), // N
+            '', // O
+            escapeCSV(player4Info.duprName), // P
+            escapeCSV(player4Info.duprId), // Q
+            '', // R
+            '', // S
+            escapeCSV(String(scoreA)), // T
+            escapeCSV(String(scoreB))  // U
+        ];
         
-        csvRows.push([
-            escapeCSV(formattedDate),
-            escapeCSV(formattedTime),
-            escapeCSV(teamANames),
-            escapeCSV(teamBNames),
-            escapeCSV(String(scoreA)),
-            escapeCSV(String(scoreB))
-        ].join(','));
-    });
+        csvRows.push(row.join(','));
+    }
     
     const csvContent = csvRows.join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -6125,7 +6203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (window.currentDisplayedRecords && window.currentDisplayedRecords.length > 0) {
                     const filename = `records_${startDate}_${endDate}.csv`;
-                    exportRecordsToCSV(window.currentDisplayedRecords, filename);
+                    await exportRecordsToCSV(window.currentDisplayedRecords, filename);
                 } else {
                     showToast('내보낼 기록이 없습니다.', 'warning');
                 }
