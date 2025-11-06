@@ -5084,8 +5084,15 @@ async function loadReservationsTimeline() {
                 statusText = '마감';
             } else if (currentCount > 0) {
                 statusClass = 'partial';
-                // 현재 예약 인원과 활성화된 코트 수를 간략하게 표시
-                const countText = `${currentCount}명 (${actualCourtCount}코트 활성)`;
+                // 활성화된 코트 정보만 표시
+                let countText;
+                if (actualCourtCount === 1) {
+                    countText = '1코트 활성';
+                } else {
+                    // 여러 코트일 경우: "1·2 코트 활성" 형태로 표시
+                    const courtNumbers = Array.from({ length: actualCourtCount }, (_, i) => i + 1).join('·');
+                    countText = `${courtNumbers} 코트 활성`;
+                }
                 
                 if (timeUntilClosing !== null && timeUntilClosing > 0) {
                     statusText = `${countText} · ${timeUntilClosing}분 후 마감`;
