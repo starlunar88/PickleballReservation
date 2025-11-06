@@ -4957,16 +4957,36 @@ async function loadReservationsTimeline() {
                 timeUntilClosing = diffMinutes;
             }
             
+            // 실제 사용할 코트 수 계산 (대진표 생성 로직과 동일)
+            const maxCourts = settings.courtCount || 2; // 최대 코트 수
+            const currentCount = reservations.length;
+            
+            // 대진표 생성 로직과 동일하게 실제 사용 코트 수 계산
+            let actualCourtCount = Math.ceil(currentCount / 4); // 최소 필요한 코트 수
+            actualCourtCount = Math.min(actualCourtCount, maxCourts); // 최대 코트 수 제한
+            
+            // 플레이어 수가 실제 코트 수의 4배보다 작으면 1코트에 모두 배정 (로테이션 방식)
+            if (currentCount > 0 && currentCount < actualCourtCount * 4) {
+                actualCourtCount = 1;
+            }
+            
+            // 실제 기준 인원 계산 (실제 사용 코트 * 4)
+            const basePlayerCount = actualCourtCount * 4;
+            
             let statusClass, statusText;
             if (isClosed) {
                 statusClass = 'closed';
                 statusText = '마감';
-            } else if (reservations.length > 0) {
+            } else if (currentCount > 0) {
                 statusClass = 'partial';
+                // 항상 "X/기준명" 형태로 표시하여 실제 사용 코트 기준을 명확히 표시
+                // 기준 인원 이상이어도 로테이션 방식이므로 "/기준명" 형태 유지
+                const countText = `${currentCount}/${basePlayerCount}명`;
+                
                 if (timeUntilClosing !== null && timeUntilClosing > 0) {
-                    statusText = `${reservations.length}/8명 · ${timeUntilClosing}분 후 마감`;
+                    statusText = `${countText} · ${timeUntilClosing}분 후 마감`;
                 } else {
-                    statusText = `${reservations.length}/8명`;
+                    statusText = countText;
                 }
             } else {
                 statusClass = 'empty';
