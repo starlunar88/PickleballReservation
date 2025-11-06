@@ -1902,9 +1902,14 @@ async function loadMatchesForDate(date) {
                     courts[courtNum].push(match);
                 });
                 
+                // 팀 모드 확인 (첫 번째 매치에서 teamMode 가져오기, 기본값 'balanced')
+                const teamMode = matches[0]?.teamMode || 'balanced';
+                
                 // 코트별 배정된 플레이어 추출
                 const courtPlayers = {};
                 const assignedPlayerIds = new Set();
+                const allPlayersSet = new Set(); // 전체 플레이어 추출 (랜덤 모드용)
+                
                 matches.forEach(match => {
                     const courtNum = match.courtNumber || 1;
                     if (!courtPlayers[courtNum]) {
@@ -1914,12 +1919,14 @@ async function loadMatchesForDate(date) {
                         if (!assignedPlayerIds.has(p.userId)) {
                             assignedPlayerIds.add(p.userId);
                             courtPlayers[courtNum].push(p.userName);
+                            allPlayersSet.add(p.userName);
                         }
                     });
                     match.teamB.forEach(p => {
                         if (!assignedPlayerIds.has(p.userId)) {
                             assignedPlayerIds.add(p.userId);
                             courtPlayers[courtNum].push(p.userName);
+                            allPlayersSet.add(p.userName);
                         }
                     });
                 });
@@ -1956,20 +1963,39 @@ async function loadMatchesForDate(date) {
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
                 `;
                 
-                // 코트별 배정 정보 표시
-                Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
-                    const players = courtPlayers[courtNum];
-                    if (players.length > 0) {
+                // 코트별 배정 정보 표시 (랜덤 모드는 전체 인원으로 표시)
+                if (teamMode === 'random') {
+                    // 랜덤 모드: 전체 플레이어를 하나의 풀로 표시
+                    const allPlayers = Array.from(allPlayersSet);
+                    if (allPlayers.length > 0) {
                         matchesHTML += `
                             <div style="margin-bottom: 8px;">
-                                <strong style="color: #667eea;">${courtNum}코트에 배정된 인원 (${players.length}명)</strong>
+                                <strong style="color: #667eea;">전체 랜덤 매칭 인원 (${allPlayers.length}명)</strong>
                                 <div style="color: #555; margin-left: 12px; margin-top: 4px;">
-                                    - ${players.join(', ')}
+                                    - ${allPlayers.join(', ')}
+                                </div>
+                                <div style="color: #888; font-size: 0.85rem; margin-left: 12px; margin-top: 4px; font-style: italic;">
+                                    (랜덤 모드: 코트별 배정 없이 전체에서 랜덤하게 매칭됩니다)
                                 </div>
                             </div>
                         `;
                     }
-                });
+                } else {
+                    // 밸런스/그룹 모드: 코트별 배정 정보 표시
+                    Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
+                        const players = courtPlayers[courtNum];
+                        if (players.length > 0) {
+                            matchesHTML += `
+                                <div style="margin-bottom: 8px;">
+                                    <strong style="color: #667eea;">${courtNum}코트에 배정된 인원 (${players.length}명)</strong>
+                                    <div style="color: #555; margin-left: 12px; margin-top: 4px;">
+                                        - ${players.join(', ')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                }
                 
                 // 미배정 인원 표시
                 if (unassignedPlayers.length > 0) {
@@ -8818,6 +8844,7 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
                 status: 'scheduled',
                 gameStartTime, // 게임 시작 시간
                 gameEndTime,   // 게임 종료 시간
+                teamMode: teamMode, // 팀 짜기 모드 저장 (random, balanced, grouped)
                 createdAt: new Date()
             });
         });
