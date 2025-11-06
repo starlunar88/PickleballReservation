@@ -522,6 +522,36 @@
         </div>
     </div>
 
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>비밀번호 변경</h2>
+                <span class="close" id="close-change-password">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="change-password-form">
+                    <div class="form-group">
+                        <label for="current-password">현재 비밀번호</label>
+                        <input type="password" id="current-password" class="form-control" required placeholder="현재 비밀번호를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">새 비밀번호</label>
+                        <input type="password" id="new-password" class="form-control" required placeholder="새 비밀번호를 입력하세요" minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">새 비밀번호 확인</label>
+                        <input type="password" id="confirm-new-password" class="form-control" required placeholder="새 비밀번호를 다시 입력하세요">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">비밀번호 변경</button>
+                </form>
+                <div class="password-info">
+                    <p><i class="fas fa-info-circle"></i> 비밀번호는 6자 이상이어야 합니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Admin Settings Modal -->
     <div id="admin-settings-modal" class="modal">
         <div class="modal-content">

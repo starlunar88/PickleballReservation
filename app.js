@@ -164,13 +164,16 @@ if (navMenu && hamburger) {
     });
 }
 
-// 모달 외부 클릭 시 닫기 (회원가입과 DUPR 수정만)
+// 모달 외부 클릭 시 닫기 (회원가입과 DUPR 수정, 비밀번호 변경만)
 window.addEventListener('click', (e) => {
     if (e.target === signupModal) {
         closeModal('signup');
     }
     if (e.target === document.getElementById('dupr-edit-modal')) {
         closeDuprEditModal();
+    }
+    if (e.target === document.getElementById('change-password-modal')) {
+        closeChangePasswordModal();
     }
     // 로그인 모달은 외부 클릭으로 닫지 않음
 });
@@ -263,6 +266,13 @@ async function handleLogin() {
         showToast('로그인되었습니다!', 'success');
         closeLoginModal();
         loginForm.reset();
+        
+        // 비밀번호가 "1"이면 비밀번호 변경 모달 자동 표시
+        if (password === '123456') {
+            setTimeout(() => {
+                openChangePasswordModal();
+            }, 500); // 로그인 모달이 닫힌 후 표시
+        }
     } catch (error) {
         console.error('로그인 오류:', error);
         console.error('오류 코드:', error.code);
@@ -973,6 +983,132 @@ async function handleDuprEdit() {
     }
 }
 
+// 비밀번호 변경 모달 열기
+function openChangePasswordModal() {
+    const modal = document.getElementById('change-password-modal');
+    if (modal) {
+        // 폼 초기화
+        const form = document.getElementById('change-password-form');
+        if (form) {
+            form.reset();
+        }
+        
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// 비밀번호 변경 모달 닫기
+function closeChangePasswordModal() {
+    const modal = document.getElementById('change-password-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        
+        // 폼 초기화
+        const form = document.getElementById('change-password-form');
+        if (form) {
+            form.reset();
+        }
+    }
+}
+
+// 비밀번호 변경 처리
+async function handleChangePassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmNewPassword = document.getElementById('confirm-new-password').value;
+    
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        showToast('모든 필드를 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmNewPassword) {
+        showToast('새 비밀번호가 일치하지 않습니다.', 'error');
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showToast('비밀번호는 6자 이상이어야 합니다.', 'error');
+        return;
+    }
+    
+    if (currentPassword === newPassword) {
+        showToast('현재 비밀번호와 새 비밀번호가 같습니다.', 'error');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'error');
+            return;
+        }
+        
+        // 현재 비밀번호 확인
+        const email = user.email;
+        if (!email) {
+            showToast('이메일 정보를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        // 현재 비밀번호로 재인증
+        const credential = auth.EmailAuthProvider.credential(email, currentPassword);
+        await user.reauthenticateWithCredential(credential);
+        
+        // 비밀번호 변경
+        await user.updatePassword(newPassword);
+        
+        // Firestore에 passwordChanged 플래그 저장
+        try {
+            await window.db.collection('users').doc(user.uid).update({
+                passwordChanged: true,
+                passwordChangedAt: new Date()
+            });
+        } catch (error) {
+            console.error('Firestore 업데이트 오류:', error);
+            // Firestore 업데이트 실패해도 비밀번호 변경은 성공했으므로 계속 진행
+        }
+        
+        showToast('비밀번호가 변경되었습니다!', 'success');
+        closeChangePasswordModal();
+        
+    } catch (error) {
+        console.error('비밀번호 변경 오류:', error);
+        let errorMessage = '비밀번호 변경 중 오류가 발생했습니다.';
+        
+        switch (error.code) {
+            case 'auth/wrong-password':
+                errorMessage = '현재 비밀번호가 올바르지 않습니다.';
+                break;
+            case 'auth/weak-password':
+                errorMessage = '비밀번호가 너무 약합니다.';
+                break;
+            case 'auth/requires-recent-login':
+                errorMessage = '보안을 위해 다시 로그인해주세요.';
+                break;
+            case 'auth/user-mismatch':
+                errorMessage = '사용자 정보가 일치하지 않습니다.';
+                break;
+            case 'auth/user-not-found':
+                errorMessage = '사용자를 찾을 수 없습니다.';
+                break;
+            case 'auth/invalid-credential':
+                errorMessage = '인증 정보가 올바르지 않습니다.';
+                break;
+            default:
+                errorMessage = `오류: ${error.message}`;
+        }
+        
+        showToast(errorMessage, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
 // 관리자 설정 모달 열기
 async function openAdminSettingsModal() {
     const modal = document.getElementById('admin-settings-modal');
@@ -1280,6 +1416,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeDuprEdit = document.getElementById('close-dupr-edit');
     if (closeDuprEdit) {
         closeDuprEdit.addEventListener('click', closeDuprEditModal);
+    }
+    
+    // 비밀번호 변경 버튼 이벤트 리스너
+    const changePasswordBtn = document.getElementById('change-password-btn');
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', openChangePasswordModal);
+    }
+    
+    // 비밀번호 변경 모달 닫기 버튼
+    const closeChangePassword = document.getElementById('close-change-password');
+    if (closeChangePassword) {
+        closeChangePassword.addEventListener('click', closeChangePasswordModal);
+    }
+    
+    // 비밀번호 변경 폼 이벤트 리스너
+    const changePasswordForm = document.getElementById('change-password-form');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleChangePassword();
+        });
     }
     
     // 관리자 설정 버튼
@@ -10160,8 +10317,64 @@ async function approveSignupRequest(requestId, email, name) {
             
         } catch (error) {
             console.error('사용자 계정 생성 오류:', error);
+            console.error('오류 코드:', error.code);
+            console.error('오류 메시지:', error.message);
+            
+            // 오류 원인에 따른 구체적인 메시지 생성
+            let errorMessage = error.message || '알 수 없는 오류';
+            let userFriendlyMessage = '이메일 발송 중 오류가 발생했습니다.';
+            let resolutionHint = '';
+            
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    userFriendlyMessage = '이미 해당 이메일로 계정이 존재합니다.';
+                    resolutionHint = '해당 사용자는 이미 등록되어 있으므로 로그인을 시도해보세요.';
+                    break;
+                case 'auth/invalid-email':
+                    userFriendlyMessage = '유효하지 않은 이메일 주소입니다.';
+                    resolutionHint = '이메일 주소 형식을 확인해주세요.';
+                    break;
+                case 'auth/operation-not-allowed':
+                    userFriendlyMessage = '이메일 링크 인증이 활성화되지 않았습니다.';
+                    resolutionHint = 'Firebase 콘솔에서 Email/Password 인증 방법을 활성화해야 합니다.';
+                    break;
+                case 'auth/too-many-requests':
+                    userFriendlyMessage = '너무 많은 요청으로 인해 일시적으로 차단되었습니다.';
+                    resolutionHint = '잠시 후 다시 시도해주세요.';
+                    break;
+                case 'auth/quota-exceeded':
+                    userFriendlyMessage = '이메일 발송 할당량을 초과했습니다.';
+                    resolutionHint = 'Firebase 프로젝트의 이메일 발송 할당량을 확인해주세요.';
+                    break;
+                case 'auth/network-request-failed':
+                    userFriendlyMessage = '네트워크 연결 오류가 발생했습니다.';
+                    resolutionHint = '인터넷 연결을 확인하고 다시 시도해주세요.';
+                    break;
+                default:
+                    userFriendlyMessage = `이메일 발송 중 오류가 발생했습니다: ${error.code || '알 수 없는 오류'}`;
+                    resolutionHint = '수동 처리 섹션에서 재시도할 수 있습니다.';
+            }
+            
+            // 이메일 발송 실패 시 approvedSignups에 emailSent: false로 표시
+            await db.collection('approvedSignups').doc(email).set({
+                email: email,
+                name: name,
+                approvedAt: new Date(),
+                approvedBy: currentUser ? currentUser.email : 'unknown',
+                passwordSetupLinkSent: false,
+                emailSent: false,
+                errorCode: error.code || 'unknown',
+                errorMessage: errorMessage,
+                userFriendlyMessage: userFriendlyMessage,
+                resolutionHint: resolutionHint,
+                failedAt: new Date()
+            }, { merge: true });
+            
             // 승인은 완료되었으므로 계속 진행
-            showToast('회원가입이 승인되었지만 이메일 발송 중 오류가 발생했습니다. 관리자가 수동으로 처리해주세요.', 'warning');
+            showToast(`${userFriendlyMessage} ${resolutionHint ? '(' + resolutionHint + ')' : ''} 관리자 설정의 "수동 처리 필요" 섹션에서 재발송할 수 있습니다.`, 'warning');
+            
+            // 수동 처리 목록 새로고침
+            await loadPendingApprovals();
         }
         
         // 승인 요청 목록 새로고침
@@ -10210,6 +10423,173 @@ async function rejectSignupRequest(requestId, email) {
     } catch (error) {
         console.error('회원가입 거부 오류:', error);
         showToast('회원가입 거부 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 승인되었지만 이메일 발송 실패한 요청 목록 로드
+async function loadPendingApprovals() {
+    try {
+        const approvalsList = document.getElementById('pending-approvals-list');
+        if (!approvalsList) {
+            console.warn('pending-approvals-list 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        approvalsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>처리 대기 목록을 불러오는 중...</p></div>';
+        
+        console.log('수동 처리 필요 목록 로드 시작...');
+        
+        // approvedSignups 컬렉션에서 emailSent가 false이거나 passwordSetupLinkSent가 false인 항목 조회
+        const pendingSnapshot = await db.collection('approvedSignups')
+            .where('emailSent', '==', false)
+            .get();
+        
+        // passwordSetupLinkSent가 false인 항목도 조회 (이전 버전 호환)
+        const pendingSnapshot2 = await db.collection('approvedSignups')
+            .where('passwordSetupLinkSent', '==', false)
+            .get();
+        
+        // 중복 제거를 위한 Set 사용
+        const pendingMap = new Map();
+        
+        pendingSnapshot.forEach(doc => {
+            const data = doc.data();
+            pendingMap.set(data.email, { id: doc.id, ...data });
+        });
+        
+        pendingSnapshot2.forEach(doc => {
+            const data = doc.data();
+            // emailSent 필드가 없거나 false인 경우만 추가
+            if (!data.emailSent && data.passwordSetupLinkSent === false) {
+                pendingMap.set(data.email, { id: doc.id, ...data });
+            }
+        });
+        
+        const pendingList = Array.from(pendingMap.values());
+        
+        console.log(`수동 처리 필요 항목: ${pendingList.length}개`);
+        
+        if (pendingList.length === 0) {
+            approvalsList.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>처리 대기 중인 항목이 없습니다</p></div>';
+            return;
+        }
+        
+        // approvedAt 기준으로 정렬 (최신순)
+        pendingList.sort((a, b) => {
+            try {
+                const aDate = a.approvedAt && a.approvedAt.toDate ? a.approvedAt.toDate().getTime() : 
+                              a.approvedAt ? new Date(a.approvedAt).getTime() : 0;
+                const bDate = b.approvedAt && b.approvedAt.toDate ? b.approvedAt.toDate().getTime() : 
+                              b.approvedAt ? new Date(b.approvedAt).getTime() : 0;
+                return bDate - aDate; // 최신순
+            } catch (error) {
+                console.error('정렬 오류:', error);
+                return 0;
+            }
+        });
+        
+        approvalsList.innerHTML = '';
+        pendingList.forEach(approval => {
+            const approvalElement = createPendingApprovalElement(approval);
+            approvalsList.appendChild(approvalElement);
+        });
+        
+        console.log(`${pendingList.length}개의 수동 처리 필요 항목을 표시했습니다.`);
+        
+    } catch (error) {
+        console.error('수동 처리 필요 목록 로드 오류:', error);
+        const approvalsList = document.getElementById('pending-approvals-list');
+        if (approvalsList) {
+            approvalsList.innerHTML = `<div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>처리 대기 목록을 불러올 수 없습니다</p>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 10px;">오류: ${error.message}</p>
+            </div>`;
+        }
+    }
+}
+
+// 수동 처리 필요 항목 요소 생성
+function createPendingApprovalElement(approval) {
+    const div = document.createElement('div');
+    div.className = 'signup-request-item';
+    div.style.borderLeft = '4px solid #ff9800'; // 주황색으로 강조
+    
+    const approvedDate = approval.approvedAt ? approval.approvedAt.toDate().toLocaleString() : '알 수 없음';
+    const errorMsg = approval.errorMessage ? `<div class="request-error" style="color: #f44336; font-size: 0.85rem; margin-top: 5px;">오류: ${approval.errorMessage}</div>` : '';
+    
+    div.innerHTML = `
+        <div class="request-info">
+            <div class="request-name"><strong>${approval.name}</strong></div>
+            <div class="request-email">${approval.email}</div>
+            <div class="request-meta">승인일: ${approvedDate}</div>
+            ${errorMsg}
+        </div>
+        <div class="request-actions">
+            <button class="btn btn-primary btn-small" onclick="resendApprovalEmail('${approval.email}', '${approval.name.replace(/'/g, "\\'")}')">
+                <i class="fas fa-paper-plane"></i> 이메일 재발송
+            </button>
+            <button class="btn btn-outline btn-small" onclick="generateManualLink('${approval.email}', '${approval.name.replace(/'/g, "\\'")}')" title="수동 링크 생성 안내">
+                <i class="fas fa-link"></i> 링크 안내
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// 승인된 회원가입 이메일 재발송
+async function resendApprovalEmail(email, name) {
+    try {
+        if (!confirm(`정말로 ${name}(${email})에게 비밀번호 설정 링크를 재발송하시겠습니까?`)) {
+            return;
+        }
+        
+        showLoading();
+        const currentUser = auth.currentUser;
+        
+        try {
+            // Firebase Authentication에 사용자 계정 생성 (비밀번호 없이)
+            const actionCodeSettings = {
+                url: window.location.origin + window.location.pathname + '?mode=signup&approved=true',
+                handleCodeInApp: true,
+            };
+            
+            // 이메일 링크 전송 (비밀번호 설정용)
+            await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+            
+            // approvedSignups 컬렉션 업데이트
+            await db.collection('approvedSignups').doc(email).update({
+                passwordSetupLinkSent: true,
+                emailSent: true,
+                resentAt: new Date(),
+                resentBy: currentUser ? currentUser.email : 'unknown',
+                errorMessage: null
+            });
+            
+            showToast(`비밀번호 설정 링크가 ${email}로 재발송되었습니다.`, 'success');
+            
+            // 수동 처리 목록 새로고침
+            await loadPendingApprovals();
+            
+        } catch (error) {
+            console.error('이메일 재발송 오류:', error);
+            
+            // 오류 정보 업데이트
+            await db.collection('approvedSignups').doc(email).update({
+                emailSent: false,
+                errorMessage: error.message || '알 수 없는 오류',
+                lastAttemptAt: new Date()
+            });
+            
+            showToast(`이메일 재발송 중 오류가 발생했습니다: ${error.message}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('이메일 재발송 처리 오류:', error);
+        showToast('이메일 재발송 중 오류가 발생했습니다.', 'error');
     } finally {
         hideLoading();
     }
