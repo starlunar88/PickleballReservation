@@ -8988,30 +8988,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             }
             courtPlayers[court].push(player);
         }
-    } else if (teamMode === 'balanced') {
-        // 밸런스 모드: 점수 순으로 정렬하여 균등 분배
-        const sortedPlayers = [...unassignedPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
-        sortedPlayers.forEach((player, index) => {
-            // 스네이크 드래프트 방식으로 분배
-            const row = Math.floor(index / courtCount);
-            const col = row % 2 === 0 ? (index % courtCount) : (courtCount - 1 - (index % courtCount));
-            const court = col + 1;
-            
-            if (!courtPlayers[court]) {
-                courtPlayers[court] = [];
-            }
-            courtPlayers[court].push(player);
-        });
     } else {
-        // 랜덤 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급 (나중에 전체 랜덤으로 섞음)
+        // 랜덤 모드와 밸런스 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급 (나중에 전체에서 선택)
         // 코트별 분배는 하지 않고, 모든 플레이어를 unassignedPlayers에 유지
         // 실제 코트 배정은 경기 생성 시 동적으로 결정
     }
     
     const schedule = [];
     
-    // 랜덤 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급
-    if (teamMode === 'random') {
+    // 랜덤 모드와 밸런스 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급
+    if (teamMode === 'random' || teamMode === 'balanced') {
         // 모든 플레이어를 하나의 풀로 합치기 (이미 배정된 플레이어도 포함)
         const allPlayersPool = [];
         for (let c = 1; c <= courtCount; c++) {
@@ -9042,11 +9028,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             const availablePlayers = [...shuffledAllPlayers];
             
             // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
+            // 밸런스 모드에서는 더 다양하게 선택하기 위해 랜덤 요소 강화
             availablePlayers.sort((a, b) => {
                 const countA = playerPlayCount[a.userId] || 0;
                 const countB = playerPlayCount[b.userId] || 0;
                 if (countA !== countB) {
                     return countA - countB;
+                }
+                // 밸런스 모드에서는 같은 횟수일 때 더 강한 랜덤 요소 적용
+                if (teamMode === 'balanced') {
+                    return Math.random() - 0.5;
                 }
                 return Math.random() - 0.5;
             });
@@ -9072,9 +9063,37 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     (playerPlayCount[p.userId] || 0) === minCount && !selectedPlayersThisRound.has(p.userId)
                 );
                 
-                // 랜덤하게 섞어서 4명 선택
-                const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
-                let fourPlayers = shuffled.slice(0, 4);
+                // 밸런스 모드에서는 더 다양하게 선택하기 위해 여러 조합 시도
+                let fourPlayers = null;
+                if (teamMode === 'balanced' && candidatesWithMinCount.length >= 4) {
+                    // 밸런스 모드: 여러 조합을 시도하여 이전 경기와 다른 조합 선택
+                    const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
+                    const maxAttempts = Math.min(20, shuffled.length - 3);
+                    
+                    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                        const candidate = shuffled.slice(attempt, attempt + 4);
+                        // 이전 경기와 다른 조합인지 확인 (간단한 체크)
+                        const candidateIds = candidate.map(p => p.userId).sort().join(',');
+                        const isNew = !previousMatchConfigs.some(prev => {
+                            const prevIds = (prev.teamAIds + ',' + prev.teamBIds).split(',').sort().join(',');
+                            return prevIds === candidateIds;
+                        });
+                        
+                        if (isNew || previousMatchConfigs.length === 0) {
+                            fourPlayers = candidate;
+                            break;
+                        }
+                    }
+                    
+                    if (!fourPlayers) {
+                        // 고유한 조합을 찾지 못했으면 랜덤하게 선택
+                        fourPlayers = shuffled.slice(0, 4);
+                    }
+                } else {
+                    // 랜덤 모드 또는 후보가 부족한 경우: 랜덤하게 섞어서 4명 선택
+                    const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
+                    fourPlayers = shuffled.slice(0, 4);
+                }
                 
                 // 4명이 안 되면 상위 플레이어 추가
                 if (fourPlayers.length < 4) {
@@ -9092,11 +9111,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 팀 구성 생성 (모든 패턴 시도)
                 const teamConfigs = [];
-                for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
-                    const p = pairingPatterns[patternIdx];
-                    const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
-                    const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
-                    teamConfigs.push({ teamA, teamB });
+                if (teamMode === 'balanced') {
+                    // 밸런스 모드: 밸런스 조합 생성
+                    const balancedConfigs = createBalancedTeamConfigs(fourPlayers);
+                    teamConfigs.push(...balancedConfigs);
+                } else {
+                    // 랜덤 모드: 모든 패턴 시도
+                    for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
+                        const p = pairingPatterns[patternIdx];
+                        const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
+                        const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
+                        teamConfigs.push({ teamA, teamB });
+                    }
                 }
                 
                 // 이전 경기와 다른 조합 찾기
