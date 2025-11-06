@@ -4099,33 +4099,44 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
     }
     
-    /* 메달 시상식 모바일 최적화 - 더 작게 (2/3 크기) */
+    /* 메달 시상식 모바일 최적화 - 사각형 크기만 반으로 줄임 */
     .podium-wrapper {
-        gap: 3px !important; /* 4px * 2/3 */
-        padding: 7px 3px !important; /* 10px 4px * 2/3 */
-        min-height: 120px !important; /* 180px * 2/3 */
-        max-height: 133px !important; /* 200px * 2/3 */
+        gap: 2px !important; /* 반으로 줄임 */
+        padding: 4px 2px !important; /* 반으로 줄임 */
+        min-height: 60px !important; /* 반으로 줄임 */
+        max-height: 67px !important; /* 반으로 줄임 */
     }
     
     .podium-card {
-        padding: 5px 3px !important; /* 8px 4px * 2/3 */
-        gap: 3px !important; /* 4px * 2/3 */
-        min-height: 80px !important; /* 120px * 2/3 */
+        padding: 3px 2px !important; /* 반으로 줄임 */
+        gap: 2px !important; /* 반으로 줄임 */
+        min-height: 40px !important; /* 반으로 줄임 */
+        width: 60px !important; /* 반으로 줄임 (기본 120px의 반) */
+        max-width: 60px !important;
     }
     
     .podium-card.first-place {
-        min-height: 107px !important; /* 160px * 2/3 */
-        max-height: 120px !important; /* 180px * 2/3 */
+        width: 67px !important; /* 반으로 줄임 (기본 133px의 반) */
+        min-width: 60px !important; /* 반으로 줄임 */
+        min-height: 54px !important; /* 반으로 줄임 */
+        max-height: 60px !important; /* 반으로 줄임 */
+        max-width: 67px !important;
     }
     
     .podium-card.second-place {
-        min-height: 93px !important; /* 140px * 2/3 */
-        max-height: 107px !important; /* 160px * 2/3 */
+        width: 60px !important; /* 반으로 줄임 (기본 120px의 반) */
+        min-width: 54px !important; /* 반으로 줄임 */
+        min-height: 47px !important; /* 반으로 줄임 */
+        max-height: 54px !important; /* 반으로 줄임 */
+        max-width: 60px !important;
     }
     
     .podium-card.third-place {
-        min-height: 80px !important; /* 120px * 2/3 */
-        max-height: 93px !important; /* 140px * 2/3 */
+        width: 60px !important; /* 반으로 줄임 (기본 120px의 반) */
+        min-width: 54px !important; /* 반으로 줄임 */
+        min-height: 40px !important; /* 반으로 줄임 */
+        max-height: 47px !important; /* 반으로 줄임 */
+        max-width: 60px !important;
     }
     
     .medal-icon {
@@ -5592,41 +5603,51 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 16px;
     }
     
-    /* 랭킹 탭 반응형 (2/3 크기) */
+    /* 랭킹 탭 반응형 - 사각형 크기만 반으로 줄임 */
     .podium-wrapper {
         flex-direction: row;
         align-items: flex-end;
-        gap: 4px; /* 6px * 2/3 */
-        padding: 8px 4px; /* 12px 6px * 2/3 */
-        min-height: 120px; /* 180px * 2/3 */
-        max-height: 133px; /* 200px * 2/3 */
+        gap: 2px; /* 반으로 줄임 */
+        padding: 4px 2px; /* 반으로 줄임 */
+        min-height: 60px; /* 반으로 줄임 */
+        max-height: 67px; /* 반으로 줄임 */
     }
     
     .podium-card {
-        flex: 1;
+        flex: 0 0 auto; /* flex: 1 제거하고 고정 크기로 */
         min-width: 0;
-        max-width: 100%;
+        width: 60px !important; /* 반으로 줄임 */
+        max-width: 60px !important;
         height: auto !important;
-        min-height: 93px; /* 140px * 2/3 */
-        padding: 7px 4px; /* 10px 6px * 2/3 */
-        gap: 4px; /* 6px * 2/3 */
+        min-height: 40px; /* 반으로 줄임 */
+        padding: 4px 2px; /* 반으로 줄임 */
+        gap: 2px; /* 반으로 줄임 */
     }
     
     .podium-card.first-place {
-        min-height: 120px; /* 180px * 2/3 */
-        max-height: 133px; /* 200px * 2/3 */
+        width: 67px !important; /* 반으로 줄임 */
+        min-width: 60px !important;
+        max-width: 67px !important;
+        min-height: 54px; /* 반으로 줄임 */
+        max-height: 60px; /* 반으로 줄임 */
         order: 2;
     }
     
     .podium-card.second-place {
-        min-height: 107px; /* 160px * 2/3 */
-        max-height: 120px; /* 180px * 2/3 */
+        width: 60px !important; /* 반으로 줄임 */
+        min-width: 54px !important;
+        max-width: 60px !important;
+        min-height: 47px; /* 반으로 줄임 */
+        max-height: 54px; /* 반으로 줄임 */
         order: 1;
     }
     
     .podium-card.third-place {
-        min-height: 93px; /* 140px * 2/3 */
-        max-height: 107px; /* 160px * 2/3 */
+        width: 60px !important; /* 반으로 줄임 */
+        min-width: 54px !important;
+        max-width: 60px !important;
+        min-height: 40px; /* 반으로 줄임 */
+        max-height: 47px; /* 반으로 줄임 */
         order: 3;
     }
     
