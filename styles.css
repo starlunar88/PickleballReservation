@@ -3562,14 +3562,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .stats-period-filter-buttons {
         gap: 6px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap !important; /* 한 줄로 표시 */
     }
     
     .stats-period-btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-        flex: 1 1 auto;
-        min-width: calc(50% - 3px);
+        padding: 8px 10px !important; /* 패딩 줄여서 한 줄에 맞춤 */
+        font-size: 0.8rem !important; /* 폰트 크기 약간 줄임 */
+        flex: 1 !important; /* 균등하게 분배 */
+        min-width: 0 !important; /* 최소 너비 제한 제거 */
+        white-space: nowrap !important; /* 텍스트 줄바꿈 방지 */
     }
     
     .stats-cards-grid {
@@ -5637,21 +5638,22 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 13px;
     }
     
-    /* 기록탭 기간 선택 버튼 - 통계탭 모바일 스타일과 동일하게 적용 */
+    /* 기록탭 기간 선택 버튼 - 통계탭 모바일 스타일과 동일하게 적용 (한 줄로) */
     .records-container .stats-period-filter-container {
         padding: 6px !important;
     }
     
     .records-container .stats-period-filter-buttons {
         gap: 6px !important;
-        flex-wrap: wrap !important; /* 통계탭 모바일과 동일하게 wrap */
+        flex-wrap: nowrap !important; /* 한 줄로 표시 */
     }
     
     .records-container .stats-period-btn {
-        padding: 8px 12px !important; /* 통계탭 모바일과 동일한 padding */
-        font-size: 0.85rem !important; /* 통계탭 모바일과 동일한 font-size */
-        flex: 1 1 auto !important; /* 통계탭 모바일과 동일하게 flex: 1 1 auto */
-        min-width: calc(50% - 3px) !important; /* 통계탭 모바일과 동일 */
+        padding: 8px 10px !important; /* 패딩 줄여서 한 줄에 맞춤 */
+        font-size: 0.8rem !important; /* 폰트 크기 약간 줄임 */
+        flex: 1 !important; /* 균등하게 분배 */
+        min-width: 0 !important; /* 최소 너비 제한 제거 */
+        white-space: nowrap !important; /* 텍스트 줄바꿈 방지 */
     }
     
     .custom-period-section {
