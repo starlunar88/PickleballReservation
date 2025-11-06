@@ -3584,8 +3584,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     -webkit-backdrop-filter: saturate(160%) blur(8px);
     border-radius: 14px; /* iOS 느낌의 둥근 모서리 */
     box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    margin: 0; /* 좌우 여백 제거 */
+    width: 100%;
     overflow: visible;
-    margin: 0 8px;
 }
 
 /* 선택된 정보 카드 */
@@ -3848,7 +3849,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 /* 모든 화면에서 모바일 스타일 적용 - 반응형 제거 */
     
     .reservations-board {
-        margin: 0 10px; /* 모바일에서 좌우 여백 축소 */
+        margin: 0; /* 좌우 여백 완전 제거 */
+        width: 100%;
     }
     
     .tab-contents {
@@ -4042,7 +4044,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .mobile-tab-btn { padding: 10px 5px; font-size: 0.85rem; font-weight: 500; }
     .mobile-tab-btn i { font-size: 1.6rem; margin-bottom: 5px; }
     .reservations-board { 
-        margin: 0 4px !important; /* 좌우 마진 최소화 */
+        margin: 0 !important; /* 좌우 여백 완전 제거 */
+        width: 100% !important;
     }
     .reservations-timeline { 
         padding: 8px !important; /* 패딩 최소화 */
