@@ -3402,7 +3402,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .team-chart-card {
     background: #fff;
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px;
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     max-width: 100%;

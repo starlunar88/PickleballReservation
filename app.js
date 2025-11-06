@@ -4091,11 +4091,8 @@ function drawTeamBarChart(data, canvasId, color) {
         containerWidth = container.clientWidth || container.offsetWidth;
     }
     
-    // PC에서 컨테이너 너비 제한 (카드 내부 padding을 이미 고려했으므로 추가 제한 없음)
-    // 다만 너무 넓어지지 않도록 최대값 설정
-    if (!isMobile && containerWidth > 600) {
-        containerWidth = 600;
-    }
+    // PC에서 컨테이너 너비 제한 제거하여 차트가 최대한 넓게 표시되도록
+    // 카드 내부 padding을 이미 고려했으므로 전체 너비 활용
     
     // 높이 설정 (모바일에서는 더 높게)
     const containerHeight = isMobile ? 300 : 280;
@@ -4139,17 +4136,17 @@ function drawTeamBarChart(data, canvasId, color) {
     });
     
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
-    // PC에서는 영역을 벗어나지 않도록 오른쪽 여백을 충분히 확보
+    // 좌우 여백 최소화하여 차트 영역 최대화
     const padding = { 
         top: isMobile ? 20 : 20, 
-        right: isMobile ? 50 : 60, 
+        right: isMobile ? 30 : 25, // 오른쪽 여백 대폭 감소
         bottom: isMobile ? 30 : 30, 
-        left: isMobile ? Math.max(maxNameWidth + 15, 100) : Math.max(maxNameWidth + 15, 100)
+        left: isMobile ? Math.max(maxNameWidth + 10, 90) : Math.max(maxNameWidth + 10, 90)
     };
     
     // PC에서 너무 넓지 않도록 최대값 제한
     if (!isMobile) {
-        padding.left = Math.min(padding.left, 130);
+        padding.left = Math.min(padding.left, 120);
     }
     
     const chartWidth = width - padding.left - padding.right;
@@ -4177,13 +4174,14 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.stroke();
     }
     
-    // 퍼센테이지 레이블 (20% 간격으로 표시)
+    // 퍼센테이지 레이블 (20% 간격으로 표시, 차트 영역 끝에 맞춤)
     ctx.fillStyle = '#666';
-    ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
+    ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i <= 5; i++) {
+        // 차트 영역 내에서 정확히 배치 (100%는 차트 영역 끝에)
         const x = padding.left + (i / 5) * chartWidth;
-        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 18);
+        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 15);
     }
     
     // 바 차트 그리기
@@ -4222,19 +4220,19 @@ function drawTeamBarChart(data, canvasId, color) {
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
         ctx.fillStyle = '#333';
-        const labelFontSize = isMobile ? '13px' : '12px';
+        const labelFontSize = isMobile ? '12px' : '11px';
         ctx.font = `${labelFontSize} "Malgun Gothic", Arial, sans-serif`;
         const labelText = `${item.winRate.toFixed(0)}%`;
         const labelTextWidth = ctx.measureText(labelText).width;
-        const labelX = x + barWidth + (isMobile ? 10 : 8);
-        // 차트 영역 내에서만 표시되도록 제한 (오른쪽 padding 고려)
-        const maxLabelX = padding.left + chartWidth - labelTextWidth - 8;
+        const labelX = x + barWidth + (isMobile ? 8 : 6);
+        // 차트 영역 내에서만 표시되도록 제한 (오른쪽 padding 최소화)
+        const maxLabelX = padding.left + chartWidth - labelTextWidth - 5;
         
         // 레이블이 차트 영역을 벗어나면 막대 안에 표시
         if (labelX > maxLabelX) {
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'right';
-            ctx.fillText(labelText, x + barWidth - 5, y + actualBarHeight / 2 + 4);
+            ctx.fillText(labelText, x + barWidth - 4, y + actualBarHeight / 2 + 4);
         } else {
             ctx.fillStyle = '#333';
             ctx.textAlign = 'left';
