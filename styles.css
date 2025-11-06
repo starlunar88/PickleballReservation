@@ -3375,12 +3375,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .team-charts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     max-width: 100%;
-    overflow: hidden;
-    padding-right: 20px;
     box-sizing: border-box;
 }
 
@@ -3407,6 +3405,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .team-chart-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     margin-bottom: 20px;
 }
