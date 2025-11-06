@@ -287,7 +287,7 @@ async function handleLogin() {
         closeLoginModal();
         loginForm.reset();
         
-        // 비밀번호가 "1"이면 비밀번호 변경 모달 자동 표시
+        
         if (password === '123456') {
             setTimeout(() => {
                 openChangePasswordModal();
@@ -5084,9 +5084,8 @@ async function loadReservationsTimeline() {
                 statusText = '마감';
             } else if (currentCount > 0) {
                 statusClass = 'partial';
-                // 항상 "X/기준명" 형태로 표시하여 실제 사용 코트 기준을 명확히 표시
-                // 기준 인원 이상이어도 로테이션 방식이므로 "/기준명" 형태 유지
-                const countText = `${currentCount}/${basePlayerCount}명`;
+                // 현재 예약 인원과 활성화된 코트 수를 표시
+                const countText = `예약 ${currentCount}명 (코트 ${actualCourtCount}개 활성화)`;
                 
                 if (timeUntilClosing !== null && timeUntilClosing > 0) {
                     statusText = `${countText} · ${timeUntilClosing}분 후 마감`;
