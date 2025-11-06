@@ -4936,8 +4936,8 @@ async function loadReservationsTimeline() {
             
             // 만석 상태 제거 - 항상 예약 가능
             
-            // 20분 전 마감 체크
-            // 검증: 대진표 생성 버튼을 누르지 않아도, 게임 시작 시간 20분 전에 자동으로 마감됩니다.
+            // 설정된 마감 시간 전 마감 체크
+            // 검증: 대진표 생성 버튼을 누르지 않아도, 게임 시작 시간 마감 시간 전에 자동으로 마감됩니다.
             // 이는 예약을 막는 용도이며, 대진표 생성 버튼은 마감 후에만 표시됩니다.
             const now = new Date();
             
@@ -4945,7 +4945,8 @@ async function loadReservationsTimeline() {
             const startTime = timeSlot.start || '00:00';
             
             const gameStartTime = new Date(`${targetDate}T${startTime}:00`);
-            const closingTime = new Date(gameStartTime.getTime() - 20 * 60 * 1000); // 20분 전
+            const closingTimeMinutes = settings.closingTime || 20; // 설정된 마감 시간 (기본값 20분)
+            const closingTime = new Date(gameStartTime.getTime() - closingTimeMinutes * 60 * 1000);
             const isClosed = now > closingTime;
             
             // 마감까지 남은 시간 계산 (분 단위)
@@ -8398,13 +8399,17 @@ async function checkAndShowMatchSchedule() {
         
         if (!selectedTimeSlot) return;
         
-        // 20분 전 마감 확인 (테스트 모드에서는 무시)
-        // 검증: 대진표 생성 버튼을 누르지 않아도, 게임 시작 20분 전에 마감됩니다.
+        // 설정된 마감 시간 전 마감 확인 (테스트 모드에서는 무시)
+        // 검증: 대진표 생성 버튼을 누르지 않아도, 게임 시작 마감 시간 전에 마감됩니다.
         // 마감 전에는 대진표를 숨기고, 마감 후에만 대진표를 생성/표시할 수 있습니다.
         const isTestMode = document.getElementById('test-time-select')?.value;
-        if (!isTestMode && !isPastClosing(currentDate, selectedTimeSlot, 20)) {
-            hideMatchSchedule();
-            return;
+        if (!isTestMode) {
+            const settings = await getSystemSettings();
+            const closingTimeMinutes = settings?.closingTime || 20; // 설정된 마감 시간 (기본값 20분)
+            if (!isPastClosing(currentDate, selectedTimeSlot, closingTimeMinutes)) {
+                hideMatchSchedule();
+                return;
+            }
         }
         
         // 기존 대진표 확인 (인덱스 오류 방지를 위해 단순화)
