@@ -7970,9 +7970,6 @@ window.addEventListener('load', async function() {
     loadTimeSlots();
     loadCourtOptions();
     
-    // 테스트 데이터 초기화 (페이지 로드 시 한 번 실행)
-    await clearTestData();
-    
     // 자동 예약 처리 시작
     startAutoProcessing();
 });
@@ -8233,55 +8230,6 @@ async function addRandomReservation(date, timeSlot) {
     } catch (error) {
         console.error('테스트 예약 추가 오류:', error);
         showToast('테스트 예약 추가 실패', 'error');
-    }
-}
-
-// 테스트 데이터 초기화 함수
-async function clearTestData() {
-    try {
-        console.log('🧹 테스트 데이터 초기화 시작...');
-        
-        // Firebase 초기화 확인
-        if (!initializeFirebase()) {
-            console.error('❌ Firebase 초기화 실패');
-            return;
-        }
-        
-        const db = window.db || firebase.firestore();
-        if (!db) {
-            console.error('❌ db 객체를 찾을 수 없습니다');
-            return;
-        }
-        
-        // isTestData가 true인 모든 예약 조회
-        const testReservationsSnapshot = await db.collection('reservations')
-            .where('isTestData', '==', true)
-            .get();
-        
-        if (testReservationsSnapshot.empty) {
-            console.log('✅ 삭제할 테스트 데이터가 없습니다.');
-            return;
-        }
-        
-        console.log(`🗑️ ${testReservationsSnapshot.size}개의 테스트 데이터를 삭제합니다...`);
-        
-        // 배치 삭제
-        const batch = db.batch();
-        testReservationsSnapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        
-        await batch.commit();
-        console.log(`✅ ${testReservationsSnapshot.size}개의 테스트 데이터 삭제 완료!`);
-        showToast(`${testReservationsSnapshot.size}개의 테스트 데이터가 삭제되었습니다.`, 'success');
-        
-        // 타임라인 새로고침
-        if (typeof loadReservationsTimeline === 'function') {
-            await loadReservationsTimeline();
-        }
-    } catch (error) {
-        console.error('❌ 테스트 데이터 초기화 오류:', error);
-        showToast('테스트 데이터 초기화 중 오류가 발생했습니다.', 'error');
     }
 }
 
