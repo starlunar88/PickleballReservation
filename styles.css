@@ -4313,8 +4313,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .medal-ceremony-section .podium-wrapper {
         gap: 8px !important;
         padding: 15px 8px !important;
-        min-height: 186px !important; /* 현재의 2배 */
-        max-height: 200px !important; /* 현재의 2배 */
+        min-height: 216px !important; /* 1위 카드(186px) + 위아래 여백 */
+        max-height: 230px !important; /* 1위 카드(186px) + 위아래 여백 */
         height: auto !important;
     }
     
@@ -5878,8 +5878,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         justify-content: center !important;
         gap: 8px !important;
         padding: 15px 8px !important;
-        min-height: 186px !important; /* 현재의 2배 */
-        max-height: 200px !important; /* 현재의 2배 */
+        min-height: 216px !important; /* 1위 카드(186px) + 위아래 여백 */
+        max-height: 230px !important; /* 1위 카드(186px) + 위아래 여백 */
         height: auto !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
