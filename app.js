@@ -3657,11 +3657,10 @@ function drawWinRateDonutChart(data) {
         return;
     }
     
-    // 도넛 차트 영역 (왼쪽)
-    const chartAreaWidth = width * 0.5; // 차트가 차지할 너비
-    const centerX = chartAreaWidth / 2;
-    const centerY = height / 2;
-    const maxRadius = Math.min(chartAreaWidth, height) / 2 - 10;
+    // 도넛 차트 영역 (중앙, 크게)
+    const centerX = width / 2;
+    const centerY = height * 0.4; // 상단에 배치
+    const maxRadius = Math.min(width, height * 0.6) / 2 - 20;
     const radius = maxRadius;
     const innerRadius = radius * 0.6;
     
@@ -3684,19 +3683,43 @@ function drawWinRateDonutChart(data) {
         currentAngle += sliceAngle;
     });
     
-    // 범례 그리기 (오른쪽, 더 컴팩트하게)
-    const legendX = chartAreaWidth + 10;
-    const legendY = (height - (data.length * 22)) / 2; // 중앙 정렬
-    const legendItemHeight = 22;
+    // 범례 그리기 (도넛 차트 아래, 가로 배치)
+    const legendStartY = centerY + radius + 25;
+    const legendItemSpacing = 15; // 항목 간 간격
+    let totalLegendWidth = 0;
+    
+    // 전체 범례 너비 계산
+    ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
+    data.forEach((item, index) => {
+        const text = `${item.userName} (${item.winRate.toFixed(0)}%)`;
+        const textWidth = ctx.measureText(text).width;
+        totalLegendWidth += 12 + 4 + textWidth; // 색상 사각형 + 간격 + 텍스트
+        if (index < data.length - 1) {
+            totalLegendWidth += legendItemSpacing; // 항목 간 간격
+        }
+    });
+    
+    // 범례 시작 위치 (중앙 정렬)
+    let currentX = (width - totalLegendWidth) / 2;
     
     data.forEach((item, index) => {
-        ctx.fillStyle = colors[index % colors.length];
-        ctx.fillRect(legendX, legendY + index * legendItemHeight, 12, 12);
+        const legendX = currentX;
+        const legendY = legendStartY;
         
+        // 색상 사각형
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillRect(legendX, legendY, 12, 12);
+        
+        // 텍스트
         ctx.fillStyle = '#333';
         ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 16, legendY + index * legendItemHeight + 9);
+        const text = `${item.userName} (${item.winRate.toFixed(0)}%)`;
+        ctx.fillText(text, legendX + 16, legendY + 9);
+        
+        // 다음 항목 위치 계산
+        const textWidth = ctx.measureText(text).width;
+        currentX += 12 + 4 + textWidth + legendItemSpacing;
     });
 }
 
@@ -3743,9 +3766,9 @@ function drawParticipationBarChart(data) {
     
     const maxValue = Math.max(...data.map(d => d.total), 1);
     
-    // Y축 최대값을 적절한 간격으로 조정 (데이터에 맞게)
-    const yMax = Math.max(maxValue * 1.1, 5); // 데이터의 110% 또는 최소 5
-    const yStep = Math.max(1, Math.ceil(yMax / 5)); // 최대 5개 눈금으로 줄임
+    // Y축 고정: 0부터 162까지 18단위로 표시
+    const yMax = 162;
+    const yStep = 18;
     
     // 패딩 조정 (X축 레이블이 잘리지 않도록, 여백 최소화)
     const padding = { top: 10, right: 15, bottom: 50, left: 40 };
@@ -3755,13 +3778,13 @@ function drawParticipationBarChart(data) {
     const barWidth = chartWidth / data.length;
     const barSpacing = barWidth * 0.15;
     
-    // 그리드 그리기
+    // 그리드 그리기 (18단위: 0, 18, 36, 54, 72, 90, 108, 126, 144, 162)
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     
     const gridLines = Math.ceil(yMax / yStep);
     for (let i = 0; i <= gridLines; i++) {
-        const value = Math.round(yMax - (i * yStep));
+        const value = yMax - (i * yStep);
         const y = padding.top + (i / gridLines) * chartHeight;
         
         ctx.beginPath();
@@ -3786,21 +3809,17 @@ function drawParticipationBarChart(data) {
         ctx.fillStyle = '#667eea';
         ctx.fillRect(x, y, actualBarWidth, barHeight);
         
-        // 값 레이블 (막대 위)
-        ctx.fillStyle = '#333';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(item.total.toString(), x + actualBarWidth / 2, y - 4);
+        // 막대 위 값 레이블 제거 (이미지와 동일하게)
         
-        // 이름 레이블 (X축, 45도 회전)
+        // 이름 레이블 (X축, 90도 회전)
         ctx.fillStyle = '#333';
         ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.save();
         const labelX = x + actualBarWidth / 2;
-        const labelY = height - padding.bottom + 12;
+        const labelY = height - padding.bottom + 15;
         ctx.translate(labelX, labelY);
-        ctx.rotate(-Math.PI / 4);
+        ctx.rotate(-Math.PI / 2); // 90도 회전
         ctx.fillText(item.userName, 0, 0);
         ctx.restore();
     });
