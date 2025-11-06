@@ -3041,9 +3041,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .stats-container {
-    padding: 20px 16px;
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 15px;
 }
 
 /* 경기 통계 섹션 */
