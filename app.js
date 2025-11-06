@@ -4942,9 +4942,65 @@ async function loadReservationsTimeline() {
                 
                 reservationsSnapshot.forEach(doc => {
                     const data = doc.data();
-                    console.log(`👤 예약 발견: ${data.userName} (${data.status})`);
+                    console.log(`👤 예약 발견: ${data.userName} (${data.status}), userId: ${data.userId || '없음'}`);
                     reservations.push({ id: doc.id, ...data });
                 });
+                
+                // 예약에 userName이 없거나 "익명"인 경우, users 컬렉션에서 이름 가져오기
+                const userNamePromises = reservations.map(async (res) => {
+                    // userName이 없거나 "익명"이면 users 컬렉션에서 가져오기
+                    const needsUpdate = !res.userName || res.userName === '익명' || res.userName.trim() === '';
+                    
+                    if (needsUpdate) {
+                        console.log(`🔍 이름 업데이트 필요: 예약 ID ${res.id}, 현재 userName: "${res.userName}", userId: ${res.userId || '없음'}`);
+                        
+                        if (res.userId) {
+                            try {
+                                console.log(`📡 users 컬렉션 조회 중: userId = ${res.userId}`);
+                                const userDoc = await db.collection('users').doc(res.userId).get();
+                                
+                                if (userDoc.exists) {
+                                    const userData = userDoc.data();
+                                    console.log(`📋 사용자 데이터:`, userData);
+                                    // 우선순위: displayName > name > email
+                                    const userName = userData.displayName || userData.name || userData.email;
+                                    console.log(`✅ 찾은 이름: "${userName}"`);
+                                    
+                                    if (userName && userName !== '익명' && userName.trim() !== '') {
+                                        console.log(`✅ 사용자 이름 업데이트: ${res.userId} -> ${userName}`);
+                                        res.userName = userName;
+                                        // 예약 데이터도 업데이트 (다음 로드 시 반영)
+                                        try {
+                                            await db.collection('reservations').doc(res.id).update({
+                                                userName: userName
+                                            });
+                                            console.log(`✅ 예약 데이터 업데이트 완료: 예약 ID ${res.id}`);
+                                        } catch (updateError) {
+                                            console.error('❌ 예약 데이터 업데이트 실패:', updateError);
+                                            console.error('예약 ID:', res.id);
+                                            console.error('업데이트할 userName:', userName);
+                                        }
+                                    } else {
+                                        console.warn(`⚠️ 찾은 이름이 유효하지 않음: "${userName}"`);
+                                    }
+                                } else {
+                                    console.warn(`⚠️ users 컬렉션에 문서가 없음: userId = ${res.userId}`);
+                                }
+                            } catch (error) {
+                                console.error(`❌ 사용자 정보 가져오기 실패 (${res.userId}):`, error);
+                            }
+                        } else {
+                            console.warn(`⚠️ 예약에 userId가 없음: 예약 ID ${res.id}`);
+                        }
+                    } else {
+                        console.log(`✅ 이름 정상: ${res.userName}`);
+                    }
+                    
+                    return res;
+                });
+                
+                // 모든 사용자 이름 조회 완료 대기
+                reservations = await Promise.all(userNamePromises);
                 
                 console.log(`✅ ${slotKey} 시간대 예약 수: ${reservations.length}`);
             } catch (error) {
@@ -8922,29 +8978,86 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             
             // 각 라운드마다 4명씩 선택하여 경기 생성
             // 모든 플레이어가 최대한 공평하게 참여하도록 로테이션
+            // 이전 경기 조합을 추적하여 중복 방지
+            const previousMatches = []; // 각 라운드의 플레이어 조합 저장
+            
             for (let r = 1; r <= rounds; r++) {
                 // 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
                 // 각 라운드마다 현재까지 참여 횟수가 가장 적은 4명을 선택
                 const availablePlayers = [...sortedAllPlayers];
                 
-                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 원래 순서 유지)
+                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
                 availablePlayers.sort((a, b) => {
                     const countA = playerPlayCount[a.userId] || 0; // 현재 대진표 내 참여 횟수
                     const countB = playerPlayCount[b.userId] || 0; // 현재 대진표 내 참여 횟수
                     if (countA !== countB) {
                         return countA - countB; // 참여 횟수가 적은 순
                     }
-                    // 같은 횟수면 원래 순서 유지
-                    return 0;
+                    // 같은 횟수면 랜덤하게 순서 섞기 (다양한 조합 생성)
+                    return Math.random() - 0.5;
                 });
                 
-                // 현재 대진표 내 참여 횟수가 가장 적은 4명 선택
-                const fourPlayers = availablePlayers.slice(0, 4);
+                // 참여 횟수가 가장 적은 플레이어들을 먼저 선택하되, 여러 조합 시도
+                let fourPlayers = null;
+                const minCount = Math.min(...availablePlayers.map(p => playerPlayCount[p.userId] || 0));
+                
+                // 같은 참여 횟수를 가진 플레이어들 중에서 선택
+                const candidatesWithMinCount = availablePlayers.filter(p => (playerPlayCount[p.userId] || 0) === minCount);
+                
+                // 가능한 조합 중 이전 경기와 다른 조합 선택
+                if (candidatesWithMinCount.length >= 4) {
+                    // 충분한 후보가 있으면 랜덤하게 섞어서 다른 조합 시도
+                    const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
+                    
+                    // 이전 경기와 다른 조합 찾기 (최대 10번 시도)
+                    for (let attempt = 0; attempt < 10 && attempt < shuffled.length - 3; attempt++) {
+                        const candidate = shuffled.slice(attempt, attempt + 4);
+                        const candidateIds = candidate.map(p => p.userId).sort().join(',');
+                        
+                        // 이전 경기와 다른 조합인지 확인
+                        const isUnique = previousMatches.every(prev => {
+                            const prevIds = prev.map(p => p.userId).sort().join(',');
+                            return prevIds !== candidateIds;
+                        });
+                        
+                        if (isUnique || previousMatches.length === 0) {
+                            fourPlayers = candidate;
+                            break;
+                        }
+                    }
+                    
+                    // 고유한 조합을 찾지 못했으면 첫 번째 조합 사용
+                    if (!fourPlayers) {
+                        fourPlayers = shuffled.slice(0, 4);
+                    }
+                } else {
+                    // 최소 참여 횟수를 가진 플레이어가 4명 미만이면 상위 플레이어 추가
+                    const needed = 4 - candidatesWithMinCount.length;
+                    const additionalPlayers = availablePlayers
+                        .filter(p => (playerPlayCount[p.userId] || 0) > minCount)
+                        .sort((a, b) => {
+                            const countA = playerPlayCount[a.userId] || 0;
+                            const countB = playerPlayCount[b.userId] || 0;
+                            if (countA !== countB) return countA - countB;
+                            return Math.random() - 0.5;
+                        })
+                        .slice(0, needed);
+                    
+                    fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
+                }
+                
+                // 안전장치: fourPlayers가 없으면 처음 4명 선택
+                if (!fourPlayers || fourPlayers.length < 4) {
+                    fourPlayers = availablePlayers.slice(0, 4);
+                }
                 
                 // 선택된 플레이어의 현재 대진표 내 참여 횟수 증가
                 fourPlayers.forEach(player => {
                     playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
                 });
+                
+                // 이전 경기 조합에 추가 (중복 방지용)
+                previousMatches.push([...fourPlayers]);
                 
                 // 팀 구성
                 if (fourPlayers.length === 4) {
@@ -8990,89 +9103,127 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     .join(', ')
             );
         } else {
-            // 4명 단위로 나누어떨어지는 경우 기존 로직 사용
-            // teamMode에 따라 코트별 팀 구성
-            let teams = [];
+            // 4명 단위로 나누어떨어지는 경우에도 로테이션 적용
+            // 모든 플레이어가 다양한 조합으로 경기하도록 개선
+            let sortedAllPlayers;
             if (teamMode === 'balanced') {
-                // 밸런스 모드: 잘하는 사람과 못하는 사람을 같은 편에 배치
-                // 점수 순으로 정렬 (내림차순: 최강, 차강, 차약, 최약)
-                const sortedPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
-                
-                // 4명 단위로 팀 구성
-                for (let i = 0; i < sortedPlayers.length; i += 4) {
-                    const fourPlayers = sortedPlayers.slice(i, i + 4);
-                    if (fourPlayers.length === 4) {
-                        // [최강(0), 최약(3), 차강(1), 차약(2)] 순서로 재배치
-                        teams.push([fourPlayers[0], fourPlayers[3], fourPlayers[1], fourPlayers[2]]);
-                    }
-                }
-            } else if (teamMode === 'grouped') {
-                // 그룹 모드: 각 코트 내에서 랜덤
-                const shuffled = [...courtPlayerList].sort(() => Math.random() - 0.5);
-                for (let i = 0; i < shuffled.length; i += 4) {
-                    const fourPlayers = shuffled.slice(i, i + 4);
-                    if (fourPlayers.length === 4) {
-                        teams.push(fourPlayers);
-                    }
-                }
+                sortedAllPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
             } else {
-                // 랜덤 모드: 무작위 섞기
-                const shuffled = [...courtPlayerList].sort(() => Math.random() - 0.5);
-                for (let i = 0; i < shuffled.length; i += 4) {
-                    const fourPlayers = shuffled.slice(i, i + 4);
-                    if (fourPlayers.length === 4) {
-                        teams.push(fourPlayers);
-                    }
-                }
+                // 랜덤/그룹 모드: 랜덤하게 섞기
+                sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
             }
             
-            // 각 팀에서 라운드별 경기 생성
+            // 공평한 분배를 위한 플레이어 참여 횟수 추적
+            const playerPlayCount = {};
+            sortedAllPlayers.forEach(player => {
+                playerPlayCount[player.userId] = 0;
+            });
+            
+            // 이전 경기 조합을 추적하여 중복 방지
+            const previousMatches = [];
+            
+            // 각 라운드마다 4명씩 선택하여 경기 생성
             for (let r = 1; r <= rounds; r++) {
-                const teamIndex = (r - 1) % teams.length;
-                if (teamIndex >= teams.length) continue;
-                const fourPlayers = teams[teamIndex];
-            
-            // 밸런스 모드일 때는 항상 밸런스 패턴 [0,1,2,3] 사용 (최강+최약 vs 차강+차약)
-            // 다른 모드일 때는 라운드별로 다른 패턴 사용하여 다양한 조합 제공
-            let patternIndex;
-            if (teamMode === 'balanced') {
-                // 밸런스 모드: 항상 밸런스 패턴 사용 (팀A: [0,1]=[최강,최약], 팀B: [2,3]=[차강,차약])
-                patternIndex = 0; // pairingPatterns[0] = [0,1,2,3]
-            } else {
-                // 랜덤/그룹 모드: 라운드별로 다양한 패턴 사용
-                patternIndex = (r - 1) % pairingPatterns.length;
-            }
-            
-            const p = pairingPatterns[patternIndex];
-            const teamA = [
-                { 
-                    userId: fourPlayers[p[0]].userId, 
-                    userName: fourPlayers[p[0]].userName,
-                    internalRating: fourPlayers[p[0]].internalRating || 0,
-                    score: fourPlayers[p[0]].score || 0
-                },
-                { 
-                    userId: fourPlayers[p[1]].userId, 
-                    userName: fourPlayers[p[1]].userName,
-                    internalRating: fourPlayers[p[1]].internalRating || 0,
-                    score: fourPlayers[p[1]].score || 0
+                const availablePlayers = [...sortedAllPlayers];
+                
+                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
+                availablePlayers.sort((a, b) => {
+                    const countA = playerPlayCount[a.userId] || 0;
+                    const countB = playerPlayCount[b.userId] || 0;
+                    if (countA !== countB) {
+                        return countA - countB;
+                    }
+                    // 같은 횟수면 랜덤하게 순서 섞기
+                    return Math.random() - 0.5;
+                });
+                
+                // 참여 횟수가 가장 적은 플레이어들을 먼저 선택하되, 여러 조합 시도
+                let fourPlayers = null;
+                const minCount = Math.min(...availablePlayers.map(p => playerPlayCount[p.userId] || 0));
+                const candidatesWithMinCount = availablePlayers.filter(p => (playerPlayCount[p.userId] || 0) === minCount);
+                
+                // 가능한 조합 중 이전 경기와 다른 조합 선택
+                if (candidatesWithMinCount.length >= 4) {
+                    const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
+                    
+                    // 이전 경기와 다른 조합 찾기 (최대 10번 시도)
+                    for (let attempt = 0; attempt < 10 && attempt < shuffled.length - 3; attempt++) {
+                        const candidate = shuffled.slice(attempt, attempt + 4);
+                        const candidateIds = candidate.map(p => p.userId).sort().join(',');
+                        
+                        const isUnique = previousMatches.every(prev => {
+                            const prevIds = prev.map(p => p.userId).sort().join(',');
+                            return prevIds !== candidateIds;
+                        });
+                        
+                        if (isUnique || previousMatches.length === 0) {
+                            fourPlayers = candidate;
+                            break;
+                        }
+                    }
+                    
+                    if (!fourPlayers) {
+                        fourPlayers = shuffled.slice(0, 4);
+                    }
+                } else {
+                    // 최소 참여 횟수를 가진 플레이어가 4명 미만이면 상위 플레이어 추가
+                    const needed = 4 - candidatesWithMinCount.length;
+                    const additionalPlayers = availablePlayers
+                        .filter(p => (playerPlayCount[p.userId] || 0) > minCount)
+                        .sort((a, b) => {
+                            const countA = playerPlayCount[a.userId] || 0;
+                            const countB = playerPlayCount[b.userId] || 0;
+                            if (countA !== countB) return countA - countB;
+                            return Math.random() - 0.5;
+                        })
+                        .slice(0, needed);
+                    
+                    fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
                 }
-            ];
-            const teamB = [
-                { 
-                    userId: fourPlayers[p[2]].userId, 
-                    userName: fourPlayers[p[2]].userName,
-                    internalRating: fourPlayers[p[2]].internalRating || 0,
-                    score: fourPlayers[p[2]].score || 0
-                },
-                { 
-                    userId: fourPlayers[p[3]].userId, 
-                    userName: fourPlayers[p[3]].userName,
-                    internalRating: fourPlayers[p[3]].internalRating || 0,
-                    score: fourPlayers[p[3]].score || 0
+                
+                // 안전장치: fourPlayers가 없으면 처음 4명 선택
+                if (!fourPlayers || fourPlayers.length < 4) {
+                    fourPlayers = availablePlayers.slice(0, 4);
                 }
-            ];
-            schedule.push({ round: r, court: c, teamA, teamB });
+                
+                // 선택된 플레이어의 참여 횟수 증가
+                fourPlayers.forEach(player => {
+                    playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
+                });
+                
+                // 이전 경기 조합에 추가
+                previousMatches.push([...fourPlayers]);
+                
+                // 팀 구성
+                let teamA, teamB;
+                if (teamMode === 'balanced') {
+                    // 밸런스 모드: 점수 순으로 정렬한 후 [최강, 최약] vs [차강, 차약]
+                    const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+                    teamA = [sorted[0], sorted[3]];
+                    teamB = [sorted[1], sorted[2]];
+                } else {
+                    // 랜덤/그룹 모드: 라운드별로 다양한 패턴 사용
+                    const p = pairingPatterns[(r - 1) % pairingPatterns.length];
+                    teamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                    teamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
+                }
+                
+                schedule.push({
+                    round: r,
+                    court: c,
+                    teamA: teamA.map(player => ({
+                        userId: player.userId,
+                        userName: player.userName,
+                        internalRating: player.internalRating || 0,
+                        score: player.score || 0
+                    })),
+                    teamB: teamB.map(player => ({
+                        userId: player.userId,
+                        userName: player.userName,
+                        internalRating: player.internalRating || 0,
+                        score: player.score || 0
+                    }))
+                });
             }
         }
     }
