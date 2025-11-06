@@ -2614,6 +2614,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     order: 2;
 }
 
+/* 모바일에서만 height를 덮어쓰기 위해 기본 스타일은 유지 */
+
 .podium-card.second-place {
     background: #e0e0e0;
     width: 120px; /* 180px * 2/3 */
@@ -5755,7 +5757,32 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 13px;
     }
     
-    /* 기록탭 기간 선택 버튼 - 통계탭 모바일 스타일과 동일하게 적용 (한 줄로) */
+    /* 통계탭과 기록탭 기간 선택 버튼 - 동일하게 적용 (한 줄로) */
+    .stats-period-filter-container {
+        padding: 6px !important;
+    }
+    
+    .stats-period-filter-buttons {
+        gap: 6px !important;
+        flex-wrap: nowrap !important; /* 한 줄로 표시 */
+    }
+    
+    .stats-period-btn {
+        padding: 8px 10px !important; /* 패딩 줄여서 한 줄에 맞춤 */
+        font-size: 0.8rem !important; /* 폰트 크기 약간 줄임 */
+        font-weight: 500 !important;
+        flex: 1 !important; /* 균등하게 분배 */
+        min-width: 0 !important; /* 최소 너비 제한 제거 */
+        white-space: nowrap !important; /* 텍스트 줄바꿈 방지 */
+        text-align: center !important;
+        box-sizing: border-box !important;
+        height: 32px !important;
+        line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
     .records-container .stats-period-filter-container {
         padding: 6px !important;
     }
