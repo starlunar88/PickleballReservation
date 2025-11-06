@@ -435,8 +435,9 @@ body {
 .rankings-container {
     max-width: 100%;
     margin: 0;
-    padding: 0; /* 좌우 여백 완전 제거 */
+    padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     width: 100%;
+    box-sizing: border-box;
 }
 
 .rankings-tabs {
@@ -1098,8 +1099,9 @@ body {
 .dashboard-container {
     max-width: 100%;
     margin: 0;
-    padding: 0; /* 좌우 여백 완전 제거 */
+    padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     width: 100%;
+    box-sizing: border-box;
 }
 
 .dashboard-stats {
@@ -2224,9 +2226,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 8px 0 140px 0; /* 좌우 여백 완전 제거 */
+    padding: 8px 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     margin-top: 0;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
@@ -2235,8 +2238,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .records-container {
     max-width: 100%;
     margin: 0;
-    padding: 0; /* 좌우 여백 완전 제거 */
+    padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* 기간 선택 버튼 */
@@ -2459,10 +2463,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .rankings-container {
-    padding: 20px 0; /* 좌우 여백 완전 제거 */
+    padding: 20px 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     max-width: 100%;
     margin: 0;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* 올림픽 메달 시상식 섹션 */
@@ -3069,8 +3074,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .stats-container {
     max-width: 100%;
     margin: 0;
-    padding: 0; /* 좌우 여백 완전 제거 */
+    padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* 경기 통계 섹션 */
@@ -3868,11 +3874,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .tab-contents {
-        padding: 0 0 60px 0 !important; /* 좌우 여백 완전 제거 */
+        padding: 0 4px 60px 4px !important; /* 예약, 대진표 탭 수준의 여백 */
     }
     .reservations-container,
     .records-container {
-        padding: 0 !important; /* 좌우 여백 완전 제거 */
+        padding: 0 4px 140px 4px !important; /* 예약, 대진표 탭 수준의 여백 */
     }
     
 /* PC에서 전체 너비 사용 */
@@ -3896,8 +3902,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 100%;
         width: 100%;
         margin: 0;
-        padding-left: 15px;
-        padding-right: 15px;
+        padding: 0 15px 140px 15px; /* PC에서도 예약, 대진표 탭 수준의 여백 */
         box-sizing: border-box;
     }
     
@@ -4144,8 +4149,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .mobile-tab-btn { padding: 10px 5px; font-size: 0.85rem; font-weight: 500; }
     .mobile-tab-btn i { font-size: 1.6rem; margin-bottom: 5px; }
     .reservations-board { 
-        margin: 0 !important; /* 좌우 여백 완전 제거 */
+        margin: 0 !important;
         width: 100% !important;
+    }
+    
+    .reservations-container,
+    .records-container,
+    .stats-container,
+    .rankings-container {
+        padding: 0 6px 140px 6px !important; /* 예약, 대진표 탭 수준의 여백 */
     }
     .reservations-timeline { 
         padding: 8px !important; /* 패딩 최소화 */
