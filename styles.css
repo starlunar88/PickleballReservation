@@ -3049,22 +3049,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 /* 경기 통계 섹션 */
 .game-stats-section {
     margin-bottom: 40px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 15px;
-    flex-wrap: wrap;
 }
 
 .stats-section-header {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 0;
+    margin-bottom: 20px;
 }
 
 .stats-section-header i {
-    color: #667eea;
+    color: #333;
     font-size: 1.2rem;
 }
 
@@ -3076,19 +3071,26 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     white-space: nowrap;
 }
 
-/* 기간 선택 버튼 */
+/* 기간 선택 필터 컨테이너 */
+.stats-period-filter-container {
+    background: #f5f5f5;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
 .stats-period-filter-buttons {
     display: flex;
-    gap: 10px;
-    margin-bottom: 0;
+    gap: 8px;
     flex-wrap: nowrap;
     align-items: center;
 }
 
 .stats-period-btn {
     padding: 10px 20px;
-    border: 2px solid #e0e0e0;
-    background: #fff;
+    border: none;
+    background: transparent;
     color: #666;
     border-radius: 8px;
     font-size: 0.95rem;
@@ -3096,17 +3098,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     cursor: pointer;
     transition: all 0.3s ease;
     white-space: nowrap;
+    flex: 1;
+    text-align: center;
 }
 
 .stats-period-btn:hover {
-    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
     color: #667eea;
 }
 
 .stats-period-btn.active {
     background: #667eea;
-    border-color: #667eea;
     color: #fff;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 /* 개인 성장 분석 */
@@ -3358,14 +3362,20 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         align-items: stretch;
     }
     
+    .stats-period-filter-container {
+        padding: 6px;
+    }
+    
     .stats-period-filter-buttons {
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
     
     .stats-period-btn {
-        padding: 8px 16px;
+        padding: 8px 12px;
         font-size: 0.85rem;
+        flex: 1 1 auto;
+        min-width: calc(50% - 3px);
     }
     
     .stats-cards-grid {
