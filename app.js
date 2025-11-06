@@ -1366,9 +1366,6 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationsBtn.addEventListener('click', openNotificationsModal);
     }
 
-    // 테스트용 시간대별 버튼 생성
-    createTestButtons();
-    
     // 새로고침 버튼 이벤트 리스너
     const refreshBtn = document.getElementById('refresh-timeline');
     if (refreshBtn) {
@@ -4894,14 +4891,6 @@ async function loadReservationsTimeline() {
                                                    title="${buttonTitle}">
                                                 <i class="fas fa-calendar-alt"></i> 대진표 생성
                                             </button>`;
-                                
-                                // 테스트용 임시 사람 추가 버튼 (관리자만 표시)
-                                buttons += `<button class="btn btn-primary add-random-btn" 
-                                               data-time-slot="${slotKey}" 
-                                               data-date="${targetDate}"
-                                               style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
-                                            <i class="fas fa-user-plus"></i> 테스트 추가
-                                        </button>`;
                             }
                             
                             return buttons;
@@ -4935,34 +4924,6 @@ async function loadReservationsTimeline() {
                 const timeSlot = e.target.getAttribute('data-time-slot');
                 const date = e.target.getAttribute('data-date');
                 await handleCancelReservation(timeSlot, date);
-            });
-        });
-        
-        // 테스트용 임시 사람 추가 버튼 이벤트 리스너 추가
-        timeline.querySelectorAll('.add-random-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                e.stopPropagation(); // 타임라인 아이템 클릭 이벤트 방지
-                try {
-                    const timeSlot = btn.getAttribute('data-time-slot');
-                    const date = btn.getAttribute('data-date');
-                    
-                    console.log(`🧪 테스트 사람 추가: ${date}, ${timeSlot}`);
-                    
-                    if (!timeSlot || !date) {
-                        console.error('시간대 또는 날짜 정보가 없습니다');
-                        showToast('시간대 또는 날짜 정보가 없습니다.', 'error');
-                        return;
-                    }
-                    
-                    await addRandomReservation(date, timeSlot);
-                    showToast(`${timeSlot} 시간대에 임시 사람이 추가되었습니다.`, 'success');
-                    
-                    // 타임라인 새로고침
-                    await loadReservationsTimeline();
-                } catch (error) {
-                    console.error('테스트 사람 추가 오류:', error);
-                    showToast('테스트 사람 추가 중 오류가 발생했습니다.', 'error');
-                }
             });
         });
         
@@ -7997,7 +7958,7 @@ window.addEventListener('offline', () => {
 // 자동 갱신 제거 - 새로고침 버튼으로만 갱신
 
 // 페이지 로드 시 애니메이션
-window.addEventListener('load', function() {
+window.addEventListener('load', async function() {
     const elements = document.querySelectorAll('.reservation-card');
     elements.forEach((element, index) => {
         setTimeout(() => {
@@ -8008,6 +7969,9 @@ window.addEventListener('load', function() {
     // 시간 슬롯과 코트 옵션 로드
     loadTimeSlots();
     loadCourtOptions();
+    
+    // 테스트 데이터 초기화 (페이지 로드 시 한 번 실행)
+    await clearTestData();
     
     // 자동 예약 처리 시작
     startAutoProcessing();
@@ -8269,6 +8233,55 @@ async function addRandomReservation(date, timeSlot) {
     } catch (error) {
         console.error('테스트 예약 추가 오류:', error);
         showToast('테스트 예약 추가 실패', 'error');
+    }
+}
+
+// 테스트 데이터 초기화 함수
+async function clearTestData() {
+    try {
+        console.log('🧹 테스트 데이터 초기화 시작...');
+        
+        // Firebase 초기화 확인
+        if (!initializeFirebase()) {
+            console.error('❌ Firebase 초기화 실패');
+            return;
+        }
+        
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            console.error('❌ db 객체를 찾을 수 없습니다');
+            return;
+        }
+        
+        // isTestData가 true인 모든 예약 조회
+        const testReservationsSnapshot = await db.collection('reservations')
+            .where('isTestData', '==', true)
+            .get();
+        
+        if (testReservationsSnapshot.empty) {
+            console.log('✅ 삭제할 테스트 데이터가 없습니다.');
+            return;
+        }
+        
+        console.log(`🗑️ ${testReservationsSnapshot.size}개의 테스트 데이터를 삭제합니다...`);
+        
+        // 배치 삭제
+        const batch = db.batch();
+        testReservationsSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        await batch.commit();
+        console.log(`✅ ${testReservationsSnapshot.size}개의 테스트 데이터 삭제 완료!`);
+        showToast(`${testReservationsSnapshot.size}개의 테스트 데이터가 삭제되었습니다.`, 'success');
+        
+        // 타임라인 새로고침
+        if (typeof loadReservationsTimeline === 'function') {
+            await loadReservationsTimeline();
+        }
+    } catch (error) {
+        console.error('❌ 테스트 데이터 초기화 오류:', error);
+        showToast('테스트 데이터 초기화 중 오류가 발생했습니다.', 'error');
     }
 }
 
