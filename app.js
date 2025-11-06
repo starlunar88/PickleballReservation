@@ -8962,9 +8962,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 예: 7명이면 각 라운드마다 다른 4명 조합으로 구성하여 모든 플레이어 참여 보장
             // 모든 플레이어를 정렬된 배열로 유지
             let sortedAllPlayers;
-            if (teamMode === 'balanced') {
+            if (teamMode === 'balanced' || teamMode === 'grouped') {
+                // 밸런스 모드와 그룹 모드: 점수 순으로 정렬
+                // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                 sortedAllPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
             } else {
+                // 랜덤 모드: 랜덤하게 섞기
                 sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
             }
             
@@ -9018,14 +9021,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
-                        if (teamMode === 'balanced') {
-                            // 밸런스 모드: 한 가지 구성만 가능
+                        if (teamMode === 'balanced' || teamMode === 'grouped') {
+                            // 밸런스 모드와 그룹 모드: [최강, 최약] vs [차강, 차약] 구성
+                            // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                             const sorted = [...candidate].sort((a, b) => b.combinedScore - a.combinedScore);
                             const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
                             const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
                             teamConfigs.push({ teamA, teamB });
                         } else {
-                            // 랜덤/그룹 모드: 모든 패턴 시도
+                            // 랜덤 모드: 모든 패턴 시도
                             for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
                                 const p = pairingPatterns[patternIdx];
                                 const teamA = [candidate[p[0]], candidate[p[1]]].map(p => p.userId).sort();
@@ -9085,7 +9089,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         .slice(0, needed);
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
-                    if (teamMode === 'balanced') {
+                    if (teamMode === 'balanced' || teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -9099,7 +9103,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 // 안전장치: fourPlayers가 없으면 처음 4명 선택
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
-                    if (teamMode === 'balanced') {
+                    if (teamMode === 'balanced' || teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -9157,10 +9161,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 4명 단위로 나누어떨어지는 경우에도 로테이션 적용
             // 모든 플레이어가 다양한 조합으로 경기하도록 개선
             let sortedAllPlayers;
-            if (teamMode === 'balanced') {
+            if (teamMode === 'balanced' || teamMode === 'grouped') {
+                // 밸런스 모드와 그룹 모드: 점수 순으로 정렬
+                // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                 sortedAllPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
             } else {
-                // 랜덤/그룹 모드: 랜덤하게 섞기
+                // 랜덤 모드: 랜덤하게 섞기
                 sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
             }
             
@@ -9206,17 +9212,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
-                        if (teamMode === 'balanced') {
-                            // 밸런스 모드: 한 가지 구성만 가능
+                        if (teamMode === 'balanced' || teamMode === 'grouped') {
+                            // 밸런스 모드와 그룹 모드: [최강, 최약] vs [차강, 차약] 구성
+                            // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                             const sorted = [...candidate].sort((a, b) => b.combinedScore - a.combinedScore);
-                            const teamA = [sorted[0], sorted[3]];
-                            const teamB = [sorted[1], sorted[2]];
-                            teamConfigs.push({
-                                teamA: teamA.map(p => p.userId).sort(),
-                                teamB: teamB.map(p => p.userId).sort()
-                            });
+                            const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
+                            const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
+                            teamConfigs.push({ teamA, teamB });
                         } else {
-                            // 랜덤/그룹 모드: 모든 패턴 시도
+                            // 랜덤 모드: 모든 패턴 시도
                             for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
                                 const p = pairingPatterns[patternIdx];
                                 const teamA = [candidate[p[0]], candidate[p[1]]].map(p => p.userId).sort();
@@ -9276,7 +9280,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         .slice(0, needed);
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
-                    if (teamMode === 'balanced') {
+                    if (teamMode === 'balanced' || teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -9290,7 +9294,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 // 안전장치: fourPlayers가 없으면 처음 4명 선택
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
-                    if (teamMode === 'balanced') {
+                    if (teamMode === 'balanced' || teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -9384,8 +9388,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     
                     if (fourPlayers.length === 4) {
                         let teamA, teamB;
-                        if (teamMode === 'balanced') {
+                        if (teamMode === 'balanced' || teamMode === 'grouped') {
                             // 점수 순으로 정렬
+                            // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                             const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                             teamA = [sorted[0], sorted[3]];
                             teamB = [sorted[1], sorted[2]];
