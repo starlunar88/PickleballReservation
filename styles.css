@@ -2521,11 +2521,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 20px;
-    padding: 30px 20px;
+    gap: 13px; /* 20px * 2/3 */
+    padding: 20px 13px; /* 30px 20px * 2/3 */
     background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
     border-radius: 20px;
-    min-height: 350px;
+    min-height: 233px; /* 350px * 2/3 */
     position: relative;
     max-width: 100%;
     overflow: hidden;
@@ -2535,12 +2535,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .podium-card {
     background: #fff;
     border-radius: 16px;
-    padding: 24px 20px;
+    padding: 16px 13px; /* 24px 20px * 2/3 */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 16px;
+    gap: 11px; /* 16px * 2/3 */
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
     flex-shrink: 0;
@@ -2552,32 +2552,32 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 .podium-card.first-place {
     background: linear-gradient(180deg, #ffeb3b 0%, #ffc107 100%);
-    width: 200px;
-    min-width: 180px;
-    height: 320px;
+    width: 133px; /* 200px * 2/3 */
+    min-width: 120px; /* 180px * 2/3 */
+    height: 213px; /* 320px * 2/3 */
     order: 2;
 }
 
 .podium-card.second-place {
     background: #e0e0e0;
-    width: 180px;
-    min-width: 160px;
-    height: 280px;
+    width: 120px; /* 180px * 2/3 */
+    min-width: 107px; /* 160px * 2/3 */
+    height: 187px; /* 280px * 2/3 */
     order: 1;
 }
 
 .podium-card.third-place {
     background: linear-gradient(180deg, #d4a574 0%, #cd7f32 100%);
-    width: 180px;
-    min-width: 160px;
-    height: 240px;
+    width: 120px; /* 180px * 2/3 */
+    min-width: 107px; /* 160px * 2/3 */
+    height: 160px; /* 240px * 2/3 */
     order: 3;
 }
 
 .medal-icon {
     position: relative;
-    font-size: 3.5rem;
-    margin-bottom: 12px;
+    font-size: 2.33rem; /* 3.5rem * 2/3 */
+    margin-bottom: 8px; /* 12px * 2/3 */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2594,14 +2594,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     left: 50%;
     transform: translate(-50%, -50%);
     font-weight: 700;
-    font-size: 1.4rem;
+    font-size: 0.93rem; /* 1.4rem * 2/3 */
     color: #fff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     z-index: 2;
 }
 
 .podium-name {
-    font-size: 1.3rem;
+    font-size: 0.87rem; /* 1.3rem * 2/3 */
     font-weight: 700;
     color: #000;
     text-align: center;
@@ -2611,12 +2611,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     white-space: nowrap;
     width: 100%;
     max-width: 100%;
-    padding: 0 8px;
+    padding: 0 5px; /* 8px * 2/3 */
     box-sizing: border-box;
     display: block;
     word-break: keep-all;
     line-height: 1.3;
-    margin-top: 8px;
+    margin-top: 5px; /* 8px * 2/3 */
 }
 
 .podium-card.first-place .podium-name {
@@ -2635,7 +2635,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .podium-score {
-    font-size: 1rem;
+    font-size: 0.67rem; /* 1rem * 2/3 */
     color: #000;
     text-align: center;
     font-weight: 600;
@@ -2644,8 +2644,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
-    padding: 0 8px;
-    margin-top: 4px;
+    padding: 0 5px; /* 8px * 2/3 */
+    margin-top: 3px; /* 4px * 2/3 */
     line-height: 1.4;
 }
 
@@ -3931,8 +3931,38 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .nav-container {
-        max-width: 480px; /* 모바일 사이즈로 제한 */
-        margin: 8px auto; /* 중앙 정렬 */
+        max-width: 480px !important; /* 모바일 사이즈로 제한 */
+        width: 100% !important;
+        margin: 8px auto !important; /* 중앙 정렬 */
+        padding: 0 12px !important;
+    }
+    
+    /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
+    .podium-wrapper {
+        gap: 8px !important; /* 13px에서 더 줄임 */
+        padding: 15px 8px !important; /* 20px 13px에서 더 줄임 */
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .podium-card.first-place {
+        width: 110px !important; /* 133px에서 더 줄임 */
+        min-width: 100px !important; /* 120px에서 더 줄임 */
+    }
+    
+    .podium-card.second-place {
+        width: 100px !important; /* 120px에서 더 줄임 */
+        min-width: 90px !important; /* 107px에서 더 줄임 */
+    }
+    
+    .podium-card.third-place {
+        width: 100px !important; /* 120px에서 더 줄임 */
+        min-width: 90px !important; /* 107px에서 더 줄임 */
+    }
+    
+    .podium-card {
+        padding: 12px 8px !important; /* 16px 13px에서 더 줄임 */
+        gap: 8px !important; /* 11px에서 더 줄임 */
     }
 }
     
@@ -4062,52 +4092,52 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem;
     }
     
-    /* 메달 시상식 모바일 최적화 - 더 작게 */
+    /* 메달 시상식 모바일 최적화 - 더 작게 (2/3 크기) */
     .podium-wrapper {
-        gap: 4px !important;
-        padding: 10px 4px !important;
-        min-height: 180px !important;
-        max-height: 200px !important;
+        gap: 3px !important; /* 4px * 2/3 */
+        padding: 7px 3px !important; /* 10px 4px * 2/3 */
+        min-height: 120px !important; /* 180px * 2/3 */
+        max-height: 133px !important; /* 200px * 2/3 */
     }
     
     .podium-card {
-        padding: 8px 4px !important;
-        gap: 4px !important;
-        min-height: 120px !important;
+        padding: 5px 3px !important; /* 8px 4px * 2/3 */
+        gap: 3px !important; /* 4px * 2/3 */
+        min-height: 80px !important; /* 120px * 2/3 */
     }
     
     .podium-card.first-place {
-        min-height: 160px !important;
-        max-height: 180px !important;
+        min-height: 107px !important; /* 160px * 2/3 */
+        max-height: 120px !important; /* 180px * 2/3 */
     }
     
     .podium-card.second-place {
-        min-height: 140px !important;
-        max-height: 160px !important;
+        min-height: 93px !important; /* 140px * 2/3 */
+        max-height: 107px !important; /* 160px * 2/3 */
     }
     
     .podium-card.third-place {
-        min-height: 120px !important;
-        max-height: 140px !important;
+        min-height: 80px !important; /* 120px * 2/3 */
+        max-height: 93px !important; /* 140px * 2/3 */
     }
     
     .medal-icon {
-        font-size: 1.5rem !important;
-        margin-bottom: 4px !important;
+        font-size: 1rem !important; /* 1.5rem * 2/3 */
+        margin-bottom: 3px !important; /* 4px * 2/3 */
     }
     
     .medal-number {
-        font-size: 0.7rem !important;
+        font-size: 0.47rem !important; /* 0.7rem * 2/3 */
     }
     
     .podium-name {
-        font-size: 0.8rem !important;
-        margin-top: 2px !important;
+        font-size: 0.53rem !important; /* 0.8rem * 2/3 */
+        margin-top: 1px !important; /* 2px * 2/3 */
     }
     
     .podium-score {
-        font-size: 0.7rem !important;
-        margin-top: 2px !important;
+        font-size: 0.47rem !important; /* 0.7rem * 2/3 */
+        margin-top: 1px !important; /* 2px * 2/3 */
     }
     
     /* .section-header는 아래 더 구체적인 스타일로 덮어씀 */
@@ -5555,14 +5585,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 16px;
     }
     
-    /* 랭킹 탭 반응형 */
+    /* 랭킹 탭 반응형 (2/3 크기) */
     .podium-wrapper {
         flex-direction: row;
         align-items: flex-end;
-        gap: 6px;
-        padding: 12px 6px;
-        min-height: 180px;
-        max-height: 200px;
+        gap: 4px; /* 6px * 2/3 */
+        padding: 8px 4px; /* 12px 6px * 2/3 */
+        min-height: 120px; /* 180px * 2/3 */
+        max-height: 133px; /* 200px * 2/3 */
     }
     
     .podium-card {
@@ -5570,46 +5600,46 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         min-width: 0;
         max-width: 100%;
         height: auto !important;
-        min-height: 140px;
-        padding: 10px 6px;
-        gap: 6px;
+        min-height: 93px; /* 140px * 2/3 */
+        padding: 7px 4px; /* 10px 6px * 2/3 */
+        gap: 4px; /* 6px * 2/3 */
     }
     
     .podium-card.first-place {
-        min-height: 180px;
-        max-height: 200px;
+        min-height: 120px; /* 180px * 2/3 */
+        max-height: 133px; /* 200px * 2/3 */
         order: 2;
     }
     
     .podium-card.second-place {
-        min-height: 160px;
-        max-height: 180px;
+        min-height: 107px; /* 160px * 2/3 */
+        max-height: 120px; /* 180px * 2/3 */
         order: 1;
     }
     
     .podium-card.third-place {
-        min-height: 140px;
-        max-height: 160px;
+        min-height: 93px; /* 140px * 2/3 */
+        max-height: 107px; /* 160px * 2/3 */
         order: 3;
     }
     
     .medal-icon {
-        font-size: 1.8rem;
-        margin-bottom: 6px;
+        font-size: 1.2rem; /* 1.8rem * 2/3 */
+        margin-bottom: 4px; /* 6px * 2/3 */
     }
     
     .medal-number {
-        font-size: 0.85rem;
+        font-size: 0.57rem; /* 0.85rem * 2/3 */
     }
     
     .podium-name {
-        font-size: 0.9rem;
-        margin-top: 4px;
+        font-size: 0.6rem; /* 0.9rem * 2/3 */
+        margin-top: 3px; /* 4px * 2/3 */
     }
     
     .podium-score {
-        font-size: 0.75rem;
-        margin-top: 2px;
+        font-size: 0.5rem; /* 0.75rem * 2/3 */
+        margin-top: 1px; /* 2px * 2/3 */
     }
     
     .rank-tiers {
@@ -5996,8 +6026,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 /* PC 스타일 - 화면이 넓을 때 네비게이션 바 조정 */
 @media (min-width: 481px) {
     .nav-container {
-        max-width: 100%; /* PC에서 전체 너비 사용 */
-        margin: 8px 15px; /* 좌우 여백만 유지 */
+        max-width: 480px !important; /* PC에서도 모바일 사이즈로 제한 */
+        width: 100% !important;
+        margin: 8px auto !important; /* 중앙 정렬 */
+        padding: 0 12px !important;
     }
     
     .nav-logo {
