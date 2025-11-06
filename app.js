@@ -2786,6 +2786,7 @@ async function loadStatsData() {
             const activePeriodBtn = document.querySelector('.stats-period-btn.active');
             const period = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
             await loadTeamAnalysis(period);
+            await loadIndividualPerformance(); // 개인별 성과 로드
         }, 300);
         
         await setupStatsEventListeners();
@@ -2799,6 +2800,7 @@ async function loadStatsData() {
                     if (statsTab && statsTab.classList.contains('active')) {
                         loadWinRateChart();
                         loadTeamAnalysis();
+                        loadIndividualPerformance(); // 개인별 성과 재그리기
                     }
                 }, 200);
             });
