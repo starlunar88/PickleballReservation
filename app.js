@@ -1963,7 +1963,7 @@ async function loadMatchesForDate(date) {
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
                 `;
                 
-                // 코트별 배정 정보 표시 (랜덤 모드는 전체 인원으로 표시)
+                // 코트별 배정 정보 표시 (랜덤 모드와 밸런스 모드는 전체 인원으로 표시)
                 if (teamMode === 'random') {
                     // 랜덤 모드: 전체 플레이어를 하나의 풀로 표시
                     const allPlayers = Array.from(allPlayersSet);
@@ -1980,8 +1980,24 @@ async function loadMatchesForDate(date) {
                             </div>
                         `;
                     }
+                } else if (teamMode === 'balanced') {
+                    // 밸런스 모드: 전체 플레이어를 하나의 풀로 표시
+                    const allPlayers = Array.from(allPlayersSet);
+                    if (allPlayers.length > 0) {
+                        matchesHTML += `
+                            <div style="margin-bottom: 8px;">
+                                <strong style="color: #667eea;">전체 밸런스 매칭 인원 (${allPlayers.length}명)</strong>
+                                <div style="color: #555; margin-left: 12px; margin-top: 4px;">
+                                    - ${allPlayers.join(', ')}
+                                </div>
+                                <div style="color: #888; font-size: 0.85rem; margin-left: 12px; margin-top: 4px; font-style: italic;">
+                                    (밸런스 모드: 코트별 배정 없이 전체에서 밸런스 매칭됩니다)
+                                </div>
+                            </div>
+                        `;
+                    }
                 } else {
-                    // 밸런스/그룹 모드: 코트별 배정 정보 표시
+                    // 그룹 모드: 코트별 배정 정보 표시
                     Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
                         const players = courtPlayers[courtNum];
                         if (players.length > 0) {
