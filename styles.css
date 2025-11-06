@@ -3125,12 +3125,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 /* 개인 성장 분석 */
 .personal-growth-section {
     margin-bottom: 40px;
-    padding: 20px;
+    padding: 15px;
     background: #fff;
     border-radius: 12px;
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-height: 400px;
+    min-height: 280px;
     display: flex;
     flex-direction: column;
 }
@@ -3139,7 +3139,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .growth-section-header i {
@@ -3157,7 +3157,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .growth-filters {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .growth-select {
@@ -3183,7 +3183,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .win-rate-chart-container {
-    margin-top: 20px;
+    margin-top: 10px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .chart-title-wrapper {
@@ -3191,7 +3194,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     align-items: center;
     gap: 8px;
     justify-content: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .chart-title-wrapper i {
@@ -3211,7 +3214,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     justify-content: center;
     align-items: center;
     gap: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .legend-item {
@@ -3234,9 +3237,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 #win-rate-chart {
     width: 100%;
-    height: 300px;
-    max-height: 400px;
+    height: 220px;
     flex: 1;
+    min-height: 200px;
 }
 
 /* 통계 카드 */
@@ -3317,10 +3320,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .performance-chart-card {
     background: #fff;
     border-radius: 12px;
-    padding: 15px;
+    padding: 12px;
     border: 1px solid #333;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-height: 280px;
+    min-height: 240px;
+    max-height: 260px;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -3329,7 +3333,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .performance-chart-header {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .performance-chart-header h3 {
@@ -3342,10 +3346,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 #win-rate-donut-chart,
 #participation-bar-chart {
     width: 100%;
-    height: 220px;
+    height: 200px;
     flex: 1;
     max-width: 100%;
     box-sizing: border-box;
+    min-height: 180px;
 }
 
 .performance-chart-card h3 {
