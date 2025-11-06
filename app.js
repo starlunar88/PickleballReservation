@@ -4019,10 +4019,11 @@ async function loadTeamAnalysis(period = null) {
             .sort((a, b) => b.winRate - a.winRate)
             .slice(0, 5);
         
+        // 최약 팀 조합: 승률이 가장 낮은 팀들 (승률 50% 미만 조건 제거)
         const weakestTeams = [...teamWinRates]
-            .filter(t => t.total >= 2 && t.winRate < 50) // 최소 2경기 이상, 승률 50% 미만만
-            .sort((a, b) => a.winRate - b.winRate)
-            .slice(0, 5);
+            .filter(t => t.total >= 2) // 최소 2경기 이상
+            .sort((a, b) => a.winRate - b.winRate) // 승률 오름차순 정렬
+            .slice(0, 5); // 상위 5개 (승률이 가장 낮은 팀들)
         
         console.log(`팀별 분석 완료 - 최강 팀: ${strongestTeams.length}개, 최약 팀: ${weakestTeams.length}개`);
         drawTeamBarChart(strongestTeams, 'strongest-teams-chart', '#43e97b');
@@ -4113,15 +4114,15 @@ function drawTeamBarChart(data, canvasId, color) {
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
     // PC에서는 영역을 벗어나지 않도록 오른쪽 여백을 충분히 확보
     const padding = { 
-        top: isMobile ? 20 : 15, 
-        right: isMobile ? 50 : 80, // PC에서 오른쪽 여백 증가 (60 -> 80)
-        bottom: isMobile ? 30 : 25, 
-        left: isMobile ? Math.max(maxNameWidth + 15, 100) : Math.max(maxNameWidth + 12, 90)
+        top: isMobile ? 20 : 20, 
+        right: isMobile ? 50 : 60, 
+        bottom: isMobile ? 30 : 30, 
+        left: isMobile ? Math.max(maxNameWidth + 15, 100) : Math.max(maxNameWidth + 15, 100)
     };
     
     // PC에서 너무 넓지 않도록 최대값 제한
     if (!isMobile) {
-        padding.left = Math.min(padding.left, 120);
+        padding.left = Math.min(padding.left, 130);
     }
     
     const chartWidth = width - padding.left - padding.right;
@@ -4133,8 +4134,8 @@ function drawTeamBarChart(data, canvasId, color) {
     }
     
     const maxValue = 100; // 승률이므로 최대 100%
-    const barHeight = chartHeight / data.length;
-    const barSpacing = barHeight * 0.15; // spacing 감소
+    const barHeight = chartHeight / Math.max(data.length, 1);
+    const barSpacing = barHeight * 0.1; // spacing 감소
     
     // 그리드 그리기 (20% 간격으로 여유있게)
     ctx.strokeStyle = '#e0e0e0';
@@ -4151,11 +4152,11 @@ function drawTeamBarChart(data, canvasId, color) {
     
     // 퍼센테이지 레이블 (20% 간격으로 표시)
     ctx.fillStyle = '#666';
-    ctx.font = isMobile ? '12px "Malgun Gothic", Arial, sans-serif' : '12px "Malgun Gothic", Arial, sans-serif';
+    ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i <= 5; i++) {
         const x = padding.left + (i / 5) * chartWidth;
-        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 15);
+        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 18);
     }
     
     // 바 차트 그리기
@@ -4183,7 +4184,7 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.textAlign = 'right';
         // 이름이 너무 길면 자르기
         let displayName = item.playerNames;
-        const maxNameDisplayWidth = padding.left - (isMobile ? 10 : 15);
+        const maxNameDisplayWidth = padding.left - (isMobile ? 10 : 12);
         if (ctx.measureText(displayName).width > maxNameDisplayWidth) {
             while (displayName.length > 0 && ctx.measureText(displayName + '...').width > maxNameDisplayWidth) {
                 displayName = displayName.slice(0, -1);
@@ -4200,7 +4201,7 @@ function drawTeamBarChart(data, canvasId, color) {
         const labelTextWidth = ctx.measureText(labelText).width;
         const labelX = x + barWidth + (isMobile ? 10 : 8);
         // 차트 영역 내에서만 표시되도록 제한 (오른쪽 padding 고려)
-        const maxLabelX = padding.left + chartWidth - labelTextWidth - 10;
+        const maxLabelX = padding.left + chartWidth - labelTextWidth - 8;
         
         // 레이블이 차트 영역을 벗어나면 막대 안에 표시
         if (labelX > maxLabelX) {
