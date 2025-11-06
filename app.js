@@ -4918,11 +4918,35 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
         const scoreA = match.scoreA ?? 0;
         const scoreB = match.scoreB ?? 0;
         
+        // 날짜를 YYYY-MM-DD 형식으로 변환
+        let formattedDate = '';
+        if (match.date) {
+            if (match.date.toDate) {
+                // Firestore Timestamp인 경우
+                const dateObj = match.date.toDate();
+                formattedDate = dateObj.toISOString().split('T')[0];
+            } else if (match.date instanceof Date) {
+                // Date 객체인 경우
+                formattedDate = match.date.toISOString().split('T')[0];
+            } else if (typeof match.date === 'string') {
+                // 문자열인 경우 (이미 YYYY-MM-DD 형식일 수 있음)
+                if (match.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    formattedDate = match.date;
+                } else {
+                    // 다른 형식이면 Date 객체로 변환
+                    const dateObj = new Date(match.date);
+                    if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toISOString().split('T')[0];
+                    }
+                }
+            }
+        }
+        
         // CSV 행 생성 (A열부터 U열까지)
         // A, B, C: 빈칸
         // D: "D"
         // E: "ATI Pickleball Club Match Doubles"
-        // F: 빈칸
+        // F: 날짜 (YYYY-MM-DD)
         // G: DUPR Name (플레이어 1)
         // H: DUPR ID (플레이어 1)
         // I: 빈칸
@@ -4944,7 +4968,7 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
             '', // C
             'D', // D
             'ATI Pickleball Club Match Doubles', // E
-            '', // F
+            escapeCSV(formattedDate), // F: 날짜 (YYYY-MM-DD)
             escapeCSV(player1Info.duprName), // G
             escapeCSV(player1Info.duprId), // H
             '', // I
