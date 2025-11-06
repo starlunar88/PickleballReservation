@@ -69,10 +69,30 @@ async function createReservation(reservationData) {
     }
     
     // 예약 데이터에 사용자 정보 추가 (이미 포함된 경우 중복 방지)
+    // userName이 이미 설정되어 있으면 사용, 없으면 users 컬렉션에서 가져오기
+    let userName = reservationData.userName;
+    
+    if (!userName) {
+        // users 컬렉션에서 사용자 이름 가져오기
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                // 우선순위: displayName > name > Firebase Auth의 displayName > email
+                userName = userData.displayName || userData.name || user.displayName || user.email;
+            } else {
+                userName = user.displayName || user.email;
+            }
+        } catch (error) {
+            console.error('사용자 정보 가져오기 오류:', error);
+            userName = user.displayName || user.email;
+        }
+    }
+    
     const reservation = {
         ...reservationData,
         userId: reservationData.userId || user.uid,
-        userName: reservationData.userName || user.displayName || user.email,
+        userName: userName,
         userDupr: reservationData.userDupr || null,
         createdAt: reservationData.createdAt || new Date(),
         status: reservationData.status || 'pending' // 대기 상태로 시작
@@ -4973,6 +4993,9 @@ async function loadReservationsTimeline() {
             // 실제 기준 인원 계산 (실제 사용 코트 * 4)
             const basePlayerCount = actualCourtCount * 4;
             
+            // 디버깅: 실제 계산값 확인
+            console.log(`[타임라인 표시] ${slotKey}: 예약 ${currentCount}명, 최대코트 ${maxCourts}, 실제코트 ${actualCourtCount}, 기준 ${basePlayerCount}명`);
+            
             let statusClass, statusText;
             if (isClosed) {
                 statusClass = 'closed';
@@ -5237,10 +5260,13 @@ async function handleTimelineReservation(timeSlot, date) {
         const userDoc = await db.collection('users').doc(user.uid).get();
         const userData = userDoc.exists ? userDoc.data() : {};
         
+        // 사용자 이름 우선순위: users 컬렉션의 displayName > name > Firebase Auth의 displayName > email
+        const userName = userData.displayName || userData.name || user.displayName || user.email;
+        
         // 예약 데이터 생성
         const reservationData = {
             userId: user.uid,
-            userName: userData.name || user.displayName || '익명',
+            userName: userName,
             userEmail: user.email,
             userDupr: userData.dupr || null,
             courtId: courtId,

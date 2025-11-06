@@ -419,13 +419,16 @@ async function createReservation(reservationData) {
         return null;
     }
     
+    // reservationData에 userName이 이미 설정되어 있으면 사용, 없으면 기본값 사용
+    const userName = reservationData.userName || user.displayName || user.email;
+    
     const reservation = {
         ...reservationData,
-        userId: user.uid,
-        userName: user.displayName || user.email,
+        userId: reservationData.userId || user.uid,
+        userName: userName,
         userDupr: reservationData.userDupr || null,
-        createdAt: new Date(),
-        status: 'pending' // 대기 상태로 시작
+        createdAt: reservationData.createdAt || new Date(),
+        status: reservationData.status || 'pending' // 대기 상태로 시작
     };
     
     try {
