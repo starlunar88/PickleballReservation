@@ -5084,8 +5084,8 @@ async function loadReservationsTimeline() {
                 statusText = '마감';
             } else if (currentCount > 0) {
                 statusClass = 'partial';
-                // 현재 예약 인원과 활성화된 코트 수를 표시
-                const countText = `예약 ${currentCount}명 (코트 ${actualCourtCount}개 활성화)`;
+                // 현재 예약 인원과 활성화된 코트 수를 간략하게 표시
+                const countText = `${currentCount}명 (${actualCourtCount}코트 활성)`;
                 
                 if (timeUntilClosing !== null && timeUntilClosing > 0) {
                     statusText = `${countText} · ${timeUntilClosing}분 후 마감`;
