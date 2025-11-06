@@ -4193,39 +4193,32 @@ function drawTeamBarChart(data, canvasId, color) {
         console.warn('차트 영역이 너무 작습니다');
     }
     
-    // 실제 데이터의 최대 승률 계산
-    const maxWinRate = Math.max(...data.map(d => d.winRate), 0);
-    // 차트 영역을 데이터에 맞게 조정 (불필요한 여백 제거)
-    const maxValue = Math.max(Math.ceil(maxWinRate / 10) * 10, 10); // 10의 배수로 올림, 최소 10
+    // 승률이므로 항상 0-100% 범위 표시
+    const maxValue = 100;
     const barHeight = chartHeight / Math.max(data.length, 1);
     const barSpacing = barHeight * 0.1; // spacing 감소
     
-    // 그리드 그리기 (동적 간격)
+    // 그리드 그리기 (20% 간격으로 표시)
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 1;
     
-    // 그리드 간격 계산 (최대 5개 눈금)
-    const gridStep = Math.max(10, Math.ceil(maxValue / 5));
-    const gridCount = Math.ceil(maxValue / gridStep);
-    
-    for (let i = 0; i <= gridCount; i++) {
-        const value = i * gridStep;
-        const x = padding.left + (value / maxValue) * chartWidth;
+    // 그리드 라인 (20% 간격: 0%, 20%, 40%, 60%, 80%, 100%)
+    for (let i = 0; i <= 5; i++) {
+        const x = padding.left + (i / 5) * chartWidth;
         ctx.beginPath();
         ctx.moveTo(x, padding.top);
         ctx.lineTo(x, padding.top + chartHeight);
         ctx.stroke();
     }
     
-    // 퍼센테이지 레이블 (동적 간격으로 표시, 차트 영역 끝에 맞춤)
+    // 퍼센테이지 레이블 (20% 간격으로 표시, 차트 영역 끝에 맞춤)
     ctx.fillStyle = '#666';
     ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
-    for (let i = 0; i <= gridCount; i++) {
-        const value = i * gridStep;
-        // 차트 영역 내에서 정확히 배치 (최대값은 차트 영역 끝에)
-        const x = padding.left + (value / maxValue) * chartWidth;
-        ctx.fillText(`${value}%`, x, height - padding.bottom + 15);
+    for (let i = 0; i <= 5; i++) {
+        // 차트 영역 내에서 정확히 배치 (100%는 차트 영역 끝에)
+        const x = padding.left + (i / 5) * chartWidth;
+        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 15);
     }
     
     // 바 차트 그리기

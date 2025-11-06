@@ -432,8 +432,9 @@ body {
 }
 
 .rankings-container {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 15px;
 }
 
 .rankings-tabs {
@@ -1089,8 +1090,9 @@ body {
 }
 
 .dashboard-container {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 15px;
 }
 
 .dashboard-stats {
@@ -2215,7 +2217,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 8px 16px 140px 16px; /* 상단 여백 최소화 */
+    padding: 8px 15px 140px 15px; /* 상단 여백 최소화 */
     margin-top: 0;
 }
 
@@ -2223,8 +2225,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .tab-contents,
 .reservations-container,
 .records-container {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 15px;
 }
 
 /* 기간 선택 버튼 */
@@ -2447,9 +2450,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .rankings-container {
-    padding: 20px 16px;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 20px 15px;
+    max-width: 100%;
+    margin: 0;
 }
 
 /* 올림픽 메달 시상식 섹션 */
