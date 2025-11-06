@@ -8842,6 +8842,46 @@ const pairingPatterns = [
     [1,2,0,3]  // 2,3 vs 1,4 (변형)
 ];
 
+// 밸런스 모드를 위한 여러 밸런스 조합 생성 함수
+function createBalancedTeamConfigs(candidate) {
+    const configs = [];
+    const sorted = [...candidate].sort((a, b) => b.combinedScore - a.combinedScore);
+    
+    // 조합 1: [최강, 최약] vs [차강, 차약] - 완벽 밸런스
+    const teamA1 = [sorted[0], sorted[3]].map(p => p.userId).sort();
+    const teamB1 = [sorted[1], sorted[2]].map(p => p.userId).sort();
+    const score1A = sorted[0].combinedScore + sorted[3].combinedScore;
+    const score1B = sorted[1].combinedScore + sorted[2].combinedScore;
+    const diff1 = Math.abs(score1A - score1B);
+    configs.push({ teamA: teamA1, teamB: teamB1, balanceDiff: diff1 });
+    
+    // 조합 2: [최강, 차약] vs [차강, 최약] - 약간의 차이 있지만 밸런스
+    const teamA2 = [sorted[0], sorted[2]].map(p => p.userId).sort();
+    const teamB2 = [sorted[1], sorted[3]].map(p => p.userId).sort();
+    const score2A = sorted[0].combinedScore + sorted[2].combinedScore;
+    const score2B = sorted[1].combinedScore + sorted[3].combinedScore;
+    const diff2 = Math.abs(score2A - score2B);
+    const totalScore = sorted.reduce((sum, p) => sum + p.combinedScore, 0);
+    const avgScore = totalScore / 2;
+    
+    // 점수 차이가 평균의 30% 이내면 밸런스로 인정
+    if (diff2 <= avgScore * 0.3) {
+        configs.push({ teamA: teamA2, teamB: teamB2, balanceDiff: diff2 });
+    }
+    
+    // 조합 3: 팀 순서만 바꾼 조합 (다양성 확보)
+    configs.push({ teamA: teamB1, teamB: teamA1, balanceDiff: diff1 });
+    if (diff2 <= avgScore * 0.3) {
+        configs.push({ teamA: teamB2, teamB: teamA2, balanceDiff: diff2 });
+    }
+    
+    // 밸런스 차이 순으로 정렬 (더 나은 밸런스 우선)
+    configs.sort((a, b) => a.balanceDiff - b.balanceDiff);
+    
+    // balanceDiff 제거하고 teamA, teamB만 반환
+    return configs.map(config => ({ teamA: config.teamA, teamB: config.teamB }));
+}
+
 // 매치 스케줄 빌드 (간단 로테이션, 동적 코트 지원, 코트 배정 유지)
 function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, teamMode = 'random') {
     // Player 객체로 변환 (점수 정보 포함)
@@ -9022,12 +9062,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
                         if (teamMode === 'balanced' || teamMode === 'grouped') {
-                            // 밸런스 모드와 그룹 모드: [최강, 최약] vs [차강, 차약] 구성
+                            // 밸런스 모드와 그룹 모드: 여러 밸런스 조합 시도 (반복 방지)
                             // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
-                            const sorted = [...candidate].sort((a, b) => b.combinedScore - a.combinedScore);
-                            const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
-                            const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
-                            teamConfigs.push({ teamA, teamB });
+                            const balancedConfigs = createBalancedTeamConfigs(candidate);
+                            teamConfigs.push(...balancedConfigs);
                         } else {
                             // 랜덤 모드: 모든 패턴 시도
                             for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
@@ -9213,12 +9251,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
                         if (teamMode === 'balanced' || teamMode === 'grouped') {
-                            // 밸런스 모드와 그룹 모드: [최강, 최약] vs [차강, 차약] 구성
+                            // 밸런스 모드와 그룹 모드: 여러 밸런스 조합 시도 (반복 방지)
                             // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
-                            const sorted = [...candidate].sort((a, b) => b.combinedScore - a.combinedScore);
-                            const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
-                            const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
-                            teamConfigs.push({ teamA, teamB });
+                            const balancedConfigs = createBalancedTeamConfigs(candidate);
+                            teamConfigs.push(...balancedConfigs);
                         } else {
                             // 랜덤 모드: 모든 패턴 시도
                             for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
