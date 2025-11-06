@@ -5620,20 +5620,21 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 13px;
     }
     
-    /* 기록탭 기간 선택 버튼 - 통계탭 스타일 적용 (모바일, PC 기준으로 통일) */
+    /* 기록탭 기간 선택 버튼 - 통계탭 모바일 스타일과 동일하게 적용 */
     .records-container .stats-period-filter-container {
         padding: 6px !important;
     }
     
     .records-container .stats-period-filter-buttons {
         gap: 6px !important;
-        flex-wrap: nowrap !important; /* PC와 동일하게 nowrap */
+        flex-wrap: wrap !important; /* 통계탭 모바일과 동일하게 wrap */
     }
     
     .records-container .stats-period-btn {
-        padding: 10px 16px !important; /* PC와 동일한 padding */
-        font-size: 0.95rem !important; /* PC와 동일한 font-size */
-        flex: 1 !important; /* PC와 동일하게 flex: 1 */
+        padding: 8px 12px !important; /* 통계탭 모바일과 동일한 padding */
+        font-size: 0.85rem !important; /* 통계탭 모바일과 동일한 font-size */
+        flex: 1 1 auto !important; /* 통계탭 모바일과 동일하게 flex: 1 1 auto */
+        min-width: calc(50% - 3px) !important; /* 통계탭 모바일과 동일 */
     }
     
     .custom-period-section {
