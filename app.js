@@ -1963,7 +1963,7 @@ async function loadMatchesForDate(date) {
                         <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
                 `;
                 
-                // 코트별 배정 정보 표시 (랜덤 모드와 밸런스 모드는 전체 인원으로 표시)
+                // 코트별 배정 정보 표시 (랜덤 모드는 전체 인원으로 표시)
                 if (teamMode === 'random') {
                     // 랜덤 모드: 전체 플레이어를 하나의 풀로 표시
                     const allPlayers = Array.from(allPlayersSet);
@@ -1980,24 +1980,8 @@ async function loadMatchesForDate(date) {
                             </div>
                         `;
                     }
-                } else if (teamMode === 'balanced') {
-                    // 밸런스 모드: 전체 플레이어를 하나의 풀로 표시
-                    const allPlayers = Array.from(allPlayersSet);
-                    if (allPlayers.length > 0) {
-                        matchesHTML += `
-                            <div style="margin-bottom: 8px;">
-                                <strong style="color: #667eea;">전체 밸런스 매칭 인원 (${allPlayers.length}명)</strong>
-                                <div style="color: #555; margin-left: 12px; margin-top: 4px;">
-                                    - ${allPlayers.join(', ')}
-                                </div>
-                                <div style="color: #888; font-size: 0.85rem; margin-left: 12px; margin-top: 4px; font-style: italic;">
-                                    (밸런스 모드: 코트별 배정 없이 전체에서 밸런스 매칭됩니다)
-                                </div>
-                            </div>
-                        `;
-                    }
                 } else {
-                    // 그룹 모드: 코트별 배정 정보 표시
+                    // 밸런스/그룹 모드: 코트별 배정 정보 표시
                     Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
                         const players = courtPlayers[courtNum];
                         if (players.length > 0) {
@@ -8989,9 +8973,19 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             courtPlayers[court].push(player);
         }
     } else if (teamMode === 'balanced') {
-        // 밸런스 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급 (나중에 전체에서 밸런스 매칭)
-        // 코트별 분배는 하지 않고, 모든 플레이어를 unassignedPlayers에 유지
-        // 실제 코트 배정은 경기 생성 시 동적으로 결정
+        // 밸런스 모드: 점수 순으로 정렬하여 균등 분배
+        const sortedPlayers = [...unassignedPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+        sortedPlayers.forEach((player, index) => {
+            // 스네이크 드래프트 방식으로 분배
+            const row = Math.floor(index / courtCount);
+            const col = row % 2 === 0 ? (index % courtCount) : (courtCount - 1 - (index % courtCount));
+            const court = col + 1;
+            
+            if (!courtPlayers[court]) {
+                courtPlayers[court] = [];
+            }
+            courtPlayers[court].push(player);
+        });
     } else {
         // 랜덤 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급 (나중에 전체 랜덤으로 섞음)
         // 코트별 분배는 하지 않고, 모든 플레이어를 unassignedPlayers에 유지
@@ -9000,8 +8994,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
     
     const schedule = [];
     
-    // 랜덤 모드와 밸런스 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급
-    if (teamMode === 'random' || teamMode === 'balanced') {
+    // 랜덤 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급
+    if (teamMode === 'random') {
         // 모든 플레이어를 하나의 풀로 합치기 (이미 배정된 플레이어도 포함)
         const allPlayersPool = [];
         for (let c = 1; c <= courtCount; c++) {
@@ -9082,18 +9076,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 팀 구성 생성 (모든 패턴 시도)
                 const teamConfigs = [];
-                if (teamMode === 'balanced') {
-                    // 밸런스 모드: 여러 밸런스 조합 시도
-                    const balancedConfigs = createBalancedTeamConfigs(fourPlayers);
-                    teamConfigs.push(...balancedConfigs);
-                } else {
-                    // 랜덤 모드: 모든 패턴 시도
-                    for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
-                        const p = pairingPatterns[patternIdx];
-                        const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
-                        const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
-                        teamConfigs.push({ teamA, teamB });
-                    }
+                for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
+                    const p = pairingPatterns[patternIdx];
+                    const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
+                    const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
+                    teamConfigs.push({ teamA, teamB });
                 }
                 
                 // 이전 경기와 다른 조합 찾기
@@ -9152,20 +9139,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     }
                 }
                 
-                // 고유한 조합을 찾지 못했으면 첫 번째 패턴 또는 밸런스 조합 사용
+                // 고유한 조합을 찾지 못했으면 첫 번째 패턴 사용
                 if (!found) {
-                    let selectedTeamA, selectedTeamB;
-                    if (teamMode === 'balanced') {
-                        // 밸런스 모드: 밸런스 조합 사용
-                        const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
-                        selectedTeamA = [sorted[0], sorted[3]];
-                        selectedTeamB = [sorted[1], sorted[2]];
-                    } else {
-                        // 랜덤 모드: 첫 번째 패턴 사용
-                        const p = pairingPatterns[0];
-                        selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
-                        selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
-                    }
+                    const p = pairingPatterns[0];
+                    const selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                    const selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
                     
                     fourPlayers.forEach(player => {
                         playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
@@ -9202,7 +9180,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             }
         }
     } else {
-        // 그룹 모드: 기존 로직 (코트별로 경기 생성)
+        // 밸런스 모드와 그룹 모드: 기존 로직 (코트별로 경기 생성)
         // 각 코트별로 라운드별 경기 생성
         for (let c = 1; c <= courtCount; c++) {
             const courtPlayerList = [...(courtPlayers[c] || [])];
