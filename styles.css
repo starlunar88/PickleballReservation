@@ -434,7 +434,8 @@ body {
 .rankings-container {
     max-width: 100%;
     margin: 0;
-    padding: 0 15px;
+    padding: 0; /* 좌우 여백 완전 제거 */
+    width: 100%;
 }
 
 .rankings-tabs {
@@ -467,10 +468,14 @@ body {
 
 .tab-content {
     display: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .tab-content.active {
     display: block;
+    width: 100%;
 }
 
 .rankings-list {
@@ -1092,7 +1097,8 @@ body {
 .dashboard-container {
     max-width: 100%;
     margin: 0;
-    padding: 0 15px;
+    padding: 0; /* 좌우 여백 완전 제거 */
+    width: 100%;
 }
 
 .dashboard-stats {
@@ -2116,8 +2122,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: #fff;
     padding-top: 80px; /* 네비게이션 바 아래 여백 최소화 */
     width: 100%;
-    max-width: 400px; /* 더 작은 모바일 크기로 제한 */
-    margin: 0 auto; /* 중앙 정렬 */
+    max-width: 100%; /* 전체 너비 사용 */
+    margin: 0; /* 여백 제거 */
     padding-bottom: 16px; /* 여백 최소화 */
 }
 
@@ -2217,8 +2223,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 8px 15px 140px 15px; /* 상단 여백 최소화 */
+    padding: 8px 0 140px 0; /* 좌우 여백 완전 제거 */
     margin-top: 0;
+    width: 100%;
 }
 
 /* PC에서도 모바일처럼 가운데 고정 폭으로 보이도록 강제 제한 */
@@ -2227,7 +2234,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .records-container {
     max-width: 100%;
     margin: 0;
-    padding: 0 15px;
+    padding: 0; /* 좌우 여백 완전 제거 */
+    width: 100%;
 }
 
 /* 기간 선택 버튼 */
@@ -2450,9 +2458,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .rankings-container {
-    padding: 20px 15px;
+    padding: 20px 0; /* 좌우 여백 완전 제거 */
     max-width: 100%;
     margin: 0;
+    width: 100%;
 }
 
 /* 올림픽 메달 시상식 섹션 */
@@ -3046,7 +3055,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .stats-container {
     max-width: 100%;
     margin: 0;
-    padding: 0 15px;
+    padding: 0; /* 좌우 여백 완전 제거 */
+    width: 100%;
 }
 
 /* 경기 통계 섹션 */
@@ -3842,11 +3852,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .tab-contents {
-        padding: 0 4px 60px 4px !important; /* 여백 최소화 */
+        padding: 0 0 60px 0 !important; /* 좌우 여백 완전 제거 */
     }
     .reservations-container,
     .records-container {
-        padding: 0 4px !important; /* 좌우 패딩 최소화 */
+        padding: 0 !important; /* 좌우 여백 완전 제거 */
     }
     
     /* 기록 탭 하단 여백 확보 (삭제 버튼이 탭바에 가려지지 않도록) */
