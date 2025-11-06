@@ -280,9 +280,18 @@ async function handleLogin() {
         showLoading();
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         
-        // DUPR 정보가 입력된 경우 Firestore에 저장
-        if (dupr || duprId || duprName) {
-            await updateUserDUPR(userCredential.user.uid, dupr ? parseFloat(dupr) : null, duprId || null, duprName || null);
+        // DUPR 정보가 입력된 경우 Firestore에 저장 (빈 값은 업데이트하지 않음)
+        const hasDuprValue = dupr && dupr !== '';
+        const hasDuprIdValue = duprId && duprId.trim() !== '';
+        const hasDuprNameValue = duprName && duprName.trim() !== '';
+        
+        if (hasDuprValue || hasDuprIdValue || hasDuprNameValue) {
+            await updateUserDUPR(
+                userCredential.user.uid, 
+                hasDuprValue ? parseFloat(dupr) : null, 
+                hasDuprIdValue ? duprId.trim() : null, 
+                hasDuprNameValue ? duprName.trim() : null
+            );
         }
         
         showToast('로그인되었습니다!', 'success');
@@ -609,12 +618,15 @@ function validateDUPRInput(input) {
 }
 
 // 사용자 DUPR 업데이트
+// merge: true 옵션을 사용하므로 기존 값은 유지되고, 전달된 값만 업데이트됩니다.
+// null이 전달되면 해당 필드는 업데이트하지 않습니다.
 async function updateUserDUPR(userId, dupr, duprId, duprName) {
     try {
         const updateData = {
             updatedAt: new Date()
         };
         
+        // null이 아닌 값만 업데이트 (기존 값 유지)
         if (dupr !== null && dupr !== undefined) {
             updateData.dupr = dupr;
         }
@@ -625,6 +637,7 @@ async function updateUserDUPR(userId, dupr, duprId, duprName) {
             updateData.duprName = duprName;
         }
         
+        // merge: true로 기존 데이터는 유지되고 전달된 필드만 업데이트
         await db.collection('users').doc(userId).set(updateData, { merge: true });
         console.log('DUPR 정보 업데이트 성공:', updateData);
     } catch (error) {
