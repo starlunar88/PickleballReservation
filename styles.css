@@ -2498,11 +2498,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 16px;
-    padding: 20px;
+    gap: 20px;
+    padding: 30px 20px;
     background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
     border-radius: 20px;
-    min-height: 300px;
+    min-height: 350px;
     position: relative;
     max-width: 100%;
     overflow: hidden;
@@ -2512,13 +2512,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .podium-card {
     background: #fff;
     border-radius: 16px;
-    padding: 20px;
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    justify-content: center;
+    gap: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .podium-card:hover {
@@ -2527,33 +2529,40 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 .podium-card.first-place {
     background: linear-gradient(180deg, #ffeb3b 0%, #ffc107 100%);
-    width: 180px;
-    height: 280px;
+    width: 200px;
+    min-width: 180px;
+    height: 320px;
     order: 2;
 }
 
 .podium-card.second-place {
-    background: #fff;
-    width: 160px;
-    height: 240px;
+    background: #e0e0e0;
+    width: 180px;
+    min-width: 160px;
+    height: 280px;
     order: 1;
 }
 
 .podium-card.third-place {
     background: linear-gradient(180deg, #d4a574 0%, #cd7f32 100%);
-    width: 160px;
-    height: 200px;
+    width: 180px;
+    min-width: 160px;
+    height: 240px;
     order: 3;
 }
 
 .medal-icon {
     position: relative;
-    font-size: 2.5rem;
-    margin-bottom: 8px;
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .medal-icon i {
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+    z-index: 1;
 }
 
 .medal-number {
@@ -2562,17 +2571,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     left: 50%;
     transform: translate(-50%, -50%);
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.4rem;
     color: #fff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: 2;
 }
 
 .podium-name {
-    font-size: 1rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #000;
     text-align: center;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2582,7 +2592,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     box-sizing: border-box;
     display: block;
     word-break: keep-all;
-    line-height: 1.2;
+    line-height: 1.3;
+    margin-top: 8px;
 }
 
 .podium-card.first-place .podium-name {
@@ -2601,16 +2612,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 }
 
 .podium-score {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: #000;
     text-align: center;
     font-weight: 600;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
     padding: 0 8px;
+    margin-top: 4px;
+    line-height: 1.4;
 }
 
 .podium-card.first-place .podium-score {
@@ -5427,31 +5440,51 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     /* 랭킹 탭 반응형 */
     .podium-wrapper {
-        flex-direction: column;
-        align-items: center;
+        flex-direction: row;
+        align-items: flex-end;
         gap: 12px;
-        padding: 16px;
-        min-height: auto;
+        padding: 20px 12px;
+        min-height: 280px;
     }
     
     .podium-card {
-        width: 100% !important;
-        max-width: 280px;
+        flex: 1;
+        min-width: 0;
+        max-width: 100%;
         height: auto !important;
         min-height: 200px;
-        order: 0 !important;
+        padding: 20px 12px;
     }
     
     .podium-card.first-place {
-        order: 1 !important;
+        min-height: 240px;
+        order: 2;
     }
     
     .podium-card.second-place {
-        order: 2 !important;
+        min-height: 200px;
+        order: 1;
     }
     
     .podium-card.third-place {
-        order: 3 !important;
+        min-height: 180px;
+        order: 3;
+    }
+    
+    .medal-icon {
+        font-size: 2.5rem;
+    }
+    
+    .medal-number {
+        font-size: 1.1rem;
+    }
+    
+    .podium-name {
+        font-size: 1.1rem;
+    }
+    
+    .podium-score {
+        font-size: 0.9rem;
     }
     
     .rank-tiers {
