@@ -257,6 +257,8 @@ async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     const dupr = document.getElementById('login-dupr').value;
+    const duprId = document.getElementById('login-dupr-id').value;
+    const duprName = document.getElementById('login-dupr-name').value;
     
     if (!email || !password) {
         showToast('이메일과 비밀번호를 입력해주세요.', 'error');
@@ -278,9 +280,9 @@ async function handleLogin() {
         showLoading();
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         
-        // DUPR이 입력된 경우 Firestore에 저장
-        if (dupr) {
-            await updateUserDUPR(userCredential.user.uid, parseFloat(dupr));
+        // DUPR 정보가 입력된 경우 Firestore에 저장
+        if (dupr || duprId || duprName) {
+            await updateUserDUPR(userCredential.user.uid, dupr ? parseFloat(dupr) : null, duprId || null, duprName || null);
         }
         
         showToast('로그인되었습니다!', 'success');
@@ -607,13 +609,24 @@ function validateDUPRInput(input) {
 }
 
 // 사용자 DUPR 업데이트
-async function updateUserDUPR(userId, dupr) {
+async function updateUserDUPR(userId, dupr, duprId, duprName) {
     try {
-        await db.collection('users').doc(userId).set({
-            dupr: dupr,
+        const updateData = {
             updatedAt: new Date()
-        }, { merge: true });
-        console.log('DUPR 업데이트 성공:', dupr);
+        };
+        
+        if (dupr !== null && dupr !== undefined) {
+            updateData.dupr = dupr;
+        }
+        if (duprId !== null && duprId !== undefined) {
+            updateData.duprId = duprId;
+        }
+        if (duprName !== null && duprName !== undefined) {
+            updateData.duprName = duprName;
+        }
+        
+        await db.collection('users').doc(userId).set(updateData, { merge: true });
+        console.log('DUPR 정보 업데이트 성공:', updateData);
     } catch (error) {
         console.error('DUPR 업데이트 오류:', error);
         throw error;
@@ -987,7 +1000,7 @@ async function handleDuprEdit() {
             return;
         }
         
-        await updateUserDUPR(user.uid, parseFloat(dupr));
+        await updateUserDUPR(user.uid, parseFloat(dupr), null, null);
         
         // 사용자 메뉴 업데이트
         await showUserMenu(user);
