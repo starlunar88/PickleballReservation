@@ -660,6 +660,25 @@ async function getUserDUPR(userId) {
     }
 }
 
+// 사용자 DUPR 정보 전체 가져오기 (DUPR, DUPR ID, DUPR Name)
+async function getUserDUPRInfo(userId) {
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            return {
+                dupr: userData.dupr || null,
+                duprId: userData.duprId || null,
+                duprName: userData.duprName || null
+            };
+        }
+        return { dupr: null, duprId: null, duprName: null };
+    } catch (error) {
+        console.error('DUPR 정보 가져오기 오류:', error);
+        return { dupr: null, duprId: null, duprName: null };
+    }
+}
+
 // 관리자 여부 확인
 async function isAdmin(user) {
     try {
@@ -956,24 +975,52 @@ async function handlePasswordSetup() {
 }
 
 // DUPR 수정 모달 열기
-function openDuprEditModal() {
+async function openDuprEditModal() {
     const modal = document.getElementById('dupr-edit-modal');
     const currentDuprSpan = document.getElementById('current-dupr');
+    const currentDuprIdSpan = document.getElementById('current-dupr-id');
+    const currentDuprNameSpan = document.getElementById('current-dupr-name');
     const editDuprInput = document.getElementById('edit-dupr');
+    const editDuprIdInput = document.getElementById('edit-dupr-id');
+    const editDuprNameInput = document.getElementById('edit-dupr-name');
     
-    if (modal && currentDuprSpan && editDuprInput) {
-        // 현재 사용자의 DUPR 가져오기
+    if (modal && currentDuprSpan && editDuprInput && currentDuprIdSpan && currentDuprNameSpan && editDuprIdInput && editDuprNameInput) {
+        // 현재 사용자의 DUPR 정보 전체 가져오기
         const user = auth.currentUser;
         if (user) {
-            getUserDUPR(user.uid).then(dupr => {
-                if (dupr) {
-                    currentDuprSpan.textContent = dupr;
-                    editDuprInput.value = dupr;
+            try {
+                const duprInfo = await getUserDUPRInfo(user.uid);
+                
+                // DUPR 점수 설정
+                if (duprInfo.dupr) {
+                    currentDuprSpan.textContent = duprInfo.dupr;
+                    editDuprInput.value = duprInfo.dupr;
                 } else {
                     currentDuprSpan.textContent = '설정되지 않음';
                     editDuprInput.value = '';
                 }
-            });
+                
+                // DUPR ID 설정
+                if (duprInfo.duprId) {
+                    currentDuprIdSpan.textContent = duprInfo.duprId;
+                    editDuprIdInput.value = duprInfo.duprId;
+                } else {
+                    currentDuprIdSpan.textContent = '설정되지 않음';
+                    editDuprIdInput.value = '';
+                }
+                
+                // DUPR Name 설정
+                if (duprInfo.duprName) {
+                    currentDuprNameSpan.textContent = duprInfo.duprName;
+                    editDuprNameInput.value = duprInfo.duprName;
+                } else {
+                    currentDuprNameSpan.textContent = '설정되지 않음';
+                    editDuprNameInput.value = '';
+                }
+            } catch (error) {
+                console.error('DUPR 정보 로드 오류:', error);
+                showToast('DUPR 정보를 불러오는 중 오류가 발생했습니다.', 'error');
+            }
         }
         
         modal.style.display = 'block';
@@ -993,14 +1040,18 @@ function closeDuprEditModal() {
 // DUPR 수정 처리
 async function handleDuprEdit() {
     const dupr = document.getElementById('edit-dupr').value;
+    const duprId = document.getElementById('edit-dupr-id').value.trim();
+    const duprName = document.getElementById('edit-dupr-name').value.trim();
     
-    if (!dupr) {
-        showToast('DUPR을 입력해주세요.', 'error');
+    // DUPR 점수가 입력된 경우에만 유효성 검사
+    if (dupr && !isValidDUPR(dupr)) {
+        showToast('DUPR은 2.0에서 8.0 사이의 값이어야 합니다.', 'error');
         return;
     }
     
-    if (!isValidDUPR(dupr)) {
-        showToast('DUPR은 2.0에서 8.0 사이의 값이어야 합니다.', 'error');
+    // 최소 하나의 값은 입력되어야 함
+    if (!dupr && !duprId && !duprName) {
+        showToast('최소 하나의 항목을 입력해주세요.', 'error');
         return;
     }
     
@@ -1013,12 +1064,18 @@ async function handleDuprEdit() {
             return;
         }
         
-        await updateUserDUPR(user.uid, parseFloat(dupr), null, null);
+        // 입력된 값만 업데이트 (빈 값은 null로 전달하여 기존 값 유지)
+        await updateUserDUPR(
+            user.uid, 
+            dupr ? parseFloat(dupr) : null, 
+            duprId || null, 
+            duprName || null
+        );
         
         // 사용자 메뉴 업데이트
         await showUserMenu(user);
         
-        showToast('DUPR이 업데이트되었습니다!', 'success');
+        showToast('DUPR 정보가 업데이트되었습니다!', 'success');
         closeDuprEditModal();
         
     } catch (error) {
@@ -10082,12 +10139,8 @@ async function saveMatchScore(match, scoreA, scoreB) {
 
         showToast('점수가 저장되었습니다.', 'success');
         
-        // 대진표 탭이 활성화되어 있으면 대진표 새로고침
-        const matchesTab = document.getElementById('matches-tab');
-        if (matchesTab && matchesTab.classList.contains('active')) {
-            const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
-            await loadMatchesForDate(currentDate);
-        }
+        // 전체 대진표 새로고침 제거 - 사용자가 입력한 다른 경기의 점수가 초기화되는 것을 방지
+        // 대신 호출하는 쪽에서 필요한 경우에만 UI를 업데이트하도록 함
         
     } catch (error) {
         console.error('점수 저장 오류:', error);
