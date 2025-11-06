@@ -323,9 +323,23 @@
                                 <select id="growth-user-select" class="growth-select">
                                     <!-- 사용자 목록은 JavaScript에서 동적으로 추가됨 -->
                                 </select>
+                                <select id="growth-period-select" class="growth-select">
+                                    <option value="weekly">주별</option>
+                                    <option value="monthly">월별</option>
+                                    <option value="all" selected>전체</option>
+                                </select>
                             </div>
                             <div class="win-rate-chart-container">
-                                <h4>승률 변화 추이</h4>
+                                <div class="chart-title-wrapper">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <h4>승률 변화 추이</h4>
+                                </div>
+                                <div class="chart-legend">
+                                    <div class="legend-item">
+                                        <span class="legend-color"></span>
+                                        <span class="legend-text">승률 (%)</span>
+                                    </div>
+                                </div>
                                 <canvas id="win-rate-chart"></canvas>
                             </div>
                         </div>

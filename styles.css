@@ -3159,17 +3159,68 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: #fff;
     color: #333;
     cursor: pointer;
+    flex: 1;
+    max-width: 200px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 35px;
+}
+
+.growth-select:focus {
+    outline: none;
+    border-color: #667eea;
 }
 
 .win-rate-chart-container {
     margin-top: 20px;
 }
 
+.chart-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.chart-title-wrapper i {
+    color: #667eea;
+    font-size: 0.9rem;
+}
+
 .win-rate-chart-container h4 {
     font-size: 1rem;
     font-weight: 600;
     color: #333;
+    margin: 0;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 15px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 3px;
+    background: #667eea;
+    border-radius: 2px;
+}
+
+.legend-text {
+    font-size: 0.9rem;
+    color: #666;
 }
 
 #win-rate-chart {

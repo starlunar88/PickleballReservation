@@ -2824,9 +2824,16 @@ function setupStatsEventListeners() {
     
     // 개인 성장 분석 필터
     const userSelect = document.getElementById('growth-user-select');
+    const periodSelect = document.getElementById('growth-period-select');
     
     if (userSelect) {
         userSelect.addEventListener('change', async () => {
+            await loadWinRateChart();
+        });
+    }
+    
+    if (periodSelect) {
+        periodSelect.addEventListener('change', async () => {
             await loadWinRateChart();
         });
     }
