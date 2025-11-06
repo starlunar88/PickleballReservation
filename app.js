@@ -3576,7 +3576,7 @@ function drawWinRateDonutChart(data) {
     
     // Canvas 크기 설정
     const containerWidth = canvas.parentElement?.offsetWidth || 400;
-    const containerHeight = 400;
+    const containerHeight = 220;
     const width = canvas.width = containerWidth;
     const height = canvas.height = containerHeight;
     
@@ -3596,7 +3596,7 @@ function drawWinRateDonutChart(data) {
     
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) / 2 - 40;
+    const radius = Math.min(width, height) / 2 - 30;
     const innerRadius = radius * 0.6;
     
     const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
@@ -3618,19 +3618,19 @@ function drawWinRateDonutChart(data) {
         currentAngle += sliceAngle;
     });
     
-    // 범례 그리기
-    const legendX = width - 150;
-    const legendY = 20;
-    const legendItemHeight = 25;
+    // 범례 그리기 (작게)
+    const legendX = width - 120;
+    const legendY = 15;
+    const legendItemHeight = 20;
     
     data.forEach((item, index) => {
         ctx.fillStyle = colors[index % colors.length];
-        ctx.fillRect(legendX, legendY + index * legendItemHeight, 15, 15);
+        ctx.fillRect(legendX, legendY + index * legendItemHeight, 12, 12);
         
         ctx.fillStyle = '#333';
-        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 20, legendY + index * legendItemHeight + 12);
+        ctx.fillText(`${item.userName} (${item.winRate.toFixed(0)}%)`, legendX + 16, legendY + index * legendItemHeight + 9);
     });
 }
 
@@ -3643,7 +3643,7 @@ function drawParticipationBarChart(data) {
     
     // Canvas 크기 설정
     const containerWidth = canvas.parentElement?.offsetWidth || 400;
-    const containerHeight = 300;
+    const containerHeight = 220;
     const width = canvas.width = containerWidth;
     const height = canvas.height = containerHeight;
     
@@ -3661,7 +3661,7 @@ function drawParticipationBarChart(data) {
         return;
     }
     
-    const padding = { top: 20, right: 40, bottom: 60, left: 80 };
+    const padding = { top: 15, right: 30, bottom: 50, left: 60 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
@@ -3681,9 +3681,9 @@ function drawParticipationBarChart(data) {
         ctx.stroke();
         
         ctx.fillStyle = '#666';
-        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(Math.round(maxValue * (1 - i / 5)), padding.left - 10, y + 4);
+        ctx.fillText(Math.round(maxValue * (1 - i / 5)), padding.left - 8, y + 3);
     }
     
     // 바 차트 그리기
@@ -3697,27 +3697,27 @@ function drawParticipationBarChart(data) {
         
         // 이름 레이블
         ctx.fillStyle = '#333';
-        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.save();
-        ctx.translate(x + (barWidth - barSpacing * 2) / 2, height - padding.bottom + 15);
+        ctx.translate(x + (barWidth - barSpacing * 2) / 2, height - padding.bottom + 12);
         ctx.rotate(-Math.PI / 4);
         ctx.fillText(item.userName, 0, 0);
         ctx.restore();
         
         // 값 레이블
         ctx.fillStyle = '#333';
-        ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
+        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(item.total, x + (barWidth - barSpacing * 2) / 2, y - 5);
+        ctx.fillText(item.total, x + (barWidth - barSpacing * 2) / 2, y - 4);
     });
     
     // Y축 레이블
     ctx.fillStyle = '#666';
-    ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
+    ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.save();
-    ctx.translate(15, height / 2);
+    ctx.translate(12, height / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText('횟수', 0, 0);
     ctx.restore();
