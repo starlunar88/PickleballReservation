@@ -4820,7 +4820,7 @@ async function deleteRecord(matchId) {
         showToast('기록이 초기화되었습니다.', 'success');
         
         // 기록 목록 새로고침
-        const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
+        const activePeriod = document.querySelector('.records-container .stats-period-btn.active')?.getAttribute('data-period') || 'all';
         await loadRecordsForPeriod(activePeriod);
         
         // 대진표도 새로고침 (매치 삭제가 아닌 점수 초기화되었으므로 대진표에 계속 표시됨)
@@ -4995,7 +4995,7 @@ async function deleteAllRecords() {
         
         showToast('모든 기록이 초기화되었습니다. (대진표는 유지됨)', 'success');
         
-        const activePeriod = document.querySelector('.period-btn.active')?.getAttribute('data-period') || 'today';
+        const activePeriod = document.querySelector('.records-container .stats-period-btn.active')?.getAttribute('data-period') || 'all';
         await loadRecordsForPeriod(activePeriod);
         
         // 대진표 탭이 활성화되어 있다면 새로고침 (점수는 초기화되었지만 매치는 유지되어야 함)
@@ -6448,12 +6448,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 하단 버튼 이벤트 리스너 제거됨 (타임라인에 통합)
     
     // 기록 보기 탭 이벤트 리스너
-    // 기간 선택 버튼들
-    document.querySelectorAll('.period-btn').forEach(btn => {
+    // 기간 선택 버튼들 (통계탭 스타일로 변경)
+    document.querySelectorAll('.records-container .stats-period-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
             // 모든 버튼 비활성화
-            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.records-container .stats-period-btn').forEach(b => b.classList.remove('active'));
             // 클릭한 버튼 활성화
             btn.classList.add('active');
             

@@ -2260,7 +2260,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     box-sizing: border-box;
 }
 
-/* 기간 선택 버튼 */
+/* 기간 선택 버튼 (기록탭 - 통계탭 스타일로 변경) */
 .period-filter-buttons {
     display: flex;
     gap: 8px;
@@ -2289,6 +2289,57 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: #667eea;
     border-color: #667eea;
     color: #fff;
+}
+
+/* 기록탭 기간 선택 버튼 - 통계탭 스타일 적용 */
+.records-container .stats-period-filter-container {
+    background: #f5f5f5;
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.records-container .stats-period-filter-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.records-container .stats-period-btn {
+    padding: 10px 16px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    color: #666;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.records-container .stats-period-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.records-container .stats-period-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
 }
 
 /* 커스텀 기간 선택 */
@@ -3971,6 +4022,22 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
         box-sizing: border-box !important;
     }
+    
+    /* PC에서 기록탭 기간 선택 버튼 스타일 (통계탭과 동일) */
+    .records-container .stats-period-filter-container {
+        padding: 6px !important;
+    }
+    
+    .records-container .stats-period-filter-buttons {
+        gap: 6px !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .records-container .stats-period-btn {
+        padding: 10px 16px !important;
+        font-size: 0.95rem !important;
+        flex: 1 !important;
+    }
 }
     
     /* 기록 탭 하단 여백 확보 (삭제 버튼이 탭바에 가려지지 않도록) */
@@ -5551,6 +5618,22 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .period-btn {
         padding: 8px 16px;
         font-size: 13px;
+    }
+    
+    /* 기록탭 기간 선택 버튼 - 통계탭 스타일 적용 (모바일, PC 기준으로 통일) */
+    .records-container .stats-period-filter-container {
+        padding: 6px !important;
+    }
+    
+    .records-container .stats-period-filter-buttons {
+        gap: 6px !important;
+        flex-wrap: nowrap !important; /* PC와 동일하게 nowrap */
+    }
+    
+    .records-container .stats-period-btn {
+        padding: 10px 16px !important; /* PC와 동일한 padding */
+        font-size: 0.95rem !important; /* PC와 동일한 font-size */
+        flex: 1 !important; /* PC와 동일하게 flex: 1 */
     }
     
     .custom-period-section {
