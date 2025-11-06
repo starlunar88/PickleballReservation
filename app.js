@@ -3278,7 +3278,7 @@ async function loadWinRateChart() {
         });
         
         // 차트 그리기
-        drawWinRateChart(chartData);
+        drawWinRateChart(chartData, groupBy);
         
     } catch (error) {
         console.error('승률 변화 추이 차트 로드 오류:', error);
@@ -3286,7 +3286,7 @@ async function loadWinRateChart() {
 }
 
 // 승률 변화 추이 차트 그리기
-function drawWinRateChart(data) {
+function drawWinRateChart(data, groupBy = 'all') {
     const canvas = document.getElementById('win-rate-chart');
     if (!canvas) return;
     
@@ -3313,8 +3313,8 @@ function drawWinRateChart(data) {
         return;
     }
     
-    // 패딩
-    const padding = { top: 40, right: 40, bottom: 40, left: 60 };
+    // 패딩 최적화 (불필요한 여백 제거)
+    const padding = { top: 20, right: 20, bottom: 30, left: 50 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
@@ -3323,8 +3323,9 @@ function drawWinRateChart(data) {
     const maxY = 100;
     const yScale = chartHeight / (maxY - minY);
     
-    // X축 범위
-    const xScale = chartWidth / (data.length - 1 || 1);
+    // X축 범위 (데이터가 적을 때 여백 최소화)
+    // 데이터가 1개일 때는 중앙에 배치, 여러 개일 때는 전체 너비 사용
+    const xScale = data.length > 1 ? chartWidth / (data.length - 1) : 0;
     
     // 그리드 및 축 그리기
     ctx.strokeStyle = '#e0e0e0';
@@ -3342,21 +3343,40 @@ function drawWinRateChart(data) {
         ctx.fillStyle = '#666';
         ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`${100 - i * 10}%`, padding.left - 10, y + 4);
+        ctx.fillText(`${100 - i * 10}%`, padding.left - 8, y + 4);
     }
     
-    // X축 레이블
-    const dateInterval = Math.max(1, Math.floor(data.length / 10));
+    // X축 레이블 (그룹화 방식에 따라 다르게 표시)
+    const maxLabels = Math.min(data.length, 10); // 최대 10개 레이블
+    const dateInterval = Math.max(1, Math.floor(data.length / maxLabels));
+    
     data.forEach((point, index) => {
         if (index % dateInterval === 0 || index === data.length - 1) {
-            const x = padding.left + index * xScale;
+            // 데이터가 1개일 때는 중앙에 배치
+            const x = data.length === 1 ? padding.left + chartWidth / 2 : padding.left + index * xScale;
             const date = new Date(point.date);
-            const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+            let dateStr;
+            
+            // 그룹화 방식에 따라 레이블 형식 변경
+            if (groupBy === 'weekly') {
+                // 주별: 해당 주의 월요일 날짜 표시 "11/2" 형식
+                const weekStart = new Date(date);
+                const day = weekStart.getDay();
+                const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+                const monday = new Date(weekStart.getFullYear(), weekStart.getMonth(), diff);
+                dateStr = `${monday.getMonth() + 1}/${monday.getDate()}`;
+            } else if (groupBy === 'monthly') {
+                // 월별: "11월" 형식
+                dateStr = `${date.getMonth() + 1}월`;
+            } else {
+                // 전체: 일별 "11/2" 형식
+                dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+            }
             
             ctx.fillStyle = '#666';
             ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(dateStr, x, height - padding.bottom + 20);
+            ctx.fillText(dateStr, x, height - padding.bottom + 18);
             
             // X축 눈금
             ctx.strokeStyle = '#e0e0e0';
@@ -3372,7 +3392,7 @@ function drawWinRateChart(data) {
     ctx.fillStyle = '#666';
     ctx.font = '12px "Malgun Gothic", Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.translate(15, height / 2);
+    ctx.translate(12, height / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText('승률 (%)', 0, 0);
     ctx.restore();
@@ -3383,7 +3403,8 @@ function drawWinRateChart(data) {
     ctx.beginPath();
     
     data.forEach((point, index) => {
-        const x = padding.left + index * xScale;
+        // 데이터가 1개일 때는 중앙에 배치
+        const x = data.length === 1 ? padding.left + chartWidth / 2 : padding.left + index * xScale;
         const y = padding.top + chartHeight - (point.winRate * yScale);
         
         if (index === 0) {
@@ -3398,7 +3419,8 @@ function drawWinRateChart(data) {
     // 데이터 포인트 그리기
     ctx.fillStyle = '#667eea';
     data.forEach((point, index) => {
-        const x = padding.left + index * xScale;
+        // 데이터가 1개일 때는 중앙에 배치
+        const x = data.length === 1 ? padding.left + chartWidth / 2 : padding.left + index * xScale;
         const y = padding.top + chartHeight - (point.winRate * yScale);
         
         ctx.beginPath();
