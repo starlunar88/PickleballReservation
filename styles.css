@@ -3214,8 +3214,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-align: center;
     box-sizing: border-box;
     min-width: 0;
-    height: auto;
+    height: 38px;
     line-height: 1.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .stats-period-btn:hover {
