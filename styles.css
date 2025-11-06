@@ -2328,7 +2328,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     text-align: center;
     box-sizing: border-box;
     min-width: 0;
-    height: 38px;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
     line-height: 1.4;
     display: flex;
     align-items: center;
@@ -4299,7 +4301,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     /* 메달 시상식 모바일 최적화 - 현재 크기의 2배로 조정 (480px 이하) */
-    .podium-wrapper {
+    .medal-ceremony-section .podium-wrapper {
         gap: 8px !important;
         padding: 15px 8px !important;
         min-height: 186px !important; /* 현재의 2배 */
@@ -4307,7 +4309,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: auto !important;
     }
     
-    .podium-card {
+    .medal-ceremony-section .podium-card {
         padding: 12px 8px !important;
         gap: 8px !important;
         min-height: 160px !important; /* 현재의 2배 */
@@ -4316,7 +4318,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 100px !important;
     }
     
-    .podium-card.first-place {
+    .medal-ceremony-section .podium-card.first-place {
         width: 110px !important; /* 너비는 유지 */
         min-width: 100px !important;
         max-width: 110px !important;
@@ -4325,7 +4327,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 186px !important; /* 현재의 2배 - 명시적 설정 */
     }
     
-    .podium-card.second-place {
+    .medal-ceremony-section .podium-card.second-place {
         width: 100px !important; /* 너비는 유지 */
         min-width: 90px !important;
         max-width: 100px !important;
@@ -4334,7 +4336,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 174px !important; /* 현재의 2배 - 명시적 설정 */
     }
     
-    .podium-card.third-place {
+    .medal-ceremony-section .podium-card.third-place {
         width: 100px !important; /* 너비는 유지 */
         min-width: 90px !important;
         max-width: 100px !important;
@@ -5859,58 +5861,58 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     /* 랭킹 탭 반응형 - 모바일에서 메달 카드 세로 크기를 현재의 2배로 조정 */
-    .podium-wrapper {
-        flex-direction: row;
-        align-items: flex-end;
-        justify-content: center;
-        gap: 8px;
-        padding: 15px 8px;
+    .medal-ceremony-section .podium-wrapper {
+        flex-direction: row !important;
+        align-items: flex-end !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        padding: 15px 8px !important;
         min-height: 186px !important; /* 현재의 2배 */
         max-height: 200px !important; /* 현재의 2배 */
         height: auto !important;
-        max-width: 100%;
-        box-sizing: border-box;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
     
-    .podium-card {
+    .medal-ceremony-section .podium-card {
         flex: 0 0 auto !important;
-        min-width: 0;
+        min-width: 0 !important;
         width: 100px !important; /* 너비는 유지 */
         max-width: 100px !important;
         height: 160px !important; /* 현재의 2배 - 명시적 설정 */
         min-height: 160px !important; /* 현재의 2배 */
-        padding: 12px 8px;
-        gap: 8px;
+        padding: 12px 8px !important;
+        gap: 8px !important;
     }
     
-    .podium-card.first-place {
+    .medal-ceremony-section .podium-card.first-place {
         width: 110px !important; /* 너비는 유지 */
         min-width: 100px !important;
         max-width: 110px !important;
         min-height: 186px !important; /* 현재의 2배 */
         max-height: 200px !important; /* 현재의 2배 */
         height: 186px !important; /* 현재의 2배 - 명시적 설정 */
-        order: 2;
+        order: 2 !important;
     }
     
-    .podium-card.second-place {
+    .medal-ceremony-section .podium-card.second-place {
         width: 100px !important; /* 너비는 유지 */
         min-width: 90px !important;
         max-width: 100px !important;
         min-height: 174px !important; /* 현재의 2배 */
         max-height: 186px !important; /* 현재의 2배 */
         height: 174px !important; /* 현재의 2배 - 명시적 설정 */
-        order: 1;
+        order: 1 !important;
     }
     
-    .podium-card.third-place {
+    .medal-ceremony-section .podium-card.third-place {
         width: 100px !important; /* 너비는 유지 */
         min-width: 90px !important;
         max-width: 100px !important;
         min-height: 160px !important; /* 현재의 2배 */
         max-height: 174px !important; /* 현재의 2배 */
         height: 160px !important; /* 현재의 2배 - 명시적 설정 */
-        order: 3;
+        order: 3 !important;
     }
     
     .medal-icon {
