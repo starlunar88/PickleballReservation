@@ -7008,9 +7008,16 @@ async function getRankings(limit = 50) {
             
             processedMatches.add(matchId); // 처리된 match ID 저장
             
+            // scoreA는 teamA의 점수, scoreB는 teamB의 점수
+            // scoreA > scoreB면 teamA가 승리, 그렇지 않으면 teamB가 승리
             const aWins = match.scoreA > match.scoreB;
             const winners = aWins ? match.teamA : match.teamB;
             const losers = aWins ? match.teamB : match.teamA;
+            
+            // 디버깅: 승패 판정 로그 추가
+            console.log(`🎯 [랭킹 계산] 매치 ${matchId}: scoreA=${match.scoreA}, scoreB=${match.scoreB}, aWins=${aWins}`);
+            console.log(`🎯 [랭킹 계산] 승자 팀: ${winners.map(p => p.userName || p.userId).join(', ')}`);
+            console.log(`🎯 [랭킹 계산] 패자 팀: ${losers.map(p => p.userName || p.userId).join(', ')}`);
             
             // 팀 구조 확인 및 디버깅
             if (!Array.isArray(winners) || !Array.isArray(losers)) {
@@ -10373,9 +10380,16 @@ async function saveMatchScore(match, scoreA, scoreB) {
         await ref.update({ scoreA, scoreB, status: 'completed', recordedAt: new Date() });
 
         // 승패 판정 및 개인 기록 저장
+        // scoreA는 teamA의 점수, scoreB는 teamB의 점수
+        // scoreA > scoreB면 teamA가 승리, 그렇지 않으면 teamB가 승리
         const aWins = scoreA > scoreB;
         const winners = aWins ? match.teamA : match.teamB;
         const losers = aWins ? match.teamB : match.teamA;
+        
+        // 디버깅: 승패 판정 로그 추가
+        console.log(`🎯 [승패 판정] 매치 ${match.id}: scoreA=${scoreA}, scoreB=${scoreB}, aWins=${aWins}`);
+        console.log(`🎯 [승패 판정] 승자 팀: ${winners.map(p => p.userName || p.userId).join(', ')}`);
+        console.log(`🎯 [승패 판정] 패자 팀: ${losers.map(p => p.userName || p.userId).join(', ')}`);
 
         // 경기 시간 계산 (15분 간격)
         let gameStartTime, gameEndTime;
