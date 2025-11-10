@@ -2057,73 +2057,6 @@ async function loadMatchesForDate(date) {
                             <span>${timeSlot.start} ~ ${timeSlot.end}</span>
                             ${deleteButtonHTML}
                         </div>
-                        <div class="assignment-info" style="padding: 12px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; margin-top: 0;">
-                `;
-                
-                // 코트별 배정 정보 표시 (랜덤 모드와 밸런스 모드는 전체 인원으로 표시)
-                if (teamMode === 'random') {
-                    // 랜덤 모드: 전체 플레이어를 하나의 풀로 표시
-                    const allPlayers = Array.from(allPlayersSet);
-                    if (allPlayers.length > 0) {
-                        matchesHTML += `
-                            <div style="margin-bottom: 8px;">
-                                <strong style="color: #667eea;">전체 랜덤 매칭 인원 (${allPlayers.length}명)</strong>
-                                <div style="color: #555; margin-left: 12px; margin-top: 4px;">
-                                    - ${allPlayers.join(', ')}
-                                </div>
-                                <div style="color: #888; font-size: 0.85rem; margin-left: 12px; margin-top: 4px; font-style: italic;">
-                                    (랜덤 모드: 코트별 배정 없이 전체에서 랜덤하게 매칭됩니다)
-                                </div>
-                            </div>
-                        `;
-                    }
-                } else if (teamMode === 'balanced') {
-                    // 밸런스 모드: 전체 플레이어를 하나의 풀로 표시 (코트 구분 없음)
-                    const allPlayers = Array.from(allPlayersSet);
-                    if (allPlayers.length > 0) {
-                        matchesHTML += `
-                            <div style="margin-bottom: 8px;">
-                                <strong style="color: #667eea;">전체 밸런스 매칭 인원 (${allPlayers.length}명)</strong>
-                                <div style="color: #555; margin-left: 12px; margin-top: 4px;">
-                                    - ${allPlayers.join(', ')}
-                                </div>
-                                <div style="color: #888; font-size: 0.85rem; margin-left: 12px; margin-top: 4px; font-style: italic;">
-                                    (밸런스 모드: 코트별 배정 없이 전체에서 밸런스 맞춰 매칭됩니다)
-                                </div>
-                            </div>
-                        `;
-                    }
-                } else {
-                    // 그룹 모드: 코트별 배정 정보 표시
-                    Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
-                        const players = courtPlayers[courtNum];
-                        if (players.length > 0) {
-                            matchesHTML += `
-                                <div style="margin-bottom: 8px;">
-                                    <strong style="color: #667eea;">${courtNum}코트에 배정된 인원 (${players.length}명)</strong>
-                                    <div style="color: #555; margin-left: 12px; margin-top: 4px;">
-                                        - ${players.join(', ')}
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                }
-                
-                // 미배정 인원 표시
-                if (unassignedPlayers.length > 0) {
-                    matchesHTML += `
-                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
-                            <strong style="color: #dc3545;">배정되지 않은 인원 (${unassignedPlayers.length}명)</strong>
-                            <div style="color: #666; margin-left: 12px; margin-top: 4px;">
-                                - ${unassignedPlayers.join(', ')}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                matchesHTML += `
-                        </div>
                         <div class="rounds-container">
                 `;
                 
@@ -2346,12 +2279,33 @@ async function loadMatchesForDate(date) {
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
-                courtLabels.forEach(el => {
+                courtLabels.forEach((el) => {
                     el.style.fontWeight = '700';
                     el.style.fontSize = '0.95rem';
-                    el.style.color = '#667eea';
                     el.style.minWidth = '52px';
                     el.style.flexShrink = '0';
+                    el.style.padding = '2px 6px';
+                    el.style.borderRadius = '4px';
+                    
+                    // 코트 번호 추출 (텍스트에서 숫자 추출)
+                    const text = el.textContent || '';
+                    const courtNumMatch = text.match(/#(\d+)/);
+                    const courtNum = courtNumMatch ? parseInt(courtNumMatch[1]) : 1;
+                    
+                    // 코트별로 다른 색상 적용
+                    if (courtNum % 3 === 1) {
+                        // 코트 1, 4, 7... - 파란색 계열
+                        el.style.color = '#ffffff';
+                        el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    } else if (courtNum % 3 === 2) {
+                        // 코트 2, 5, 8... - 빨간색 계열
+                        el.style.color = '#ffffff';
+                        el.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+                    } else {
+                        // 코트 3, 6, 9... - 초록색 계열
+                        el.style.color = '#ffffff';
+                        el.style.background = 'linear-gradient(135deg, #51cf66 0%, #40c057 100%)';
+                    }
                 });
                 
                 const playerNames = matchesContainer.querySelectorAll('.player-names-compact');
