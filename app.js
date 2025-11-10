@@ -2311,27 +2311,25 @@ async function loadMatchesForDate(date) {
                     el.style.fontSize = '0.95rem';
                     el.style.minWidth = '52px';
                     el.style.flexShrink = '0';
-                    el.style.padding = '2px 6px';
-                    el.style.borderRadius = '4px';
+                    el.style.padding = '0';
+                    el.style.background = 'transparent';
+                    el.style.border = 'none';
                     
                     // 코트 번호 추출 (텍스트에서 숫자 추출)
                     const text = el.textContent || '';
                     const courtNumMatch = text.match(/#(\d+)/);
                     const courtNum = courtNumMatch ? parseInt(courtNumMatch[1]) : 1;
                     
-                    // 코트별로 다른 색상 적용
+                    // 코트별로 다른 색상 적용 (박스 없이 색상만)
                     if (courtNum % 3 === 1) {
                         // 코트 1, 4, 7... - 파란색 계열
-                        el.style.color = '#ffffff';
-                        el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        el.style.color = '#667eea';
                     } else if (courtNum % 3 === 2) {
                         // 코트 2, 5, 8... - 빨간색 계열
-                        el.style.color = '#ffffff';
-                        el.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+                        el.style.color = '#ff6b6b';
                     } else {
                         // 코트 3, 6, 9... - 초록색 계열
-                        el.style.color = '#ffffff';
-                        el.style.background = 'linear-gradient(135deg, #51cf66 0%, #40c057 100%)';
+                        el.style.color = '#51cf66';
                     }
                 });
                 
