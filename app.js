@@ -2069,23 +2069,22 @@ async function loadMatchesForDate(date) {
                     Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
                         const players = courtPlayers[courtNum];
                         if (players.length > 0) {
-                            courtInfoList.push(`코트${courtNum}: ${players.join(', ')}`);
+                            courtInfoList.push('코트' + courtNum + ': ' + players.join(', '));
                         }
                     });
                     if (courtInfoList.length > 0) {
-                        matchingInfoHTML = `<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">그룹 모드: ${courtInfoList.join(' | ')}</div>`;
+                        matchingInfoHTML = '<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">그룹 모드: ' + courtInfoList.join(' | ') + '</div>';
                     }
                 }
                 
-                matchesHTML += `
-                    <div class="time-slot-section" data-time-slot="${slotKey}" data-date="${date}">
-                        <div class="time-slot-header-compact" style="color: #000; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
-                            <span>${timeSlot.start} ~ ${timeSlot.end}</span>
-                            ${deleteButtonHTML}
-                        </div>
-                        ${matchingInfoHTML}
-                        <div class="rounds-container">
-                `;
+                matchesHTML += 
+                    '<div class="time-slot-section" data-time-slot="' + slotKey + '" data-date="' + date + '">' +
+                        '<div class="time-slot-header-compact" style="color: #000; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">' +
+                            '<span>' + timeSlot.start + ' ~ ' + timeSlot.end + '</span>' +
+                            deleteButtonHTML +
+                        '</div>' +
+                        matchingInfoHTML +
+                        '<div class="rounds-container">';
                 
                 // 라운드별로 렌더링 (1경기, 2경기 순서)
                 Object.keys(rounds).sort((a, b) => a - b).forEach(roundNum => {
@@ -2118,15 +2117,14 @@ async function loadMatchesForDate(date) {
                         const gameEndHour = Math.floor(totalEndMinutes / 60);
                         const gameEndMin = totalEndMinutes % 60;
                         
-                        gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-                        gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                        gameStart = String(gameStartHour).padStart(2, '0') + ':' + String(gameStartMin).padStart(2, '0');
+                        gameEnd = String(gameEndHour).padStart(2, '0') + ':' + String(gameEndMin).padStart(2, '0');
                     }
                     
                     // 라운드 헤더
-                    matchesHTML += `
-                        <div class="round-section">
-                            <div class="round-header-compact">${roundNum}경기 : ${gameStart}~${gameEnd}</div>
-                    `;
+                    matchesHTML += 
+                        '<div class="round-section">' +
+                            '<div class="round-header-compact">' + roundNum + '경기 : ' + gameStart + '~' + gameEnd + '</div>';
                     
                     // 각 라운드의 경기 렌더링 (코트별로 한 줄씩)
                     roundMatches.forEach(match => {
@@ -2148,38 +2146,38 @@ async function loadMatchesForDate(date) {
                         const teamAClass = teamBWon ? 'team-lost' : '';
                         const teamBClass = teamAWon ? 'team-lost' : '';
                         
-                        matchesHTML += `
-                            <div class="match-item-compact" data-match-id="${match.id}">
-                                <div class="match-players-row">
-                                    <span class="court-label-compact">코트#${courtNum}</span>
-                                    <span class="player-names-compact ${teamAClass}">${teamALabel}</span>
-                                    <span class="vs-separator-compact">vs</span>
-                                    <span class="player-names-compact ${teamBClass}">${teamBLabel}</span>
-                                </div>
-                                <div class="match-score-row">
-                                    <span class="score-spacer-compact"></span>
-                                    <input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
-                                    <span class="vs-separator-compact">vs</span>
-                                    <input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
-                                    <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
-                                        ${isCompleted ? '수정하기' : '경기 기록하기'}
-                                    </button>
-                                </div>
-                            </div>
-                        `;
+                        const scoreAValue = (scoreA !== null && scoreA !== undefined && scoreA !== '') ? scoreA : '15';
+                        const scoreBValue = (scoreB !== null && scoreB !== undefined && scoreB !== '') ? scoreB : '15';
+                        const readonlyAttr = isCompleted ? 'readonly' : '';
+                        const completedClass = isCompleted ? 'completed' : '';
+                        const buttonText = isCompleted ? '수정하기' : '경기 기록하기';
+                        
+                        matchesHTML += 
+                            '<div class="match-item-compact" data-match-id="' + match.id + '">' +
+                                '<div class="match-players-row">' +
+                                    '<span class="court-label-compact">코트#' + courtNum + '</span>' +
+                                    '<span class="player-names-compact ' + teamAClass + '">' + teamALabel + '</span>' +
+                                    '<span class="vs-separator-compact">vs</span>' +
+                                    '<span class="player-names-compact ' + teamBClass + '">' + teamBLabel + '</span>' +
+                                '</div>' +
+                                '<div class="match-score-row">' +
+                                    '<span class="score-spacer-compact"></span>' +
+                                    '<input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-' + safeId + '" placeholder="15" value="' + scoreAValue + '" ' + readonlyAttr + '>' +
+                                    '<span class="vs-separator-compact">vs</span>' +
+                                    '<input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-' + safeId + '" placeholder="15" value="' + scoreBValue + '" ' + readonlyAttr + '>' +
+                                    '<button class="save-score-btn-compact ' + completedClass + '" id="save-' + safeId + '" ' + (isCompleted ? '' : '') + '>' +
+                                        buttonText +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>';
                     });
                     
                     // 라운드 섹션 닫기
-                    matchesHTML += `
-                        </div>
-                    `;
+                    matchesHTML += '</div>';
                 });
                 
                 // 시간대별 섹션 닫기
-                matchesHTML += `
-                        </div>
-                    </div>
-                `;
+                matchesHTML += '</div></div>';
             }
         }
         
@@ -2376,18 +2374,18 @@ async function loadMatchesForDate(date) {
                             const firstScoreInput = scoreInputs[0];
                             const firstPlayerNameRect = firstPlayerName.getBoundingClientRect();
                             const playerNameWidth = firstPlayerNameRect.width;
-                            firstScoreInput.style.width = `${playerNameWidth}px`;
+                            firstScoreInput.style.width = playerNameWidth + 'px';
                             firstScoreInput.style.flex = '0 0 auto';
-                            firstScoreInput.style.maxWidth = `${playerNameWidth}px`;
+                            firstScoreInput.style.maxWidth = playerNameWidth + 'px';
                             
                             // 두 번째 점수 입력 필드도 두 번째 플레이어 이름과 맞추기
                             if (scoreInputs.length >= 2 && secondPlayerName) {
                                 const secondScoreInput = scoreInputs[1];
                                 const secondPlayerNameRect = secondPlayerName.getBoundingClientRect();
                                 const secondPlayerNameWidth = secondPlayerNameRect.width;
-                                secondScoreInput.style.width = `${secondPlayerNameWidth}px`;
+                                secondScoreInput.style.width = secondPlayerNameWidth + 'px';
                                 secondScoreInput.style.flex = '0 0 auto';
-                                secondScoreInput.style.maxWidth = `${secondPlayerNameWidth}px';
+                                secondScoreInput.style.maxWidth = secondPlayerNameWidth + 'px';
                             }
                         }
                     });
@@ -2725,12 +2723,11 @@ async function loadMatchesForDate(date) {
         });
     });
 } else {
-            matchesContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-calendar-times"></i>
-                    <p>${date}에 생성된 대진표가 없습니다.</p>
-                </div>
-            `;
+            matchesContainer.innerHTML = 
+                '<div class="empty-state">' +
+                    '<i class="fas fa-calendar-times"></i>' +
+                    '<p>' + date + '에 생성된 대진표가 없습니다.</p>' +
+                '</div>';
         }
         
         // 날짜 표시 업데이트
