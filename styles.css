@@ -4621,12 +4621,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: flex !important;
         align-items: center !important;
         gap: 1px !important; /* 간격 더 줄임 */
-        padding: 2px 3px 2px 1px !important; /* 패딩 더 줄임 */
+        padding: 3px 3px 3px 1px !important; /* 상하 패딩 증가 (두 줄 이름을 위해) */
         flex-wrap: nowrap !important;
         width: 100% !important;
         box-sizing: border-box !important;
         overflow-x: visible !important;
         overflow-y: visible !important;
+        min-height: 32px !important; /* 두 줄 이름을 위한 최소 높이 */
     }
     
     .court-label-compact {
@@ -4641,11 +4642,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         flex: 0 1 auto !important;
         flex-shrink: 1 !important;
         min-width: 0 !important; /* flexbox에서 잘림 방지 */
-        max-width: 60px !important; /* 최대 너비 제한 */
-        overflow: hidden !important; /* 넘치는 부분 숨김 */
-        text-overflow: ellipsis !important; /* 말줄임표 */
-        white-space: nowrap !important; /* 한 줄로 */
-        padding: 0 2px !important; /* 좌우 패딩 최소화 */
+        max-width: 70px !important; /* 최대 너비 제한 (두 줄 표시를 위해 약간 증가) */
+        overflow: hidden !important; /* -webkit-line-clamp를 위해 필요 */
+        text-overflow: clip !important; /* 말줄임표 제거 */
+        white-space: normal !important; /* 두 줄로 표시 */
+        word-wrap: break-word !important; /* 단어 단위로 줄바꿈 */
+        line-height: 1.2 !important; /* 줄 간격 조정 */
+        padding: 1px 2px !important; /* 상하 패딩 추가 */
+        display: -webkit-box !important; /* 두 줄 제한 */
+        -webkit-line-clamp: 2 !important; /* 최대 2줄 */
+        -webkit-box-orient: vertical !important;
+        text-align: center !important; /* 중앙 정렬 */
     }
     
     .score-input-compact {
@@ -5597,12 +5604,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: flex !important;
         align-items: center !important;
         gap: 1px !important;
-        padding: 2px 3px 2px 1px !important;
+        padding: 3px 3px 3px 1px !important; /* 상하 패딩 증가 (두 줄 이름을 위해) */
         flex-wrap: nowrap !important;
         width: 100% !important;
         box-sizing: border-box !important;
         overflow-x: visible !important;
         overflow-y: visible !important;
+        min-height: 32px !important; /* 두 줄 이름을 위한 최소 높이 */
     }
     
     .match-item-compact {
@@ -5622,11 +5630,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .player-names-compact {
         font-size: 0.75rem !important;
-        max-width: 60px !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        white-space: nowrap !important;
-        padding: 0 2px !important;
+        max-width: 70px !important; /* 두 줄 표시를 위해 약간 증가 */
+        overflow: hidden !important; /* -webkit-line-clamp를 위해 필요 */
+        text-overflow: clip !important; /* 말줄임표 제거 */
+        white-space: normal !important; /* 두 줄로 표시 */
+        word-wrap: break-word !important; /* 단어 단위로 줄바꿈 */
+        line-height: 1.2 !important; /* 줄 간격 조정 */
+        padding: 1px 2px !important; /* 상하 패딩 추가 */
+        display: -webkit-box !important; /* 두 줄 제한 */
+        -webkit-line-clamp: 2 !important; /* 최대 2줄 */
+        -webkit-box-orient: vertical !important;
+        text-align: center !important; /* 중앙 정렬 */
     }
     
     .score-input-compact {
