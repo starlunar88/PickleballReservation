@@ -2155,7 +2155,7 @@ async function loadMatchesForDate(date) {
                         matchesHTML += 
                             '<div class="match-item-compact" data-match-id="' + match.id + '">' +
                                 '<div class="match-single-row">' +
-                                    '<span class="court-label-compact">코트#' + courtNum + '</span>' +
+                                    '<span class="court-label-compact">#' + courtNum + '</span>' +
                                     '<span class="player-names-compact ' + teamAClass + '">' + teamALabel + '</span>' +
                                     '<input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-' + safeId + '" placeholder="15" value="' + scoreAStr + '" ' + readonlyAttr + '>' +
                                     '<span class="vs-separator-compact">vs</span>' +
@@ -2255,7 +2255,7 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '4px';
+                    el.style.gap = '2px';
                     el.style.flexWrap = 'nowrap';
                     el.style.padding = '3px 4px';
                     el.style.marginBottom = '3px';
@@ -2265,8 +2265,8 @@ async function loadMatchesForDate(date) {
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
                 courtLabels.forEach((el) => {
                     el.style.fontWeight = '700';
-                    el.style.fontSize = '0.95rem';
-                    el.style.minWidth = '52px';
+                    el.style.fontSize = '0.9rem';
+                    el.style.minWidth = '28px';
                     el.style.flexShrink = '0';
                     el.style.padding = '0';
                     el.style.background = 'transparent';
@@ -2314,17 +2314,17 @@ async function loadMatchesForDate(date) {
                 
                 const vsSeparators = matchesContainer.querySelectorAll('.vs-separator-compact');
                 vsSeparators.forEach(el => {
-                    el.style.fontSize = '0.85rem';
+                    el.style.fontSize = '0.8rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#667eea';
-                    el.style.margin = '0 2px';
+                    el.style.margin = '0 1px';
                     el.style.flexShrink = '0';
                 });
                 
-                // 점수 입력 필드 스타일
+                // 점수 입력 필드 스타일 (여백 최소화)
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
-                    el.style.padding = '3px 5px';
+                    el.style.padding = '2px 3px';
                     el.style.border = '1px solid #ccc';
                     el.style.borderRadius = '3px';
                     el.style.textAlign = 'center';
@@ -2332,10 +2332,11 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
                     el.style.flex = '0 0 auto';
-                    el.style.width = '50px';
-                    el.style.minWidth = '50px';
-                    el.style.maxWidth = '50px';
+                    el.style.width = '40px';
+                    el.style.minWidth = '40px';
+                    el.style.maxWidth = '40px';
                     el.style.boxSizing = 'border-box';
+                    el.style.margin = '0';
                 });
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
