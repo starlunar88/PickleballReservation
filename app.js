@@ -2538,13 +2538,6 @@ async function loadMatchesForDate(date) {
                     updateTeamLostStyle(el);
                 });
                 
-                const scoreSeparators = matchesContainer.querySelectorAll('.score-separator-compact');
-                scoreSeparators.forEach(el => {
-                    el.style.fontSize = '1rem';
-                    el.style.fontWeight = '600';
-                    el.style.color = '#333';
-                });
-                
                 const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
                 saveBtns.forEach(el => {
                     el.style.flexShrink = '0';
