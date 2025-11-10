@@ -2537,8 +2537,8 @@ async function loadMatchesForDate(date) {
                         
                         // 완료 상태면 입력 필드도 읽기 전용으로 설정
                         const btnId = el.id.replace('save-', '');
-                        const scoreAInput = document.getElementById(`scoreA-${btnId}`);
-                        const scoreBInput = document.getElementById(`scoreB-${btnId}`);
+                        const scoreAInput = document.getElementById('scoreA-' + btnId);
+                        const scoreBInput = document.getElementById('scoreB-' + btnId);
                         
                         if (scoreAInput) {
                             scoreAInput.readOnly = true;
