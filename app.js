@@ -2233,10 +2233,10 @@ async function loadMatchesForDate(date) {
                 const roundHeaders = matchesContainer.querySelectorAll('.round-header-compact');
                 roundHeaders.forEach(el => {
                     if (isMobile) {
-                        el.style.fontSize = '0.95rem';
+                        el.style.fontSize = '1.05rem'; /* 모바일에서 글씨 크기 더 키움 */
                         el.style.padding = '3px 4px';
                     } else {
-                        el.style.fontSize = '1rem';
+                        el.style.fontSize = '1.1rem'; /* PC에서 글씨 크기 더 키움 */
                         el.style.padding = '4px 5px';
                     }
                     el.style.fontWeight = '700';
