@@ -2591,8 +2591,8 @@ async function loadMatchesForDate(date) {
                             return;
                         }
                         
-                        const scoreAInput = document.getElementById(`scoreA-${safeId}`);
-                        const scoreBInput = document.getElementById(`scoreB-${safeId}`);
+                        const scoreAInput = document.getElementById('scoreA-' + safeId);
+                        const scoreBInput = document.getElementById('scoreB-' + safeId);
                         
                         if (!scoreAInput || !scoreBInput) {
                             console.error('점수 입력 필드를 찾을 수 없습니다');
@@ -10616,8 +10616,8 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                 const saveBtn = matchDiv.querySelector(`#save-${safeId}`);
                 if (saveBtn && !isCompleted) {
                     saveBtn.addEventListener('click', async () => {
-                        const scoreA = Number(document.getElementById(`scoreA-${safeId}`).value || 0);
-                        const scoreB = Number(document.getElementById(`scoreB-${safeId}`).value || 0);
+                        const scoreA = Number(document.getElementById('scoreA-' + safeId).value || 0);
+                        const scoreB = Number(document.getElementById('scoreB-' + safeId).value || 0);
                         
                         // 15점 초과 차단
                         if (scoreA > 15 || scoreB > 15) {
