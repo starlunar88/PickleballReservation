@@ -2255,9 +2255,9 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '2px';
+                    el.style.gap = '1px';
                     el.style.flexWrap = 'nowrap';
-                    el.style.padding = '3px 4px';
+                    el.style.padding = '3px 2px';
                     el.style.marginBottom = '3px';
                     el.style.borderBottom = '1px solid #e0e0e0';
                 });
@@ -2266,9 +2266,10 @@ async function loadMatchesForDate(date) {
                 courtLabels.forEach((el) => {
                     el.style.fontWeight = '700';
                     el.style.fontSize = '0.9rem';
-                    el.style.minWidth = '28px';
+                    el.style.minWidth = '24px';
                     el.style.flexShrink = '0';
                     el.style.padding = '0';
+                    el.style.marginRight = '0';
                     el.style.background = 'transparent';
                     el.style.border = 'none';
                     

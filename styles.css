@@ -2255,7 +2255,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .matches-container {
     max-width: 100%;
     margin: 0;
-    padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
+    padding: 0 2px 140px 2px; /* 예약, 대진표 탭 수준의 여백 */
     width: 100%;
     box-sizing: border-box;
 }
@@ -4013,7 +4013,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 480px; /* 모바일 사이즈로 제한 */
         width: 100%;
         margin: 0 auto; /* 중앙 정렬 */
-        padding: 0 4px 140px 4px; /* 모바일과 동일한 여백 */
+        padding: 0 2px 140px 2px; /* 모바일과 동일한 여백 */
         box-sizing: border-box;
     }
     
@@ -4582,11 +4582,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     /* 대진표 작은 모바일 반응형 */
     .matches-container {
-        padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
+        padding: 0 2px 140px 2px; /* 예약, 대진표 탭 수준의 여백 */
     }
     
     .match-schedule-section {
-        padding: 12px;
+        padding: 12px 8px;
         margin-top: 12px;
     }
     
@@ -5309,7 +5309,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     max-width: 100%;
     margin: 0 auto;
     width: 100%;
-    padding: 0 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
+    padding: 0 2px 140px 2px; /* 예약, 대진표 탭 수준의 여백 */
     min-height: calc(100vh - 200px);
     box-sizing: border-box;
     overflow-x: hidden; /* 가로 스크롤 방지 */
@@ -5321,7 +5321,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     border-radius: 20px;
     border: 1.5px solid #e8ecf1;
     margin-top: 20px;
-    padding: 24px;
+    padding: 16px 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
     overflow: visible; /* 내용이 잘리지 않도록 */
     min-height: 200px;
