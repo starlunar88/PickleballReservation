@@ -4616,12 +4616,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin-top: 12px;
     }
     
-    /* 모바일에서 한 줄 레이아웃 스타일 */
+    /* 모바일에서 한 줄 레이아웃 스타일 - 더 컴팩트하게 */
     .match-single-row {
         display: flex !important;
         align-items: center !important;
-        gap: 2px !important;
-        padding: 3px 4px 3px 2px !important; /* 오른쪽 패딩 증가 */
+        gap: 1px !important; /* 간격 더 줄임 */
+        padding: 2px 3px 2px 1px !important; /* 패딩 더 줄임 */
         flex-wrap: nowrap !important;
         width: 100% !important;
         box-sizing: border-box !important;
@@ -4630,37 +4630,45 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .court-label-compact {
-        font-size: 0.8rem !important;
-        min-width: 20px !important;
+        font-size: 0.7rem !important; /* 폰트 더 작게 */
+        min-width: 18px !important; /* 너비 줄임 */
+        max-width: 18px !important;
+        flex-shrink: 0 !important;
     }
     
     .player-names-compact {
-        font-size: 0.9rem !important;
+        font-size: 0.75rem !important; /* 폰트 더 작게 */
         flex: 0 1 auto !important;
         flex-shrink: 1 !important;
         min-width: 0 !important; /* flexbox에서 잘림 방지 */
-        overflow: visible !important;
-        word-wrap: break-word !important;
-        white-space: normal !important;
+        max-width: 60px !important; /* 최대 너비 제한 */
+        overflow: hidden !important; /* 넘치는 부분 숨김 */
+        text-overflow: ellipsis !important; /* 말줄임표 */
+        white-space: nowrap !important; /* 한 줄로 */
+        padding: 0 2px !important; /* 좌우 패딩 최소화 */
     }
     
     .score-input-compact {
-        padding: 2px 2px !important;
-        font-size: 0.75rem !important;
-        width: 35px !important;
-        min-width: 35px !important;
-        max-width: 35px !important;
+        padding: 1px 1px !important; /* 패딩 더 줄임 */
+        font-size: 0.7rem !important; /* 폰트 더 작게 */
+        width: 28px !important; /* 너비 줄임 */
+        min-width: 28px !important;
+        max-width: 28px !important;
+        flex-shrink: 0 !important;
     }
     
     .vs-separator-compact {
-        font-size: 0.7rem !important;
+        font-size: 0.65rem !important; /* 폰트 더 작게 */
         margin: 0 !important;
+        padding: 0 1px !important; /* 좌우 패딩 최소화 */
+        flex-shrink: 0 !important;
+        min-width: 18px !important;
     }
     
     .save-score-btn-compact {
-        padding: 3px 8px !important; /* 좌우 패딩 증가 */
-        font-size: 0.7rem !important;
-        margin-left: 4px !important;
+        padding: 2px 6px !important; /* 패딩 더 줄임 */
+        font-size: 0.65rem !important; /* 폰트 더 작게 */
+        margin-left: 2px !important; /* 마진 줄임 */
         margin-right: 0 !important; /* 오른쪽 마진 제거 */
         flex-shrink: 0 !important; /* 버튼이 잘리지 않도록 */
         white-space: nowrap !important;
@@ -4668,7 +4676,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: inline-block !important; /* 모바일에서도 항상 표시 */
         visibility: visible !important; /* 모바일에서도 항상 표시 */
         opacity: 1 !important; /* 모바일에서도 항상 표시 */
-        min-width: 40px !important; /* 최소 너비 보장 */
+        min-width: 35px !important; /* 최소 너비 줄임 */
+        max-width: 35px !important;
     }
     
     .match-schedule {
@@ -5536,6 +5545,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     border-radius: 6px !important;
 }
 
+/* 모바일에서 round-section 패딩 줄이기 */
+@media (max-width: 480px) {
+    .round-section {
+        padding: 4px 4px 4px 3px !important; /* 패딩 더 줄임 */
+        margin-bottom: 8px !important;
+    }
+    
+    .round-header-compact {
+        font-size: 0.85rem !important; /* 폰트 더 작게 */
+        padding: 4px 6px !important; /* 패딩 줄임 */
+    }
+}
+
 .round-header-compact {
     font-size: 0.95rem !important;
     font-weight: 700 !important;
@@ -5557,15 +5579,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     margin-bottom: 3px !important;
 }
 
-/* 모바일에서도 버튼이 항상 표시되도록 */
+/* 모바일에서도 버튼이 항상 표시되도록 - 더 컴팩트하게 */
 @media (max-width: 480px) {
     .save-score-btn-compact {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        min-width: 40px !important;
-        padding: 3px 8px !important;
-        font-size: 0.7rem !important;
+        min-width: 35px !important;
+        max-width: 35px !important;
+        padding: 2px 6px !important;
+        font-size: 0.65rem !important;
         flex-shrink: 0 !important;
         white-space: nowrap !important;
     }
@@ -5573,8 +5596,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .match-single-row {
         display: flex !important;
         align-items: center !important;
-        gap: 2px !important;
-        padding: 3px 4px 3px 2px !important;
+        gap: 1px !important;
+        padding: 2px 3px 2px 1px !important;
         flex-wrap: nowrap !important;
         width: 100% !important;
         box-sizing: border-box !important;
@@ -5587,8 +5610,37 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         box-sizing: border-box !important;
         overflow-x: visible !important;
         overflow-y: visible !important;
-        padding: 0 4px 0 0 !important;
-        margin-bottom: 3px !important;
+        padding: 0 3px 0 0 !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .court-label-compact {
+        font-size: 0.7rem !important;
+        min-width: 18px !important;
+        max-width: 18px !important;
+    }
+    
+    .player-names-compact {
+        font-size: 0.75rem !important;
+        max-width: 60px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        padding: 0 2px !important;
+    }
+    
+    .score-input-compact {
+        width: 28px !important;
+        min-width: 28px !important;
+        max-width: 28px !important;
+        padding: 1px 1px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .vs-separator-compact {
+        font-size: 0.65rem !important;
+        padding: 0 1px !important;
+        min-width: 18px !important;
     }
 }
 
