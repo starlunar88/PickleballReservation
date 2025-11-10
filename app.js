@@ -5356,7 +5356,23 @@ async function loadReservationsTimeline() {
                     .where('status', 'in', ['pending', 'confirmed'])
                     .get();
                 
+                // 디버깅: cancelled 상태의 예약자도 확인
+                const cancelledSnapshot = await db.collection('reservations')
+                    .where('date', '==', targetDate)
+                    .where('timeSlot', '==', slotKey)
+                    .where('status', '==', 'cancelled')
+                    .get();
+                
                 console.log('📡 Firestore 쿼리 완료, 문서 수:', reservationsSnapshot.size);
+                console.log(`📊 [상태별 예약자 수] pending+confirmed: ${reservationsSnapshot.size}명, cancelled: ${cancelledSnapshot.size}명`);
+                
+                if (cancelledSnapshot.size > 0) {
+                    console.log(`⚠️ [취소된 예약자] ${cancelledSnapshot.size}명:`, 
+                        cancelledSnapshot.docs.map(doc => {
+                            const data = doc.data();
+                            return `${data.userName || '익명'} (${data.cancellationReason || '이유 없음'})`;
+                        }).join(', '));
+                }
                 
                 reservationsSnapshot.forEach(doc => {
                     const data = doc.data();
@@ -8279,14 +8295,18 @@ async function processTimeSlotReservations(date, timeSlot) {
             
             // 예약자가 코트 수 제한을 초과하는 경우, 처음 예약한 순서대로 제한
             let reservationsToUse = reservations;
+            let unassignedReservations = [];
             if (reservations.length > maxPlayers) {
                 console.log(`⚠️ 예약자 수(${reservations.length}명)가 코트 수 제한(${maxPlayers}명)을 초과하여 첫 ${maxPlayers}명만 사용합니다.`);
                 // createdAt 기준으로 정렬하여 먼저 예약한 순서대로 선택
-                reservationsToUse = [...reservations].sort((a, b) => {
+                const sortedReservations = [...reservations].sort((a, b) => {
                     const timeA = a.createdAt?.toMillis?.() || (a.createdAt?.seconds || 0) * 1000 || 0;
                     const timeB = b.createdAt?.toMillis?.() || (b.createdAt?.seconds || 0) * 1000 || 0;
                     return timeA - timeB; // 먼저 예약한 순서대로
-                }).slice(0, maxPlayers);
+                });
+                reservationsToUse = sortedReservations.slice(0, maxPlayers);
+                unassignedReservations = sortedReservations.slice(maxPlayers);
+                console.log(`⚠️ 배정되지 않은 예약자 ${unassignedReservations.length}명:`, unassignedReservations.map(r => r.userName).join(', '));
             }
             
             // 기본 팀 짜기 모드 (밸런스 모드)
@@ -8294,6 +8314,12 @@ async function processTimeSlotReservations(date, timeSlot) {
             
             // 팀 배정 결과 저장
             await saveTeamAssignments(date, timeSlot, teams, TEAM_MODE.BALANCED);
+            
+            // 배정되지 않은 예약자들은 pending 상태로 유지 (취소하지 않음)
+            // 이렇게 하면 예약 탭에서도 모든 예약자가 표시됩니다
+            if (unassignedReservations.length > 0) {
+                console.log(`ℹ️ 배정되지 않은 ${unassignedReservations.length}명의 예약자는 pending 상태로 유지되어 예약 탭에 표시됩니다.`);
+            }
             
             // 대진표 생성/재생성
             try {
@@ -10255,9 +10281,15 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                         <div class="team">${teamBLabel}</div>
                     </div>
                     <div class="match-score">
-                        <input type="number" class="score-input" min="0" max="15" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                        <div class="score-input-wrapper">
+                            <label class="score-label" for="scoreA-${safeId}">${teamALabel}</label>
+                            <input type="number" class="score-input" min="0" max="15" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                        </div>
                         <span class="score-separator">:</span>
-                        <input type="number" class="score-input" min="0" max="15" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                        <div class="score-input-wrapper">
+                            <label class="score-label" for="scoreB-${safeId}">${teamBLabel}</label>
+                            <input type="number" class="score-input" min="0" max="15" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                        </div>
                         <button class="save-score-btn" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                             ${isCompleted ? '완료' : '저장'}
                         </button>
