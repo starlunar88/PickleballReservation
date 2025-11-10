@@ -2297,15 +2297,15 @@ async function loadMatchesForDate(date) {
                     el.style.fontSize = '1.15rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#1a1a1a';
-                    el.style.flex = '1';
+                    el.style.flex = '0 0 auto';
                     el.style.textAlign = 'left';
                     el.style.wordBreak = 'break-word';
                     el.style.lineHeight = '1.3';
                     el.style.minWidth = '0';
                     el.style.maxWidth = 'none';
                     el.style.whiteSpace = 'nowrap';
-                    el.style.overflow = 'hidden';
-                    el.style.textOverflow = 'ellipsis';
+                    el.style.overflow = 'visible';
+                    el.style.textOverflow = 'clip';
                 });
                 
                 // 진 팀 스타일 (회색)
@@ -2350,14 +2350,14 @@ async function loadMatchesForDate(date) {
                     el.style.fontSize = '0.85rem';
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
-                    el.style.flex = '1';
+                    el.style.flex = '0 0 auto';
                     el.style.minWidth = '45px';
-                    el.style.maxWidth = '90px';
+                    el.style.maxWidth = 'none';
                 });
                 
                 // 점수 입력 줄의 vs가 플레이어 이름 줄의 vs와 정렬되도록
-                // setTimeout을 사용하여 DOM이 완전히 렌더링된 후 실행
-                setTimeout(() => {
+                // 점수 입력 박스의 너비를 플레이어 이름의 너비에 맞추기
+                const adjustScoreBoxWidths = () => {
                     matchScoreRows.forEach((scoreRow) => {
                         const matchItem = scoreRow.closest('.match-item-compact');
                         if (!matchItem) return;
@@ -2376,6 +2376,7 @@ async function loadMatchesForDate(date) {
                             const playerNameWidth = firstPlayerNameRect.width;
                             firstScoreInput.style.width = playerNameWidth + 'px';
                             firstScoreInput.style.flex = '0 0 auto';
+                            firstScoreInput.style.minWidth = playerNameWidth + 'px';
                             firstScoreInput.style.maxWidth = playerNameWidth + 'px';
                             
                             // 두 번째 점수 입력 필드도 두 번째 플레이어 이름과 맞추기
@@ -2385,11 +2386,19 @@ async function loadMatchesForDate(date) {
                                 const secondPlayerNameWidth = secondPlayerNameRect.width;
                                 secondScoreInput.style.width = secondPlayerNameWidth + 'px';
                                 secondScoreInput.style.flex = '0 0 auto';
+                                secondScoreInput.style.minWidth = secondPlayerNameWidth + 'px';
                                 secondScoreInput.style.maxWidth = secondPlayerNameWidth + 'px';
                             }
                         }
                     });
-                }, 200);
+                };
+                
+                // DOM이 완전히 렌더링된 후 실행 (여러 번 시도)
+                setTimeout(() => {
+                    adjustScoreBoxWidths();
+                    // 추가로 한 번 더 실행 (렌더링이 완료될 때까지)
+                    setTimeout(adjustScoreBoxWidths, 100);
+                }, 300);
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
                 matchTeams.forEach(el => {
