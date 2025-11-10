@@ -2709,7 +2709,7 @@ async function loadMatchesForDate(date) {
             const timeSlot = btn.getAttribute('data-time-slot');
             
             // 확인 메시지
-            if (!confirm(`${timeSlot} 시간대의 대진표와 모든 기록을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+            if (!confirm(timeSlot + ' 시간대의 대진표와 모든 기록을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
                 return;
             }
             
