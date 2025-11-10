@@ -5663,14 +5663,6 @@ async function loadReservationsTimeline() {
                             
                             // 관리자 버튼들 (관리자만 표시/활성화)
                             if (isAdminUser) {
-                                // 무작위 추가 버튼
-                                buttons += `<button class="btn btn-outline add-random-btn" 
-                                                   data-time-slot="${slotKey}" 
-                                                   data-date="${targetDate}"
-                                                   style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
-                                                <i class="fas fa-user-plus"></i> 무작위 추가
-                                            </button>`;
-                                
                                 // 대진표 생성 버튼
                                 const canGenerate = reservations.length >= 4;
                                 const buttonDisabled = !canGenerate ? 'disabled' : '';
@@ -5751,9 +5743,7 @@ async function loadReservationsTimeline() {
                 // 버튼 클릭은 제외
                 if (e.target.classList.contains('timeline-reserve-btn') || 
                     e.target.classList.contains('timeline-cancel-btn') ||
-                    e.target.classList.contains('add-random-btn') ||
                     e.target.classList.contains('force-generate-btn') ||
-                    e.target.closest('.add-random-btn') ||
                     e.target.closest('.force-generate-btn')) {
                     return;
                 }
@@ -8928,34 +8918,6 @@ async function createTestButtons() {
 
 // 테스트 버튼 이벤트 리스너 추가
 function addTestButtonEventListeners() {
-    // 무작위 추가 버튼들 (관리자만 사용 가능)
-    document.querySelectorAll('.add-random-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            // 관리자 권한 확인
-            const user = firebase.auth().currentUser;
-            if (!user) {
-                showToast('로그인이 필요합니다.', 'warning');
-                return;
-            }
-            
-            const isAdminUser = await isAdmin(user);
-            if (!isAdminUser) {
-                showToast('관리자만 사용할 수 있는 기능입니다.', 'error');
-                return;
-            }
-            
-            try {
-                const timeSlot = e.target.getAttribute('data-time-slot') || e.target.closest('.add-random-btn')?.getAttribute('data-time-slot');
-                const date = e.target.getAttribute('data-date') || e.target.closest('.add-random-btn')?.getAttribute('data-date') || window.currentDate || new Date().toISOString().slice(0, 10);
-                
-                await addRandomReservation(date, timeSlot);
-                await loadReservationsTimeline();
-            } catch (error) {
-                console.error('무작위 예약자 추가 오류:', error);
-                showToast('무작위 예약 추가 중 오류', 'error');
-            }
-        });
-    });
     
     // 대진표 강제 생성 버튼들 (타임라인 버튼 포함)
     document.querySelectorAll('.force-generate-btn').forEach(btn => {

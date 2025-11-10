@@ -4579,8 +4579,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .timeline-actions .btn,
     .timeline-actions .timeline-reserve-btn,
     .timeline-actions .timeline-cancel-btn,
-    .timeline-actions .force-generate-btn,
-    .timeline-actions .add-random-btn {
+    .timeline-actions .force-generate-btn {
         padding: 4px 6px !important; /* padding 최소화 */
         font-size: 0.65rem !important; /* 더 작게 */
     }
@@ -5782,8 +5781,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .timeline-actions .btn,
     .timeline-actions .timeline-reserve-btn,
     .timeline-actions .timeline-cancel-btn,
-    .timeline-actions .force-generate-btn,
-    .timeline-actions .add-random-btn {
+    .timeline-actions .force-generate-btn {
         flex: 0 0 auto !important;
         min-width: auto !important;
         font-size: 0.75rem !important;
