@@ -4620,13 +4620,20 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .match-single-row {
         display: flex !important;
         align-items: center !important;
-        gap: 1px !important; /* 간격 더 줄임 */
-        padding: 2px 3px 2px 1px !important; /* 패딩 조정 */
+        gap: 1px !important; /* 간격 최소화 */
+        padding: 2px 2px 2px 1px !important; /* 여백 최대한 줄임 */
         flex-wrap: nowrap !important;
         width: 100% !important;
         box-sizing: border-box !important;
         overflow-x: visible !important;
         overflow-y: visible !important;
+    }
+    
+    .player-names-compact {
+        font-size: 0.8rem !important; /* 모바일에서 글씨 크기 아주 조금만 키움 */
+        max-width: none !important; /* 말줄임표 제거 */
+        overflow: visible !important; /* 말줄임표 제거 */
+        text-overflow: clip !important; /* 말줄임표 제거 */
     }
     
     .court-label-compact {
@@ -5529,35 +5536,52 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     box-sizing: border-box !important;
     overflow-x: visible !important;
     overflow-y: visible !important;
-    margin-bottom: 10px !important;
-    padding: 6px 8px 6px 6px !important; /* 오른쪽 패딩 증가 */
+    margin-bottom: 6px !important; /* 여백 줄임 */
+    padding: 4px 4px 4px 3px !important; /* 여백 최대한 줄임 */
     background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%) !important;
     border-radius: 6px !important;
 }
 
-/* 모바일에서 round-section 패딩 줄이기 */
+/* 모바일에서 round-section 패딩 줄이기 및 글씨 크기 조정 */
 @media (max-width: 480px) {
     .round-section {
-        padding: 4px 4px 4px 3px !important; /* 패딩 더 줄임 */
-        margin-bottom: 8px !important;
+        padding: 3px 3px 3px 2px !important; /* 여백 최대한 줄임 */
+        margin-bottom: 4px !important; /* 여백 줄임 */
     }
     
     .round-header-compact {
-        font-size: 0.85rem !important; /* 폰트 더 작게 */
-        padding: 4px 6px !important; /* 패딩 줄임 */
+        font-size: 0.9rem !important; /* 글씨 크기 아주 조금만 키움 */
+        padding: 3px 5px !important; /* 여백 줄임 */
+    }
+    
+    .player-names-compact {
+        font-size: 0.8rem !important; /* 모바일에서 글씨 크기 아주 조금만 키움 */
+    }
+    
+    .match-single-row {
+        padding: 2px 2px 2px 1px !important; /* 여백 최대한 줄임 */
+        gap: 1px !important;
+    }
+    
+    .match-item-compact {
+        padding: 0 2px 0 0 !important; /* 여백 줄임 */
+        margin-bottom: 2px !important; /* 여백 줄임 */
     }
 }
 
 .round-header-compact {
     font-size: 0.95rem !important;
     font-weight: 700 !important;
-    color: #1a1a1a !important;
-    padding: 5px 8px !important;
-    margin-bottom: 4px !important;
+    color: white !important; /* 흰색 글씨로 변경 */
+    padding: 4px 6px !important; /* 여백 줄임 */
+    margin-bottom: 2px !important; /* 여백 줄임 */
     width: 100% !important;
     box-sizing: border-box !important;
     overflow-x: visible !important;
     word-wrap: break-word !important;
+    background: linear-gradient(135deg, #4c63d2 0%, #6a3d91 100%) !important; /* 배경 유지 */
+    border-radius: 4px !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important; /* 가독성 향상 */
 }
 
 .match-item-compact {
@@ -5882,15 +5906,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     transform: translateY(-2px) scale(1.02) !important;
 }
 
-/* player-names-compact 기본 스타일 - 한 줄로 표시 */
+/* player-names-compact 기본 스타일 - 한 줄로 표시, 말줄임표 제거 */
 .player-names-compact {
     font-size: 0.75rem !important;
     flex: 0 1 auto !important;
     flex-shrink: 1 !important;
     min-width: 0 !important;
-    max-width: 70px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important; /* 말줄임표 */
+    max-width: none !important; /* 말줄임표 제거를 위해 제한 해제 */
+    overflow: visible !important; /* 말줄임표 제거 */
+    text-overflow: clip !important; /* 말줄임표 제거 */
     white-space: nowrap !important; /* 한 줄로 */
     line-height: 1.2 !important;
     padding: 1px 2px !important;

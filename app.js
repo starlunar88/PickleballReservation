@@ -2222,8 +2222,8 @@ async function loadMatchesForDate(date) {
                 // 라운드 섹션 스타일
                 const roundSections = matchesContainer.querySelectorAll('.round-section');
                 roundSections.forEach(el => {
-                    el.style.marginBottom = '10px';
-                    el.style.padding = '6px';
+                    el.style.marginBottom = '6px'; /* 여백 줄임 */
+                    el.style.padding = '4px 4px 4px 3px'; /* 여백 최대한 줄임 */
                     el.style.background = 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)';
                     el.style.borderRadius = '6px';
                     el.style.border = '1px solid #e2e8f0';
@@ -2234,12 +2234,12 @@ async function loadMatchesForDate(date) {
                 roundHeaders.forEach(el => {
                     el.style.fontSize = '0.95rem';
                     el.style.fontWeight = '700';
-                    el.style.color = '#1a1a1a';
-                    el.style.padding = '5px 8px';
-                    el.style.marginBottom = '4px';
-                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    el.style.color = 'white';
+                    el.style.color = 'white'; /* 흰색 글씨로 변경 */
+                    el.style.padding = '4px 6px'; /* 여백 줄임 */
+                    el.style.marginBottom = '2px'; /* 여백 줄임 */
+                    el.style.background = 'linear-gradient(135deg, #4c63d2 0%, #6a3d91 100%)'; /* 배경 유지 */
                     el.style.borderRadius = '4px';
+                    el.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.3)'; /* 가독성 향상 */
                 });
                 
                 // 매치 아이템 스타일 (한 줄 레이아웃)
