@@ -1989,14 +1989,14 @@ async function loadMatchesForDate(date) {
                     console.log(`📋 매치 ${match.id}: status=${match.status}, scoreA=${match.scoreA}, scoreB=${match.scoreB}`);
                 });
                 
-                // 코트별로 그룹화
-                const courts = {};
+                // 라운드별로 그룹화
+                const rounds = {};
                 matches.forEach(match => {
-                    const courtNum = match.courtNumber || 1;
-                    if (!courts[courtNum]) {
-                        courts[courtNum] = [];
+                    const roundNum = match.roundNumber || 1;
+                    if (!rounds[roundNum]) {
+                        rounds[roundNum] = [];
                     }
-                    courts[courtNum].push(match);
+                    rounds[roundNum].push(match);
                 });
                 
                 // 팀 모드 확인 (첫 번째 매치에서 teamMode 가져오기, 기본값 'balanced')
@@ -2124,25 +2124,52 @@ async function loadMatchesForDate(date) {
                 
                 matchesHTML += `
                         </div>
-                        <div class="courts-container">
+                        <div class="rounds-container">
                 `;
                 
-                // 각 코트 내에서 경기 번호 순으로 정렬
-                Object.keys(courts).forEach(courtNum => {
-                    courts[courtNum].sort((a, b) => (a.roundNumber || 1) - (b.roundNumber || 1));
-                });
-                
-                // 코트별로 렌더링 (1코트, 2코트 순서)
-                Object.keys(courts).sort((a, b) => a - b).forEach(courtNum => {
-                    const courtMatches = courts[courtNum];
+                // 라운드별로 렌더링 (1경기, 2경기 순서)
+                Object.keys(rounds).sort((a, b) => a - b).forEach(roundNum => {
+                    const roundMatches = rounds[roundNum];
                     
+                    // 각 라운드 내에서 코트 번호 순으로 정렬
+                    roundMatches.sort((a, b) => {
+                        const courtA = a.courtNumber || a.court || 1;
+                        const courtB = b.courtNumber || b.court || 1;
+                        return courtA - courtB;
+                    });
+                    
+                    // 라운드의 첫 번째 매치에서 시간 정보 가져오기
+                    const firstMatch = roundMatches[0];
+                    let gameStart, gameEnd;
+                    if (firstMatch.gameStartTime && firstMatch.gameEndTime) {
+                        gameStart = firstMatch.gameStartTime;
+                        gameEnd = firstMatch.gameEndTime;
+                    } else {
+                        // 기존 계산 로직 (하위 호환성)
+                        const timeSlotStart = timeSlot.start.split(':');
+                        const startHour = parseInt(timeSlotStart[0]);
+                        const startMin = parseInt(timeSlotStart[1]);
+                        const minutesPerGame = 15;
+                        const gameStartMinutes = (parseInt(roundNum) - 1) * minutesPerGame;
+                        const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+                        const gameStartHour = Math.floor(totalStartMinutes / 60);
+                        const gameStartMin = totalStartMinutes % 60;
+                        const totalEndMinutes = totalStartMinutes + minutesPerGame;
+                        const gameEndHour = Math.floor(totalEndMinutes / 60);
+                        const gameEndMin = totalEndMinutes % 60;
+                        
+                        gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+                        gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                    }
+                    
+                    // 라운드 헤더
                     matchesHTML += `
-                        <div class="court-column">
-                            <div class="court-header-compact">${courtNum}코트</div>
+                        <div class="round-section">
+                            <div class="round-header-compact">${roundNum}경기 : ${gameStart}~${gameEnd}</div>
                     `;
                     
-                    // 각 코트의 경기 렌더링
-                    courtMatches.forEach(match => {
+                    // 각 라운드의 경기 렌더링 (코트별로 한 줄씩)
+                    roundMatches.forEach(match => {
                         // 계급 아이콘 생성 헬퍼 함수 (점수 기준: 승리 +10점, 패배 -5점)
                         // 실제 게임 점수만 사용 (internalRating은 사용하지 않음)
                         const getTierIcon = (score) => {
@@ -2186,32 +2213,8 @@ async function loadMatchesForDate(date) {
                         const scoreB = match.scoreB ?? '';
                         const isCompleted = match.status === 'completed';
                         const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
-                        const roundNum = match.roundNumber || 1;
-                        const courtNum = match.courtNumber || 1;
+                        const courtNum = match.courtNumber || match.court || 1;
                         
-                        // 경기 시간 (저장된 값이 있으면 사용, 없으면 계산)
-                        let gameStart, gameEnd;
-                        if (match.gameStartTime && match.gameEndTime) {
-                            gameStart = match.gameStartTime;
-                            gameEnd = match.gameEndTime;
-                        } else {
-                            // 기존 계산 로직 (하위 호환성)
-                            const timeSlotStart = timeSlot.start.split(':');
-                            const startHour = parseInt(timeSlotStart[0]);
-                            const startMin = parseInt(timeSlotStart[1]);
-                            const minutesPerGame = 15;
-                            const gameStartMinutes = (roundNum - 1) * minutesPerGame;
-                            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-                            const gameStartHour = Math.floor(totalStartMinutes / 60);
-                            const gameStartMin = totalStartMinutes % 60;
-                            const totalEndMinutes = totalStartMinutes + minutesPerGame;
-                            const gameEndHour = Math.floor(totalEndMinutes / 60);
-                            const gameEndMin = totalEndMinutes % 60;
-                            
-                            gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-                            gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
-                        }
-                    
                         // 팀 이름에서 아이콘 제거 (간단한 형식)
                         const teamALabel = match.teamA.map(p => p.userName).join(',');
                         const teamBLabel = match.teamB.map(p => p.userName).join(',');
@@ -2230,9 +2233,6 @@ async function loadMatchesForDate(date) {
                                     <span class="court-label-compact">코트#${courtNum}</span>
                                     <span class="player-names-compact">${teamALabel}${scoreASpace}${scoreADisplay} vs ${scoreBSpace}${scoreBDisplay}${teamBLabel}</span>
                                 </div>
-                                <div class="match-header-compact">
-                                    <span class="match-info-compact">${roundNum}경기 : ${gameStart}~${gameEnd}</span>
-                                </div>
                                 <div class="match-score-input-compact">
                                     <input type="number" class="score-input-compact" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
                                     <span class="score-separator-compact">-</span>
@@ -2245,6 +2245,7 @@ async function loadMatchesForDate(date) {
                         `;
                     });
                     
+                    // 라운드 섹션 닫기
                     matchesHTML += `
                         </div>
                     `;
@@ -2288,89 +2289,59 @@ async function loadMatchesForDate(date) {
                     el.style.borderRadius = '4px';
                 });
                 
-                const courtsContainers = matchesContainer.querySelectorAll('.courts-container');
-                courtsContainers.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.gap = '2px';
+                // 라운드 컨테이너 스타일
+                const roundsContainers = matchesContainer.querySelectorAll('.rounds-container');
+                roundsContainers.forEach(el => {
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
-                    el.style.borderLeft = '2px solid #e0e0e0';
-                    el.style.borderRight = '2px solid #e0e0e0';
                 });
                 
-                const courtColumns = matchesContainer.querySelectorAll('.court-column');
-                courtColumns.forEach((el, index) => {
-                    el.style.flex = '1';
-                    el.style.minWidth = '0';
-                    el.style.display = 'flex';
-                    el.style.flexDirection = 'column';
-                    el.style.padding = '0 6px';
-                    el.style.height = '100%';
-                    // 코트 사이 구분선 (첫 번째 코트에만)
-                    if (index === 0 && courtColumns.length > 1) {
-                        el.style.borderRight = '2px solid #667eea';
-                    }
+                // 라운드 섹션 스타일
+                const roundSections = matchesContainer.querySelectorAll('.round-section');
+                roundSections.forEach(el => {
+                    el.style.marginBottom = '20px';
+                    el.style.padding = '12px';
+                    el.style.background = 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)';
+                    el.style.borderRadius = '12px';
+                    el.style.border = '1px solid #e2e8f0';
                 });
                 
-                const courtHeaders = matchesContainer.querySelectorAll('.court-header-compact');
-                courtHeaders.forEach((el, index) => {
-                    el.style.fontSize = '0.85rem';
+                // 라운드 헤더 스타일
+                const roundHeaders = matchesContainer.querySelectorAll('.round-header-compact');
+                roundHeaders.forEach(el => {
+                    el.style.fontSize = '1.1rem';
                     el.style.fontWeight = '700';
+                    el.style.color = '#1a1a1a';
+                    el.style.padding = '8px 12px';
+                    el.style.marginBottom = '12px';
+                    el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     el.style.color = 'white';
-                    el.style.padding = '4px 8px';
-                    el.style.marginBottom = '4px';
-                    el.style.borderRadius = '6px';
-                    el.style.textAlign = 'center';
-                    
-                    // 코트별로 다른 배경색 설정
-                    if (index === 0) {
-                        // 1코트: 파란색 계열
-                        el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    } else if (index === 1) {
-                        // 2코트: 빨간색/주황색 계열
-                        el.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
-                    } else {
-                        // 3코트 이상: 초록색 계열
-                        el.style.background = 'linear-gradient(135deg, #51cf66 0%, #40c057 100%)';
-                    }
+                    el.style.borderRadius = '8px';
                 });
                 
+                // 매치 아이템을 한 줄로 표시
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
                 matchItems.forEach(el => {
-                    el.style.padding = '4px';
-                    el.style.marginBottom = '4px';
+                    el.style.padding = '8px';
+                    el.style.marginBottom = '8px';
                     el.style.borderBottom = '1px solid #e0e0e0';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
                     el.style.display = 'flex';
-                    el.style.flexDirection = 'column';
-                    el.style.gap = '4px';
+                    el.style.flexDirection = 'row';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '12px';
+                    el.style.flexWrap = 'wrap';
                 });
                 
-                const matchHeaders = matchesContainer.querySelectorAll('.match-header-compact');
-                matchHeaders.forEach(el => {
-                    el.style.padding = '2px 0';
-                    el.style.marginBottom = '0';
-                });
-                
-                const matchInfos = matchesContainer.querySelectorAll('.match-info-compact');
-                matchInfos.forEach(el => {
-                    el.style.fontSize = '0.7rem';
-                    el.style.color = '#000';
-                    el.style.fontWeight = '500';
-                });
-                
-                // 간단한 대진표 스타일 추가
+                // 간단한 대진표 스타일 추가 (한 줄로 표시)
                 const matchCourtSimples = matchesContainer.querySelectorAll('.match-court-simple-compact');
                 matchCourtSimples.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
                     el.style.gap = '12px';
-                    el.style.marginBottom = '8px';
-                    el.style.padding = '10px';
-                    el.style.background = 'linear-gradient(135deg, #f8f9fc 0%, #f0f4ff 100%)';
-                    el.style.borderRadius = '8px';
-                    el.style.border = '1px solid #e2e8f0';
+                    el.style.flex = '1';
+                    el.style.minWidth = '300px';
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
@@ -2378,7 +2349,7 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '700';
                     el.style.fontSize = '1rem';
                     el.style.color = '#667eea';
-                    el.style.minWidth = '60px';
+                    el.style.minWidth = '70px';
                     el.style.flexShrink = '0';
                 });
                 
@@ -2388,7 +2359,7 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '600';
                     el.style.color = '#1a1a1a';
                     el.style.flex = '1';
-                    el.style.textAlign = 'center';
+                    el.style.textAlign = 'left';
                     el.style.wordBreak = 'break-word';
                     el.style.lineHeight = '1.5';
                 });
@@ -2431,10 +2402,8 @@ async function loadMatchesForDate(date) {
                 matchScoreInputs.forEach(el => {
                     el.style.display = 'flex';
                     el.style.alignItems = 'center';
-                    el.style.justifyContent = 'center';
                     el.style.gap = '8px';
-                    el.style.padding = '4px 0';
-                    el.style.marginBottom = '0';
+                    el.style.flexShrink = '0';
                 });
                 
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
@@ -2497,6 +2466,7 @@ async function loadMatchesForDate(date) {
                 
                 const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
                 saveBtns.forEach(el => {
+                    el.style.flexShrink = '0';
                     // 완료 상태인지 확인
                     const isCompleted = el.classList.contains('completed') || el.textContent.includes('수정');
                     
