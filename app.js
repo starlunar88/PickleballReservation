@@ -4240,20 +4240,37 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.fillStyle = color;
         ctx.fillRect(x, y, barWidth, actualBarHeight);
         
-        // 팀 이름 레이블 (가로로 표시, 한 줄)
+        // 팀 이름 레이블 (두 줄로 표시)
         ctx.fillStyle = '#333';
         ctx.font = `${nameFontSize} "Malgun Gothic", Arial, sans-serif`;
         ctx.textAlign = 'right';
-        // 이름이 너무 길면 자르기
-        let displayName = item.playerNames;
+        
+        // 이름을 쉼표로 분리하여 두 줄로 표시
+        const names = item.playerNames.split(',').map(name => name.trim());
         const maxNameDisplayWidth = padding.left - (isMobile ? 10 : 12);
-        if (ctx.measureText(displayName).width > maxNameDisplayWidth) {
-            while (displayName.length > 0 && ctx.measureText(displayName + '...').width > maxNameDisplayWidth) {
-                displayName = displayName.slice(0, -1);
+        const lineHeight = parseFloat(nameFontSize) * 1.2; // 줄 간격
+        
+        // 첫 번째 이름 (위 줄)
+        let firstName = names[0] || '';
+        if (ctx.measureText(firstName).width > maxNameDisplayWidth) {
+            while (firstName.length > 0 && ctx.measureText(firstName + '...').width > maxNameDisplayWidth) {
+                firstName = firstName.slice(0, -1);
             }
-            displayName = displayName + '...';
+            firstName = firstName + '...';
         }
-        ctx.fillText(displayName, padding.left - 5, y + actualBarHeight / 2 + 4);
+        ctx.fillText(firstName, padding.left - 5, y + actualBarHeight / 2 - lineHeight / 2 + 4);
+        
+        // 두 번째 이름 (아래 줄)
+        if (names.length > 1) {
+            let secondName = names[1] || '';
+            if (ctx.measureText(secondName).width > maxNameDisplayWidth) {
+                while (secondName.length > 0 && ctx.measureText(secondName + '...').width > maxNameDisplayWidth) {
+                    secondName = secondName.slice(0, -1);
+                }
+                secondName = secondName + '...';
+            }
+            ctx.fillText(secondName, padding.left - 5, y + actualBarHeight / 2 + lineHeight / 2 + 4);
+        }
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
         ctx.fillStyle = '#333';
