@@ -7947,8 +7947,17 @@ function createRandomTeams(players) {
 
 // 2. 밸런스 모드 팀 짜기 (균형 맞추기)
 function createBalancedTeams(players) {
-    // 플레이어를 점수 순으로 정렬
-    const sortedPlayers = [...players].sort((a, b) => b.combinedScore - a.combinedScore);
+    // 플레이어를 DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+    const sortedPlayers = [...players].sort((a, b) => {
+        const duprA = b.dupr || 0;
+        const duprB = a.dupr || 0;
+        const diff = duprA - duprB;
+        // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+        if (Math.abs(diff) < 0.1) {
+            return Math.random() - 0.5;
+        }
+        return diff;
+    });
     
     const teams = [];
     const teamCount = Math.floor(sortedPlayers.length / 4);
@@ -9336,23 +9345,33 @@ const pairingPatterns = [
 // 밸런스 모드를 위한 여러 밸런스 조합 생성 함수
 function createBalancedTeamConfigs(candidate) {
     const configs = [];
-    const sorted = [...candidate].sort((a, b) => b.combinedScore - a.combinedScore);
+    // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+    const sorted = [...candidate].sort((a, b) => {
+        const duprA = b.dupr || 0;
+        const duprB = a.dupr || 0;
+        const diff = duprA - duprB;
+        // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+        if (Math.abs(diff) < 0.1) {
+            return Math.random() - 0.5;
+        }
+        return diff;
+    });
     
     // 조합 1: [최강, 최약] vs [차강, 차약] - 완벽 밸런스
     const teamA1 = [sorted[0], sorted[3]].map(p => p.userId).sort();
     const teamB1 = [sorted[1], sorted[2]].map(p => p.userId).sort();
-    const score1A = sorted[0].combinedScore + sorted[3].combinedScore;
-    const score1B = sorted[1].combinedScore + sorted[2].combinedScore;
+    const score1A = (sorted[0].dupr || 0) + (sorted[3].dupr || 0);
+    const score1B = (sorted[1].dupr || 0) + (sorted[2].dupr || 0);
     const diff1 = Math.abs(score1A - score1B);
     configs.push({ teamA: teamA1, teamB: teamB1, balanceDiff: diff1 });
     
     // 조합 2: [최강, 차약] vs [차강, 최약] - 약간의 차이 있지만 밸런스
     const teamA2 = [sorted[0], sorted[2]].map(p => p.userId).sort();
     const teamB2 = [sorted[1], sorted[3]].map(p => p.userId).sort();
-    const score2A = sorted[0].combinedScore + sorted[2].combinedScore;
-    const score2B = sorted[1].combinedScore + sorted[3].combinedScore;
+    const score2A = (sorted[0].dupr || 0) + (sorted[2].dupr || 0);
+    const score2B = (sorted[1].dupr || 0) + (sorted[3].dupr || 0);
     const diff2 = Math.abs(score2A - score2B);
-    const totalScore = sorted.reduce((sum, p) => sum + p.combinedScore, 0);
+    const totalScore = sorted.reduce((sum, p) => sum + (p.dupr || 0), 0);
     const avgScore = totalScore / 2;
     
     // 점수 차이가 평균의 30% 이내면 밸런스로 인정
@@ -9366,8 +9385,15 @@ function createBalancedTeamConfigs(candidate) {
         configs.push({ teamA: teamB2, teamB: teamA2, balanceDiff: diff2 });
     }
     
-    // 밸런스 차이 순으로 정렬 (더 나은 밸런스 우선)
-    configs.sort((a, b) => a.balanceDiff - b.balanceDiff);
+    // 밸런스 차이 순으로 정렬하되, 비슷한 밸런스 차이 내에서는 랜덤하게 섞기
+    configs.sort((a, b) => {
+        const diff = a.balanceDiff - b.balanceDiff;
+        // 밸런스 차이가 0.2 이내면 비슷한 것으로 간주하고 랜덤하게 섞기
+        if (Math.abs(diff) < 0.2) {
+            return Math.random() - 0.5;
+        }
+        return diff;
+    });
     
     // balanceDiff 제거하고 teamA, teamB만 반환
     return configs.map(config => ({ teamA: config.teamA, teamB: config.teamB }));
@@ -9700,8 +9726,20 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 예: 7명이면 각 라운드마다 다른 4명 조합으로 구성하여 모든 플레이어 참여 보장
             // 모든 플레이어를 정렬된 배열로 유지
             let sortedAllPlayers;
-            if (teamMode === 'balanced' || teamMode === 'grouped') {
-                // 밸런스 모드와 그룹 모드: 점수 순으로 정렬
+            if (teamMode === 'balanced') {
+                // 밸런스 모드: DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                sortedAllPlayers = [...courtPlayerList].sort((a, b) => {
+                    const duprA = b.dupr || 0;
+                    const duprB = a.dupr || 0;
+                    const diff = duprA - duprB;
+                    // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                    if (Math.abs(diff) < 0.1) {
+                        return Math.random() - 0.5;
+                    }
+                    return diff;
+                });
+            } else if (teamMode === 'grouped') {
+                // 그룹 모드: 점수 순으로 정렬 (기존 로직 유지)
                 // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                 sortedAllPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
             } else {
@@ -9727,12 +9765,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 // 각 라운드마다 현재까지 참여 횟수가 가장 적은 4명을 선택
                 const availablePlayers = [...sortedAllPlayers];
                 
-                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
+                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 DUPR 점수 고려 후 랜덤)
                 availablePlayers.sort((a, b) => {
                     const countA = playerPlayCount[a.userId] || 0; // 현재 대진표 내 참여 횟수
                     const countB = playerPlayCount[b.userId] || 0; // 현재 대진표 내 참여 횟수
                     if (countA !== countB) {
                         return countA - countB; // 참여 횟수가 적은 순
+                    }
+                    // 밸런스 모드에서는 같은 횟수일 때 DUPR 점수 범위 내에서 랜덤하게 섞기
+                    if (teamMode === 'balanced') {
+                        const duprA = b.dupr || 0;
+                        const duprB = a.dupr || 0;
+                        const diff = duprA - duprB;
+                        // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                        if (Math.abs(diff) < 0.1) {
+                            return Math.random() - 0.5;
+                        }
+                        return diff;
                     }
                     // 같은 횟수면 랜덤하게 순서 섞기 (다양한 조합 생성)
                     return Math.random() - 0.5;
@@ -9802,7 +9851,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 고유한 조합을 찾지 못했으면 랜덤하게 선택
                         fourPlayers = shuffled.slice(0, 4);
                         if (teamMode === 'balanced') {
-                            const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+                            // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                            const sorted = [...fourPlayers].sort((a, b) => {
+                                const duprA = b.dupr || 0;
+                                const duprB = a.dupr || 0;
+                                const diff = duprA - duprB;
+                                // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                                if (Math.abs(diff) < 0.1) {
+                                    return Math.random() - 0.5;
+                                }
+                                return diff;
+                            });
                             selectedTeamA = [sorted[0], sorted[3]];
                             selectedTeamB = [sorted[1], sorted[2]];
                         } else {
@@ -9825,7 +9884,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         .slice(0, needed);
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
-                    if (teamMode === 'balanced' || teamMode === 'grouped') {
+                    if (teamMode === 'balanced') {
+                        // DUPR 점수 순으로 정렬
+                        const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        selectedTeamA = [sorted[0], sorted[3]];
+                        selectedTeamB = [sorted[1], sorted[2]];
+                    } else if (teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -9839,7 +9903,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 // 안전장치: fourPlayers가 없으면 처음 4명 선택
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
-                    if (teamMode === 'balanced' || teamMode === 'grouped') {
+                    if (teamMode === 'balanced') {
+                        // DUPR 점수 순으로 정렬
+                        const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        selectedTeamA = [sorted[0], sorted[3]];
+                        selectedTeamB = [sorted[1], sorted[2]];
+                    } else if (teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -9897,8 +9966,20 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 4명 단위로 나누어떨어지는 경우에도 로테이션 적용
             // 모든 플레이어가 다양한 조합으로 경기하도록 개선
             let sortedAllPlayers;
-            if (teamMode === 'balanced' || teamMode === 'grouped') {
-                // 밸런스 모드와 그룹 모드: 점수 순으로 정렬
+            if (teamMode === 'balanced') {
+                // 밸런스 모드: DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                sortedAllPlayers = [...courtPlayerList].sort((a, b) => {
+                    const duprA = b.dupr || 0;
+                    const duprB = a.dupr || 0;
+                    const diff = duprA - duprB;
+                    // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                    if (Math.abs(diff) < 0.1) {
+                        return Math.random() - 0.5;
+                    }
+                    return diff;
+                });
+            } else if (teamMode === 'grouped') {
+                // 그룹 모드: 점수 순으로 정렬 (기존 로직 유지)
                 // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                 sortedAllPlayers = [...courtPlayerList].sort((a, b) => b.combinedScore - a.combinedScore);
             } else {
@@ -9919,12 +10000,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             for (let r = 1; r <= rounds; r++) {
                 const availablePlayers = [...sortedAllPlayers];
                 
-                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
+                // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 DUPR 점수 고려 후 랜덤)
                 availablePlayers.sort((a, b) => {
                     const countA = playerPlayCount[a.userId] || 0;
                     const countB = playerPlayCount[b.userId] || 0;
                     if (countA !== countB) {
                         return countA - countB;
+                    }
+                    // 밸런스 모드에서는 같은 횟수일 때 DUPR 점수 범위 내에서 랜덤하게 섞기
+                    if (teamMode === 'balanced') {
+                        const duprA = b.dupr || 0;
+                        const duprB = a.dupr || 0;
+                        const diff = duprA - duprB;
+                        // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                        if (Math.abs(diff) < 0.1) {
+                            return Math.random() - 0.5;
+                        }
+                        return diff;
                     }
                     // 같은 횟수면 랜덤하게 순서 섞기
                     return Math.random() - 0.5;
@@ -9991,7 +10083,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 고유한 조합을 찾지 못했으면 랜덤하게 선택
                         fourPlayers = shuffled.slice(0, 4);
                         if (teamMode === 'balanced') {
-                            const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
+                            // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                            const sorted = [...fourPlayers].sort((a, b) => {
+                                const duprA = b.dupr || 0;
+                                const duprB = a.dupr || 0;
+                                const diff = duprA - duprB;
+                                // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                                if (Math.abs(diff) < 0.1) {
+                                    return Math.random() - 0.5;
+                                }
+                                return diff;
+                            });
                             selectedTeamA = [sorted[0], sorted[3]];
                             selectedTeamB = [sorted[1], sorted[2]];
                         } else {
@@ -10014,7 +10116,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         .slice(0, needed);
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
-                    if (teamMode === 'balanced' || teamMode === 'grouped') {
+                    if (teamMode === 'balanced') {
+                        // DUPR 점수 순으로 정렬
+                        const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        selectedTeamA = [sorted[0], sorted[3]];
+                        selectedTeamB = [sorted[1], sorted[2]];
+                    } else if (teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -10028,7 +10135,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 // 안전장치: fourPlayers가 없으면 처음 4명 선택
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
-                    if (teamMode === 'balanced' || teamMode === 'grouped') {
+                    if (teamMode === 'balanced') {
+                        // DUPR 점수 순으로 정렬
+                        const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        selectedTeamA = [sorted[0], sorted[3]];
+                        selectedTeamB = [sorted[1], sorted[2]];
+                    } else if (teamMode === 'grouped') {
                         const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -10123,8 +10235,22 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     
                     if (fourPlayers.length === 4) {
                         let teamA, teamB;
-                        if (teamMode === 'balanced' || teamMode === 'grouped') {
-                            // 점수 순으로 정렬
+                        if (teamMode === 'balanced') {
+                            // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                            const sorted = [...fourPlayers].sort((a, b) => {
+                                const duprA = b.dupr || 0;
+                                const duprB = a.dupr || 0;
+                                const diff = duprA - duprB;
+                                // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+                                if (Math.abs(diff) < 0.1) {
+                                    return Math.random() - 0.5;
+                                }
+                                return diff;
+                            });
+                            teamA = [sorted[0], sorted[3]];
+                            teamB = [sorted[1], sorted[2]];
+                        } else if (teamMode === 'grouped') {
+                            // 점수 순으로 정렬 (기존 로직 유지)
                             // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
                             const sorted = [...fourPlayers].sort((a, b) => b.combinedScore - a.combinedScore);
                             teamA = [sorted[0], sorted[3]];
