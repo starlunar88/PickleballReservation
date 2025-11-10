@@ -2130,45 +2130,6 @@ async function loadMatchesForDate(date) {
                     
                     // 각 라운드의 경기 렌더링 (코트별로 한 줄씩)
                     roundMatches.forEach(match => {
-                        // 계급 아이콘 생성 헬퍼 함수 (점수 기준: 승리 +10점, 패배 -5점)
-                        // 실제 게임 점수만 사용 (internalRating은 사용하지 않음)
-                        const getTierIcon = (score) => {
-                            // 점수는 승리 +10점, 패배 -5점으로 계산되므로 0 이상의 정수값만 사용
-                            const actualScore = score || 0;
-                            
-                            if (actualScore >= 2000) {
-                                return '<i class="fas fa-trophy" style="font-size: 0.75rem; color: #764ba2; margin-right: 3px;"></i>'; // GOAT
-                            } else if (actualScore >= 1500) {
-                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>'; // 레전드
-                            } else if (actualScore >= 1000) {
-                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #c0c0c0; margin-right: 3px;"></i>'; // 마스터
-                            } else if (actualScore >= 500) {
-                                return '<i class="fas fa-medal" style="font-size: 0.75rem; color: #cd7f32; margin-right: 3px;"></i>'; // 챔피언
-                            } else if (actualScore >= 300) {
-                                return '<i class="fas fa-star" style="font-size: 0.75rem; color: #ffd700; margin-right: 3px;"></i>'; // 프로
-                            } else if (actualScore >= 100) {
-                                return '<i class="fas fa-table-tennis" style="font-size: 0.75rem; color: #ff69b4; margin-right: 3px;"></i>'; // 플레이어
-                            } else {
-                                // 점수가 0-99면 초보자로 표시 (새싹 아이콘)
-                                return '<i class="fas fa-seedling" style="font-size: 0.75rem; color: #51cf66; margin-right: 3px;"></i>';
-                            }
-                        };
-                        
-                        // 팀 A 이름들을 배열로 (계급 아이콘 포함)
-                        const teamANames = match.teamA.map(p => {
-                            // 실제 게임 점수만 사용 (score 필드)
-                            // score가 없으면 0으로 처리하여 NEW로 표시
-                            const score = p.score || 0;
-                            const tierIcon = getTierIcon(score);
-                            return `${tierIcon}${p.userName}`;
-                        });
-                        // 팀 B 이름들을 배열로 (계급 아이콘 포함)
-                        const teamBNames = match.teamB.map(p => {
-                            // 실제 게임 점수만 사용 (score 필드)
-                            const score = p.score || 0;
-                            const tierIcon = getTierIcon(score);
-                            return `${tierIcon}${p.userName}`;
-                        });
                         const scoreA = match.scoreA ?? '';
                         const scoreB = match.scoreB ?? '';
                         const isCompleted = match.status === 'completed';
