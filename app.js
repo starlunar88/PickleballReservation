@@ -2189,6 +2189,9 @@ async function loadMatchesForDate(date) {
             
             // 컴팩트 스타일 강제 적용
             setTimeout(() => {
+                // 모바일 감지
+                const isMobile = window.innerWidth <= 768;
+                
                 const timeSlotSections = matchesContainer.querySelectorAll('.time-slot-section');
                 timeSlotSections.forEach(el => {
                     el.style.marginBottom = '0';
@@ -2255,9 +2258,9 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '1px';
+                    el.style.gap = isMobile ? '1px' : '1px';
                     el.style.flexWrap = 'nowrap';
-                    el.style.padding = '3px 2px';
+                    el.style.padding = isMobile ? '3px 1px' : '3px 2px';
                     el.style.marginBottom = '3px';
                     el.style.borderBottom = '1px solid #e0e0e0';
                 });
@@ -2265,8 +2268,8 @@ async function loadMatchesForDate(date) {
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
                 courtLabels.forEach((el) => {
                     el.style.fontWeight = '700';
-                    el.style.fontSize = '0.9rem';
-                    el.style.minWidth = '24px';
+                    el.style.fontSize = isMobile ? '0.8rem' : '0.9rem';
+                    el.style.minWidth = isMobile ? '20px' : '24px';
                     el.style.flexShrink = '0';
                     el.style.padding = '0';
                     el.style.marginRight = '0';
@@ -2293,10 +2296,11 @@ async function loadMatchesForDate(date) {
                 
                 const playerNames = matchesContainer.querySelectorAll('.player-names-compact');
                 playerNames.forEach(el => {
-                    el.style.fontSize = '1.15rem';
+                    el.style.fontSize = isMobile ? '0.9rem' : '1.15rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#1a1a1a';
-                    el.style.flex = '0 0 auto';
+                    el.style.flex = '0 1 auto';
+                    el.style.flexShrink = '1';
                     el.style.textAlign = 'left';
                     el.style.wordBreak = 'break-word';
                     el.style.lineHeight = '1.3';
@@ -2315,27 +2319,27 @@ async function loadMatchesForDate(date) {
                 
                 const vsSeparators = matchesContainer.querySelectorAll('.vs-separator-compact');
                 vsSeparators.forEach(el => {
-                    el.style.fontSize = '0.8rem';
+                    el.style.fontSize = isMobile ? '0.7rem' : '0.8rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#667eea';
-                    el.style.margin = '0 1px';
+                    el.style.margin = isMobile ? '0' : '0 1px';
                     el.style.flexShrink = '0';
                 });
                 
                 // 점수 입력 필드 스타일 (여백 최소화)
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
-                    el.style.padding = '2px 3px';
+                    el.style.padding = isMobile ? '2px 2px' : '2px 3px';
                     el.style.border = '1px solid #ccc';
                     el.style.borderRadius = '3px';
                     el.style.textAlign = 'center';
-                    el.style.fontSize = '0.85rem';
+                    el.style.fontSize = isMobile ? '0.75rem' : '0.85rem';
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
                     el.style.flex = '0 0 auto';
-                    el.style.width = '40px';
-                    el.style.minWidth = '40px';
-                    el.style.maxWidth = '40px';
+                    el.style.width = isMobile ? '35px' : '40px';
+                    el.style.minWidth = isMobile ? '35px' : '40px';
+                    el.style.maxWidth = isMobile ? '35px' : '40px';
                     el.style.boxSizing = 'border-box';
                     el.style.margin = '0';
                 });
@@ -2475,6 +2479,8 @@ async function loadMatchesForDate(date) {
                 const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
                 saveBtns.forEach(el => {
                     el.style.flexShrink = '0';
+                    el.style.padding = isMobile ? '3px 6px' : '4px 10px';
+                    el.style.fontSize = isMobile ? '0.7rem' : '0.8rem';
                     // 완료 상태인지 확인
                     const isCompleted = el.classList.contains('completed') || el.textContent.includes('수정');
                     
@@ -2503,12 +2509,10 @@ async function loadMatchesForDate(date) {
                     }
                     
                     el.style.border = 'none';
-                    el.style.padding = '4px 10px';
                     el.style.borderRadius = '3px';
-                    el.style.fontSize = '0.8rem';
                     el.style.fontWeight = '600';
                     el.style.cursor = 'pointer';
-                    el.style.marginLeft = '8px';
+                    el.style.marginLeft = isMobile ? '4px' : '8px';
                 });
                 
                 console.log('✅ 컴팩트 스타일 적용 완료');
@@ -2683,12 +2687,15 @@ async function loadMatchesForDate(date) {
         const dateTimeDisplay = document.getElementById('match-date-time');
         if (dateTimeDisplay) {
             const dateObj = new Date(date);
-            const formattedDate = dateObj.toLocaleDateString('ko-KR', {
+            const datePart = dateObj.toLocaleDateString('ko-KR', {
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric',
-                weekday: 'short'
+                day: 'numeric'
             });
+            const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
+                weekday: 'long'
+            });
+            const formattedDate = `${datePart} (${weekdayPart})`;
             dateTimeDisplay.textContent = formattedDate;
         }
         
