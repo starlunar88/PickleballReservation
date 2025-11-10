@@ -2154,17 +2154,13 @@ async function loadMatchesForDate(date) {
                         
                         matchesHTML += 
                             '<div class="match-item-compact" data-match-id="' + match.id + '">' +
-                                '<div class="match-players-row">' +
+                                '<div class="match-single-row">' +
                                     '<span class="court-label-compact">코트#' + courtNum + '</span>' +
                                     '<span class="player-names-compact ' + teamAClass + '">' + teamALabel + '</span>' +
-                                    '<span class="vs-separator-compact">vs</span>' +
-                                    '<span class="player-names-compact ' + teamBClass + '">' + teamBLabel + '</span>' +
-                                '</div>' +
-                                '<div class="match-score-row">' +
-                                    '<span class="score-spacer-compact"></span>' +
                                     '<input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-' + safeId + '" placeholder="15" value="' + scoreAStr + '" ' + readonlyAttr + '>' +
                                     '<span class="vs-separator-compact">vs</span>' +
                                     '<input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-' + safeId + '" placeholder="15" value="' + scoreBStr + '" ' + readonlyAttr + '>' +
+                                    '<span class="player-names-compact ' + teamBClass + '">' + teamBLabel + '</span>' +
                                     '<button class="save-score-btn-compact ' + completedClass + '" id="save-' + safeId + '" ' + (isCompleted ? '' : '') + '>' +
                                         buttonText +
                                     '</button>' +
@@ -2241,27 +2237,29 @@ async function loadMatchesForDate(date) {
                     el.style.borderRadius = '4px';
                 });
                 
-                // 매치 아이템을 두 줄로 표시
+                // 매치 아이템 스타일 (한 줄 레이아웃)
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
                 matchItems.forEach(el => {
-                    el.style.padding = '3px 4px';
+                    el.style.padding = '0';
                     el.style.marginBottom = '3px';
-                    el.style.borderBottom = '1px solid #e0e0e0';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
                     el.style.display = 'flex';
                     el.style.flexDirection = 'column';
-                    el.style.gap = '3px';
+                    el.style.gap = '0';
                 });
                 
-                // 플레이어 이름 줄
-                const matchPlayersRows = matchesContainer.querySelectorAll('.match-players-row');
-                matchPlayersRows.forEach(el => {
+                // 한 줄 레이아웃
+                const matchSingleRows = matchesContainer.querySelectorAll('.match-single-row');
+                matchSingleRows.forEach(el => {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '2px';
+                    el.style.gap = '4px';
                     el.style.flexWrap = 'nowrap';
+                    el.style.padding = '3px 4px';
+                    el.style.marginBottom = '3px';
+                    el.style.borderBottom = '1px solid #e0e0e0';
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
@@ -2323,24 +2321,7 @@ async function loadMatchesForDate(date) {
                     el.style.flexShrink = '0';
                 });
                 
-                // 점수 입력 줄
-                const matchScoreRows = matchesContainer.querySelectorAll('.match-score-row');
-                matchScoreRows.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.flexDirection = 'row';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '2px';
-                    el.style.flexWrap = 'nowrap';
-                });
-                
-                // 점수 입력 줄의 빈 공간 (코트 라벨과 같은 너비 + 패딩 고려)
-                const scoreSpacers = matchesContainer.querySelectorAll('.score-spacer-compact');
-                scoreSpacers.forEach(el => {
-                    el.style.minWidth = '52px';
-                    el.style.flexShrink = '0';
-                });
-                
-                // 점수 입력 필드가 플레이어 이름과 정렬되도록
+                // 점수 입력 필드 스타일
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
                     el.style.padding = '3px 5px';
@@ -2351,96 +2332,11 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
                     el.style.flex = '0 0 auto';
-                    el.style.minWidth = '45px';
-                    el.style.maxWidth = 'none';
+                    el.style.width = '50px';
+                    el.style.minWidth = '50px';
+                    el.style.maxWidth = '50px';
                     el.style.boxSizing = 'border-box';
                 });
-                
-                // 점수 입력 줄의 vs가 플레이어 이름 줄의 vs와 정렬되도록
-                // 점수 입력 박스의 너비를 플레이어 이름의 너비에 정확히 맞추기
-                const adjustScoreBoxWidths = () => {
-                    matchScoreRows.forEach((scoreRow) => {
-                        const matchItem = scoreRow.closest('.match-item-compact');
-                        if (!matchItem) return;
-                        
-                        const playersRow = matchItem.querySelector('.match-players-row');
-                        if (!playersRow) return;
-                        
-                        const firstPlayerName = playersRow.querySelector('.player-names-compact:first-of-type');
-                        const secondPlayerName = playersRow.querySelector('.player-names-compact:last-of-type');
-                        const scoreInputs = scoreRow.querySelectorAll('.score-input-compact');
-                        
-                        if (firstPlayerName && scoreInputs.length >= 1) {
-                            // 첫 번째 점수 입력 필드의 너비를 첫 번째 플레이어 이름과 정확히 맞추기
-                            const firstScoreInput = scoreInputs[0];
-                            
-                            // offsetWidth를 사용하여 실제 렌더링 너비 측정 (더 정확함)
-                            const playerNameWidth = firstPlayerName.offsetWidth;
-                            
-                            // 점수 입력 박스의 padding과 border를 고려한 너비 설정
-                            const computedStyle = window.getComputedStyle(firstScoreInput);
-                            const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
-                            const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
-                            const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
-                            const borderRight = parseFloat(computedStyle.borderRightWidth) || 0;
-                            
-                            // box-sizing이 border-box이므로 전체 너비를 설정
-                            firstScoreInput.style.boxSizing = 'border-box';
-                            firstScoreInput.style.width = playerNameWidth + 'px';
-                            firstScoreInput.style.flex = '0 0 auto';
-                            firstScoreInput.style.flexShrink = '0';
-                            firstScoreInput.style.flexGrow = '0';
-                            firstScoreInput.style.minWidth = playerNameWidth + 'px';
-                            firstScoreInput.style.maxWidth = playerNameWidth + 'px';
-                            
-                            // 두 번째 점수 입력 필드도 두 번째 플레이어 이름과 정확히 맞추기
-                            if (scoreInputs.length >= 2 && secondPlayerName) {
-                                const secondScoreInput = scoreInputs[1];
-                                const secondPlayerNameWidth = secondPlayerName.offsetWidth;
-                                
-                                secondScoreInput.style.boxSizing = 'border-box';
-                                secondScoreInput.style.width = secondPlayerNameWidth + 'px';
-                                secondScoreInput.style.flex = '0 0 auto';
-                                secondScoreInput.style.flexShrink = '0';
-                                secondScoreInput.style.flexGrow = '0';
-                                secondScoreInput.style.minWidth = secondPlayerNameWidth + 'px';
-                                secondScoreInput.style.maxWidth = secondPlayerNameWidth + 'px';
-                            }
-                        }
-                    });
-                };
-                
-                // ResizeObserver를 사용하여 동적으로 조정
-                const resizeObserver = new ResizeObserver(() => {
-                    adjustScoreBoxWidths();
-                });
-                
-                // 모든 match-item에 ResizeObserver 연결
-                matchScoreRows.forEach((scoreRow) => {
-                    const matchItem = scoreRow.closest('.match-item-compact');
-                    if (matchItem) {
-                        resizeObserver.observe(matchItem);
-                    }
-                });
-                
-                // requestAnimationFrame을 사용하여 렌더링 완료 후 정확하게 측정
-                const adjustWithRAF = () => {
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            adjustScoreBoxWidths();
-                            // 추가로 여러 번 실행하여 정확성 보장
-                            setTimeout(adjustScoreBoxWidths, 10);
-                            setTimeout(adjustScoreBoxWidths, 50);
-                            setTimeout(adjustScoreBoxWidths, 100);
-                        });
-                    });
-                };
-                
-                // DOM이 완전히 렌더링된 후 실행
-                setTimeout(adjustWithRAF, 50);
-                setTimeout(adjustWithRAF, 200);
-                setTimeout(adjustWithRAF, 400);
-                setTimeout(adjustWithRAF, 600);
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
                 matchTeams.forEach(el => {
