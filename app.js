@@ -708,6 +708,20 @@ async function isAdmin(user) {
     }
 }
 
+// 예약 인원에 따른 코트 수 계산 함수
+// 4명 = 1코트, 8명 = 2코트, 12명 이상 = 3코트에 분배
+function calculateCourtCount(playerCount, maxCourts = 3) {
+    if (playerCount < 4) {
+        return 1; // 4명 미만은 1코트
+    } else if (playerCount < 8) {
+        return 1; // 4-7명은 1코트
+    } else if (playerCount < 12) {
+        return 2; // 8-11명은 2코트
+    } else {
+        return Math.min(3, maxCourts); // 12명 이상은 3코트 (최대 코트 수 제한)
+    }
+}
+
 // 시스템 설정 가져오기
 async function getSystemSettings() {
     try {
@@ -721,7 +735,7 @@ async function getSystemSettings() {
         }
         // 기본 설정 반환
         return {
-            courtCount: 2,
+            courtCount: 3,
             timeSlots: [
                 { start: "09:00", end: "10:00" },
                 { start: "10:00", end: "11:00" },
@@ -1229,7 +1243,7 @@ async function openAdminSettingsModal() {
         
         if (settings) {
             // 설정값을 UI에 반영
-            document.getElementById('court-count').value = settings.courtCount || 2;
+            document.getElementById('court-count').value = settings.courtCount || 3;
             document.getElementById('closing-time').value = settings.closingTime || 60;
             
             // 시간 슬롯 로드
@@ -1245,7 +1259,7 @@ async function openAdminSettingsModal() {
             }
         } else {
             // 설정이 없으면 기본값으로 초기화
-            document.getElementById('court-count').value = 2;
+            document.getElementById('court-count').value = 3;
             document.getElementById('closing-time').value = 60;
             addTimeSlotItem('09:00', '10:00');
         }
@@ -5498,17 +5512,11 @@ async function loadReservationsTimeline() {
             }
             
             // 실제 사용할 코트 수 계산 (대진표 생성 로직과 동일)
-            const maxCourts = settings.courtCount || 2; // 최대 코트 수
+            const maxCourts = settings.courtCount || 3; // 최대 코트 수
             const currentCount = reservations.length;
             
-            // 대진표 생성 로직과 동일하게 실제 사용 코트 수 계산
-            let actualCourtCount = Math.ceil(currentCount / 4); // 최소 필요한 코트 수
-            actualCourtCount = Math.min(actualCourtCount, maxCourts); // 최대 코트 수 제한
-            
-            // 플레이어 수가 실제 코트 수의 4배보다 작으면 1코트에 모두 배정 (로테이션 방식)
-            if (currentCount > 0 && currentCount < actualCourtCount * 4) {
-                actualCourtCount = 1;
-            }
+            // 예약 인원에 따른 코트 수 계산 (4명=1코트, 8명=2코트, 12명 이상=3코트)
+            let actualCourtCount = calculateCourtCount(currentCount, maxCourts);
             
             // 실제 기준 인원 계산 (실제 사용 코트 * 4)
             const basePlayerCount = actualCourtCount * 4;
@@ -8332,7 +8340,7 @@ async function processTimeSlotReservations(date, timeSlot) {
             
             // 시스템 설정에서 최대 코트 수 가져오기
             const settings = await getSystemSettings();
-            const maxCourts = settings?.courtCount || 2; // 기본값 2
+            const maxCourts = settings?.courtCount || 3; // 기본값 3
             
             // 코트 수에 따라 사용할 수 있는 최대 플레이어 수 계산
             // 코트 수 * 4 = 최대 플레이어 수
@@ -9160,31 +9168,14 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         
         // 시스템 설정에서 최대 코트 수 가져오기
         const settings = await getSystemSettings();
-        const maxCourts = settings?.courtCount || 2; // 기본값 2
+        const maxCourts = settings?.courtCount || 3; // 기본값 3
         
         // 예약자 수에 따라 코트 수 동적 결정
-        // 모든 플레이어가 배정되도록 코트 수 계산
-        // 최소 코트 수: Math.ceil(플레이어 수 / 4) (4명당 1코트)
-        // 최대 코트 수 제한 적용
+        // 4명 = 1코트, 8명 = 2코트, 12명 이상 = 3코트에 분배
         const playerCount = players.length;
-        let courtCount = Math.ceil(playerCount / 4); // 모든 플레이어를 배정하기 위한 최소 코트 수
-        courtCount = Math.min(courtCount, maxCourts); // 최대 코트 수 제한
+        const courtCount = calculateCourtCount(playerCount, maxCourts);
         
-        // 최소 1코트는 보장
-        if (courtCount < 1) {
-            courtCount = 1;
-        }
-        
-        // 플레이어 수가 코트 수의 4배보다 작으면 모든 플레이어를 1코트에 배정
-        // 예: 5명, 2코트 → 1코트에 5명 모두 배정 (로테이션 방식)
-        //     7명, 2코트 → 1코트에 7명 모두 배정 (로테이션 방식)
-        //     8명, 2코트 → 코트 1: 4명, 코트 2: 4명 (정상)
-        if (playerCount < courtCount * 4) {
-            console.log(`⚠️ 플레이어 수(${playerCount}명)가 코트 수(${courtCount})의 4배보다 적어서 1코트에 모두 배정합니다.`);
-            courtCount = 1;
-        }
-        
-        console.log(`📊 코트 배정: 예약자 ${playerCount}명, 계산된 코트 수: ${Math.ceil(playerCount / 4)}, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}`);
+        console.log(`📊 코트 배정: 예약자 ${playerCount}명, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}`);
         
         // 기존 대진표 확인 및 삭제
         const existingMatches = await db.collection('matches')
