@@ -2212,19 +2212,26 @@ async function loadMatchesForDate(date) {
                             gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
                         }
                     
+                        // 팀 이름에서 아이콘 제거 (간단한 형식)
+                        const teamALabel = match.teamA.map(p => p.userName).join(',');
+                        const teamBLabel = match.teamB.map(p => p.userName).join(',');
+                        
+                        // 점수 표시 형식: 점수가 있으면 [점수], 없으면 빈 문자열
+                        const scoreADisplay = scoreA !== null && scoreA !== undefined && scoreA !== '' ? `[${scoreA}]` : '';
+                        const scoreBDisplay = scoreB !== null && scoreB !== undefined && scoreB !== '' ? `[${scoreB}]` : '';
+                        
+                        // 점수가 있을 때만 공백 포함
+                        const scoreASpace = scoreADisplay ? ' ' : '';
+                        const scoreBSpace = scoreBDisplay ? ' ' : '';
+                        
                         matchesHTML += `
                             <div class="match-item-compact" data-match-id="${match.id}">
-                                <div class="match-header-compact">
-                                    <span class="match-info-compact">${roundNum}경기 ${gameStart} ~ ${gameEnd}</span>
+                                <div class="match-court-simple-compact">
+                                    <span class="court-label-compact">코트#${courtNum}</span>
+                                    <span class="player-names-compact">${teamALabel}${scoreASpace}${scoreADisplay} vs ${scoreBSpace}${scoreBDisplay}${teamBLabel}</span>
                                 </div>
-                                <div class="match-teams-compact">
-                                    <div class="team-compact">
-                                        ${teamANames.map(name => `<div class="team-name-compact">${name}</div>`).join('')}
-                                    </div>
-                                    <span class="team-vs-compact">vs</span>
-                                    <div class="team-compact">
-                                        ${teamBNames.map(name => `<div class="team-name-compact">${name}</div>`).join('')}
-                                    </div>
+                                <div class="match-header-compact">
+                                    <span class="match-info-compact">${roundNum}경기 : ${gameStart}~${gameEnd}</span>
                                 </div>
                                 <div class="match-score-input-compact">
                                     <input type="number" class="score-input-compact" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
@@ -2351,6 +2358,39 @@ async function loadMatchesForDate(date) {
                     el.style.fontSize = '0.7rem';
                     el.style.color = '#000';
                     el.style.fontWeight = '500';
+                });
+                
+                // 간단한 대진표 스타일 추가
+                const matchCourtSimples = matchesContainer.querySelectorAll('.match-court-simple-compact');
+                matchCourtSimples.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '12px';
+                    el.style.marginBottom = '8px';
+                    el.style.padding = '10px';
+                    el.style.background = 'linear-gradient(135deg, #f8f9fc 0%, #f0f4ff 100%)';
+                    el.style.borderRadius = '8px';
+                    el.style.border = '1px solid #e2e8f0';
+                });
+                
+                const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
+                courtLabels.forEach(el => {
+                    el.style.fontWeight = '700';
+                    el.style.fontSize = '1rem';
+                    el.style.color = '#667eea';
+                    el.style.minWidth = '60px';
+                    el.style.flexShrink = '0';
+                });
+                
+                const playerNames = matchesContainer.querySelectorAll('.player-names-compact');
+                playerNames.forEach(el => {
+                    el.style.fontSize = '1.3rem';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#1a1a1a';
+                    el.style.flex = '1';
+                    el.style.textAlign = 'center';
+                    el.style.wordBreak = 'break-word';
+                    el.style.lineHeight = '1.5';
                 });
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
