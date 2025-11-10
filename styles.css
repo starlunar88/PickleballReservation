@@ -2255,9 +2255,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .matches-container {
     max-width: 100%;
     margin: 0;
-    padding: 0 2px 140px 2px; /* 예약, 대진표 탭 수준의 여백 */
+    padding: 0 8px 140px 8px; /* 좌우 여백 증가로 잘림 방지 */
     width: 100%;
     box-sizing: border-box;
+    overflow-x: visible !important; /* 가로 스크롤 방지 */
+    overflow-y: visible !important; /* 세로 스크롤 허용 */
 }
 
 /* 기간 선택 버튼 (기록탭 - 통계탭 스타일로 변경) */
@@ -4616,8 +4618,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     /* 모바일에서 한 줄 레이아웃 스타일 */
     .match-single-row {
-        gap: 1px !important;
-        padding: 3px 1px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        padding: 3px 2px !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
     }
     
     .court-label-compact {
@@ -4629,6 +4638,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.9rem !important;
         flex: 0 1 auto !important;
         flex-shrink: 1 !important;
+        min-width: 0 !important; /* flexbox에서 잘림 방지 */
+        overflow: visible !important;
+        word-wrap: break-word !important;
+        white-space: normal !important;
     }
     
     .score-input-compact {
@@ -4648,6 +4661,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 3px 6px !important;
         font-size: 0.7rem !important;
         margin-left: 4px !important;
+        flex-shrink: 0 !important; /* 버튼이 잘리지 않도록 */
+        white-space: nowrap !important;
     }
     
     .match-schedule {
@@ -5481,11 +5496,88 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     max-width: 100%;
     margin: 0 auto;
     width: 100%;
-    padding: 0 2px 160px 2px; /* 모바일 하단 탭바를 위한 여백 증가 (140px -> 160px) */
+    padding: 0 8px 160px 8px; /* 좌우 여백 증가로 잘림 방지 */
     min-height: calc(100vh - 200px);
     box-sizing: border-box;
-    overflow-x: hidden; /* 가로 스크롤 방지 */
-    overflow-y: visible; /* 세로 스크롤 허용하여 내용이 잘리지 않도록 */
+    overflow-x: visible !important; /* 가로 스크롤 방지 */
+    overflow-y: visible !important; /* 세로 스크롤 허용하여 내용이 잘리지 않도록 */
+}
+
+/* 대진표 섹션 스타일 */
+.time-slot-section {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    margin-bottom: 20px !important;
+}
+
+.rounds-container {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+}
+
+.round-section {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    margin-bottom: 10px !important;
+    padding: 6px !important;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%) !important;
+    border-radius: 6px !important;
+}
+
+.round-header-compact {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: #1a1a1a !important;
+    padding: 5px 8px !important;
+    margin-bottom: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    word-wrap: break-word !important;
+}
+
+.match-item-compact {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    padding: 0 !important;
+    margin-bottom: 3px !important;
+}
+
+/* 참가자 목록 잘림 방지 */
+.time-slot-section > div[style*="밸런스 모드"],
+.time-slot-section > div[style*="랜덤 모드"],
+.time-slot-section > div[style*="그룹 모드"] {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    word-wrap: break-word !important;
+    white-space: normal !important;
+    padding: 4px 8px !important;
+    margin-bottom: 4px !important;
+    font-size: 0.85rem !important;
+    color: #666 !important;
+}
+
+/* time-slot-header-compact 스타일 */
+.time-slot-header-compact {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    word-wrap: break-word !important;
+    white-space: normal !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
 }
 
 /* 대진표 섹션 스타일 (하위 호환성) */
@@ -5496,8 +5588,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     margin-top: 20px;
     padding: 16px 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
-    overflow: visible; /* 내용이 잘리지 않도록 */
+    overflow: visible !important; /* 내용이 잘리지 않도록 */
+    overflow-x: visible !important; /* 가로 스크롤 허용 */
+    overflow-y: visible !important; /* 세로 스크롤 허용 */
     min-height: 200px;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .match-info {
@@ -5516,12 +5612,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .match-schedule,
 #match-schedule {
     margin-top: 20px !important;
-    padding-right: 5px !important;
+    padding: 0 4px !important; /* 좌우 여백 추가 */
     display: flex !important;
     flex-direction: column !important;
     gap: 30px !important;
     overflow-y: visible !important;
-    overflow-x: hidden !important;
+    overflow-x: visible !important; /* 가로 스크롤 허용하여 잘림 방지 */
     max-height: none !important;
     width: 100% !important;
     box-sizing: border-box !important;
