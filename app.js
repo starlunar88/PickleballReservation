@@ -5604,8 +5604,17 @@ async function loadReservationsTimeline() {
                             // 실제 확인은 비동기로 처리되지만, 버튼 표시 시에는 window.adminStatus 사용
                             const isAdminUser = window.adminStatus === true;
                             
-                            // 대진표 생성 버튼 (관리자만 표시/활성화)
+                            // 관리자 버튼들 (관리자만 표시/활성화)
                             if (isAdminUser) {
+                                // 무작위 추가 버튼
+                                buttons += `<button class="btn btn-outline add-random-btn" 
+                                                   data-time-slot="${slotKey}" 
+                                                   data-date="${targetDate}"
+                                                   style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;">
+                                                <i class="fas fa-user-plus"></i> 무작위 추가
+                                            </button>`;
+                                
+                                // 대진표 생성 버튼
                                 const canGenerate = reservations.length >= 4;
                                 const buttonDisabled = !canGenerate ? 'disabled' : '';
                                 const buttonStyle = 'margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;' + (!canGenerate ? ' opacity: 0.5;' : '');
@@ -5705,6 +5714,9 @@ async function loadReservationsTimeline() {
                 // 예약 탭에서는 대진표를 표시하지 않음 (대진표 탭에서만 표시)
             });
         });
+        
+        // 무작위 추가 버튼 이벤트 리스너 추가
+        addTestButtonEventListeners();
         
     } catch (error) {
         console.error('예약 현황 로드 오류:', error);
