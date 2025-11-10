@@ -2146,8 +2146,8 @@ async function loadMatchesForDate(date) {
                         const teamAClass = teamBWon ? 'team-lost' : '';
                         const teamBClass = teamAWon ? 'team-lost' : '';
                         
-                        const scoreAValue = (scoreA !== null && scoreA !== undefined && scoreA !== '') ? scoreA : '15';
-                        const scoreBValue = (scoreB !== null && scoreB !== undefined && scoreB !== '') ? scoreB : '15';
+                        const scoreAStr = (scoreA !== null && scoreA !== undefined && scoreA !== '') ? scoreA : '15';
+                        const scoreBStr = (scoreB !== null && scoreB !== undefined && scoreB !== '') ? scoreB : '15';
                         const readonlyAttr = isCompleted ? 'readonly' : '';
                         const completedClass = isCompleted ? 'completed' : '';
                         const buttonText = isCompleted ? '수정하기' : '경기 기록하기';
@@ -2162,9 +2162,9 @@ async function loadMatchesForDate(date) {
                                 '</div>' +
                                 '<div class="match-score-row">' +
                                     '<span class="score-spacer-compact"></span>' +
-                                    '<input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-' + safeId + '" placeholder="15" value="' + scoreAValue + '" ' + readonlyAttr + '>' +
+                                    '<input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-' + safeId + '" placeholder="15" value="' + scoreAStr + '" ' + readonlyAttr + '>' +
                                     '<span class="vs-separator-compact">vs</span>' +
-                                    '<input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-' + safeId + '" placeholder="15" value="' + scoreBValue + '" ' + readonlyAttr + '>' +
+                                    '<input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-' + safeId + '" placeholder="15" value="' + scoreBStr + '" ' + readonlyAttr + '>' +
                                     '<button class="save-score-btn-compact ' + completedClass + '" id="save-' + safeId + '" ' + (isCompleted ? '' : '') + '>' +
                                         buttonText +
                                     '</button>' +
