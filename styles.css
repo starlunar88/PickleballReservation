@@ -4665,6 +4665,10 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         flex-shrink: 0 !important; /* 버튼이 잘리지 않도록 */
         white-space: nowrap !important;
         box-sizing: border-box !important;
+        display: inline-block !important; /* 모바일에서도 항상 표시 */
+        visibility: visible !important; /* 모바일에서도 항상 표시 */
+        opacity: 1 !important; /* 모바일에서도 항상 표시 */
+        min-width: 40px !important; /* 최소 너비 보장 */
     }
     
     .match-schedule {
@@ -5551,6 +5555,41 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     overflow-y: visible !important;
     padding: 0 4px 0 0 !important; /* 오른쪽 패딩 추가 */
     margin-bottom: 3px !important;
+}
+
+/* 모바일에서도 버튼이 항상 표시되도록 */
+@media (max-width: 480px) {
+    .save-score-btn-compact {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-width: 40px !important;
+        padding: 3px 8px !important;
+        font-size: 0.7rem !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+    }
+    
+    .match-single-row {
+        display: flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        padding: 3px 4px 3px 2px !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+    }
+    
+    .match-item-compact {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        padding: 0 4px 0 0 !important;
+        margin-bottom: 3px !important;
+    }
 }
 
 /* 참가자 목록 잘림 방지 */
