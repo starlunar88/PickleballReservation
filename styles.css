@@ -4590,6 +4590,42 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin-top: 12px;
     }
     
+    /* 모바일에서 한 줄 레이아웃 스타일 */
+    .match-single-row {
+        gap: 1px !important;
+        padding: 3px 1px !important;
+    }
+    
+    .court-label-compact {
+        font-size: 0.8rem !important;
+        min-width: 20px !important;
+    }
+    
+    .player-names-compact {
+        font-size: 0.9rem !important;
+        flex: 0 1 auto !important;
+        flex-shrink: 1 !important;
+    }
+    
+    .score-input-compact {
+        padding: 2px 2px !important;
+        font-size: 0.75rem !important;
+        width: 35px !important;
+        min-width: 35px !important;
+        max-width: 35px !important;
+    }
+    
+    .vs-separator-compact {
+        font-size: 0.7rem !important;
+        margin: 0 !important;
+    }
+    
+    .save-score-btn-compact {
+        padding: 3px 6px !important;
+        font-size: 0.7rem !important;
+        margin-left: 4px !important;
+    }
+    
     .match-schedule {
         max-height: none !important;
         overflow-y: visible !important;

@@ -2189,8 +2189,10 @@ async function loadMatchesForDate(date) {
             
             // 컴팩트 스타일 강제 적용
             setTimeout(() => {
-                // 모바일 감지
-                const isMobile = window.innerWidth <= 768;
+                // 모바일 감지 (더 정확한 감지)
+                const screenWidth = window.innerWidth || document.documentElement.clientWidth;
+                const isMobile = screenWidth <= 480 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                console.log('📱 모바일 감지:', isMobile, '화면 너비:', screenWidth);
                 
                 const timeSlotSections = matchesContainer.querySelectorAll('.time-slot-section');
                 timeSlotSections.forEach(el => {
@@ -2258,23 +2260,29 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = isMobile ? '1px' : '1px';
                     el.style.flexWrap = 'nowrap';
-                    el.style.padding = isMobile ? '3px 1px' : '3px 2px';
                     el.style.marginBottom = '3px';
                     el.style.borderBottom = '1px solid #e0e0e0';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.gap = '1px';
+                        el.style.padding = '3px 2px';
+                    }
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
                 courtLabels.forEach((el) => {
                     el.style.fontWeight = '700';
-                    el.style.fontSize = isMobile ? '0.8rem' : '0.9rem';
-                    el.style.minWidth = isMobile ? '20px' : '24px';
                     el.style.flexShrink = '0';
                     el.style.padding = '0';
                     el.style.marginRight = '0';
                     el.style.background = 'transparent';
                     el.style.border = 'none';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.fontSize = '0.9rem';
+                        el.style.minWidth = '24px';
+                    }
                     
                     // 코트 번호 추출 (텍스트에서 숫자 추출)
                     const text = el.textContent || '';
@@ -2296,11 +2304,8 @@ async function loadMatchesForDate(date) {
                 
                 const playerNames = matchesContainer.querySelectorAll('.player-names-compact');
                 playerNames.forEach(el => {
-                    el.style.fontSize = isMobile ? '0.9rem' : '1.15rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#1a1a1a';
-                    el.style.flex = '0 1 auto';
-                    el.style.flexShrink = '1';
                     el.style.textAlign = 'left';
                     el.style.wordBreak = 'break-word';
                     el.style.lineHeight = '1.3';
@@ -2309,6 +2314,14 @@ async function loadMatchesForDate(date) {
                     el.style.whiteSpace = 'nowrap';
                     el.style.overflow = 'visible';
                     el.style.textOverflow = 'clip';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.fontSize = '1.15rem';
+                        el.style.flex = '0 0 auto';
+                    } else {
+                        el.style.flex = '0 1 auto';
+                        el.style.flexShrink = '1';
+                    }
                 });
                 
                 // 진 팀 스타일 (회색)
@@ -2319,29 +2332,35 @@ async function loadMatchesForDate(date) {
                 
                 const vsSeparators = matchesContainer.querySelectorAll('.vs-separator-compact');
                 vsSeparators.forEach(el => {
-                    el.style.fontSize = isMobile ? '0.7rem' : '0.8rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#667eea';
-                    el.style.margin = isMobile ? '0' : '0 1px';
                     el.style.flexShrink = '0';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.fontSize = '0.8rem';
+                        el.style.margin = '0 1px';
+                    }
                 });
                 
                 // 점수 입력 필드 스타일 (여백 최소화)
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
-                    el.style.padding = isMobile ? '2px 2px' : '2px 3px';
                     el.style.border = '1px solid #ccc';
                     el.style.borderRadius = '3px';
                     el.style.textAlign = 'center';
-                    el.style.fontSize = isMobile ? '0.75rem' : '0.85rem';
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
                     el.style.flex = '0 0 auto';
-                    el.style.width = isMobile ? '35px' : '40px';
-                    el.style.minWidth = isMobile ? '35px' : '40px';
-                    el.style.maxWidth = isMobile ? '35px' : '40px';
                     el.style.boxSizing = 'border-box';
                     el.style.margin = '0';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.padding = '2px 3px';
+                        el.style.fontSize = '0.85rem';
+                        el.style.width = '40px';
+                        el.style.minWidth = '40px';
+                        el.style.maxWidth = '40px';
+                    }
                 });
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
@@ -2479,8 +2498,11 @@ async function loadMatchesForDate(date) {
                 const saveBtns = matchesContainer.querySelectorAll('.save-score-btn-compact');
                 saveBtns.forEach(el => {
                     el.style.flexShrink = '0';
-                    el.style.padding = isMobile ? '3px 6px' : '4px 10px';
-                    el.style.fontSize = isMobile ? '0.7rem' : '0.8rem';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.padding = '4px 10px';
+                        el.style.fontSize = '0.8rem';
+                    }
                     // 완료 상태인지 확인
                     const isCompleted = el.classList.contains('completed') || el.textContent.includes('수정');
                     
@@ -2512,7 +2534,10 @@ async function loadMatchesForDate(date) {
                     el.style.borderRadius = '3px';
                     el.style.fontWeight = '600';
                     el.style.cursor = 'pointer';
-                    el.style.marginLeft = isMobile ? '4px' : '8px';
+                    // 모바일일 때는 CSS에 의존, PC일 때만 인라인 스타일 적용
+                    if (!isMobile) {
+                        el.style.marginLeft = '8px';
+                    }
                 });
                 
                 console.log('✅ 컴팩트 스타일 적용 완료');
@@ -2686,16 +2711,17 @@ async function loadMatchesForDate(date) {
         // 날짜 표시 업데이트
         const dateTimeDisplay = document.getElementById('match-date-time');
         if (dateTimeDisplay) {
-            const dateObj = new Date(date);
-            const datePart = dateObj.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            const weekdayPart = dateObj.toLocaleDateString('ko-KR', {
-                weekday: 'long'
-            });
-            const formattedDate = `${datePart} (${weekdayPart})`;
+            const dateObj = new Date(date + 'T00:00:00');
+            const year = dateObj.getFullYear();
+            const month = dateObj.getMonth() + 1;
+            const day = dateObj.getDate();
+            const weekday = dateObj.getDay();
+            
+            // 요일 배열 (일요일=0부터 시작)
+            const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            const weekdayName = weekdays[weekday];
+            
+            const formattedDate = `${year}년 ${month}월 ${day}일 (${weekdayName})`;
             dateTimeDisplay.textContent = formattedDate;
         }
         
