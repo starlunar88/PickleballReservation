@@ -5348,6 +5348,8 @@ async function loadReservationsTimeline() {
             
             try {
                 console.log('📡 Firestore 쿼리 시작...');
+                // 모든 상태의 예약자를 가져오되, cancelled는 제외
+                // 마감 여부와 관계없이 pending과 confirmed 상태의 모든 예약자를 표시
                 const reservationsSnapshot = await db.collection('reservations')
                     .where('date', '==', targetDate)
                     .where('timeSlot', '==', slotKey)
@@ -5361,6 +5363,19 @@ async function loadReservationsTimeline() {
                     console.log(`👤 예약 발견: ${data.userName} (${data.status}), userId: ${data.userId || '없음'}`);
                     reservations.push({ id: doc.id, ...data });
                 });
+                
+                // 디버깅: 마감된 시간대에서 예약자 수 확인
+                const now = new Date();
+                const startTime = timeSlot.start || '00:00';
+                const gameStartTime = new Date(`${targetDate}T${startTime}:00`);
+                const closingTimeMinutes = settings.closingTime || 20;
+                const closingTime = new Date(gameStartTime.getTime() - closingTimeMinutes * 60 * 1000);
+                const isClosed = now > closingTime;
+                
+                if (isClosed) {
+                    console.log(`🔍 [마감된 시간대] ${slotKey}: 조회된 예약자 수 = ${reservations.length}명`);
+                    console.log(`🔍 [마감된 시간대] 예약자 목록:`, reservations.map(r => `${r.userName} (${r.status})`).join(', '));
+                }
                 
                 // 예약에 userName이 없거나 "익명"인 경우, users 컬렉션에서 이름 가져오기
                 const userNamePromises = reservations.map(async (res) => {
