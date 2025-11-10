@@ -2302,7 +2302,7 @@ async function loadMatchesForDate(date) {
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
                     el.style.gap = '2px';
-                    el.style.flexWrap = 'wrap';
+                    el.style.flexWrap = 'nowrap';
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
@@ -2344,6 +2344,9 @@ async function loadMatchesForDate(date) {
                     el.style.lineHeight = '1.3';
                     el.style.minWidth = '0';
                     el.style.maxWidth = 'none';
+                    el.style.whiteSpace = 'nowrap';
+                    el.style.overflow = 'hidden';
+                    el.style.textOverflow = 'ellipsis';
                 });
                 
                 // 진 팀 스타일 (회색)
@@ -2368,7 +2371,7 @@ async function loadMatchesForDate(date) {
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
                     el.style.gap = '2px';
-                    el.style.flexWrap = 'wrap';
+                    el.style.flexWrap = 'nowrap';
                 });
                 
                 // 점수 입력 줄의 빈 공간 (코트 라벨과 같은 너비 + 패딩 고려)
@@ -2404,34 +2407,30 @@ async function loadMatchesForDate(date) {
                         if (!playersRow) return;
                         
                         const firstPlayerName = playersRow.querySelector('.player-names-compact:first-of-type');
-                        const vsInPlayersRow = playersRow.querySelector('.vs-separator-compact');
+                        const secondPlayerName = playersRow.querySelector('.player-names-compact:last-of-type');
                         const scoreInputs = scoreRow.querySelectorAll('.score-input-compact');
                         
-                        if (firstPlayerName && vsInPlayersRow && scoreInputs.length >= 1) {
-                            // 플레이어 이름 줄의 vs 위치 계산
-                            const firstPlayerNameRect = firstPlayerName.getBoundingClientRect();
-                            const vsInPlayersRect = vsInPlayersRow.getBoundingClientRect();
-                            
+                        if (firstPlayerName && scoreInputs.length >= 1) {
                             // 첫 번째 점수 입력 필드의 너비를 첫 번째 플레이어 이름과 맞추기
                             const firstScoreInput = scoreInputs[0];
+                            const firstPlayerNameRect = firstPlayerName.getBoundingClientRect();
                             const playerNameWidth = firstPlayerNameRect.width;
                             firstScoreInput.style.width = `${playerNameWidth}px`;
                             firstScoreInput.style.flex = '0 0 auto';
+                            firstScoreInput.style.maxWidth = `${playerNameWidth}px`;
                             
                             // 두 번째 점수 입력 필드도 두 번째 플레이어 이름과 맞추기
-                            if (scoreInputs.length >= 2) {
-                                const secondPlayerName = playersRow.querySelector('.player-names-compact:last-of-type');
-                                if (secondPlayerName) {
-                                    const secondPlayerNameRect = secondPlayerName.getBoundingClientRect();
-                                    const secondScoreInput = scoreInputs[1];
-                                    const secondPlayerNameWidth = secondPlayerNameRect.width;
-                                    secondScoreInput.style.width = `${secondPlayerNameWidth}px`;
-                                    secondScoreInput.style.flex = '0 0 auto';
-                                }
+                            if (scoreInputs.length >= 2 && secondPlayerName) {
+                                const secondScoreInput = scoreInputs[1];
+                                const secondPlayerNameRect = secondPlayerName.getBoundingClientRect();
+                                const secondPlayerNameWidth = secondPlayerNameRect.width;
+                                secondScoreInput.style.width = `${secondPlayerNameWidth}px`;
+                                secondScoreInput.style.flex = '0 0 auto';
+                                secondScoreInput.style.maxWidth = `${secondPlayerNameWidth}px';
                             }
                         }
                     });
-                }, 150);
+                }, 200);
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
                 matchTeams.forEach(el => {
