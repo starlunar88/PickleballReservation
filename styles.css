@@ -4621,7 +4621,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: flex !important;
         align-items: center !important;
         gap: 2px !important;
-        padding: 3px 2px !important;
+        padding: 3px 4px 3px 2px !important; /* 오른쪽 패딩 증가 */
         flex-wrap: nowrap !important;
         width: 100% !important;
         box-sizing: border-box !important;
@@ -4658,11 +4658,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .save-score-btn-compact {
-        padding: 3px 6px !important;
+        padding: 3px 8px !important; /* 좌우 패딩 증가 */
         font-size: 0.7rem !important;
         margin-left: 4px !important;
+        margin-right: 0 !important; /* 오른쪽 마진 제거 */
         flex-shrink: 0 !important; /* 버튼이 잘리지 않도록 */
         white-space: nowrap !important;
+        box-sizing: border-box !important;
     }
     
     .match-schedule {
@@ -5525,7 +5527,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     overflow-x: visible !important;
     overflow-y: visible !important;
     margin-bottom: 10px !important;
-    padding: 6px !important;
+    padding: 6px 8px 6px 6px !important; /* 오른쪽 패딩 증가 */
     background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%) !important;
     border-radius: 6px !important;
 }
@@ -5547,7 +5549,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     box-sizing: border-box !important;
     overflow-x: visible !important;
     overflow-y: visible !important;
-    padding: 0 !important;
+    padding: 0 4px 0 0 !important; /* 오른쪽 패딩 추가 */
     margin-bottom: 3px !important;
 }
 
