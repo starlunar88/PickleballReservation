@@ -2051,12 +2051,39 @@ async function loadMatchesForDate(date) {
                     `<button class="delete-timeslot-btn" data-date="${date}" data-time-slot="${slotKey}" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin-left: 10px;" title="이 시간대의 대진표와 기록 삭제">
                         <i class="fas fa-trash-alt"></i> 삭제
                     </button>` : '';
+                // 간단한 매칭 정보 표시
+                let matchingInfoHTML = '';
+                if (teamMode === 'random') {
+                    const allPlayers = Array.from(allPlayersSet);
+                    if (allPlayers.length > 0) {
+                        matchingInfoHTML = `<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">랜덤 모드: ${allPlayers.join(', ')} (${allPlayers.length}명)</div>`;
+                    }
+                } else if (teamMode === 'balanced') {
+                    const allPlayers = Array.from(allPlayersSet);
+                    if (allPlayers.length > 0) {
+                        matchingInfoHTML = `<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">밸런스 모드: ${allPlayers.join(', ')} (${allPlayers.length}명)</div>`;
+                    }
+                } else {
+                    // 그룹 모드: 코트별 배정 정보 표시
+                    const courtInfoList = [];
+                    Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
+                        const players = courtPlayers[courtNum];
+                        if (players.length > 0) {
+                            courtInfoList.push(`코트${courtNum}: ${players.join(', ')}`);
+                        }
+                    });
+                    if (courtInfoList.length > 0) {
+                        matchingInfoHTML = `<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">그룹 모드: ${courtInfoList.join(' | ')}</div>`;
+                    }
+                }
+                
                 matchesHTML += `
                     <div class="time-slot-section" data-time-slot="${slotKey}" data-date="${date}">
                         <div class="time-slot-header-compact" style="color: #000; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>${timeSlot.start} ~ ${timeSlot.end}</span>
                             ${deleteButtonHTML}
                         </div>
+                        ${matchingInfoHTML}
                         <div class="rounds-container">
                 `;
                 
