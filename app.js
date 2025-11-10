@@ -2229,18 +2229,21 @@ async function loadMatchesForDate(date) {
                         
                         matchesHTML += `
                             <div class="match-item-compact" data-match-id="${match.id}">
-                                <span class="court-label-compact">코트#${courtNum}</span>
-                                <span class="player-names-compact ${teamAClass}">${teamALabel}</span>
-                                <span class="vs-separator-compact">vs</span>
-                                <span class="player-names-compact ${teamBClass}">${teamBLabel}</span>
-                                <div class="match-score-input-compact">
-                                    <input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
-                                    <span class="score-separator-compact">-</span>
-                                    <input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                <div class="match-players-row">
+                                    <span class="court-label-compact">코트#${courtNum}</span>
+                                    <span class="player-names-compact ${teamAClass}">${teamALabel}</span>
+                                    <span class="vs-separator-compact">vs</span>
+                                    <span class="player-names-compact ${teamBClass}">${teamBLabel}</span>
                                 </div>
-                                <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
-                                    ${isCompleted ? '수정하기' : '경기 기록하기'}
-                                </button>
+                                <div class="match-score-row">
+                                    <span class="score-spacer-compact"></span>
+                                    <input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                    <span class="vs-separator-compact">vs</span>
+                                    <input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                    <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
+                                        ${isCompleted ? '수정하기' : '경기 기록하기'}
+                                    </button>
+                                </div>
                             </div>
                         `;
                     });
@@ -2319,7 +2322,7 @@ async function loadMatchesForDate(date) {
                     el.style.borderRadius = '8px';
                 });
                 
-                // 매치 아이템을 한 줄로 표시
+                // 매치 아이템을 두 줄로 표시
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
                 matchItems.forEach(el => {
                     el.style.padding = '8px';
@@ -2327,6 +2330,14 @@ async function loadMatchesForDate(date) {
                     el.style.borderBottom = '1px solid #e0e0e0';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'column';
+                    el.style.gap = '8px';
+                });
+                
+                // 플레이어 이름 줄
+                const matchPlayersRows = matchesContainer.querySelectorAll('.match-players-row');
+                matchPlayersRows.forEach(el => {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
@@ -2372,6 +2383,38 @@ async function loadMatchesForDate(date) {
                     el.style.flexShrink = '0';
                 });
                 
+                // 점수 입력 줄
+                const matchScoreRows = matchesContainer.querySelectorAll('.match-score-row');
+                matchScoreRows.forEach(el => {
+                    el.style.display = 'flex';
+                    el.style.flexDirection = 'row';
+                    el.style.alignItems = 'center';
+                    el.style.gap = '6px';
+                    el.style.flexWrap = 'nowrap';
+                });
+                
+                // 점수 입력 줄의 빈 공간 (코트 라벨과 같은 너비)
+                const scoreSpacers = matchesContainer.querySelectorAll('.score-spacer-compact');
+                scoreSpacers.forEach(el => {
+                    el.style.minWidth = '60px';
+                    el.style.flexShrink = '0';
+                });
+                
+                // 점수 입력 필드가 플레이어 이름과 정렬되도록
+                const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
+                scoreInputs.forEach(el => {
+                    el.style.padding = '6px';
+                    el.style.border = '1px solid #ccc';
+                    el.style.borderRadius = '6px';
+                    el.style.textAlign = 'center';
+                    el.style.fontSize = '0.9rem';
+                    el.style.fontWeight = '600';
+                    el.style.background = 'white';
+                    el.style.flex = '1';
+                    el.style.minWidth = '50px';
+                    el.style.maxWidth = '100px';
+                });
+                
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
                 matchTeams.forEach(el => {
                     el.style.display = 'flex';
@@ -2404,32 +2447,6 @@ async function loadMatchesForDate(date) {
                     el.style.fontSize = '0.7rem';
                     el.style.color = '#999';
                     el.style.fontWeight = '500';
-                });
-                
-                const matchScoreInputs = matchesContainer.querySelectorAll('.match-score-input-compact');
-                matchScoreInputs.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '8px';
-                    el.style.flexShrink = '0';
-                    el.style.marginLeft = 'auto';
-                    el.style.marginRight = '12px';
-                });
-                
-                // 팀별 점수 입력 필드 정렬
-                const teamAScores = matchesContainer.querySelectorAll('.team-a-score');
-                teamAScores.forEach(el => {
-                    el.style.order = '1';
-                });
-                
-                const teamBScores = matchesContainer.querySelectorAll('.team-b-score');
-                teamBScores.forEach(el => {
-                    el.style.order = '3';
-                });
-                
-                const scoreSeparators = matchesContainer.querySelectorAll('.score-separator-compact');
-                scoreSeparators.forEach(el => {
-                    el.style.order = '2';
                 });
                 
                 // 점수 변경 시 진 팀 스타일 업데이트 함수
@@ -2479,17 +2496,9 @@ async function loadMatchesForDate(date) {
                     }
                 }
                 
-                const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
-                scoreInputs.forEach(el => {
-                    el.style.width = '50px';
-                    el.style.padding = '6px';
-                    el.style.border = '1px solid #ccc';
-                    el.style.borderRadius = '6px';
-                    el.style.textAlign = 'center';
-                    el.style.fontSize = '0.9rem';
-                    el.style.fontWeight = '600';
-                    el.style.background = 'white';
-                    
+                // 점수 입력 필드 스타일 (이미 위에서 설정했으므로 추가 속성만 설정)
+                const scoreInputsAll = matchesContainer.querySelectorAll('.score-input-compact');
+                scoreInputsAll.forEach(el => {
                     // 스피너 제거 (위아래 화살표 제거)
                     el.style.webkitAppearance = 'none';
                     el.style.mozAppearance = 'textfield';
