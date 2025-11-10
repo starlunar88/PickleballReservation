@@ -2240,9 +2240,6 @@ async function loadMatchesForDate(date) {
                                     <input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
                                     <span class="vs-separator-compact">vs</span>
                                     <input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
-                                </div>
-                                <div class="match-button-row">
-                                    <span class="button-spacer-compact"></span>
                                     <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
                                         ${isCompleted ? '수정하기' : '경기 기록하기'}
                                     </button>
@@ -2305,37 +2302,37 @@ async function loadMatchesForDate(date) {
                 // 라운드 섹션 스타일
                 const roundSections = matchesContainer.querySelectorAll('.round-section');
                 roundSections.forEach(el => {
-                    el.style.marginBottom = '12px';
-                    el.style.padding = '8px';
+                    el.style.marginBottom = '10px';
+                    el.style.padding = '6px';
                     el.style.background = 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)';
-                    el.style.borderRadius = '8px';
+                    el.style.borderRadius = '6px';
                     el.style.border = '1px solid #e2e8f0';
                 });
                 
                 // 라운드 헤더 스타일
                 const roundHeaders = matchesContainer.querySelectorAll('.round-header-compact');
                 roundHeaders.forEach(el => {
-                    el.style.fontSize = '1rem';
+                    el.style.fontSize = '0.95rem';
                     el.style.fontWeight = '700';
                     el.style.color = '#1a1a1a';
-                    el.style.padding = '6px 10px';
-                    el.style.marginBottom = '6px';
+                    el.style.padding = '5px 8px';
+                    el.style.marginBottom = '4px';
                     el.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     el.style.color = 'white';
-                    el.style.borderRadius = '6px';
+                    el.style.borderRadius = '4px';
                 });
                 
-                // 매치 아이템을 세 줄로 표시
+                // 매치 아이템을 두 줄로 표시
                 const matchItems = matchesContainer.querySelectorAll('.match-item-compact');
                 matchItems.forEach(el => {
-                    el.style.padding = '4px 6px';
-                    el.style.marginBottom = '4px';
+                    el.style.padding = '3px 4px';
+                    el.style.marginBottom = '3px';
                     el.style.borderBottom = '1px solid #e0e0e0';
                     el.style.width = '100%';
                     el.style.boxSizing = 'border-box';
                     el.style.display = 'flex';
                     el.style.flexDirection = 'column';
-                    el.style.gap = '4px';
+                    el.style.gap = '3px';
                 });
                 
                 // 플레이어 이름 줄
@@ -2344,28 +2341,28 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '4px';
+                    el.style.gap = '3px';
                     el.style.flexWrap = 'wrap';
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
                 courtLabels.forEach(el => {
                     el.style.fontWeight = '700';
-                    el.style.fontSize = '1rem';
+                    el.style.fontSize = '0.95rem';
                     el.style.color = '#667eea';
-                    el.style.minWidth = '55px';
+                    el.style.minWidth = '52px';
                     el.style.flexShrink = '0';
                 });
                 
                 const playerNames = matchesContainer.querySelectorAll('.player-names-compact');
                 playerNames.forEach(el => {
-                    el.style.fontSize = '1.2rem';
+                    el.style.fontSize = '1.15rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#1a1a1a';
                     el.style.flex = '1';
                     el.style.textAlign = 'left';
                     el.style.wordBreak = 'break-word';
-                    el.style.lineHeight = '1.4';
+                    el.style.lineHeight = '1.3';
                     el.style.minWidth = '0';
                 });
                 
@@ -2377,10 +2374,10 @@ async function loadMatchesForDate(date) {
                 
                 const vsSeparators = matchesContainer.querySelectorAll('.vs-separator-compact');
                 vsSeparators.forEach(el => {
-                    el.style.fontSize = '0.9rem';
+                    el.style.fontSize = '0.85rem';
                     el.style.fontWeight = '600';
                     el.style.color = '#667eea';
-                    el.style.margin = '0 4px';
+                    el.style.margin = '0 3px';
                     el.style.flexShrink = '0';
                 });
                 
@@ -2390,46 +2387,30 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '4px';
+                    el.style.gap = '3px';
                     el.style.flexWrap = 'wrap';
                 });
                 
                 // 점수 입력 줄의 빈 공간 (코트 라벨과 같은 너비)
                 const scoreSpacers = matchesContainer.querySelectorAll('.score-spacer-compact');
                 scoreSpacers.forEach(el => {
-                    el.style.minWidth = '55px';
+                    el.style.minWidth = '52px';
                     el.style.flexShrink = '0';
                 });
                 
                 // 점수 입력 필드가 플레이어 이름과 정렬되도록
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
-                    el.style.padding = '4px 6px';
+                    el.style.padding = '3px 5px';
                     el.style.border = '1px solid #ccc';
-                    el.style.borderRadius = '4px';
+                    el.style.borderRadius = '3px';
                     el.style.textAlign = 'center';
-                    el.style.fontSize = '0.9rem';
+                    el.style.fontSize = '0.85rem';
                     el.style.fontWeight = '600';
                     el.style.background = 'white';
                     el.style.flex = '1';
-                    el.style.minWidth = '50px';
-                    el.style.maxWidth = '100px';
-                });
-                
-                // 버튼 줄
-                const matchButtonRows = matchesContainer.querySelectorAll('.match-button-row');
-                matchButtonRows.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.flexDirection = 'row';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '4px';
-                });
-                
-                // 버튼 줄의 빈 공간 (코트 라벨과 같은 너비)
-                const buttonSpacers = matchesContainer.querySelectorAll('.button-spacer-compact');
-                buttonSpacers.forEach(el => {
-                    el.style.minWidth = '55px';
-                    el.style.flexShrink = '0';
+                    el.style.minWidth = '45px';
+                    el.style.maxWidth = '90px';
                 });
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
@@ -2595,11 +2576,12 @@ async function loadMatchesForDate(date) {
                     }
                     
                     el.style.border = 'none';
-                    el.style.padding = '6px 12px';
-                    el.style.borderRadius = '4px';
-                    el.style.fontSize = '0.85rem';
+                    el.style.padding = '4px 10px';
+                    el.style.borderRadius = '3px';
+                    el.style.fontSize = '0.8rem';
                     el.style.fontWeight = '600';
                     el.style.cursor = 'pointer';
+                    el.style.marginLeft = 'auto';
                 });
                 
                 console.log('✅ 컴팩트 스타일 적용 완료');
