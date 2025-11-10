@@ -2134,9 +2134,9 @@ async function loadMatchesForDate(date) {
                         const safeId = match.id.replace(/:/g, '_').replace(/\//g, '_');
                         const courtNum = match.courtNumber || match.court || 1;
                         
-                        // 팀 이름에서 아이콘 제거 (간단한 형식)
-                        const teamALabel = match.teamA.map(p => p.userName).join(',');
-                        const teamBLabel = match.teamB.map(p => p.userName).join(',');
+                        // 팀 이름에서 아이콘 제거 (간단한 형식) - 쉼표를 <br>로 변경하여 두 줄로 표시
+                        const teamALabel = match.teamA.map(p => p.userName).join(',<br>');
+                        const teamBLabel = match.teamB.map(p => p.userName).join(',<br>');
                         
                         // 점수 비교하여 진 팀 확인
                         const scoreAValue = scoreA !== null && scoreA !== undefined && scoreA !== '' ? parseInt(scoreA) : null;

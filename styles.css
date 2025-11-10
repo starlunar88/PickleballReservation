@@ -4637,23 +4637,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         flex-shrink: 0 !important;
     }
     
-    .player-names-compact {
-        font-size: 0.75rem !important; /* 폰트 더 작게 */
-        flex: 0 1 auto !important;
-        flex-shrink: 1 !important;
-        min-width: 0 !important; /* flexbox에서 잘림 방지 */
-        max-width: 70px !important; /* 최대 너비 제한 (두 줄 표시를 위해 약간 증가) */
-        overflow: hidden !important; /* -webkit-line-clamp를 위해 필요 */
-        text-overflow: clip !important; /* 말줄임표 제거 */
-        white-space: normal !important; /* 두 줄로 표시 */
-        word-wrap: break-word !important; /* 단어 단위로 줄바꿈 */
-        line-height: 1.2 !important; /* 줄 간격 조정 */
-        padding: 1px 2px !important; /* 상하 패딩 추가 */
-        display: -webkit-box !important; /* 두 줄 제한 */
-        -webkit-line-clamp: 2 !important; /* 최대 2줄 */
-        -webkit-box-orient: vertical !important;
-        text-align: center !important; /* 중앙 정렬 */
-    }
+    /* 모바일에서 player-names-compact는 기본 스타일 상속 */
     
     .score-input-compact {
         padding: 1px 1px !important; /* 패딩 더 줄임 */
@@ -5628,19 +5612,9 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 18px !important;
     }
     
-    .player-names-compact {
-        font-size: 0.75rem !important;
-        max-width: 70px !important; /* 두 줄 표시를 위해 약간 증가 */
-        overflow: hidden !important; /* -webkit-line-clamp를 위해 필요 */
-        text-overflow: clip !important; /* 말줄임표 제거 */
-        white-space: normal !important; /* 두 줄로 표시 */
-        word-wrap: break-word !important; /* 단어 단위로 줄바꿈 */
-        line-height: 1.2 !important; /* 줄 간격 조정 */
-        padding: 1px 2px !important; /* 상하 패딩 추가 */
-        display: -webkit-box !important; /* 두 줄 제한 */
-        -webkit-line-clamp: 2 !important; /* 최대 2줄 */
-        -webkit-box-orient: vertical !important;
-        text-align: center !important; /* 중앙 정렬 */
+    /* 모바일에서 player-names-compact는 기본 스타일 상속 */
+    .player-names-compact.team-won {
+        padding: 1px 2px 1px 14px !important; /* 트로피 공간 확보 */
     }
     
     .score-input-compact {
@@ -5910,25 +5884,55 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     transform: translateY(-2px) scale(1.02) !important;
 }
 
+/* player-names-compact 기본 스타일 - PC와 모바일 모두 두 줄 표시 */
+.player-names-compact {
+    font-size: 0.75rem !important;
+    flex: 0 1 auto !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+    max-width: 70px !important;
+    overflow: visible !important; /* <br> 줄바꿈을 위해 visible로 변경 */
+    text-overflow: clip !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    line-height: 1.2 !important;
+    padding: 1px 2px 1px 2px !important;
+    display: inline-block !important; /* flexbox와 호환되도록 inline-block */
+    text-align: center !important;
+    position: relative !important;
+    max-height: 2.4em !important; /* 최대 2줄 높이 (line-height 1.2 * 2) */
+    vertical-align: middle !important; /* 수직 정렬 */
+}
+
 /* player-names-compact에도 승리 효과 */
 .player-names-compact.team-won {
     background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
-    padding: 4px 8px !important;
+    padding: 1px 2px 1px 14px !important; /* 왼쪽 패딩 증가 (트로피 공간 확보) */
     border-radius: 6px !important;
     border: 2px solid #ffc107 !important;
     box-shadow: 0 3px 12px rgba(255, 193, 7, 0.4), 0 0 15px rgba(255, 215, 0, 0.3) !important;
     color: #1a1a1a !important;
     font-weight: 800 !important;
-    position: relative !important;
-    display: inline-block !important;
     animation: winnerGlow 2s ease-in-out infinite !important;
+    overflow: visible !important; /* <br> 줄바꿈을 위해 */
+    display: inline-block !important; /* flexbox와 호환되도록 */
+    max-height: 2.4em !important; /* 최대 2줄 높이 */
+    vertical-align: middle !important; /* 수직 정렬 */
 }
 
 .player-names-compact.team-won::before {
-    content: '🏆 ' !important;
-    margin-right: 2px !important;
-    font-size: 0.85rem !important;
+    content: '🏆' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 2px !important;
+    transform: translateY(-50%) !important; /* 수직 중앙 정렬 */
+    font-size: 0.7rem !important;
     animation: winnerBounce 1.5s ease-in-out infinite !important;
+    z-index: 1 !important;
+    line-height: 1 !important;
+    width: 10px !important;
+    text-align: center !important;
 }
 
 .match-score-simple {
