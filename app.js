@@ -2373,25 +2373,36 @@ async function loadMatchesForDate(date) {
                         if (firstPlayerName && scoreInputs.length >= 1) {
                             // 첫 번째 점수 입력 필드의 너비를 첫 번째 플레이어 이름과 정확히 맞추기
                             const firstScoreInput = scoreInputs[0];
-                            const firstPlayerNameRect = firstPlayerName.getBoundingClientRect();
-                            const playerNameWidth = firstPlayerNameRect.width;
                             
-                            // box-sizing을 고려하여 정확한 너비 설정
+                            // offsetWidth를 사용하여 실제 렌더링 너비 측정 (더 정확함)
+                            const playerNameWidth = firstPlayerName.offsetWidth;
+                            
+                            // 점수 입력 박스의 padding과 border를 고려한 너비 설정
+                            const computedStyle = window.getComputedStyle(firstScoreInput);
+                            const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+                            const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+                            const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+                            const borderRight = parseFloat(computedStyle.borderRightWidth) || 0;
+                            
+                            // box-sizing이 border-box이므로 전체 너비를 설정
                             firstScoreInput.style.boxSizing = 'border-box';
                             firstScoreInput.style.width = playerNameWidth + 'px';
                             firstScoreInput.style.flex = '0 0 auto';
+                            firstScoreInput.style.flexShrink = '0';
+                            firstScoreInput.style.flexGrow = '0';
                             firstScoreInput.style.minWidth = playerNameWidth + 'px';
                             firstScoreInput.style.maxWidth = playerNameWidth + 'px';
                             
                             // 두 번째 점수 입력 필드도 두 번째 플레이어 이름과 정확히 맞추기
                             if (scoreInputs.length >= 2 && secondPlayerName) {
                                 const secondScoreInput = scoreInputs[1];
-                                const secondPlayerNameRect = secondPlayerName.getBoundingClientRect();
-                                const secondPlayerNameWidth = secondPlayerNameRect.width;
+                                const secondPlayerNameWidth = secondPlayerName.offsetWidth;
                                 
                                 secondScoreInput.style.boxSizing = 'border-box';
                                 secondScoreInput.style.width = secondPlayerNameWidth + 'px';
                                 secondScoreInput.style.flex = '0 0 auto';
+                                secondScoreInput.style.flexShrink = '0';
+                                secondScoreInput.style.flexGrow = '0';
                                 secondScoreInput.style.minWidth = secondPlayerNameWidth + 'px';
                                 secondScoreInput.style.maxWidth = secondPlayerNameWidth + 'px';
                             }
@@ -2399,21 +2410,37 @@ async function loadMatchesForDate(date) {
                     });
                 };
                 
+                // ResizeObserver를 사용하여 동적으로 조정
+                const resizeObserver = new ResizeObserver(() => {
+                    adjustScoreBoxWidths();
+                });
+                
+                // 모든 match-item에 ResizeObserver 연결
+                matchScoreRows.forEach((scoreRow) => {
+                    const matchItem = scoreRow.closest('.match-item-compact');
+                    if (matchItem) {
+                        resizeObserver.observe(matchItem);
+                    }
+                });
+                
                 // requestAnimationFrame을 사용하여 렌더링 완료 후 정확하게 측정
                 const adjustWithRAF = () => {
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
                             adjustScoreBoxWidths();
-                            // 추가로 한 번 더 실행하여 정확성 보장
+                            // 추가로 여러 번 실행하여 정확성 보장
+                            setTimeout(adjustScoreBoxWidths, 10);
                             setTimeout(adjustScoreBoxWidths, 50);
+                            setTimeout(adjustScoreBoxWidths, 100);
                         });
                     });
                 };
                 
                 // DOM이 완전히 렌더링된 후 실행
-                setTimeout(adjustWithRAF, 100);
-                setTimeout(adjustWithRAF, 300);
-                setTimeout(adjustWithRAF, 500);
+                setTimeout(adjustWithRAF, 50);
+                setTimeout(adjustWithRAF, 200);
+                setTimeout(adjustWithRAF, 400);
+                setTimeout(adjustWithRAF, 600);
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
                 matchTeams.forEach(el => {
