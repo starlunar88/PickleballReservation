@@ -8254,8 +8254,28 @@ async function processTimeSlotReservations(date, timeSlot) {
                 return;
             }
             
+            // 시스템 설정에서 최대 코트 수 가져오기
+            const settings = await getSystemSettings();
+            const maxCourts = settings?.courtCount || 2; // 기본값 2
+            
+            // 코트 수에 따라 사용할 수 있는 최대 플레이어 수 계산
+            // 코트 수 * 4 = 최대 플레이어 수
+            const maxPlayers = maxCourts * 4;
+            
+            // 예약자가 코트 수 제한을 초과하는 경우, 처음 예약한 순서대로 제한
+            let reservationsToUse = reservations;
+            if (reservations.length > maxPlayers) {
+                console.log(`⚠️ 예약자 수(${reservations.length}명)가 코트 수 제한(${maxPlayers}명)을 초과하여 첫 ${maxPlayers}명만 사용합니다.`);
+                // createdAt 기준으로 정렬하여 먼저 예약한 순서대로 선택
+                reservationsToUse = [...reservations].sort((a, b) => {
+                    const timeA = a.createdAt?.toMillis?.() || (a.createdAt?.seconds || 0) * 1000 || 0;
+                    const timeB = b.createdAt?.toMillis?.() || (b.createdAt?.seconds || 0) * 1000 || 0;
+                    return timeA - timeB; // 먼저 예약한 순서대로
+                }).slice(0, maxPlayers);
+            }
+            
             // 기본 팀 짜기 모드 (밸런스 모드)
-            const teams = await createTeams(reservations, TEAM_MODE.BALANCED);
+            const teams = await createTeams(reservationsToUse, TEAM_MODE.BALANCED);
             
             // 팀 배정 결과 저장
             await saveTeamAssignments(date, timeSlot, teams, TEAM_MODE.BALANCED);
