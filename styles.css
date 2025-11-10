@@ -4438,7 +4438,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .records-container,
     .stats-container,
     .rankings-container {
-        padding: 0 6px 140px 6px !important; /* 예약, 대진표 탭 수준의 여백 */
+        padding: 0 6px 160px 6px !important; /* 모바일 하단 탭바를 위한 여백 증가 (140px -> 160px) */
+    }
+    
+    /* 대진표 컨테이너 모바일 여백 확보 */
+    .matches-container {
+        padding: 0 6px 160px 6px !important; /* 모바일 하단 탭바를 위한 여백 증가 */
     }
     .reservations-timeline { 
         padding: 8px !important; /* 패딩 최소화 */
@@ -4688,7 +4693,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: white !important;
     border-radius: 20px !important;
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15) !important;
-    overflow: hidden !important;
+    overflow: visible !important; /* 모바일에서 내용이 잘리지 않도록 변경 */
     border: 3px solid #e0e4ff !important;
     position: relative !important;
     transition: all 0.3s ease !important;
@@ -5345,10 +5350,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     max-width: 100%;
     margin: 0 auto;
     width: 100%;
-    padding: 0 2px 140px 2px; /* 예약, 대진표 탭 수준의 여백 */
+    padding: 0 2px 160px 2px; /* 모바일 하단 탭바를 위한 여백 증가 (140px -> 160px) */
     min-height: calc(100vh - 200px);
     box-sizing: border-box;
     overflow-x: hidden; /* 가로 스크롤 방지 */
+    overflow-y: visible; /* 세로 스크롤 허용하여 내용이 잘리지 않도록 */
 }
 
 /* 대진표 섹션 스타일 (하위 호환성) */
@@ -5800,7 +5806,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     /* 대진표 반응형 */
     .matches-container {
-        padding: 0 6px 140px 6px; /* 예약, 대진표 탭 수준의 여백 */
+        padding: 0 6px 160px 6px !important; /* 모바일 하단 탭바를 위한 여백 증가 */
+    }
+    
+    /* 모바일에서 대진표 시간대별 섹션 overflow 수정 */
+    .time-slot-matches {
+        overflow: visible !important; /* 내용이 잘리지 않도록 */
+    }
+    
+    .time-slot-content {
+        overflow: visible !important; /* 내용이 잘리지 않도록 */
     }
     
     .match-schedule-section {
@@ -6383,6 +6398,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .time-slot-matches {
         margin-bottom: 15px !important;
         border-radius: 10px !important;
+        overflow: visible !important; /* 내용이 잘리지 않도록 */
     }
     
     .time-slot-header {
@@ -6400,6 +6416,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
     .time-slot-content {
         padding: 12px !important;
+        overflow: visible !important; /* 내용이 잘리지 않도록 */
+    }
+    
+    /* 대진표 컨테이너 모바일 여백 확보 */
+    .matches-container {
+        padding: 0 6px 160px 6px !important; /* 모바일 하단 탭바를 위한 여백 증가 */
+    }
+    
+    /* 대진표 섹션 모바일 여백 확보 */
+    .match-schedule-section {
+        margin-bottom: 20px !important; /* 하단 여백 확보 */
     }
 }
 
