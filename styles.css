@@ -5004,6 +5004,71 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%) !important;
 }
 
+/* 승리 팀 시각적 효과 - 금색/황금색 강조 */
+.time-slot-matches .team-small.team-won {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+    border: 2px solid #ffc107 !important;
+    box-shadow: 0 4px 16px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 215, 0, 0.3) !important;
+    color: #1a1a1a !important;
+    font-weight: 800 !important;
+    position: relative !important;
+    animation: winnerGlow 2s ease-in-out infinite !important;
+}
+
+.time-slot-matches .team-small.team-won::before {
+    content: '🏆' !important;
+    margin-right: 4px !important;
+    font-size: 0.9rem !important;
+    animation: winnerBounce 1.5s ease-in-out infinite !important;
+}
+
+.time-slot-matches .team-small.team-won::after {
+    content: '' !important;
+    position: absolute !important;
+    top: -2px !important;
+    left: -2px !important;
+    right: -2px !important;
+    bottom: -2px !important;
+    background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.5), transparent) !important;
+    border-radius: 12px !important;
+    z-index: -1 !important;
+    animation: winnerShine 3s linear infinite !important;
+}
+
+@keyframes winnerGlow {
+    0%, 100% {
+        box-shadow: 0 4px 16px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 215, 0, 0.3) !important;
+    }
+    50% {
+        box-shadow: 0 6px 24px rgba(255, 193, 7, 0.6), 0 0 30px rgba(255, 215, 0, 0.5) !important;
+    }
+}
+
+@keyframes winnerBounce {
+    0%, 100% {
+        transform: translateY(0) !important;
+    }
+    50% {
+        transform: translateY(-3px) !important;
+    }
+}
+
+@keyframes winnerShine {
+    0% {
+        transform: translateX(-100%) translateY(-100%) !important;
+    }
+    100% {
+        transform: translateX(100%) translateY(100%) !important;
+    }
+}
+
+.time-slot-matches .team-small.team-won:hover {
+    border-color: #ffc107 !important;
+    box-shadow: 0 6px 24px rgba(255, 193, 7, 0.6), 0 0 30px rgba(255, 215, 0, 0.5) !important;
+    transform: translateY(-3px) scale(1.02) !important;
+    background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%) !important;
+}
+
 .time-slot-matches .team-vs-small {
     background: linear-gradient(135deg, #4c63d2 0%, #6a3d91 100%) !important;
     color: white !important;

@@ -2143,8 +2143,8 @@ async function loadMatchesForDate(date) {
                         const scoreBValue = scoreB !== null && scoreB !== undefined && scoreB !== '' ? parseInt(scoreB) : null;
                         const teamAWon = scoreAValue !== null && scoreBValue !== null && scoreAValue > scoreBValue;
                         const teamBWon = scoreAValue !== null && scoreBValue !== null && scoreBValue > scoreAValue;
-                        const teamAClass = teamBWon ? 'team-lost' : '';
-                        const teamBClass = teamAWon ? 'team-lost' : '';
+                        const teamAClass = isCompleted ? (teamAWon ? 'team-won' : (teamBWon ? 'team-lost' : '')) : '';
+                        const teamBClass = isCompleted ? (teamBWon ? 'team-won' : (teamAWon ? 'team-lost' : '')) : '';
                         
                         const scoreAStr = (scoreA !== null && scoreA !== undefined && scoreA !== '') ? scoreA : '15';
                         const scoreBStr = (scoreB !== null && scoreB !== undefined && scoreB !== '') ? scoreB : '15';
@@ -10519,6 +10519,14 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                 // 안전한 ID 생성 (콜론을 언더스코어로 변경)
                 const safeId = match.id.replace(/:/g, '_');
                 
+                // 점수 비교하여 승리/패배 팀 확인
+                const scoreAValue = scoreA !== null && scoreA !== undefined && scoreA !== '' ? parseInt(scoreA) : null;
+                const scoreBValue = scoreB !== null && scoreB !== undefined && scoreB !== '' ? parseInt(scoreB) : null;
+                const teamAWon = isCompleted && scoreAValue !== null && scoreBValue !== null && scoreAValue > scoreBValue;
+                const teamBWon = isCompleted && scoreAValue !== null && scoreBValue !== null && scoreBValue > scoreAValue;
+                const teamAClass = teamAWon ? 'team-won' : (teamBWon ? 'team-lost' : '');
+                const teamBClass = teamBWon ? 'team-won' : (teamAWon ? 'team-lost' : '');
+                
                 // 점수 표시 형식: 점수가 있으면 [점수], 없으면 빈 문자열
                 const scoreADisplay = scoreA !== '' ? `[${scoreA}]` : '';
                 const scoreBDisplay = scoreB !== '' ? `[${scoreB}]` : '';
@@ -10530,17 +10538,20 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                 matchDiv.innerHTML = `
                     <div class="match-court-simple">
                         <span class="court-label">코트#${courtNumber}</span>
-                        <span class="player-names">${teamALabel}${scoreASpace}${scoreADisplay} vs ${scoreBSpace}${scoreBDisplay}${teamBLabel}</span>
+                        <span class="player-names">
+                            <span class="${teamAClass}">${teamALabel}${scoreASpace}${scoreADisplay}</span> vs 
+                            <span class="${teamBClass}">${scoreBSpace}${scoreBDisplay}${teamBLabel}</span>
+                        </span>
                     </div>
                     <div class="match-score-simple">
                         <div class="score-input-wrapper">
-                            <label class="score-label" for="scoreA-${safeId}">${teamALabel}</label>
-                            <input type="number" class="score-input" min="0" max="15" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
+                            <label class="score-label ${teamAClass}" for="scoreA-${safeId}">${teamALabel}</label>
+                            <input type="number" class="score-input ${teamAClass}" min="0" max="15" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
                         </div>
                         <span class="score-separator">:</span>
                         <div class="score-input-wrapper">
-                            <label class="score-label" for="scoreB-${safeId}">${teamBLabel}</label>
-                            <input type="number" class="score-input" min="0" max="15" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
+                            <label class="score-label ${teamBClass}" for="scoreB-${safeId}">${teamBLabel}</label>
+                            <input type="number" class="score-input ${teamBClass}" min="0" max="15" id="scoreB-${safeId}" placeholder="0" value="${scoreB}" ${isCompleted ? 'readonly' : ''}>
                         </div>
                         <button class="save-score-btn" id="save-${safeId}" ${isCompleted ? 'disabled' : ''}>
                             ${isCompleted ? '완료' : '저장'}
