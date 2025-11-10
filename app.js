@@ -2061,7 +2061,7 @@ async function loadMatchesForDate(date) {
                 } else if (teamMode === 'balanced') {
                     const allPlayers = Array.from(allPlayersSet);
                     if (allPlayers.length > 0) {
-                        matchingInfoHTML = `<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">밸런스 모드: ${allPlayers.join(', ')} (${allPlayers.length}명)</div>`;
+                        matchingInfoHTML = '<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">밸런스 모드<br>- ' + allPlayers.join(', ') + '</div>';
                     }
                 } else {
                     // 그룹 모드: 코트별 배정 정보 표시
@@ -2069,11 +2069,11 @@ async function loadMatchesForDate(date) {
                     Object.keys(courtPlayers).sort((a, b) => a - b).forEach(courtNum => {
                         const players = courtPlayers[courtNum];
                         if (players.length > 0) {
-                            courtInfoList.push('코트' + courtNum + ': ' + players.join(', '));
+                            courtInfoList.push('- 코트' + courtNum + ' : ' + players.join(', '));
                         }
                     });
                     if (courtInfoList.length > 0) {
-                        matchingInfoHTML = '<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">그룹 모드: ' + courtInfoList.join(' | ') + '</div>';
+                        matchingInfoHTML = '<div style="padding: 4px 8px; margin-bottom: 4px; font-size: 0.85rem; color: #666;">그룹 모드<br>' + courtInfoList.join('<br>') + '</div>';
                     }
                 }
                 
