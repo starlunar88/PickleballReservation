@@ -2232,10 +2232,15 @@ async function loadMatchesForDate(date) {
                 // 라운드 헤더 스타일
                 const roundHeaders = matchesContainer.querySelectorAll('.round-header-compact');
                 roundHeaders.forEach(el => {
-                    el.style.fontSize = '0.95rem';
+                    if (isMobile) {
+                        el.style.fontSize = '0.95rem';
+                        el.style.padding = '3px 4px';
+                    } else {
+                        el.style.fontSize = '1rem';
+                        el.style.padding = '4px 5px';
+                    }
                     el.style.fontWeight = '700';
-                    el.style.color = 'white'; /* 흰색 글씨로 변경 */
-                    el.style.padding = '4px 6px'; /* 여백 줄임 */
+                    el.style.color = 'white'; /* 흰색 글씨로 변경 (모바일/PC 모두) */
                     el.style.marginBottom = '2px'; /* 여백 줄임 */
                     el.style.background = 'linear-gradient(135deg, #4c63d2 0%, #6a3d91 100%)'; /* 배경 유지 */
                     el.style.borderRadius = '4px';

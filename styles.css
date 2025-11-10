@@ -5571,6 +5571,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: none !important; /* 말줄임표 제거 */
         overflow: visible !important; /* 말줄임표 제거 */
         text-overflow: clip !important; /* 말줄임표 제거 */
+        white-space: nowrap !important; /* 한 줄로 강제 */
     }
     
     .match-single-row {
