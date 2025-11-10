@@ -2219,24 +2219,24 @@ async function loadMatchesForDate(date) {
                         const teamALabel = match.teamA.map(p => p.userName).join(',');
                         const teamBLabel = match.teamB.map(p => p.userName).join(',');
                         
-                        // 점수 표시 형식: 점수가 있으면 [점수], 없으면 빈 문자열
-                        const scoreADisplay = scoreA !== null && scoreA !== undefined && scoreA !== '' ? `[${scoreA}]` : '';
-                        const scoreBDisplay = scoreB !== null && scoreB !== undefined && scoreB !== '' ? `[${scoreB}]` : '';
-                        
-                        // 점수가 있을 때만 공백 포함
-                        const scoreASpace = scoreADisplay ? ' ' : '';
-                        const scoreBSpace = scoreBDisplay ? ' ' : '';
+                        // 점수 비교하여 진 팀 확인
+                        const scoreAValue = scoreA !== null && scoreA !== undefined && scoreA !== '' ? parseInt(scoreA) : null;
+                        const scoreBValue = scoreB !== null && scoreB !== undefined && scoreB !== '' ? parseInt(scoreB) : null;
+                        const teamAWon = scoreAValue !== null && scoreBValue !== null && scoreAValue > scoreBValue;
+                        const teamBWon = scoreAValue !== null && scoreBValue !== null && scoreBValue > scoreAValue;
+                        const teamAClass = teamBWon ? 'team-lost' : '';
+                        const teamBClass = teamAWon ? 'team-lost' : '';
                         
                         matchesHTML += `
                             <div class="match-item-compact" data-match-id="${match.id}">
-                                <div class="match-court-simple-compact">
-                                    <span class="court-label-compact">코트#${courtNum}</span>
-                                    <span class="player-names-compact">${teamALabel}${scoreASpace}${scoreADisplay} vs ${scoreBSpace}${scoreBDisplay}${teamBLabel}</span>
-                                </div>
+                                <span class="court-label-compact">코트#${courtNum}</span>
+                                <span class="player-names-compact ${teamAClass}">${teamALabel}</span>
+                                <span class="vs-separator-compact">vs</span>
+                                <span class="player-names-compact ${teamBClass}">${teamBLabel}</span>
                                 <div class="match-score-input-compact">
-                                    <input type="number" class="score-input-compact" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                    <input type="number" class="score-input-compact team-a-score" min="0" max="15" id="scoreA-${safeId}" placeholder="15" value="${scoreA !== null && scoreA !== undefined && scoreA !== '' ? scoreA : '15'}" ${isCompleted ? 'readonly' : ''}>
                                     <span class="score-separator-compact">-</span>
-                                    <input type="number" class="score-input-compact" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
+                                    <input type="number" class="score-input-compact team-b-score" min="0" max="15" id="scoreB-${safeId}" placeholder="15" value="${scoreB !== null && scoreB !== undefined && scoreB !== '' ? scoreB : '15'}" ${isCompleted ? 'readonly' : ''}>
                                 </div>
                                 <button class="save-score-btn-compact ${isCompleted ? 'completed' : ''}" id="save-${safeId}" ${isCompleted ? '' : ''}>
                                     ${isCompleted ? '수정하기' : '경기 기록하기'}
@@ -2330,18 +2330,8 @@ async function loadMatchesForDate(date) {
                     el.style.display = 'flex';
                     el.style.flexDirection = 'row';
                     el.style.alignItems = 'center';
-                    el.style.gap = '12px';
-                    el.style.flexWrap = 'wrap';
-                });
-                
-                // 간단한 대진표 스타일 추가 (한 줄로 표시)
-                const matchCourtSimples = matchesContainer.querySelectorAll('.match-court-simple-compact');
-                matchCourtSimples.forEach(el => {
-                    el.style.display = 'flex';
-                    el.style.alignItems = 'center';
-                    el.style.gap = '12px';
-                    el.style.flex = '1';
-                    el.style.minWidth = '300px';
+                    el.style.gap = '6px';
+                    el.style.flexWrap = 'nowrap';
                 });
                 
                 const courtLabels = matchesContainer.querySelectorAll('.court-label-compact');
@@ -2349,7 +2339,7 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '700';
                     el.style.fontSize = '1rem';
                     el.style.color = '#667eea';
-                    el.style.minWidth = '70px';
+                    el.style.minWidth = '60px';
                     el.style.flexShrink = '0';
                 });
                 
@@ -2362,6 +2352,24 @@ async function loadMatchesForDate(date) {
                     el.style.textAlign = 'left';
                     el.style.wordBreak = 'break-word';
                     el.style.lineHeight = '1.5';
+                    el.style.whiteSpace = 'nowrap';
+                    el.style.overflow = 'hidden';
+                    el.style.textOverflow = 'ellipsis';
+                });
+                
+                // 진 팀 스타일 (회색)
+                const teamLost = matchesContainer.querySelectorAll('.team-lost');
+                teamLost.forEach(el => {
+                    el.style.color = '#999';
+                });
+                
+                const vsSeparators = matchesContainer.querySelectorAll('.vs-separator-compact');
+                vsSeparators.forEach(el => {
+                    el.style.fontSize = '1rem';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#667eea';
+                    el.style.margin = '0 8px';
+                    el.style.flexShrink = '0';
                 });
                 
                 const matchTeams = matchesContainer.querySelectorAll('.match-teams-compact');
@@ -2404,7 +2412,72 @@ async function loadMatchesForDate(date) {
                     el.style.alignItems = 'center';
                     el.style.gap = '8px';
                     el.style.flexShrink = '0';
+                    el.style.marginLeft = 'auto';
+                    el.style.marginRight = '12px';
                 });
+                
+                // 팀별 점수 입력 필드 정렬
+                const teamAScores = matchesContainer.querySelectorAll('.team-a-score');
+                teamAScores.forEach(el => {
+                    el.style.order = '1';
+                });
+                
+                const teamBScores = matchesContainer.querySelectorAll('.team-b-score');
+                teamBScores.forEach(el => {
+                    el.style.order = '3';
+                });
+                
+                const scoreSeparators = matchesContainer.querySelectorAll('.score-separator-compact');
+                scoreSeparators.forEach(el => {
+                    el.style.order = '2';
+                });
+                
+                // 점수 변경 시 진 팀 스타일 업데이트 함수
+                function updateTeamLostStyle(scoreInput) {
+                    const matchItem = scoreInput.closest('.match-item-compact');
+                    if (!matchItem) return;
+                    
+                    const scoreAInput = matchItem.querySelector('.team-a-score');
+                    const scoreBInput = matchItem.querySelector('.team-b-score');
+                    const teamAName = matchItem.querySelector('.player-names-compact:first-of-type');
+                    const teamBName = matchItem.querySelector('.player-names-compact:last-of-type');
+                    
+                    if (!scoreAInput || !scoreBInput || !teamAName || !teamBName) return;
+                    
+                    const scoreA = parseInt(scoreAInput.value) || 0;
+                    const scoreB = parseInt(scoreBInput.value) || 0;
+                    
+                    // 둘 다 0이거나 같으면 스타일 제거
+                    if (scoreA === 0 && scoreB === 0) {
+                        teamAName.classList.remove('team-lost');
+                        teamBName.classList.remove('team-lost');
+                        teamAName.style.color = '#1a1a1a';
+                        teamBName.style.color = '#1a1a1a';
+                        return;
+                    }
+                    
+                    // 점수가 같으면 스타일 제거
+                    if (scoreA === scoreB) {
+                        teamAName.classList.remove('team-lost');
+                        teamBName.classList.remove('team-lost');
+                        teamAName.style.color = '#1a1a1a';
+                        teamBName.style.color = '#1a1a1a';
+                        return;
+                    }
+                    
+                    // 진 팀에 스타일 적용
+                    if (scoreA > scoreB) {
+                        teamAName.classList.remove('team-lost');
+                        teamBName.classList.add('team-lost');
+                        teamAName.style.color = '#1a1a1a';
+                        teamBName.style.color = '#999';
+                    } else {
+                        teamAName.classList.add('team-lost');
+                        teamBName.classList.remove('team-lost');
+                        teamAName.style.color = '#999';
+                        teamBName.style.color = '#1a1a1a';
+                    }
+                }
                 
                 const scoreInputs = matchesContainer.querySelectorAll('.score-input-compact');
                 scoreInputs.forEach(el => {
@@ -2435,6 +2508,9 @@ async function loadMatchesForDate(date) {
                             this.value = '15';
                             showToast('점수는 15점을 초과할 수 없습니다.', 'warning');
                         }
+                        
+                        // 점수 변경 시 진 팀 스타일 업데이트
+                        updateTeamLostStyle(this);
                     });
                     
                     // 클릭 시 초기화 (readonly가 아닌 경우)
@@ -2453,8 +2529,13 @@ async function loadMatchesForDate(date) {
                             if (!this.value || this.value === '') {
                                 this.value = '15';
                             }
+                            // blur 시에도 진 팀 스타일 업데이트
+                            updateTeamLostStyle(this);
                         });
                     }
+                    
+                    // 초기 로드 시 진 팀 스타일 적용
+                    updateTeamLostStyle(el);
                 });
                 
                 const scoreSeparators = matchesContainer.querySelectorAll('.score-separator-compact');
