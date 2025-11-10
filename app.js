@@ -2143,7 +2143,7 @@ async function loadMatchesForDate(date) {
                         const scoreBValue = scoreB !== null && scoreB !== undefined && scoreB !== '' ? parseInt(scoreB) : null;
                         const teamAWon = scoreAValue !== null && scoreBValue !== null && scoreAValue > scoreBValue;
                         const teamBWon = scoreAValue !== null && scoreBValue !== null && scoreBValue > scoreAValue;
-                        const teamAClass = isCompleted ? (teamAWon ? 'team-won' : (teamBWon ? 'team-lost' : '')) : '';
+                        const teamAClass = isCompleted ? (teamAWon ? 'team-won-left' : (teamBWon ? 'team-lost' : '')) : '';
                         const teamBClass = isCompleted ? (teamBWon ? 'team-won' : (teamAWon ? 'team-lost' : '')) : '';
                         
                         const scoreAStr = (scoreA !== null && scoreA !== undefined && scoreA !== '') ? scoreA : '15';
