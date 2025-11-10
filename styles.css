@@ -5447,6 +5447,47 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     margin-top: 8px;
 }
 
+/* 간단한 대진표 스타일 */
+.match-court-simple {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8f9fc 0%, #f0f4ff 100%);
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.court-label {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #667eea;
+    min-width: 70px;
+    flex-shrink: 0;
+}
+
+.player-names {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    flex: 1;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.5;
+}
+
+.match-score-simple {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+}
+
 .score-input {
     width: 45px;
     padding: 6px;

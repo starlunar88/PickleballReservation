@@ -10467,7 +10467,7 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
             const firstMatch = roundMatches[0];
             let timeStr = '';
             if (firstMatch.gameStartTime && firstMatch.gameEndTime) {
-                timeStr = `${firstMatch.gameStartTime} ~ ${firstMatch.gameEndTime}`;
+                timeStr = `${firstMatch.gameStartTime}~${firstMatch.gameEndTime}`;
             } else {
                 // 하위 호환성: 계산으로 시간 결정
                 const startTime = timeSlot.split('-')[0];
@@ -10475,36 +10475,53 @@ async function renderMatchScheduleToContainer(matches, date, timeSlot, scheduleC
                 roundStartTime.setMinutes(roundStartTime.getMinutes() + (parseInt(roundNum) - 1) * 15);
                 const endTime = new Date(roundStartTime);
                 endTime.setMinutes(endTime.getMinutes() + 15);
-                timeStr = `${roundStartTime.toTimeString().slice(0, 5)} ~ ${endTime.toTimeString().slice(0, 5)}`;
+                const startTimeStr = roundStartTime.toTimeString().slice(0, 5);
+                const endTimeStr = endTime.toTimeString().slice(0, 5);
+                timeStr = `${startTimeStr}~${endTimeStr}`;
             }
             
             roundDiv.innerHTML = `
-                <h3>${timeStr} - ${roundNum}경기 (15분)</h3>
+                <h3>${roundNum}경기 : ${timeStr}</h3>
                 <div class="round-matches"></div>
             `;
             
             const roundMatchesContainer = roundDiv.querySelector('.round-matches');
             
+            // 코트 번호별로 정렬
+            roundMatches.sort((a, b) => {
+                const courtA = a.courtNumber || a.court || 1;
+                const courtB = b.courtNumber || b.court || 1;
+                return courtA - courtB;
+            });
+            
             roundMatches.forEach(match => {
                 const matchDiv = document.createElement('div');
                 matchDiv.className = 'match-item';
                 
-                const teamALabel = match.teamA.map(p => p.userName).join(', ');
-                const teamBLabel = match.teamB.map(p => p.userName).join(', ');
+                const teamALabel = match.teamA.map(p => p.userName).join(',');
+                const teamBLabel = match.teamB.map(p => p.userName).join(',');
                 const scoreA = match.scoreA ?? '';
                 const scoreB = match.scoreB ?? '';
                 const isCompleted = match.status === 'completed';
+                const courtNumber = match.courtNumber || match.court || 1;
                 
                 // 안전한 ID 생성 (콜론을 언더스코어로 변경)
                 const safeId = match.id.replace(/:/g, '_');
                 
+                // 점수 표시 형식: 점수가 있으면 [점수], 없으면 빈 문자열
+                const scoreADisplay = scoreA !== '' ? `[${scoreA}]` : '';
+                const scoreBDisplay = scoreB !== '' ? `[${scoreB}]` : '';
+                
+                // 점수가 있을 때만 공백 포함
+                const scoreASpace = scoreADisplay ? ' ' : '';
+                const scoreBSpace = scoreBDisplay ? ' ' : '';
+                
                 matchDiv.innerHTML = `
-                    <div class="match-teams">
-                        <div class="team">${teamALabel}</div>
-                        <div class="team vs">vs</div>
-                        <div class="team">${teamBLabel}</div>
+                    <div class="match-court-simple">
+                        <span class="court-label">코트#${courtNumber}</span>
+                        <span class="player-names">${teamALabel}${scoreASpace}${scoreADisplay} vs ${scoreBSpace}${scoreBDisplay}${teamBLabel}</span>
                     </div>
-                    <div class="match-score">
+                    <div class="match-score-simple">
                         <div class="score-input-wrapper">
                             <label class="score-label" for="scoreA-${safeId}">${teamALabel}</label>
                             <input type="number" class="score-input" min="0" max="15" id="scoreA-${safeId}" placeholder="0" value="${scoreA}" ${isCompleted ? 'readonly' : ''}>
