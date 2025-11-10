@@ -2150,7 +2150,7 @@ async function loadMatchesForDate(date) {
                         const scoreBStr = (scoreB !== null && scoreB !== undefined && scoreB !== '') ? scoreB : '15';
                         const readonlyAttr = isCompleted ? 'readonly' : '';
                         const completedClass = isCompleted ? 'completed' : '';
-                        const buttonText = isCompleted ? '수정하기' : '경기 기록하기';
+                        const buttonText = isCompleted ? '수정' : '기록';
                         
                         matchesHTML += 
                             '<div class="match-item-compact" data-match-id="' + match.id + '">' +
@@ -2560,7 +2560,7 @@ async function loadMatchesForDate(date) {
                             scoreAInput.style.cursor = 'text';
                             scoreBInput.style.cursor = 'text';
                             
-                            newBtn.textContent = '경기 기록하기';
+                            newBtn.textContent = '기록';
                             newBtn.style.background = '#667eea';
                             newBtn.style.color = 'white';
                             newBtn.classList.remove('completed');
@@ -2613,7 +2613,7 @@ async function loadMatchesForDate(date) {
                             showToast('점수가 기록되었습니다.', 'success');
                             
                             // 버튼 상태 변경: 완료 상태로
-                            newBtn.textContent = '수정하기';
+                            newBtn.textContent = '수정';
                             newBtn.style.background = '#6c757d';
                             newBtn.style.color = 'white';
                             newBtn.classList.add('completed');
