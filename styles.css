@@ -1099,32 +1099,32 @@ body {
     }
     
     .member-table-header {
-        padding: 4px 2px !important;
-        font-size: 0.7rem !important;
+        padding: 6px 4px !important;
+        font-size: 0.75rem !important;
         border-radius: 6px 6px 0 0 !important;
     }
     
     .member-header-cell {
-        padding: 0 1px !important;
-        font-size: 0.7rem !important;
+        padding: 0 !important;
+        font-size: 0.75rem !important;
     }
     
     .member-item {
-        padding: 4px 2px !important;
-        min-height: 32px !important;
+        padding: 6px 4px !important;
+        min-height: 36px !important;
     }
     
     .member-cell {
-        padding: 0 1px !important;
-        font-size: 0.7rem !important;
+        padding: 0 !important;
+        font-size: 0.75rem !important;
     }
     
     /* 강퇴 버튼 텍스트 숨기고 아이콘만 표시 */
     .remove-member-btn.mobile-remove-btn {
-        min-width: 26px !important;
-        width: 26px !important;
-        padding: 2px !important;
-        font-size: 0.65rem !important;
+        min-width: 28px !important;
+        width: 28px !important;
+        padding: 3px !important;
+        font-size: 0.7rem !important;
         border-radius: 3px !important;
         position: relative !important;
     }
@@ -1135,7 +1135,7 @@ body {
     
     .remove-member-btn.mobile-remove-btn i {
         margin: 0 !important;
-        font-size: 0.75rem !important;
+        font-size: 0.8rem !important;
     }
 }
 
