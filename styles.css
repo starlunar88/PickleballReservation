@@ -1004,14 +1004,17 @@ body {
 }
 
 .member-list {
-    max-height: 500px;
+    max-height: 400px;
     overflow-y: auto;
     margin-top: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: #fff;
 }
 
 .member-table-header {
     display: flex;
-    padding: 12px 15px;
+    padding: 8px 10px;
     background: #f8f9fa;
     border-radius: 8px 8px 0 0;
     font-weight: 600;
@@ -1020,21 +1023,24 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
+    font-size: 0.85rem;
 }
 
 .member-header-cell {
-    padding: 0 8px;
-    font-size: 0.9rem;
+    padding: 0 4px;
+    font-size: 0.85rem;
     color: #495057;
+    white-space: nowrap;
 }
 
 .member-item {
     display: flex;
     align-items: center;
-    padding: 12px 15px;
+    padding: 8px 10px;
     background: #fff;
     border-bottom: 1px solid #e9ecef;
     transition: all 0.2s ease;
+    min-height: 40px;
 }
 
 .member-item:last-child {
@@ -1047,12 +1053,13 @@ body {
 }
 
 .member-cell {
-    padding: 0 8px;
-    font-size: 0.9rem;
+    padding: 0 4px;
+    font-size: 0.85rem;
     color: #333;
     word-break: break-word;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .member-cell:first-child {
@@ -1063,11 +1070,11 @@ body {
     background: transparent;
     border: 1px solid #dc3545;
     color: #dc3545;
-    padding: 6px 12px;
+    padding: 4px 8px;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     white-space: nowrap;
 }
 
@@ -1867,16 +1874,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 관리자 설정 모달 스타일 */
 #admin-settings-modal .modal-content {
-    max-height: 90vh;
+    max-height: 95vh;
     overflow: hidden;
-    width: 90vw;
-    max-width: 600px;
+    width: 95vw;
+    max-width: 1000px;
     display: flex;
     flex-direction: column;
 }
 
 #admin-settings-modal .modal-body {
-    max-height: calc(90vh - 140px);
+    max-height: calc(95vh - 140px);
     overflow-y: auto;
     padding: 20px 30px;
     flex: 1;

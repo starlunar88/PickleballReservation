@@ -11893,12 +11893,12 @@ async function loadMemberList() {
         const tableHeader = document.createElement('div');
         tableHeader.className = 'member-table-header';
         tableHeader.innerHTML = `
-            <div class="member-header-cell" style="flex: 1.5;">이름</div>
-            <div class="member-header-cell" style="flex: 1.5;">이메일</div>
-            <div class="member-header-cell" style="flex: 1;">DUPR</div>
-            <div class="member-header-cell" style="flex: 1.5;">DUPR ID</div>
-            <div class="member-header-cell" style="flex: 1.5;">DUPR Name</div>
-            <div class="member-header-cell" style="flex: 1;">작업</div>
+            <div class="member-header-cell" style="flex: 1.2; min-width: 80px;">이름</div>
+            <div class="member-header-cell" style="flex: 1.3; min-width: 120px;">이메일</div>
+            <div class="member-header-cell" style="flex: 0.8; min-width: 60px;">DUPR</div>
+            <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR ID</div>
+            <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR Name</div>
+            <div class="member-header-cell" style="flex: 0.9; min-width: 70px;">작업</div>
         `;
         memberList.appendChild(tableHeader);
         
@@ -11931,12 +11931,12 @@ function createMemberElement(member) {
     const escapedId = escapeJsString(member.id);
     
     div.innerHTML = `
-        <div class="member-cell" style="flex: 1.5;">${escapeHtml(member.displayName)}</div>
-        <div class="member-cell" style="flex: 1.5;">${escapeHtml(member.email)}</div>
-        <div class="member-cell" style="flex: 1;">${duprText}</div>
-        <div class="member-cell" style="flex: 1.5;">${escapeHtml(duprIdText)}</div>
-        <div class="member-cell" style="flex: 1.5;">${escapeHtml(duprNameText)}</div>
-        <div class="member-cell" style="flex: 1;">
+        <div class="member-cell" style="flex: 1.2; min-width: 80px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
+        <div class="member-cell" style="flex: 1.3; min-width: 120px;" title="${escapeHtml(member.email)}">${escapeHtml(member.email)}</div>
+        <div class="member-cell" style="flex: 0.8; min-width: 60px;">${duprText}</div>
+        <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprIdText)}">${escapeHtml(duprIdText)}</div>
+        <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
+        <div class="member-cell" style="flex: 0.9; min-width: 70px;">
             <button class="btn btn-outline btn-small remove-member-btn" onclick="removeMember('${escapedId}', '${escapedDisplayName}')">
                 <i class="fas fa-user-slash"></i> 강퇴
             </button>
