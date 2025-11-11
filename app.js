@@ -9575,17 +9575,36 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 let fourPlayers = null;
                 if (teamMode === 'balanced' && candidatesWithMinCount.length >= 4) {
                     // 밸런스 모드: 여러 조합을 시도하여 이전 경기와 다른 조합 선택
+                    // DUPR 점수 범위를 고려하여 다양성 확보
                     const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
-                    const maxAttempts = Math.min(20, shuffled.length - 3);
+                    const maxAttempts = Math.min(50, Math.floor(shuffled.length / 4) * 10); // 더 많은 조합 시도
+                    
+                    // 이전 경기에서 사용된 플레이어 조합 추적 (팀 구성 무관)
+                    const previousPlayerCombinations = previousMatchConfigs.map(prev => {
+                        const allIds = (prev.teamAIds + ',' + prev.teamBIds).split(',').sort().join(',');
+                        return allIds;
+                    });
                     
                     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-                        const candidate = shuffled.slice(attempt, attempt + 4);
-                        // 이전 경기와 다른 조합인지 확인 (간단한 체크)
+                        // 다양한 인덱스에서 4명 선택 (더 다양하게)
+                        const startIdx = attempt % Math.max(1, shuffled.length - 3);
+                        let candidate = shuffled.slice(startIdx, startIdx + 4);
+                        
+                        if (candidate.length < 4) {
+                            // 인덱스가 범위를 벗어나면 랜덤하게 선택
+                            const randomIndices = [];
+                            while (randomIndices.length < 4) {
+                                const idx = Math.floor(Math.random() * shuffled.length);
+                                if (!randomIndices.includes(idx)) {
+                                    randomIndices.push(idx);
+                                }
+                            }
+                            candidate = randomIndices.map(idx => shuffled[idx]);
+                        }
+                        
+                        // 이전 경기와 다른 조합인지 확인 (플레이어 4명 조합 체크)
                         const candidateIds = candidate.map(p => p.userId).sort().join(',');
-                        const isNew = !previousMatchConfigs.some(prev => {
-                            const prevIds = (prev.teamAIds + ',' + prev.teamBIds).split(',').sort().join(',');
-                            return prevIds === candidateIds;
-                        });
+                        const isNew = !previousPlayerCombinations.includes(candidateIds);
                         
                         if (isNew || previousMatchConfigs.length === 0) {
                             fourPlayers = candidate;
@@ -9594,8 +9613,48 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     }
                     
                     if (!fourPlayers) {
-                        // 고유한 조합을 찾지 못했으면 랜덤하게 선택
-                        fourPlayers = shuffled.slice(0, 4);
+                        // 고유한 조합을 찾지 못했으면 랜덤하게 선택 (DUPR 점수 고려)
+                        // DUPR 점수 범위를 고려하여 다양한 조합 시도
+                        const duprRanges = [];
+                        shuffled.forEach((p, idx) => {
+                            const dupr = p.dupr || 0;
+                            const range = Math.floor(dupr * 10) / 10; // 0.1 단위로 그룹화
+                            if (!duprRanges[range]) {
+                                duprRanges[range] = [];
+                            }
+                            duprRanges[range].push(p);
+                        });
+                        
+                        // 각 범위에서 최대한 골고루 선택
+                        const selected = [];
+                        const rangeKeys = Object.keys(duprRanges).sort((a, b) => parseFloat(b) - parseFloat(a));
+                        let rangeIdx = 0;
+                        let playerIdx = 0;
+                        
+                        while (selected.length < 4 && shuffled.length > 0) {
+                            if (rangeKeys.length > 0) {
+                                const rangeKey = rangeKeys[rangeIdx % rangeKeys.length];
+                                const rangePlayers = duprRanges[rangeKey];
+                                if (rangePlayers && rangePlayers.length > 0) {
+                                    const player = rangePlayers[playerIdx % rangePlayers.length];
+                                    if (!selected.find(p => p.userId === player.userId)) {
+                                        selected.push(player);
+                                    }
+                                    playerIdx++;
+                                }
+                                rangeIdx++;
+                            } else {
+                                selected.push(shuffled[selected.length % shuffled.length]);
+                            }
+                            
+                            if (selected.length === 0 && shuffled.length >= 4) {
+                                // 완전히 랜덤하게 선택
+                                selected.push(...shuffled.slice(0, 4));
+                                break;
+                            }
+                        }
+                        
+                        fourPlayers = selected.length >= 4 ? selected.slice(0, 4) : shuffled.slice(0, 4);
                     }
                 } else {
                     // 랜덤 모드 또는 후보가 부족한 경우: 랜덤하게 섞어서 4명 선택
@@ -10111,10 +10170,40 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 if (candidatesWithMinCount.length >= 4) {
                     const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
                     
+                    // 이전 경기에서 사용된 플레이어 조합 추적 (팀 구성 무관)
+                    const previousPlayerCombinations = previousMatchConfigs.map(prev => {
+                        const allIds = (prev.teamAIds + ',' + prev.teamBIds).split(',').sort().join(',');
+                        return allIds;
+                    });
+                    
                     // 이전 경기와 다른 조합 찾기 (최대 50번 시도 - 더 많은 조합 시도)
                     let found = false;
-                    for (let attempt = 0; attempt < 50 && attempt < shuffled.length - 3 && !found; attempt++) {
-                        const candidate = shuffled.slice(attempt, attempt + 4);
+                    const maxAttempts = Math.min(50, Math.floor(shuffled.length / 4) * 10);
+                    for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
+                        // 다양한 인덱스에서 4명 선택 (더 다양하게)
+                        const startIdx = attempt % Math.max(1, shuffled.length - 3);
+                        let candidate = shuffled.slice(startIdx, startIdx + 4);
+                        
+                        if (candidate.length < 4) {
+                            // 인덱스가 범위를 벗어나면 랜덤하게 선택
+                            const randomIndices = [];
+                            while (randomIndices.length < 4 && randomIndices.length < shuffled.length) {
+                                const idx = Math.floor(Math.random() * shuffled.length);
+                                if (!randomIndices.includes(idx)) {
+                                    randomIndices.push(idx);
+                                }
+                            }
+                            candidate = randomIndices.map(idx => shuffled[idx]);
+                        }
+                        
+                        // 이전 경기와 다른 플레이어 조합인지 먼저 확인
+                        const candidateIds = candidate.map(p => p.userId).sort().join(',');
+                        const isNewPlayerCombination = !previousPlayerCombinations.includes(candidateIds);
+                        
+                        if (!isNewPlayerCombination && previousMatchConfigs.length > 0) {
+                            // 같은 플레이어 조합이면 스킵
+                            continue;
+                        }
                         
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
