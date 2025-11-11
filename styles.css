@@ -1087,6 +1087,13 @@ body {
     margin-right: 4px;
 }
 
+/* 모바일에서 이메일 컬럼 숨기기 */
+@media (max-width: 768px) {
+    .member-email-cell {
+        display: none !important;
+    }
+}
+
 /* 알림 시스템 스타일 */
 .notifications-btn {
     position: relative;

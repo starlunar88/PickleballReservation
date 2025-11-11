@@ -11894,7 +11894,7 @@ async function loadMemberList() {
         tableHeader.className = 'member-table-header';
         tableHeader.innerHTML = `
             <div class="member-header-cell" style="flex: 1.2; min-width: 80px;">이름</div>
-            <div class="member-header-cell" style="flex: 1.3; min-width: 120px;">이메일</div>
+            <div class="member-header-cell member-email-cell" style="flex: 1.3; min-width: 120px;">이메일</div>
             <div class="member-header-cell" style="flex: 0.8; min-width: 60px;">DUPR</div>
             <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR ID</div>
             <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR Name</div>
@@ -11932,7 +11932,7 @@ function createMemberElement(member) {
     
     div.innerHTML = `
         <div class="member-cell" style="flex: 1.2; min-width: 80px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
-        <div class="member-cell" style="flex: 1.3; min-width: 120px;" title="${escapeHtml(member.email)}">${escapeHtml(member.email)}</div>
+        <div class="member-cell member-email-cell" style="flex: 1.3; min-width: 120px;" title="${escapeHtml(member.email)}">${escapeHtml(member.email)}</div>
         <div class="member-cell" style="flex: 0.8; min-width: 60px;">${duprText}</div>
         <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprIdText)}">${escapeHtml(duprIdText)}</div>
         <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
