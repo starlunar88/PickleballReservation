@@ -1087,10 +1087,39 @@ body {
     margin-right: 4px;
 }
 
-/* 모바일에서 이메일 컬럼 숨기기 */
+/* 모바일에서 이메일 컬럼 숨기기 및 컴팩트 스타일 */
 @media (max-width: 768px) {
     .member-email-cell {
         display: none !important;
+    }
+    
+    .member-table-header {
+        padding: 6px 4px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .member-header-cell {
+        padding: 0 2px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .member-item {
+        padding: 6px 4px !important;
+        min-height: 35px !important;
+    }
+    
+    .member-cell {
+        padding: 0 2px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .remove-member-btn {
+        padding: 3px 6px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .remove-member-btn i {
+        margin-right: 2px !important;
     }
 }
 
