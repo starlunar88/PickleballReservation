@@ -709,16 +709,19 @@ async function isAdmin(user) {
 }
 
 // 예약 인원에 따른 코트 수 계산 함수
-// 4명 = 1코트, 8명 = 2코트, 12명 이상 = 3코트에 분배
+// 1~3명: 대진표 생성 안됨 (이 함수 호출 전에 체크됨)
+// 4~7명: 코트 1개에 모든 인원 배정
+// 8~11명: 코트 2개에 모든 인원 배정
+// 12명 이상: 코트 3개에 모든 인원 배정
 function calculateCourtCount(playerCount, maxCourts = 3) {
     if (playerCount < 4) {
-        return 1; // 4명 미만은 1코트
+        return 1; // 4명 미만은 1코트 (하지만 실제로는 대진표 생성 안됨)
     } else if (playerCount < 8) {
-        return 1; // 4-7명은 1코트
+        return 1; // 4~7명: 코트 1개에 모든 인원 배정
     } else if (playerCount < 12) {
-        return 2; // 8-11명은 2코트
+        return 2; // 8~11명: 코트 2개에 모든 인원 배정
     } else {
-        return Math.min(3, maxCourts); // 12명 이상은 3코트 (최대 코트 수 제한)
+        return Math.min(3, maxCourts); // 12명 이상: 코트 3개에 모든 인원 배정 (최대 코트 수 제한)
     }
 }
 
@@ -8332,11 +8335,17 @@ async function checkAndProcessReservations() {
             const slotStart = timeSlot.start;
             const slotEnd = timeSlot.end;
             
-            // 마감 시간 계산 (게임 시작 1시간 전)
+            // 마감 시간 계산 (게임 시작 시간에서 마감 시간(분) 전)
             const gameStartTime = new Date(`${currentDate}T${slotStart}:00`);
             const closingTime = new Date(gameStartTime.getTime() - (settings.closingTime * 60 * 1000));
             
-            // 현재 시간이 마감 시간을 지났는지 확인
+            // 게임 시작 시간이 지난 경우 처리하지 않음 (이미 게임이 시작되었거나 종료됨)
+            if (now >= gameStartTime) {
+                console.log(`게임 시작 시간이 지나서 처리하지 않음: ${currentDate} ${slotStart}-${slotEnd}`);
+                continue;
+            }
+            
+            // 현재 시간이 마감 시간을 지났는지 확인 (마감 시간 후 ~ 게임 시작 시간 전)
             if (now >= closingTime) {
                 await processTimeSlotReservations(currentDate, `${slotStart}-${slotEnd}`);
             }
@@ -8376,6 +8385,18 @@ async function processTimeSlotReservations(date, timeSlot) {
                 reservations.push({ id: doc.id, ...doc.data() });
             });
             
+            // 게임 시작 시간 확인 - 게임 시작 시간이 지난 경우 예약 취소를 절대 하지 않음
+            const settings = await getSystemSettings();
+            const [slotStart] = timeSlot.split('-');
+            const gameStartTime = new Date(`${date}T${slotStart}:00`);
+            const now = new Date();
+            
+            // 게임 시작 시간이 지난 경우 처리하지 않음 (예약 취소 절대 금지)
+            if (now >= gameStartTime) {
+                console.log(`게임 시작 시간이 지나서 예약 취소를 하지 않음: ${date} ${timeSlot}`);
+                return;
+            }
+            
             // 최소 4명 이상인지 확인
             // 단, confirmed 상태의 예약도 함께 확인하여 총 예약자 수가 4명 이상이면 취소하지 않음
             if (reservations.length < 4) {
@@ -8394,10 +8415,11 @@ async function processTimeSlotReservations(date, timeSlot) {
                     .where('timeSlot', '==', timeSlot)
                     .get();
                 
+                // 1~3명인 경우에만 취소 (게임 시작 시간 전에만)
                 if (totalReservations < 4) {
                     console.log(`예약자 수 부족 (pending: ${reservations.length}명, confirmed: ${confirmedSnapshot.size}명, 총: ${totalReservations}명): ${date} ${timeSlot}`);
                     
-                    // 예약 취소 처리
+                    // 예약 취소 처리 (게임 시작 시간 전에만, 1~3명인 경우에만)
                     await cancelInsufficientReservations(reservations, date, timeSlot);
                     return;
                 } else if (!existingMatches.empty) {
@@ -8412,41 +8434,18 @@ async function processTimeSlotReservations(date, timeSlot) {
                 }
             }
             
-            // 시스템 설정에서 최대 코트 수 가져오기
-            const settings = await getSystemSettings();
+            // 시스템 설정에서 최대 코트 수 가져오기 (이미 위에서 가져옴)
             const maxCourts = settings?.courtCount || 3; // 기본값 3
             
-            // 코트 수에 따라 사용할 수 있는 최대 플레이어 수 계산
-            // 코트 수 * 4 = 최대 플레이어 수
-            const maxPlayers = maxCourts * 4;
-            
-            // 예약자가 코트 수 제한을 초과하는 경우, 처음 예약한 순서대로 제한
-            let reservationsToUse = reservations;
-            let unassignedReservations = [];
-            if (reservations.length > maxPlayers) {
-                console.log(`⚠️ 예약자 수(${reservations.length}명)가 코트 수 제한(${maxPlayers}명)을 초과하여 첫 ${maxPlayers}명만 사용합니다.`);
-                // createdAt 기준으로 정렬하여 먼저 예약한 순서대로 선택
-                const sortedReservations = [...reservations].sort((a, b) => {
-                    const timeA = a.createdAt?.toMillis?.() || (a.createdAt?.seconds || 0) * 1000 || 0;
-                    const timeB = b.createdAt?.toMillis?.() || (b.createdAt?.seconds || 0) * 1000 || 0;
-                    return timeA - timeB; // 먼저 예약한 순서대로
-                });
-                reservationsToUse = sortedReservations.slice(0, maxPlayers);
-                unassignedReservations = sortedReservations.slice(maxPlayers);
-                console.log(`⚠️ 배정되지 않은 예약자 ${unassignedReservations.length}명:`, unassignedReservations.map(r => r.userName).join(', '));
-            }
+            // 모든 예약자를 사용 (인원 제한 없음)
+            // 4~7명: 코트 1개, 8~11명: 코트 2개, 12명 이상: 코트 3개에 모든 인원 배정
+            const reservationsToUse = reservations;
             
             // 기본 팀 짜기 모드 (밸런스 모드)
             const teams = await createTeams(reservationsToUse, TEAM_MODE.BALANCED);
             
             // 팀 배정 결과 저장
             await saveTeamAssignments(date, timeSlot, teams, TEAM_MODE.BALANCED);
-            
-            // 배정되지 않은 예약자들은 pending 상태로 유지 (취소하지 않음)
-            // 이렇게 하면 예약 탭에서도 모든 예약자가 표시됩니다
-            if (unassignedReservations.length > 0) {
-                console.log(`ℹ️ 배정되지 않은 ${unassignedReservations.length}명의 예약자는 pending 상태로 유지되어 예약 탭에 표시됩니다.`);
-            }
             
             // 대진표 생성/재생성
             try {
@@ -8513,9 +8512,19 @@ async function processTimeSlotReservations(date, timeSlot) {
     }
 }
 
-// 예약자 수 부족 시 취소 처리
+// 예약자 수 부족 시 취소 처리 (게임 시작 시간 전에만)
 async function cancelInsufficientReservations(reservations, date, timeSlot) {
     try {
+        // 게임 시작 시간 확인 - 게임 시작 시간이 지난 경우 절대 취소하지 않음
+        const [slotStart] = timeSlot.split('-');
+        const gameStartTime = new Date(`${date}T${slotStart}:00`);
+        const now = new Date();
+        
+        if (now >= gameStartTime) {
+            console.log(`⚠️ 게임 시작 시간이 지나서 예약 취소를 하지 않음: ${date} ${timeSlot}`);
+            return;
+        }
+        
         const batch = db.batch();
         
         for (const reservation of reservations) {
@@ -8534,7 +8543,7 @@ async function cancelInsufficientReservations(reservations, date, timeSlot) {
             await sendCancellationNotification(reservation, date, timeSlot);
         }
         
-        console.log(`예약 취소 완료: ${reservations.length}건`);
+        console.log(`예약 취소 완료: ${reservations.length}건 (게임 시작 시간 전)`);
         
     } catch (error) {
         console.error('예약 취소 처리 오류:', error);
@@ -9217,11 +9226,17 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         const maxCourts = settings?.courtCount || 3; // 기본값 3
         
         // 예약자 수에 따라 코트 수 동적 결정
-        // 4명 = 1코트, 8명 = 2코트, 12명 이상 = 3코트에 분배
+        // 1~3명: 대진표 생성 안됨 (이미 위에서 체크됨)
+        // 4~7명: 코트 1개에 모든 인원 배정
+        // 8~11명: 코트 2개에 모든 인원 배정
+        // 12명 이상: 코트 3개에 모든 인원 배정
         const playerCount = players.length;
         const courtCount = calculateCourtCount(playerCount, maxCourts);
         
-        console.log(`📊 코트 배정: 예약자 ${playerCount}명, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}`);
+        // 모든 플레이어를 사용 (인원 제한 없음)
+        const playersToUse = players;
+        
+        console.log(`📊 코트 배정: 예약자 ${playerCount}명, 설정된 최대 코트: ${maxCourts}, 실제 배정 코트: ${courtCount}, 모든 플레이어 배정`);
         
         // 기존 대진표 확인 및 삭제
         const existingMatches = await db.collection('matches')
@@ -9241,7 +9256,7 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
         // teamMode에 따라 대진표 생성 (같은 게임 내에서만 중복 매칭 방지)
-        const { schedule, unassignedPlayers } = buildMatchSchedule(players, courtCount, rounds, {}, teamMode);
+        const { schedule, unassignedPlayers } = buildMatchSchedule(playersToUse, courtCount, rounds, {}, teamMode);
         
         console.log(`📊 대진표 생성 결과: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
         
