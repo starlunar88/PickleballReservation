@@ -9240,7 +9240,7 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         }
         const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
 
-        // teamMode에 따라 대진표 생성
+        // teamMode에 따라 대진표 생성 (같은 게임 내에서만 중복 매칭 방지)
         const { schedule, unassignedPlayers } = buildMatchSchedule(players, courtCount, rounds, {}, teamMode);
         
         console.log(`📊 대진표 생성 결과: ${playerCount}명, ${courtCount}코트, ${schedule.length}경기`);
@@ -9423,6 +9423,13 @@ function createBalancedTeamConfigs(candidate) {
         return diff;
     });
     
+    const totalScore = sorted.reduce((sum, p) => sum + (p.dupr || 0), 0);
+    const avgScore = totalScore / 2;
+    const duprRange = (sorted[0].dupr || 0) - (sorted[3].dupr || 0);
+    
+    // DUPR 범위가 좁을 때(1.0 이하) 더 많은 조합 생성
+    const isNarrowRange = duprRange <= 1.0;
+    
     // 조합 1: [최강, 최약] vs [차강, 차약] - 완벽 밸런스
     const teamA1 = [sorted[0], sorted[3]].map(p => p.userId).sort();
     const teamB1 = [sorted[1], sorted[2]].map(p => p.userId).sort();
@@ -9437,17 +9444,39 @@ function createBalancedTeamConfigs(candidate) {
     const score2A = (sorted[0].dupr || 0) + (sorted[2].dupr || 0);
     const score2B = (sorted[1].dupr || 0) + (sorted[3].dupr || 0);
     const diff2 = Math.abs(score2A - score2B);
-    const totalScore = sorted.reduce((sum, p) => sum + (p.dupr || 0), 0);
-    const avgScore = totalScore / 2;
     
-    // 점수 차이가 평균의 30% 이내면 밸런스로 인정
-    if (diff2 <= avgScore * 0.3) {
+    // 점수 차이가 평균의 30% 이내면 밸런스로 인정 (범위가 좁을 때는 50%까지 허용)
+    const balanceThreshold = isNarrowRange ? 0.5 : 0.3;
+    if (diff2 <= avgScore * balanceThreshold) {
         configs.push({ teamA: teamA2, teamB: teamB2, balanceDiff: diff2 });
     }
     
-    // 조합 3: 팀 순서만 바꾼 조합 (다양성 확보)
+    // DUPR 범위가 좁을 때 추가 조합 생성 (다양성 확보)
+    if (isNarrowRange) {
+        // 조합 3: [최강, 차강] vs [차약, 최약] - 약간의 불균형이지만 허용
+        const teamA3 = [sorted[0], sorted[1]].map(p => p.userId).sort();
+        const teamB3 = [sorted[2], sorted[3]].map(p => p.userId).sort();
+        const score3A = (sorted[0].dupr || 0) + (sorted[1].dupr || 0);
+        const score3B = (sorted[2].dupr || 0) + (sorted[3].dupr || 0);
+        const diff3 = Math.abs(score3A - score3B);
+        if (diff3 <= avgScore * 0.5) {
+            configs.push({ teamA: teamA3, teamB: teamB3, balanceDiff: diff3 });
+        }
+        
+        // 조합 4: [최강, 차약] vs [차강, 최약] (다른 순서)
+        const teamA4 = [sorted[0], sorted[3]].map(p => p.userId).sort();
+        const teamB4 = [sorted[1], sorted[2]].map(p => p.userId).sort();
+        const score4A = (sorted[0].dupr || 0) + (sorted[3].dupr || 0);
+        const score4B = (sorted[1].dupr || 0) + (sorted[2].dupr || 0);
+        const diff4 = Math.abs(score4A - score4B);
+        if (diff4 <= avgScore * 0.5) {
+            configs.push({ teamA: teamA4, teamB: teamB4, balanceDiff: diff4 });
+        }
+    }
+    
+    // 팀 순서만 바꾼 조합 (다양성 확보)
     configs.push({ teamA: teamB1, teamB: teamA1, balanceDiff: diff1 });
-    if (diff2 <= avgScore * 0.3) {
+    if (diff2 <= avgScore * balanceThreshold) {
         configs.push({ teamA: teamB2, teamB: teamA2, balanceDiff: diff2 });
     }
     
@@ -9554,8 +9583,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             playerPlayCount[player.userId] = 0;
         });
         
-        // 이전 경기 조합을 추적하여 중복 방지
-        const previousMatchConfigs = [];
+        // 이전 경기 조합을 추적하여 중복 방지 (같은 게임 내에서만)
+        // 같은 사람과의 반복 매칭을 방지하기 위해 개인별 매칭 이력도 추적
+        const previousMatchConfigs = []; // 팀 조합 이력
+        const playerPairHistory = new Map(); // 개인별 매칭 이력: userId -> Set<matchedUserId>
         
         // 전체 경기 생성 (코트는 동적으로 배정)
         let currentCourt = 1;
@@ -9722,20 +9753,42 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     }
                 }
                 
-                // 이전 경기와 다른 조합 찾기
+                // 이전 경기와 다른 조합 찾기 (팀 조합 + 개인별 매칭 이력 체크)
                 let found = false;
                 for (const config of teamConfigs) {
                     const teamAKey = config.teamA.join(',');
                     const teamBKey = config.teamB.join(',');
                     const matchKey = `${teamAKey}|${teamBKey}`;
                     
-                    const isUnique = previousMatchConfigs.every(prev => {
+                    // 1. 팀 조합 중복 체크
+                    const isUniqueTeam = previousMatchConfigs.every(prev => {
                         const prevKey1 = `${prev.teamAIds}|${prev.teamBIds}`;
                         const prevKey2 = `${prev.teamBIds}|${prev.teamAIds}`;
                         return matchKey !== prevKey1 && matchKey !== prevKey2;
                     });
                     
-                    if (isUnique || previousMatchConfigs.length === 0) {
+                    // 2. 개인별 매칭 이력 체크 (같은 사람과 반복 매칭 방지)
+                    const allPlayerIds = [...config.teamA, ...config.teamB];
+                    let hasRepeatedPair = false;
+                    for (let i = 0; i < allPlayerIds.length; i++) {
+                        for (let j = i + 1; j < allPlayerIds.length; j++) {
+                            const player1 = allPlayerIds[i];
+                            const player2 = allPlayerIds[j];
+                            // 같은 팀이거나 상대 팀이어도 이미 매칭된 적이 있으면 체크
+                            if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
+                                hasRepeatedPair = true;
+                                break;
+                            }
+                            if (playerPairHistory.has(player2) && playerPairHistory.get(player2).has(player1)) {
+                                hasRepeatedPair = true;
+                                break;
+                            }
+                        }
+                        if (hasRepeatedPair) break;
+                    }
+                    
+                    // 팀 조합이 고유하고, 개인별 반복 매칭이 없으면 선택
+                    if ((isUniqueTeam || previousMatchConfigs.length === 0) && !hasRepeatedPair) {
                         const selectedTeamA = config.teamA.map(id => fourPlayers.find(p => p.userId === id));
                         const selectedTeamB = config.teamB.map(id => fourPlayers.find(p => p.userId === id));
                         
@@ -9746,6 +9799,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         
                         // 이전 경기 조합에 추가
                         previousMatchConfigs.push({ teamAIds: teamAKey, teamBIds: teamBKey });
+                        
+                        // 개인별 매칭 이력 업데이트
+                        const allPlayerIds = [...config.teamA, ...config.teamB];
+                        for (let i = 0; i < allPlayerIds.length; i++) {
+                            for (let j = i + 1; j < allPlayerIds.length; j++) {
+                                const player1 = allPlayerIds[i];
+                                const player2 = allPlayerIds[j];
+                                if (!playerPairHistory.has(player1)) {
+                                    playerPairHistory.set(player1, new Set());
+                                }
+                                if (!playerPairHistory.has(player2)) {
+                                    playerPairHistory.set(player2, new Set());
+                                }
+                                playerPairHistory.get(player1).add(player2);
+                                playerPairHistory.get(player2).add(player1);
+                            }
+                        }
                         
                         // 경기 생성
                         schedule.push({
@@ -9896,7 +9966,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 각 라운드마다 4명씩 선택하여 경기 생성
             // 모든 플레이어가 최대한 공평하게 참여하도록 로테이션
             // 이전 경기 조합을 추적하여 중복 방지 (팀 구성까지 고려)
+            // 같은 게임 내에서만 중복 방지
             const previousMatchConfigs = []; // {teamAIds: string, teamBIds: string}
+            const playerPairHistory = new Map(); // 개인별 매칭 이력: userId -> Set<matchedUserId>
             
             for (let r = 1; r <= rounds; r++) {
                 // 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
@@ -10086,6 +10158,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 const teamAIds = selectedTeamA.map(p => p.userId).sort().join(',');
                 const teamBIds = selectedTeamB.map(p => p.userId).sort().join(',');
                 previousMatchConfigs.push({ teamAIds, teamBIds });
+                
+                // 개인별 매칭 이력 업데이트
+                const allPlayerIds = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
+                for (let i = 0; i < allPlayerIds.length; i++) {
+                    for (let j = i + 1; j < allPlayerIds.length; j++) {
+                        const player1 = allPlayerIds[i];
+                        const player2 = allPlayerIds[j];
+                        if (!playerPairHistory.has(player1)) {
+                            playerPairHistory.set(player1, new Set());
+                        }
+                        if (!playerPairHistory.has(player2)) {
+                            playerPairHistory.set(player2, new Set());
+                        }
+                        playerPairHistory.get(player1).add(player2);
+                        playerPairHistory.get(player2).add(player1);
+                    }
+                }
                 
                 // 팀 구성
                 if (fourPlayers.length === 4) {
