@@ -1270,6 +1270,9 @@ async function openAdminSettingsModal() {
         // 회원가입 승인 요청 목록 로드
         await loadSignupRequests();
         
+        // 가입자 목록 로드
+        await loadMemberList();
+        
         // 실시간으로 승인 요청 목록 업데이트 구독
         // 기존 구독이 있으면 먼저 해제
         if (window.unsubscribeSignupRequests) {
@@ -11831,6 +11834,234 @@ async function rejectSignupRequest(requestId, email) {
     } catch (error) {
         console.error('회원가입 거부 오류:', error);
         showToast('회원가입 거부 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 가입자 목록 로드
+async function loadMemberList() {
+    try {
+        const memberList = document.getElementById('member-list');
+        if (!memberList) {
+            console.warn('member-list 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        memberList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>가입자 목록을 불러오는 중...</p></div>';
+        
+        console.log('가입자 목록 로드 시작...');
+        
+        // users 컬렉션에서 모든 사용자 가져오기
+        const usersSnapshot = await db.collection('users').get();
+        
+        console.log(`가입자 개수: ${usersSnapshot.size}`);
+        
+        if (usersSnapshot.empty) {
+            console.log('가입자가 없습니다.');
+            memberList.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>가입자가 없습니다</p></div>';
+            return;
+        }
+        
+        // 데이터를 배열로 변환하여 정렬
+        const members = [];
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            members.push({
+                id: doc.id,
+                displayName: userData.displayName || userData.name || '이름 없음',
+                email: userData.email || '이메일 없음',
+                dupr: userData.dupr || null,
+                duprId: userData.duprId || null,
+                duprName: userData.duprName || null,
+                createdAt: userData.createdAt || null
+            });
+        });
+        
+        // 이름 순으로 정렬
+        members.sort((a, b) => {
+            const nameA = a.displayName.toLowerCase();
+            const nameB = b.displayName.toLowerCase();
+            return nameA.localeCompare(nameB, 'ko');
+        });
+        
+        console.log('가입자 목록:', members);
+        
+        memberList.innerHTML = '';
+        
+        // 테이블 헤더 생성
+        const tableHeader = document.createElement('div');
+        tableHeader.className = 'member-table-header';
+        tableHeader.innerHTML = `
+            <div class="member-header-cell" style="flex: 1.5;">이름</div>
+            <div class="member-header-cell" style="flex: 1.5;">이메일</div>
+            <div class="member-header-cell" style="flex: 1;">DUPR</div>
+            <div class="member-header-cell" style="flex: 1.5;">DUPR ID</div>
+            <div class="member-header-cell" style="flex: 1.5;">DUPR Name</div>
+            <div class="member-header-cell" style="flex: 1;">작업</div>
+        `;
+        memberList.appendChild(tableHeader);
+        
+        // 각 사용자 항목 생성
+        members.forEach(member => {
+            const memberElement = createMemberElement(member);
+            memberList.appendChild(memberElement);
+        });
+        
+    } catch (error) {
+        console.error('가입자 목록 로드 오류:', error);
+        const memberList = document.getElementById('member-list');
+        if (memberList) {
+            memberList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>가입자 목록을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 가입자 요소 생성
+function createMemberElement(member) {
+    const div = document.createElement('div');
+    div.className = 'member-item';
+    
+    const duprText = member.dupr !== null ? member.dupr.toFixed(1) : '-';
+    const duprIdText = member.duprId || '-';
+    const duprNameText = member.duprName || '-';
+    
+    // JavaScript 문자열 이스케이프 (작은따옴표 처리)
+    const escapedDisplayName = escapeJsString(member.displayName);
+    const escapedId = escapeJsString(member.id);
+    
+    div.innerHTML = `
+        <div class="member-cell" style="flex: 1.5;">${escapeHtml(member.displayName)}</div>
+        <div class="member-cell" style="flex: 1.5;">${escapeHtml(member.email)}</div>
+        <div class="member-cell" style="flex: 1;">${duprText}</div>
+        <div class="member-cell" style="flex: 1.5;">${escapeHtml(duprIdText)}</div>
+        <div class="member-cell" style="flex: 1.5;">${escapeHtml(duprNameText)}</div>
+        <div class="member-cell" style="flex: 1;">
+            <button class="btn btn-outline btn-small remove-member-btn" onclick="removeMember('${escapedId}', '${escapedDisplayName}')">
+                <i class="fas fa-user-slash"></i> 강퇴
+            </button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// JavaScript 문자열 이스케이프 함수 (작은따옴표 처리)
+function escapeJsString(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r');
+}
+
+// HTML 이스케이프 함수
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 가입자 강퇴
+async function removeMember(userId, displayName) {
+    try {
+        if (!confirm(`정말로 ${displayName}님을 강퇴하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 해당 사용자의 모든 데이터가 삭제됩니다.`)) {
+            return;
+        }
+        
+        // 추가 확인
+        const confirmText = prompt(`강퇴를 확인하려면 "${displayName}"을(를) 정확히 입력하세요:`);
+        if (confirmText !== displayName) {
+            showToast('이름이 일치하지 않아 강퇴가 취소되었습니다.', 'warning');
+            return;
+        }
+        
+        showLoading();
+        
+        // 사용자 데이터 삭제
+        await db.collection('users').doc(userId).delete();
+        
+        // 사용자의 예약 삭제
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('userId', '==', userId)
+            .get();
+        
+        const batch = db.batch();
+        reservationsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        
+        // 사용자의 매치 데이터 삭제 (teamA, teamB에서 제거)
+        const matchesSnapshot = await db.collection('matches')
+            .where('status', '==', 'completed')
+            .get();
+        
+        const matchBatch = db.batch();
+        matchesSnapshot.forEach(doc => {
+            const matchData = doc.data();
+            let updated = false;
+            
+            if (matchData.teamA && Array.isArray(matchData.teamA)) {
+                const filteredTeamA = matchData.teamA.filter(player => {
+                    const playerId = player.userId || player.id;
+                    return playerId !== userId;
+                });
+                if (filteredTeamA.length !== matchData.teamA.length) {
+                    matchBatch.update(doc.ref, { teamA: filteredTeamA });
+                    updated = true;
+                }
+            }
+            
+            if (matchData.teamB && Array.isArray(matchData.teamB)) {
+                const filteredTeamB = matchData.teamB.filter(player => {
+                    const playerId = player.userId || player.id;
+                    return playerId !== userId;
+                });
+                if (filteredTeamB.length !== matchData.teamB.length) {
+                    matchBatch.update(doc.ref, { teamB: filteredTeamB });
+                    updated = true;
+                }
+            }
+        });
+        await matchBatch.commit();
+        
+        // 사용자의 게임 결과 데이터 삭제
+        const gameResultsSnapshot = await db.collection('gameResults').get();
+        const gameBatch = db.batch();
+        gameResultsSnapshot.forEach(doc => {
+            const gameData = doc.data();
+            let updated = false;
+            
+            if (gameData.winners && Array.isArray(gameData.winners)) {
+                const filteredWinners = gameData.winners.filter(id => id !== userId);
+                if (filteredWinners.length !== gameData.winners.length) {
+                    gameBatch.update(doc.ref, { winners: filteredWinners });
+                    updated = true;
+                }
+            }
+            
+            if (gameData.losers && Array.isArray(gameData.losers)) {
+                const filteredLosers = gameData.losers.filter(id => id !== userId);
+                if (filteredLosers.length !== gameData.losers.length) {
+                    gameBatch.update(doc.ref, { losers: filteredLosers });
+                    updated = true;
+                }
+            }
+        });
+        await gameBatch.commit();
+        
+        showToast(`${displayName}님이 강퇴되었습니다.`, 'success');
+        
+        // 가입자 목록 새로고침
+        await loadMemberList();
+        
+    } catch (error) {
+        console.error('가입자 강퇴 오류:', error);
+        showToast('가입자 강퇴 중 오류가 발생했습니다.', 'error');
     } finally {
         hideLoading();
     }

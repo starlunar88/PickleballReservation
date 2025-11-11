@@ -998,6 +998,88 @@ body {
     color: white;
 }
 
+/* 인원 관리 스타일 */
+.member-management-section {
+    margin-top: 10px;
+}
+
+.member-list {
+    max-height: 500px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.member-table-header {
+    display: flex;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.member-header-cell {
+    padding: 0 8px;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.member-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.member-item:hover {
+    background: #f8f9fa;
+}
+
+.member-cell {
+    padding: 0 8px;
+    font-size: 0.9rem;
+    color: #333;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.member-cell:first-child {
+    font-weight: 500;
+}
+
+.remove-member-btn {
+    background: transparent;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.remove-member-btn:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.remove-member-btn i {
+    margin-right: 4px;
+}
+
 /* 알림 시스템 스타일 */
 .notifications-btn {
     position: relative;
