@@ -11889,22 +11889,39 @@ async function loadMemberList() {
         
         memberList.innerHTML = '';
         
+        // 모바일 감지
+        const screenWidth = window.innerWidth || document.documentElement.clientWidth;
+        const isMobile = screenWidth <= 768;
+        
         // 테이블 헤더 생성
         const tableHeader = document.createElement('div');
         tableHeader.className = 'member-table-header';
-        tableHeader.innerHTML = `
-            <div class="member-header-cell" style="flex: 1.2; min-width: 80px;">이름</div>
-            <div class="member-header-cell member-email-cell" style="flex: 1.3; min-width: 120px;">이메일</div>
-            <div class="member-header-cell" style="flex: 0.8; min-width: 60px;">DUPR</div>
-            <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR ID</div>
-            <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR Name</div>
-            <div class="member-header-cell" style="flex: 0.9; min-width: 70px;">작업</div>
-        `;
+        
+        if (isMobile) {
+            // 모바일: 이메일 제외
+            tableHeader.innerHTML = `
+                <div class="member-header-cell" style="flex: 1.5; min-width: 80px;">이름</div>
+                <div class="member-header-cell" style="flex: 1; min-width: 60px;">DUPR</div>
+                <div class="member-header-cell" style="flex: 1.5; min-width: 100px;">DUPR ID</div>
+                <div class="member-header-cell" style="flex: 1.5; min-width: 100px;">DUPR Name</div>
+                <div class="member-header-cell" style="flex: 1; min-width: 70px;">작업</div>
+            `;
+        } else {
+            // 데스크톱: 모든 컬럼 포함
+            tableHeader.innerHTML = `
+                <div class="member-header-cell" style="flex: 1.2; min-width: 80px;">이름</div>
+                <div class="member-header-cell member-email-cell" style="flex: 1.3; min-width: 120px;">이메일</div>
+                <div class="member-header-cell" style="flex: 0.8; min-width: 60px;">DUPR</div>
+                <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR ID</div>
+                <div class="member-header-cell" style="flex: 1.2; min-width: 100px;">DUPR Name</div>
+                <div class="member-header-cell" style="flex: 0.9; min-width: 70px;">작업</div>
+            `;
+        }
         memberList.appendChild(tableHeader);
         
         // 각 사용자 항목 생성
         members.forEach(member => {
-            const memberElement = createMemberElement(member);
+            const memberElement = createMemberElement(member, isMobile);
             memberList.appendChild(memberElement);
         });
         
@@ -11918,7 +11935,7 @@ async function loadMemberList() {
 }
 
 // 가입자 요소 생성
-function createMemberElement(member) {
+function createMemberElement(member, isMobile = false) {
     const div = document.createElement('div');
     div.className = 'member-item';
     
@@ -11930,18 +11947,34 @@ function createMemberElement(member) {
     const escapedDisplayName = escapeJsString(member.displayName);
     const escapedId = escapeJsString(member.id);
     
-    div.innerHTML = `
-        <div class="member-cell" style="flex: 1.2; min-width: 80px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
-        <div class="member-cell member-email-cell" style="flex: 1.3; min-width: 120px;" title="${escapeHtml(member.email)}">${escapeHtml(member.email)}</div>
-        <div class="member-cell" style="flex: 0.8; min-width: 60px;">${duprText}</div>
-        <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprIdText)}">${escapeHtml(duprIdText)}</div>
-        <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
-        <div class="member-cell" style="flex: 0.9; min-width: 70px;">
-            <button class="btn btn-outline btn-small remove-member-btn" onclick="removeMember('${escapedId}', '${escapedDisplayName}')">
-                <i class="fas fa-user-slash"></i> 강퇴
-            </button>
-        </div>
-    `;
+    if (isMobile) {
+        // 모바일: 이메일 제외
+        div.innerHTML = `
+            <div class="member-cell" style="flex: 1.5; min-width: 80px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
+            <div class="member-cell" style="flex: 1; min-width: 60px;">${duprText}</div>
+            <div class="member-cell" style="flex: 1.5; min-width: 100px;" title="${escapeHtml(duprIdText)}">${escapeHtml(duprIdText)}</div>
+            <div class="member-cell" style="flex: 1.5; min-width: 100px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
+            <div class="member-cell" style="flex: 1; min-width: 70px;">
+                <button class="btn btn-outline btn-small remove-member-btn" onclick="removeMember('${escapedId}', '${escapedDisplayName}')">
+                    <i class="fas fa-user-slash"></i> 강퇴
+                </button>
+            </div>
+        `;
+    } else {
+        // 데스크톱: 모든 컬럼 포함
+        div.innerHTML = `
+            <div class="member-cell" style="flex: 1.2; min-width: 80px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
+            <div class="member-cell member-email-cell" style="flex: 1.3; min-width: 120px;" title="${escapeHtml(member.email)}">${escapeHtml(member.email)}</div>
+            <div class="member-cell" style="flex: 0.8; min-width: 60px;">${duprText}</div>
+            <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprIdText)}">${escapeHtml(duprIdText)}</div>
+            <div class="member-cell" style="flex: 1.2; min-width: 100px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
+            <div class="member-cell" style="flex: 0.9; min-width: 70px;">
+                <button class="btn btn-outline btn-small remove-member-btn" onclick="removeMember('${escapedId}', '${escapedDisplayName}')">
+                    <i class="fas fa-user-slash"></i> 강퇴
+                </button>
+            </div>
+        `;
+    }
     
     return div;
 }
