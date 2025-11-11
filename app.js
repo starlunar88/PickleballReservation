@@ -8377,12 +8377,39 @@ async function processTimeSlotReservations(date, timeSlot) {
             });
             
             // 최소 4명 이상인지 확인
+            // 단, confirmed 상태의 예약도 함께 확인하여 총 예약자 수가 4명 이상이면 취소하지 않음
             if (reservations.length < 4) {
-                console.log(`예약자 수 부족 (${reservations.length}명): ${date} ${timeSlot}`);
+                // confirmed 상태의 예약도 확인
+                const confirmedSnapshot = await db.collection('reservations')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .where('status', '==', 'confirmed')
+                    .get();
                 
-                // 예약 취소 처리
-                await cancelInsufficientReservations(reservations, date, timeSlot);
-                return;
+                const totalReservations = reservations.length + confirmedSnapshot.size;
+                
+                // 대진표가 이미 생성되어 있는지 확인
+                const existingMatches = await db.collection('matches')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .get();
+                
+                if (totalReservations < 4) {
+                    console.log(`예약자 수 부족 (pending: ${reservations.length}명, confirmed: ${confirmedSnapshot.size}명, 총: ${totalReservations}명): ${date} ${timeSlot}`);
+                    
+                    // 예약 취소 처리
+                    await cancelInsufficientReservations(reservations, date, timeSlot);
+                    return;
+                } else if (!existingMatches.empty) {
+                    // 대진표가 이미 생성되어 있고, 총 예약자 수가 4명 이상이면 pending 예약을 취소하지 않음
+                    // (이미 대진표에 포함되었거나, 다음 대진표 재생성 시 포함될 수 있음)
+                    console.log(`⚠️ 대진표가 이미 생성되어 있고, pending 예약 ${reservations.length}명 + confirmed 예약 ${confirmedSnapshot.size}명 = 총 ${totalReservations}명이므로 취소하지 않습니다.`);
+                    return;
+                } else {
+                    // 대진표가 없지만 총 예약자 수가 4명 이상이면 pending 예약을 취소하지 않고 계속 진행
+                    console.log(`⚠️ pending 예약이 ${reservations.length}명이지만, confirmed 예약 ${confirmedSnapshot.size}명이 있어 총 ${totalReservations}명이므로 취소하지 않고 계속 진행합니다.`);
+                    // 계속 진행하여 팀 배정 및 대진표 생성
+                }
             }
             
             // 시스템 설정에서 최대 코트 수 가져오기
