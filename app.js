@@ -11927,11 +11927,11 @@ async function loadMemberList() {
         if (isMobile) {
             // 모바일: 이메일 제외, 매우 컴팩트하게 (이름 3글자, DUPR ID 6글자 기준)
             tableHeader.innerHTML = `
-                <div class="member-header-cell" style="flex: 0.9; min-width: 35px;">이름</div>
+                <div class="member-header-cell" style="flex: 0.7; min-width: 30px;">이름</div>
                 <div class="member-header-cell" style="flex: 0.6; min-width: 35px;">DUPR</div>
                 <div class="member-header-cell" style="flex: 1; min-width: 50px;">DUPR ID</div>
-                <div class="member-header-cell" style="flex: 1.1; min-width: 55px;">DUPR Name</div>
-                <div class="member-header-cell" style="flex: 0.8; min-width: 40px;">작업</div>
+                <div class="member-header-cell" style="flex: 1.5; min-width: 70px;">DUPR Name</div>
+                <div class="member-header-cell" style="flex: 0.6; min-width: 30px;">작업</div>
             `;
         } else {
             // 데스크톱: 모든 컬럼 포함
@@ -11977,11 +11977,11 @@ function createMemberElement(member, isMobile = false) {
     if (isMobile) {
         // 모바일: 이메일 제외, 매우 컴팩트하게 (이름 3글자, DUPR ID 6글자 기준)
         div.innerHTML = `
-            <div class="member-cell" style="flex: 0.9; min-width: 35px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
+            <div class="member-cell" style="flex: 0.7; min-width: 30px;" title="${escapeHtml(member.displayName)}">${escapeHtml(member.displayName)}</div>
             <div class="member-cell" style="flex: 0.6; min-width: 35px;">${duprText}</div>
             <div class="member-cell" style="flex: 1; min-width: 50px;" title="${escapeHtml(duprIdText)}">${escapeHtml(duprIdText)}</div>
-            <div class="member-cell" style="flex: 1.1; min-width: 55px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
-            <div class="member-cell" style="flex: 0.8; min-width: 40px;">
+            <div class="member-cell" style="flex: 1.5; min-width: 70px;" title="${escapeHtml(duprNameText)}">${escapeHtml(duprNameText)}</div>
+            <div class="member-cell" style="flex: 0.6; min-width: 30px;">
                 <button class="btn btn-outline btn-small remove-member-btn mobile-remove-btn" onclick="removeMember('${escapedId}', '${escapedDisplayName}')" title="강퇴">
                     <i class="fas fa-user-slash"></i><span class="remove-btn-text"> 강퇴</span>
                 </button>

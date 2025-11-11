@@ -1099,24 +1099,28 @@ body {
     }
     
     .member-table-header {
-        padding: 6px 4px !important;
+        padding: 6px 2px !important;
         font-size: 0.75rem !important;
         border-radius: 6px 6px 0 0 !important;
+        gap: 2px !important;
     }
     
     .member-header-cell {
         padding: 0 !important;
         font-size: 0.75rem !important;
+        margin: 0 !important;
     }
     
     .member-item {
-        padding: 6px 4px !important;
+        padding: 6px 2px !important;
         min-height: 36px !important;
+        gap: 2px !important;
     }
     
     .member-cell {
         padding: 0 !important;
         font-size: 0.75rem !important;
+        margin: 0 !important;
     }
     
     /* 강퇴 버튼 텍스트 숨기고 아이콘만 표시 */
