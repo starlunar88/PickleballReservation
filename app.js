@@ -196,12 +196,17 @@ if (navMenu && hamburger) {
     });
 }
 
-// 태블릿 사이즈에서 메뉴 항상 표시
+// 태블릿 사이즈에서 메뉴 항상 표시 (CSS로 처리하므로 active 클래스는 제거)
 function handleTabletMenu() {
     const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
     if (isTablet && navMenu) {
-        navMenu.classList.add('active');
+        // 태블릿에서는 active 클래스를 제거하고 CSS가 자동으로 처리하도록 함
+        // CSS에서 이미 display: flex !important로 설정되어 있음
+        navMenu.classList.remove('active');
         document.body.style.overflow = 'auto';
+    } else if (navMenu) {
+        // 태블릿이 아닐 때는 기본 동작 유지
+        // active 클래스가 없으면 CSS의 display: none이 적용됨
     }
 }
 
@@ -6172,6 +6177,9 @@ async function loadAdminDashboard() {
 
 // 페이지 로드 시 이메일 링크 확인
 document.addEventListener('DOMContentLoaded', function() {
+    // 태블릿 사이즈에서 메뉴 처리 (초기 로드 시)
+    handleTabletMenu();
+    
     handleEmailLinkSignIn();
     
     // 탭 버튼 이벤트 리스너

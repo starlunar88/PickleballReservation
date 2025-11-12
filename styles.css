@@ -4160,6 +4160,20 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     
 /* 태블릿 사이즈 (768px ~ 1024px) */
 @media (min-width: 769px) and (max-width: 1024px) {
+    /* 네비게이션 바 전체 스타일 */
+    .navbar {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 1000;
+    }
+    
+    .nav-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    
     .main-container {
         max-width: 750px; /* 태블릿 사이즈에 맞게 조정 */
         width: 100%;
@@ -4197,28 +4211,30 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 0 20px !important;
     }
     
-    /* 태블릿에서 네비게이션 메뉴 표시 */
-    .nav-menu {
+    /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
+    .navbar .nav-container .nav-menu,
+    .navbar .nav-container .nav-menu.active,
+    #nav-menu,
+    #nav-menu.active {
         display: flex !important;
         position: static !important; /* fixed에서 static으로 변경 */
         flex-direction: row !important;
-        align-items: center;
-        gap: 15px;
+        align-items: center !important;
+        gap: 15px !important;
         background: transparent !important; /* 배경 제거 */
         width: auto !important;
         max-width: none !important;
         left: auto !important;
+        top: auto !important;
         transform: none !important;
         padding: 0 !important;
         backdrop-filter: none !important;
         z-index: auto !important;
         text-align: left !important;
-    }
-    
-    .nav-menu.active {
-        display: flex !important; /* active 상태와 관계없이 항상 표시 */
-        position: static !important;
-        transform: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     .hamburger {
@@ -4247,26 +4263,38 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.8rem;
     }
     
-    /* 태블릿에서 모바일 탭 숨기고 데스크톱 탭 표시 */
+    /* 태블릿에서 모바일 탭 완전히 숨기기 */
     .mobile-nav-tabs {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
     }
     
     .mobile-nav-tabs-spacer {
         display: none !important;
+        height: 0 !important;
     }
     
+    /* 태블릿에서 데스크톱 탭 강제 표시 */
+    .main-container .desktop-nav-tabs,
     .desktop-nav-tabs {
         display: flex !important;
-        justify-content: center;
-        gap: 12px;
-        margin: 20px auto 30px auto;
-        padding: 15px 20px;
-        max-width: 750px;
-        flex-wrap: wrap;
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        visibility: visible !important;
+        opacity: 1 !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        margin: 20px auto 30px auto !important;
+        padding: 15px 20px !important;
+        max-width: 750px !important;
+        width: 100% !important;
+        flex-wrap: wrap !important;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        position: relative !important;
+        z-index: 100 !important;
     }
     
     .desktop-tab-btn {
