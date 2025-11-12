@@ -1961,33 +1961,49 @@ async function loadMatchesForDate(date) {
         let matchesHTML = '';
         let hasMatches = false;
         
-        console.log('🕐 시간대 수:', settings.timeSlots.length);
+        // 먼저 해당 날짜의 모든 matches를 가져옴 (시스템 설정에 없는 시간대도 포함)
+        const allMatchesSnapshot = await db.collection('matches')
+            .where('date', '==', date)
+            .get();
         
-        for (const timeSlot of settings.timeSlots) {
-            const slotKey = `${timeSlot.start}-${timeSlot.end}`;
+        console.log(`📊 ${date} 날짜의 전체 매치 수: ${allMatchesSnapshot.size}개`);
+        
+        // timeSlot별로 그룹화
+        const matchesByTimeSlot = {};
+        allMatchesSnapshot.forEach(doc => {
+            const matchData = doc.data();
+            const timeSlot = matchData.timeSlot;
+            if (!timeSlot) return;
+            
+            if (!matchesByTimeSlot[timeSlot]) {
+                matchesByTimeSlot[timeSlot] = [];
+            }
+            matchesByTimeSlot[timeSlot].push({ id: doc.id, ...matchData });
+        });
+        
+        console.log('🕐 발견된 시간대:', Object.keys(matchesByTimeSlot));
+        
+        // 시스템 설정의 timeSlots와 실제 matches에 있는 timeSlot을 모두 포함
+        const allTimeSlots = new Set();
+        settings.timeSlots.forEach(slot => {
+            allTimeSlots.add(`${slot.start}-${slot.end}`);
+        });
+        Object.keys(matchesByTimeSlot).forEach(timeSlot => {
+            allTimeSlots.add(timeSlot);
+        });
+        
+        // 시간대별로 정렬하여 표시
+        const sortedTimeSlots = Array.from(allTimeSlots).sort();
+        
+        for (const slotKey of sortedTimeSlots) {
+            const existingMatches = matchesByTimeSlot[slotKey] || [];
+            
             console.log(`🔍 시간대 확인: ${slotKey}, 날짜: ${date}`);
+            console.log(`📊 ${slotKey} 시간대 매치 수: ${existingMatches.length}개`);
             
-            // 해당 시간대의 대진표 확인
-            console.log(`🔍 Firestore 쿼리 실행: date=${date}, timeSlot=${slotKey}`);
-            console.log(`⚠️ 주의: status 필터가 없으므로 scheduled와 completed 모두 가져와야 함`);
-            
-            const existingMatches = await db.collection('matches')
-                .where('date', '==', date)
-                .where('timeSlot', '==', slotKey)
-                .get();
-            
-            console.log(`📊 ${slotKey} 시간대 매치 수: ${existingMatches.size}개`);
-            console.log(`📋 쿼리 결과 상세:`);
-            
-            // 쿼리 결과 상세 로그
-            existingMatches.docs.forEach((doc, index) => {
-                const matchData = doc.data();
-                console.log(`  매치 ${index + 1}: id=${doc.id}, status=${matchData.status}, scoreA=${matchData.scoreA}, scoreB=${matchData.scoreB}`);
-            });
-            
-            if (!existingMatches.empty) {
+            if (existingMatches.length > 0) {
                 hasMatches = true;
-                const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const matches = existingMatches; // 이미 배열 형태
                 console.log(`✅ ${slotKey} 시간대 매치 발견:`, matches.length);
                 
                 // 각 매치의 상태 로그
