@@ -2131,7 +2131,9 @@ async function loadMatchesForDate(date) {
                         gameEnd = firstMatch.gameEndTime;
                     } else {
                         // 기존 계산 로직 (하위 호환성)
-                        const timeSlotStart = timeSlot.start.split(':');
+                        // slotKey에서 시작 시간 추출 (예: "13:45-14:00" -> "13:45")
+                        const [timeSlotStartStr] = slotKey.split('-');
+                        const timeSlotStart = timeSlotStartStr.split(':');
                         const startHour = parseInt(timeSlotStart[0]);
                         const startMin = parseInt(timeSlotStart[1]);
                         const minutesPerGame = 15;
