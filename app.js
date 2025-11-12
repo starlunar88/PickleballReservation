@@ -12476,7 +12476,8 @@ function isValidEmail(email) {
 
 // 전역 변수: 수동 대진표 생성용
 window.manualMatchPlayers = []; // 전체 플레이어 목록
-window.manualMatchSelectedPlayers = []; // 선택된 플레이어 목록
+window.manualMatchTeamAPlayers = []; // 팀 A 선택된 플레이어 목록
+window.manualMatchTeamBPlayers = []; // 팀 B 선택된 플레이어 목록
 window.manualMatchMatches = []; // 생성된 경기 목록
 
 // 수동 대진표 생성 모달 열기
@@ -12495,7 +12496,8 @@ async function openManualMatchCreateModal() {
     }
     
     // 초기화
-    window.manualMatchSelectedPlayers = [];
+    window.manualMatchTeamAPlayers = [];
+    window.manualMatchTeamBPlayers = [];
     window.manualMatchMatches = [];
     
     // 15분 단위 시간 옵션 로드
@@ -12504,10 +12506,13 @@ async function openManualMatchCreateModal() {
     // 플레이어 목록 로드
     await loadAllPlayersForManualMatch();
     
+    // 팀 플레이어 표시 초기화
+    updateTeamPlayersDisplay();
+    
     // 경기 컨테이너 초기화
     const matchesContainer = document.getElementById('manual-matches-container');
     if (matchesContainer) {
-        matchesContainer.innerHTML = '<p style="color: #666; font-size: 0.9rem;">플레이어를 선택하면 자동으로 경기가 생성됩니다.</p>';
+        matchesContainer.innerHTML = '<p style="color: #666; font-size: 0.9rem;">각 팀에 플레이어를 선택하면 자동으로 경기가 생성됩니다.</p>';
     }
     
     // 모달 표시
@@ -12548,7 +12553,8 @@ function closeManualMatchCreateModal() {
     
     // 초기화
     window.manualMatchPlayers = [];
-    window.manualMatchSelectedPlayers = [];
+    window.manualMatchTeamAPlayers = [];
+    window.manualMatchTeamBPlayers = [];
     window.manualMatchMatches = [];
     
     // 검색 입력 초기화
@@ -12631,67 +12637,133 @@ function renderPlayerListForManualMatch(searchTerm = '') {
         return;
     }
     
+    const isInTeamA = (userId) => window.manualMatchTeamAPlayers.some(p => p.userId === userId);
+    const isInTeamB = (userId) => window.manualMatchTeamBPlayers.some(p => p.userId === userId);
+    
     container.innerHTML = playersToShow.map(player => {
-        const isSelected = window.manualMatchSelectedPlayers.some(p => p.userId === player.userId);
+        const inTeamA = isInTeamA(player.userId);
+        const inTeamB = isInTeamB(player.userId);
+        const isSelected = inTeamA || inTeamB;
+        
         return `
-            <div class="player-item" style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; ${isSelected ? 'background: #e3f2fd;' : ''}" 
-                 onclick="togglePlayerSelection('${player.userId}')">
-                <input type="checkbox" ${isSelected ? 'checked' : ''} style="margin-right: 10px;" onchange="togglePlayerSelection('${player.userId}')">
+            <div class="player-item" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; ${isSelected ? 'background: #f0f0f0;' : ''}">
                 <div style="flex: 1;">
                     <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
                     <div style="font-size: 0.85rem; color: #666;">${player.email || ''} ${player.dupr ? `| DUPR: ${player.dupr}` : ''}</div>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="addPlayerToTeam('${player.userId}', 'A')" 
+                            style="padding: 5px 10px; background: ${inTeamA ? '#2196F3' : '#e3f2fd'}; color: ${inTeamA ? 'white' : '#1976D2'}; border: 1px solid #2196F3; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"
+                            ${inTeamA ? 'disabled' : ''}>
+                        ${inTeamA ? '✓ 팀 A' : '팀 A'}
+                    </button>
+                    <button onclick="addPlayerToTeam('${player.userId}', 'B')" 
+                            style="padding: 5px 10px; background: ${inTeamB ? '#FF9800' : '#fff3e0'}; color: ${inTeamB ? 'white' : '#F57C00'}; border: 1px solid #FF9800; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"
+                            ${inTeamB ? 'disabled' : ''}>
+                        ${inTeamB ? '✓ 팀 B' : '팀 B'}
+                    </button>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// 플레이어 선택/해제
-function togglePlayerSelection(userId) {
+// 플레이어를 팀에 추가
+function addPlayerToTeam(userId, team) {
     const player = window.manualMatchPlayers.find(p => p.userId === userId);
     if (!player) return;
     
-    const index = window.manualMatchSelectedPlayers.findIndex(p => p.userId === userId);
-    if (index >= 0) {
-        // 해제
-        window.manualMatchSelectedPlayers.splice(index, 1);
+    // 다른 팀에서 제거
+    if (team === 'A') {
+        // 팀 B에서 제거
+        const indexB = window.manualMatchTeamBPlayers.findIndex(p => p.userId === userId);
+        if (indexB >= 0) {
+            window.manualMatchTeamBPlayers.splice(indexB, 1);
+        }
+        // 팀 A에 추가 (이미 있으면 추가하지 않음)
+        const indexA = window.manualMatchTeamAPlayers.findIndex(p => p.userId === userId);
+        if (indexA < 0) {
+            window.manualMatchTeamAPlayers.push(player);
+        }
     } else {
-        // 선택
-        window.manualMatchSelectedPlayers.push(player);
+        // 팀 A에서 제거
+        const indexA = window.manualMatchTeamAPlayers.findIndex(p => p.userId === userId);
+        if (indexA >= 0) {
+            window.manualMatchTeamAPlayers.splice(indexA, 1);
+        }
+        // 팀 B에 추가 (이미 있으면 추가하지 않음)
+        const indexB = window.manualMatchTeamBPlayers.findIndex(p => p.userId === userId);
+        if (indexB < 0) {
+            window.manualMatchTeamBPlayers.push(player);
+        }
     }
     
     // UI 업데이트
     renderPlayerListForManualMatch(document.getElementById('player-search')?.value || '');
-    updateSelectedPlayersDisplay();
+    updateTeamPlayersDisplay();
     updateManualMatchesDisplay();
 }
 
-// 선택된 플레이어 표시 업데이트
-function updateSelectedPlayersDisplay() {
-    const container = document.getElementById('selected-players');
-    if (!container) return;
-    
-    if (window.manualMatchSelectedPlayers.length === 0) {
-        container.innerHTML = '<span style="color: #999;">플레이어를 선택하세요 (최소 4명)</span>';
-        return;
+// 팀에서 플레이어 제거
+function removePlayerFromTeam(userId, team) {
+    if (team === 'A') {
+        const index = window.manualMatchTeamAPlayers.findIndex(p => p.userId === userId);
+        if (index >= 0) {
+            window.manualMatchTeamAPlayers.splice(index, 1);
+        }
+    } else {
+        const index = window.manualMatchTeamBPlayers.findIndex(p => p.userId === userId);
+        if (index >= 0) {
+            window.manualMatchTeamBPlayers.splice(index, 1);
+        }
     }
     
-    container.innerHTML = window.manualMatchSelectedPlayers.map(player => `
-        <span class="selected-player-badge" style="display: inline-flex; align-items: center; padding: 6px 12px; background: #2196F3; color: white; border-radius: 20px; font-size: 0.9rem;">
-            ${player.userName || '이름 없음'}
-            <button onclick="removePlayerFromSelection('${player.userId}')" style="margin-left: 8px; background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
-        </span>
-    `).join('');
+    // UI 업데이트
+    renderPlayerListForManualMatch(document.getElementById('player-search')?.value || '');
+    updateTeamPlayersDisplay();
+    updateManualMatchesDisplay();
 }
 
-// 플레이어 선택 해제
-function removePlayerFromSelection(userId) {
-    const index = window.manualMatchSelectedPlayers.findIndex(p => p.userId === userId);
-    if (index >= 0) {
-        window.manualMatchSelectedPlayers.splice(index, 1);
-        renderPlayerListForManualMatch(document.getElementById('player-search')?.value || '');
-        updateSelectedPlayersDisplay();
-        updateManualMatchesDisplay();
+// 팀 플레이어 표시 업데이트
+function updateTeamPlayersDisplay() {
+    // 팀 A 표시
+    const teamAContainer = document.getElementById('team-a-players');
+    if (teamAContainer) {
+        if (window.manualMatchTeamAPlayers.length === 0) {
+            teamAContainer.innerHTML = '<span style="color: #999; font-size: 0.9rem;">플레이어를 선택하세요 (2명 이상)</span>';
+        } else {
+            teamAContainer.innerHTML = window.manualMatchTeamAPlayers.map(player => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: white; border-radius: 4px; border: 1px solid #2196F3;">
+                    <div>
+                        <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
+                        <div style="font-size: 0.8rem; color: #666;">${player.email || ''}</div>
+                    </div>
+                    <button onclick="removePlayerFromTeam('${player.userId}', 'A')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+    }
+    
+    // 팀 B 표시
+    const teamBContainer = document.getElementById('team-b-players');
+    if (teamBContainer) {
+        if (window.manualMatchTeamBPlayers.length === 0) {
+            teamBContainer.innerHTML = '<span style="color: #999; font-size: 0.9rem;">플레이어를 선택하세요 (2명 이상)</span>';
+        } else {
+            teamBContainer.innerHTML = window.manualMatchTeamBPlayers.map(player => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: white; border-radius: 4px; border: 1px solid #FF9800;">
+                    <div>
+                        <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
+                        <div style="font-size: 0.8rem; color: #666;">${player.email || ''}</div>
+                    </div>
+                    <button onclick="removePlayerFromTeam('${player.userId}', 'B')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
     }
 }
 
@@ -12702,12 +12774,12 @@ function filterPlayersForManualMatch(searchTerm) {
 
 // 수동 경기 추가
 function addManualMatchRow() {
-    if (window.manualMatchSelectedPlayers.length < 4) {
-        showToast('최소 4명의 플레이어가 필요합니다.', 'warning');
+    if (window.manualMatchTeamAPlayers.length < 2 || window.manualMatchTeamBPlayers.length < 2) {
+        showToast('각 팀에 최소 2명의 플레이어가 필요합니다.', 'warning');
         return;
     }
     
-    // 자동으로 경기 생성 (선택된 플레이어를 4명씩 나누어 경기 생성)
+    // 자동으로 경기 생성
     updateManualMatchesDisplay();
 }
 
@@ -12716,29 +12788,34 @@ function updateManualMatchesDisplay() {
     const container = document.getElementById('manual-matches-container');
     if (!container) return;
     
-    if (window.manualMatchSelectedPlayers.length < 4) {
-        container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">플레이어를 선택하면 자동으로 경기가 생성됩니다. (최소 4명 필요)</p>';
+    const teamACount = window.manualMatchTeamAPlayers.length;
+    const teamBCount = window.manualMatchTeamBPlayers.length;
+    
+    if (teamACount < 2 || teamBCount < 2) {
+        container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">각 팀에 최소 2명의 플레이어를 선택하세요.</p>';
+        window.manualMatchMatches = [];
         return;
     }
     
-    // 선택된 플레이어를 4명씩 나누어 경기 생성
-    const players = [...window.manualMatchSelectedPlayers];
+    // 팀 A와 팀 B에서 각각 2명씩 선택하여 경기 생성
+    const teamA = [...window.manualMatchTeamAPlayers];
+    const teamB = [...window.manualMatchTeamBPlayers];
     const matches = [];
     let matchIndex = 0;
     let courtNumber = 1;
     let roundNumber = 1;
     
-    while (players.length >= 4) {
-        // 4명씩 추출
-        const teamA = [players.shift(), players.shift()];
-        const teamB = [players.shift(), players.shift()];
+    // 각 팀에서 2명씩 추출하여 경기 생성
+    while (teamA.length >= 2 && teamB.length >= 2) {
+        const matchTeamA = [teamA.shift(), teamA.shift()];
+        const matchTeamB = [teamB.shift(), teamB.shift()];
         
         matches.push({
             id: `manual_${matchIndex++}`,
             roundNumber: roundNumber,
             courtNumber: courtNumber,
-            teamA: teamA,
-            teamB: teamB,
+            teamA: matchTeamA,
+            teamB: matchTeamB,
             scoreA: null,
             scoreB: null
         });

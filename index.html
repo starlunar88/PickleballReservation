@@ -812,16 +812,32 @@
                             <i class="fas fa-sync-alt"></i> 전체 목록 새로고침
                         </button>
                     </div>
-                    <div id="player-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                    <div id="player-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-bottom: 15px;">
                         <div class="loading-state">
                             <i class="fas fa-spinner fa-spin"></i>
                             <p>플레이어 목록을 불러오는 중...</p>
                         </div>
                     </div>
-                    <div style="margin-top: 10px;">
-                        <strong>선택된 플레이어:</strong>
-                        <div id="selected-players" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding: 10px; background: #f5f5f5; border-radius: 4px; min-height: 40px;">
-                            <span style="color: #999;">플레이어를 선택하세요 (최소 4명)</span>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <!-- 왼쪽 팀 A -->
+                        <div style="border: 2px solid #2196F3; border-radius: 8px; padding: 15px; background: #e3f2fd;">
+                            <div style="font-weight: 600; margin-bottom: 10px; color: #1976D2;">
+                                <i class="fas fa-users"></i> 팀 A (왼쪽)
+                            </div>
+                            <div id="team-a-players" style="min-height: 150px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                                <span style="color: #999; font-size: 0.9rem;">플레이어를 선택하세요 (2명 이상)</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 오른쪽 팀 B -->
+                        <div style="border: 2px solid #FF9800; border-radius: 8px; padding: 15px; background: #fff3e0;">
+                            <div style="font-weight: 600; margin-bottom: 10px; color: #F57C00;">
+                                <i class="fas fa-users"></i> 팀 B (오른쪽)
+                            </div>
+                            <div id="team-b-players" style="min-height: 150px; max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                                <span style="color: #999; font-size: 0.9rem;">플레이어를 선택하세요 (2명 이상)</span>
+                            </div>
                         </div>
                     </div>
                 </div>
