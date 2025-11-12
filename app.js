@@ -12517,9 +12517,8 @@ async function openManualMatchCreateModal() {
 // 15분 단위 시간 옵션 생성
 function loadTimeSlotOptions() {
     const startSelect = document.getElementById('manual-match-time-slot-start');
-    const endSelect = document.getElementById('manual-match-time-slot-end');
     
-    if (!startSelect || !endSelect) return;
+    if (!startSelect) return;
     
     // 15분 단위로 시간 생성 (00:00 ~ 23:45)
     const timeOptions = [];
@@ -12537,58 +12536,6 @@ function loadTimeSlotOptions() {
         option.value = time;
         option.textContent = time;
         startSelect.appendChild(option);
-    });
-    
-    // 종료 시간 옵션 생성 (초기에는 모든 옵션 포함)
-    endSelect.innerHTML = '<option value="">종료 시간 선택</option>';
-    timeOptions.forEach(time => {
-        const option = document.createElement('option');
-        option.value = time;
-        option.textContent = time;
-        endSelect.appendChild(option);
-    });
-    
-    // 시작 시간 변경 시 종료 시간 옵션 업데이트 (시작 시간 이후만 선택 가능)
-    // 기존 이벤트 리스너 제거 후 새로 추가 (중복 방지)
-    const newStartSelect = startSelect.cloneNode(true);
-    startSelect.parentNode.replaceChild(newStartSelect, startSelect);
-    
-    newStartSelect.addEventListener('change', () => {
-        const startTime = newStartSelect.value;
-        if (!startTime) {
-            // 시작 시간이 없으면 모든 옵션 표시
-            endSelect.innerHTML = '<option value="">종료 시간 선택</option>';
-            timeOptions.forEach(time => {
-                const option = document.createElement('option');
-                option.value = time;
-                option.textContent = time;
-                endSelect.appendChild(option);
-            });
-            return;
-        }
-        
-        // 시작 시간 이후의 시간만 표시
-        endSelect.innerHTML = '<option value="">종료 시간 선택</option>';
-        const [startHour, startMinute] = startTime.split(':').map(Number);
-        const startTotalMinutes = startHour * 60 + startMinute;
-        
-        timeOptions.forEach(time => {
-            const [hour, minute] = time.split(':').map(Number);
-            const totalMinutes = hour * 60 + minute;
-            
-            // 시작 시간보다 이후인 시간만 추가
-            if (totalMinutes > startTotalMinutes) {
-                const option = document.createElement('option');
-                option.value = time;
-                option.textContent = time;
-                endSelect.appendChild(option);
-            }
-        });
-        
-        // 종료 시간이 시작 시간 이전이면 초기화
-        if (endSelect.value && endSelect.value <= startTime) {
-            endSelect.value = '';
-        }
     });
 }
 
@@ -12612,9 +12559,7 @@ function closeManualMatchCreateModal() {
     
     // 시간 선택 초기화
     const startSelect = document.getElementById('manual-match-time-slot-start');
-    const endSelect = document.getElementById('manual-match-time-slot-end');
     if (startSelect) startSelect.value = '';
-    if (endSelect) endSelect.value = '';
 }
 
 // 전체 플레이어 목록 로드
@@ -12870,14 +12815,28 @@ async function saveManualMatchSchedule() {
     try {
         const date = document.getElementById('manual-match-date')?.value;
         const startTime = document.getElementById('manual-match-time-slot-start')?.value;
-        const endTime = document.getElementById('manual-match-time-slot-end')?.value;
         
-        if (!date || !startTime || !endTime) {
-            showToast('날짜와 시간대를 모두 선택하세요.', 'error');
+        if (!date || !startTime) {
+            showToast('날짜와 시작 시간을 선택하세요.', 'error');
             return;
         }
         
-        // 시간대 형식으로 조합 (예: 09:00-10:00)
+        // 시작 시간에서 15분 뒤 종료 시간 자동 계산
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const startTotalMinutes = startHour * 60 + startMinute;
+        const endTotalMinutes = startTotalMinutes + 15;
+        const endHour = Math.floor(endTotalMinutes / 60);
+        const endMinute = endTotalMinutes % 60;
+        
+        // 24시간을 넘어가면 오류 처리
+        if (endHour >= 24) {
+            showToast('종료 시간이 24시를 넘을 수 없습니다. 다른 시작 시간을 선택하세요.', 'error');
+            return;
+        }
+        
+        const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+        
+        // 시간대 형식으로 조합 (예: 09:00-09:15)
         const timeSlot = `${startTime}-${endTime}`;
         
         if (window.manualMatchMatches.length === 0) {
