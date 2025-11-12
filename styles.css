@@ -4158,8 +4158,314 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 0 4px 140px 4px !important; /* 예약, 대진표 탭 수준의 여백 */
     }
     
-/* PC에서도 모바일 사이즈로 제한 */
-@media (min-width: 769px) {
+/* 태블릿 사이즈 (768px ~ 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .main-container {
+        max-width: 750px; /* 태블릿 사이즈에 맞게 조정 */
+        width: 100%;
+        margin: 0 auto;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .tab-contents {
+        padding: 20px 15px 20px 15px !important; /* 하단 탭바 제거로 여백 조정 */
+    }
+    
+    .reservations-container,
+    .records-container,
+    .stats-container,
+    .rankings-container,
+    .matches-container {
+        max-width: 750px; /* 태블릿 사이즈에 맞게 조정 */
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 15px 20px 15px;
+        box-sizing: border-box;
+    }
+    
+    .reservations-board {
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .nav-container {
+        max-width: 750px !important;
+        width: 100% !important;
+        margin: 8px auto !important;
+        padding: 0 20px !important;
+    }
+    
+    /* 태블릿에서 네비게이션 메뉴 표시 */
+    .nav-menu {
+        display: flex !important;
+        flex-direction: row;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .hamburger {
+        display: none !important; /* 태블릿에서는 햄버거 메뉴 숨김 */
+    }
+    
+    .user-menu {
+        flex-direction: row; /* 태블릿에서는 가로 배치 */
+        gap: 12px;
+    }
+    
+    .user-info {
+        font-size: 0.9rem;
+    }
+    
+    .user-name {
+        font-size: 0.9rem;
+    }
+    
+    .user-actions {
+        gap: 8px;
+    }
+    
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    /* 태블릿에서 모바일 탭 숨기고 데스크톱 탭 표시 */
+    .mobile-nav-tabs {
+        display: none !important;
+    }
+    
+    .mobile-nav-tabs-spacer {
+        display: none !important;
+    }
+    
+    .desktop-nav-tabs {
+        display: flex !important;
+        justify-content: center;
+        gap: 10px;
+        margin: 20px auto;
+        padding: 0 20px;
+        max-width: 750px;
+        flex-wrap: wrap;
+    }
+    
+    .desktop-tab-btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
+    }
+    
+    /* 태블릿에서 메달 시상식 크기 조정 */
+    .podium-wrapper {
+        gap: 15px !important;
+        padding: 20px 15px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    .podium-card.first-place {
+        width: 140px !important;
+        min-width: 130px !important;
+        height: 240px !important;
+    }
+    
+    .podium-card.second-place {
+        width: 130px !important;
+        min-width: 120px !important;
+        height: 210px !important;
+    }
+    
+    .podium-card.third-place {
+        width: 130px !important;
+        min-width: 120px !important;
+        height: 180px !important;
+    }
+    
+    .podium-card {
+        padding: 16px 12px !important;
+        gap: 12px !important;
+    }
+    
+    .medal-icon {
+        font-size: 3rem !important;
+    }
+    
+    .medal-number {
+        font-size: 1.3rem !important;
+    }
+    
+    .podium-name {
+        font-size: 1.1rem !important;
+    }
+    
+    .podium-score {
+        font-size: 0.9rem !important;
+    }
+    
+    /* 태블릿에서 통계탭과 기록탭 기간 선택 버튼 스타일 */
+    .stats-period-filter-container {
+        padding: 10px !important;
+    }
+    
+    .stats-period-filter-buttons {
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .stats-period-btn {
+        padding: 12px 18px !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        height: 42px !important;
+        line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .records-container .stats-period-filter-container {
+        padding: 10px !important;
+    }
+    
+    .records-container .stats-period-filter-buttons {
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .records-container .stats-period-btn {
+        padding: 12px 18px !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        height: 42px !important;
+        line-height: 1.4 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* 태블릿에서 섹션 헤더 크기 조정 */
+    .section-header {
+        padding: 20px 25px;
+    }
+    
+    .section-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    /* 태블릿에서 타임라인 아이템 크기 조정 */
+    .timeline-item {
+        padding: 14px 16px;
+        margin-bottom: 10px;
+    }
+    
+    .timeline-time {
+        min-width: 100px;
+        font-size: 1rem;
+    }
+    
+    .player-item {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+    
+    /* 태블릿에서 버튼 크기 조정 */
+    .btn {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+    
+    .timeline-reserve-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+    
+    /* 태블릿에서 예약 타임라인 크기 조정 */
+    .reservations-timeline {
+        padding: 25px;
+    }
+    
+    /* 태블릿에서 대진표 스타일 조정 */
+    .match-schedule-section {
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .time-slot-matches {
+        margin-bottom: 25px;
+        border-radius: 16px;
+    }
+    
+    .time-slot-header {
+        padding: 14px 18px;
+    }
+    
+    .time-slot-title {
+        font-size: 1.1rem;
+        gap: 10px;
+    }
+    
+    .time-slot-content {
+        padding: 20px;
+    }
+    
+    /* 태블릿에서 플레이어 그리드 조정 */
+    .timeline-players {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 8px !important;
+    }
+    
+    .player-item {
+        min-height: 42px !important;
+        padding: 8px 12px !important;
+    }
+    
+    /* 태블릿에서 랭킹 시스템 조정 */
+    .rank-tier-card {
+        padding: 20px;
+    }
+    
+    .rank-tier-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+    
+    .rank-tier-name {
+        font-size: 1.1rem;
+    }
+    
+    .rank-tier-range {
+        font-size: 0.95rem;
+    }
+    
+    /* 태블릿에서 통계 차트 크기 조정 */
+    .win-rate-chart-container {
+        padding: 20px;
+    }
+    
+    .team-chart-card {
+        padding: 20px;
+    }
+    
+    /* 태블릿에서 모달 크기 조정 */
+    .modal-content {
+        max-width: 600px;
+        margin: 5% auto;
+    }
+}
+
+/* PC 사이즈 (1025px 이상) - 모바일 사이즈로 제한 */
+@media (min-width: 1025px) {
     .main-container {
         max-width: 480px; /* 모바일 사이즈로 제한 */
         width: 100%;
