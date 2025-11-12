@@ -9543,28 +9543,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
     
     // teamMode에 따라 미배정 플레이어를 코트별로 분배
     if (teamMode === 'grouped') {
-        // 그룹 모드: DUPR 점수로 잘하는 사람과 못하는 사람을 코트별로 분배
+        // 그룹 모드: DUPR 점수로 잘하는 사람부터 못하는 사람까지 줄세우기
         const sortedPlayers = [...unassignedPlayers].sort((a, b) => {
             const duprA = b.dupr || 0;
             const duprB = a.dupr || 0;
             return duprA - duprB;
         });
-        const midPoint = Math.floor(sortedPlayers.length / 2);
         
-        // 상위 그룹을 1코트부터, 하위 그룹을 마지막 코트부터 배정
+        // 코트별로 순차적으로 배정 (1코트부터 잘하는 사람, 마지막 코트부터 못하는 사람)
         for (let i = 0; i < sortedPlayers.length; i++) {
             const player = sortedPlayers[i];
             let court;
-            if (i < midPoint) {
-                // 잘하는 사람 - 1코트부터 배정
-                court = (i % Math.min(courtCount, Math.ceil(sortedPlayers.length / 2))) + 1;
-            } else {
-                // 못하는 사람 - 마지막 코트부터 배정
-                const lowerIndex = i - midPoint;
-                court = courtCount - (lowerIndex % Math.min(courtCount, Math.ceil(sortedPlayers.length / 2)));
-                if (court < 1) court = 1;
-            }
             
+            // 잘하는 사람부터 순서대로 코트에 배정
+            // 1코트부터 시작해서 코트 수만큼 순환 배정
+            court = (i % courtCount) + 1;
+            
+            // 코트가 없으면 초기화
             if (!courtPlayers[court]) {
                 courtPlayers[court] = [];
             }
@@ -9953,18 +9948,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     return diff;
                 });
             } else if (teamMode === 'grouped') {
-                // 그룹 모드: DUPR 점수 순으로 정렬 (밸런스 모드처럼 구성)
-                // (그룹 모드는 이미 코트가 DUPR 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
-                sortedAllPlayers = [...courtPlayerList].sort((a, b) => {
-                    const duprA = b.dupr || 0;
-                    const duprB = a.dupr || 0;
-                    const diff = duprA - duprB;
-                    // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
-                    if (Math.abs(diff) < 0.1) {
-                        return Math.random() - 0.5;
-                    }
-                    return diff;
-                });
+                // 그룹 모드: 코트 내에서는 랜덤하게 섞기
+                // (그룹 모드는 이미 코트가 DUPR 점수별로 나눠졌으므로, 코트 내에서는 랜덤하게 팀 구성)
+                sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
             } else {
                 // 랜덤 모드: 랜덤하게 섞기
                 sortedAllPlayers = [...courtPlayerList].sort(() => Math.random() - 0.5);
@@ -10033,11 +10019,19 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
-                        if (teamMode === 'balanced' || teamMode === 'grouped') {
-                            // 밸런스 모드와 그룹 모드: 여러 밸런스 조합 시도 (반복 방지)
-                            // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 밸런스 모드처럼 구성)
+                        if (teamMode === 'balanced') {
+                            // 밸런스 모드: 여러 밸런스 조합 시도 (반복 방지)
                             const balancedConfigs = createBalancedTeamConfigs(candidate);
                             teamConfigs.push(...balancedConfigs);
+                        } else if (teamMode === 'grouped') {
+                            // 그룹 모드: 코트 내에서는 랜덤하게 팀 구성
+                            // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 랜덤하게 구성)
+                            for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
+                                const p = pairingPatterns[patternIdx];
+                                const teamA = [candidate[p[0]], candidate[p[1]]].map(p => p.userId).sort();
+                                const teamB = [candidate[p[2]], candidate[p[3]]].map(p => p.userId).sort();
+                                teamConfigs.push({ teamA, teamB });
+                            }
                         } else {
                             // 랜덤 모드: 모든 패턴 시도
                             for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
