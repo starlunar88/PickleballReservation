@@ -2099,10 +2099,14 @@ async function loadMatchesForDate(date) {
                     }
                 }
                 
+                // slotKey에서 시작/종료 시간 추출 (예: "13:45-14:00" -> "13:45"와 "14:00")
+                const [startTime, endTime] = slotKey.split('-');
+                const timeDisplay = startTime && endTime ? `${startTime} ~ ${endTime}` : slotKey;
+                
                 matchesHTML += 
                     '<div class="time-slot-section" data-time-slot="' + slotKey + '" data-date="' + date + '">' +
                         '<div class="time-slot-header-compact" style="color: #000; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center;">' +
-                            '<span>' + timeSlot.start + ' ~ ' + timeSlot.end + '</span>' +
+                            '<span>' + timeDisplay + '</span>' +
                             deleteButtonHTML +
                         '</div>' +
                         matchingInfoHTML +
