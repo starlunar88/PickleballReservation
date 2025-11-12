@@ -12992,9 +12992,24 @@ async function saveManualMatchSchedule() {
         showToast('대진표가 저장되었습니다!', 'success');
         closeManualMatchCreateModal();
         
-        // 대진표 탭 새로고침
-        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
-        await loadMatchesForDate(currentDate);
+        // 저장한 날짜로 대진표 탭 새로고침
+        // window.currentDate를 저장한 날짜로 업데이트
+        window.currentDate = date;
+        
+        // 날짜 표시 업데이트
+        if (window.updateMatchesDateDisplay) {
+            window.updateMatchesDateDisplay();
+        }
+        
+        // 대진표 탭 새로고침 (저장한 날짜로)
+        await loadMatchesForDate(date);
+        
+        // 대진표 탭이 활성화되어 있지 않으면 활성화
+        const matchesTab = document.getElementById('matches-tab');
+        if (matchesTab && !matchesTab.classList.contains('active')) {
+            // 대진표 탭으로 전환
+            await switchMainTab('matches');
+        }
         
     } catch (error) {
         console.error('수동 대진표 저장 오류:', error);
