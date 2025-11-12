@@ -3474,23 +3474,32 @@ function drawWinRateChart(data, groupBy = 'all') {
         ctx.fillText(`${Math.round(value)}%`, padding.left - 6, y + 3);
     }
     
-    // X축 레이블 (그룹화 방식에 따라 다르게 표시)
-    const maxLabels = Math.min(data.length, 10); // 최대 10개 레이블
-    const dateInterval = Math.max(1, Math.floor(data.length / maxLabels));
+    // X축 레이블 (최대 10개, 왼쪽부터 일정 간격으로 표시)
+    const maxLabels = 10;
+    const totalPoints = data.length;
     
-    // 오른쪽 끝에서 최소 거리 (레이블이 오른쪽 끝에 붙지 않도록)
-    const minRightMargin = 40;
+    // 표시할 레이블 인덱스 계산 (왼쪽부터 일정 간격으로)
+    const labelIndices = [];
+    if (totalPoints <= maxLabels) {
+        // 데이터가 10개 이하면 모두 표시
+        for (let i = 0; i < totalPoints; i++) {
+            labelIndices.push(i);
+        }
+    } else {
+        // 데이터가 10개보다 많으면 왼쪽부터 일정 간격으로 10개 선택
+        const step = (totalPoints - 1) / (maxLabels - 1);
+        for (let i = 0; i < maxLabels; i++) {
+            const index = Math.round(i * step);
+            labelIndices.push(index);
+        }
+    }
     
     data.forEach((point, index) => {
         // 항상 왼쪽부터 시작
         const x = padding.left + index * xScale;
         
-        // 마지막 레이블이 오른쪽 끝에 붙지 않도록 체크
-        const isLastPoint = index === data.length - 1;
-        const tooCloseToRight = x > width - padding.right - minRightMargin;
-        
-        // 레이블 표시 조건: 간격에 맞거나 마지막 포인트인데 오른쪽 끝에서 충분히 떨어져 있을 때
-        if (index % dateInterval === 0 || (isLastPoint && !tooCloseToRight)) {
+        // 레이블을 표시할 인덱스인지 확인
+        if (labelIndices.includes(index)) {
             const date = new Date(point.date);
             let dateStr;
             
@@ -3530,7 +3539,13 @@ function drawWinRateChart(data, groupBy = 'all') {
             ctx.fillStyle = '#666';
             ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(dateStr, x, height - padding.bottom + 15);
+            
+            // 날짜 레이블을 대각선으로 회전시켜 표시
+            ctx.save();
+            ctx.translate(x, height - padding.bottom + 15);
+            ctx.rotate(-Math.PI / 4); // 45도 회전
+            ctx.fillText(dateStr, 0, 0);
+            ctx.restore();
             
             // X축 눈금
             ctx.strokeStyle = '#e0e0e0';
