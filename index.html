@@ -159,6 +159,9 @@
                             <button class="btn btn-outline" id="refresh-matches" title="새로고침">
                                 <i class="fas fa-rotate-right"></i>
                             </button>
+                            <button class="btn btn-primary" id="manual-match-create-btn" style="display: none; margin-left: 10px;" title="수동 대진표 생성">
+                                <i class="fas fa-plus-circle"></i> 수동 대진표 생성
+                            </button>
                         </div>
                     </div>
                     <div class="match-schedule-section">
@@ -775,6 +778,67 @@
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px;">
                 <button class="btn btn-outline" onclick="closeMatchScheduleOptionsModal()">취소</button>
                 <button class="btn btn-primary" id="confirm-match-schedule-btn">생성하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수동 대진표 생성 모달 -->
+    <div id="manual-match-create-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>수동 대진표 생성</h3>
+                <span class="close" id="close-manual-match-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="manual-match-date">날짜</label>
+                    <input type="date" id="manual-match-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="manual-match-time">시간</label>
+                    <input type="time" id="manual-match-time" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="manual-match-time-slot">시간대</label>
+                    <input type="text" id="manual-match-time-slot" class="form-control" placeholder="예: 09:00-10:00" required>
+                    <small class="form-text">시간대를 입력하세요 (예: 09:00-10:00)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>플레이어 선택</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="player-search" class="form-control" placeholder="플레이어 검색..." style="flex: 1;">
+                        <button type="button" class="btn btn-outline" id="load-all-players-btn">
+                            <i class="fas fa-sync-alt"></i> 전체 목록 새로고침
+                        </button>
+                    </div>
+                    <div id="player-list-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>플레이어 목록을 불러오는 중...</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>선택된 플레이어:</strong>
+                        <div id="selected-players" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; padding: 10px; background: #f5f5f5; border-radius: 4px; min-height: 40px;">
+                            <span style="color: #999;">플레이어를 선택하세요 (최소 4명)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>경기 구성</label>
+                    <div id="manual-matches-container" style="margin-top: 10px;">
+                        <p style="color: #666; font-size: 0.9rem;">플레이어를 선택하면 자동으로 경기가 생성됩니다.</p>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-small" id="add-manual-match-btn" style="margin-top: 10px;">
+                        <i class="fas fa-plus"></i> 경기 추가
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px;">
+                <button class="btn btn-outline" id="cancel-manual-match-btn">취소</button>
+                <button class="btn btn-primary" id="save-manual-match-btn">대진표 저장</button>
             </div>
         </div>
     </div>

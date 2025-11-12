@@ -2736,6 +2736,16 @@ async function loadMatchesForDate(date) {
             dateTimeDisplay.textContent = formattedDate;
         }
         
+        // 관리자 버튼 표시/숨김
+        const manualMatchCreateBtn = document.getElementById('manual-match-create-btn');
+        if (manualMatchCreateBtn) {
+            if (window.adminStatus === true) {
+                manualMatchCreateBtn.style.display = 'inline-block';
+            } else {
+                manualMatchCreateBtn.style.display = 'none';
+            }
+        }
+        
     } catch (error) {
         console.error('대진표 로드 오류:', error);
         showToast('대진표를 불러오는 중 오류가 발생했습니다.', 'error');
@@ -6573,6 +6583,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // 대진표 탭 초기 날짜 표시
     if (matchesCurrentDateDisplay) {
         window.updateMatchesDateDisplay();
+    }
+    
+    // 수동 대진표 생성 버튼
+    const manualMatchCreateBtn = document.getElementById('manual-match-create-btn');
+    if (manualMatchCreateBtn) {
+        manualMatchCreateBtn.addEventListener('click', () => {
+            openManualMatchCreateModal();
+        });
+    }
+    
+    // 수동 대진표 생성 모달 닫기
+    const closeManualMatchModal = document.getElementById('close-manual-match-modal');
+    const cancelManualMatchBtn = document.getElementById('cancel-manual-match-btn');
+    if (closeManualMatchModal) {
+        closeManualMatchModal.addEventListener('click', closeManualMatchCreateModal);
+    }
+    if (cancelManualMatchBtn) {
+        cancelManualMatchBtn.addEventListener('click', closeManualMatchCreateModal);
+    }
+    
+    // 수동 대진표 저장 버튼
+    const saveManualMatchBtn = document.getElementById('save-manual-match-btn');
+    if (saveManualMatchBtn) {
+        saveManualMatchBtn.addEventListener('click', async () => {
+            await saveManualMatchSchedule();
+        });
+    }
+    
+    // 플레이어 목록 새로고침 버튼
+    const loadAllPlayersBtn = document.getElementById('load-all-players-btn');
+    if (loadAllPlayersBtn) {
+        loadAllPlayersBtn.addEventListener('click', async () => {
+            await loadAllPlayersForManualMatch();
+        });
+    }
+    
+    // 플레이어 검색
+    const playerSearchInput = document.getElementById('player-search');
+    if (playerSearchInput) {
+        playerSearchInput.addEventListener('input', (e) => {
+            filterPlayersForManualMatch(e.target.value);
+        });
+    }
+    
+    // 경기 추가 버튼
+    const addManualMatchBtn = document.getElementById('add-manual-match-btn');
+    if (addManualMatchBtn) {
+        addManualMatchBtn.addEventListener('click', () => {
+            addManualMatchRow();
+        });
     }
     
     // 하단 버튼 초기화 코드 제거됨 (타임라인에 통합)
@@ -12410,4 +12470,402 @@ async function resendApprovalEmail(email, name) {
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+}
+
+// ==================== 수동 대진표 생성 기능 ====================
+
+// 전역 변수: 수동 대진표 생성용
+window.manualMatchPlayers = []; // 전체 플레이어 목록
+window.manualMatchSelectedPlayers = []; // 선택된 플레이어 목록
+window.manualMatchMatches = []; // 생성된 경기 목록
+
+// 수동 대진표 생성 모달 열기
+async function openManualMatchCreateModal() {
+    const modal = document.getElementById('manual-match-create-modal');
+    if (!modal) {
+        showToast('모달을 찾을 수 없습니다.', 'error');
+        return;
+    }
+    
+    // 오늘 날짜로 기본 설정
+    const today = new Date().toISOString().slice(0, 10);
+    const dateInput = document.getElementById('manual-match-date');
+    if (dateInput) {
+        dateInput.value = today;
+    }
+    
+    // 초기화
+    window.manualMatchSelectedPlayers = [];
+    window.manualMatchMatches = [];
+    
+    // 플레이어 목록 로드
+    await loadAllPlayersForManualMatch();
+    
+    // 경기 컨테이너 초기화
+    const matchesContainer = document.getElementById('manual-matches-container');
+    if (matchesContainer) {
+        matchesContainer.innerHTML = '<p style="color: #666; font-size: 0.9rem;">플레이어를 선택하면 자동으로 경기가 생성됩니다.</p>';
+    }
+    
+    // 모달 표시
+    modal.style.display = 'flex';
+}
+
+// 수동 대진표 생성 모달 닫기
+function closeManualMatchCreateModal() {
+    const modal = document.getElementById('manual-match-create-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // 초기화
+    window.manualMatchPlayers = [];
+    window.manualMatchSelectedPlayers = [];
+    window.manualMatchMatches = [];
+    
+    // 검색 입력 초기화
+    const playerSearchInput = document.getElementById('player-search');
+    if (playerSearchInput) {
+        playerSearchInput.value = '';
+    }
+}
+
+// 전체 플레이어 목록 로드
+async function loadAllPlayersForManualMatch() {
+    try {
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            showToast('데이터베이스 연결 오류', 'error');
+            return;
+        }
+        
+        const container = document.getElementById('player-list-container');
+        if (!container) return;
+        
+        container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>플레이어 목록을 불러오는 중...</p></div>';
+        
+        // users 컬렉션에서 모든 사용자 가져오기
+        const usersSnapshot = await db.collection('users').get();
+        
+        window.manualMatchPlayers = [];
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.name || userData.email) {
+                window.manualMatchPlayers.push({
+                    userId: doc.id,
+                    userName: userData.name || userData.email || '이름 없음',
+                    email: userData.email || '',
+                    dupr: userData.dupr || null,
+                    score: userData.score || 1000
+                });
+            }
+        });
+        
+        // 이름순 정렬
+        window.manualMatchPlayers.sort((a, b) => {
+            return (a.userName || '').localeCompare(b.userName || '');
+        });
+        
+        renderPlayerListForManualMatch();
+        
+    } catch (error) {
+        console.error('플레이어 목록 로드 오류:', error);
+        const container = document.getElementById('player-list-container');
+        if (container) {
+            container.innerHTML = '<p style="color: #e74c3c;">플레이어 목록을 불러올 수 없습니다.</p>';
+        }
+        showToast('플레이어 목록을 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 플레이어 목록 렌더링
+function renderPlayerListForManualMatch(searchTerm = '') {
+    const container = document.getElementById('player-list-container');
+    if (!container) return;
+    
+    let playersToShow = window.manualMatchPlayers || [];
+    
+    // 검색 필터링
+    if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        playersToShow = playersToShow.filter(p => 
+            (p.userName && p.userName.toLowerCase().includes(term)) ||
+            (p.email && p.email.toLowerCase().includes(term))
+        );
+    }
+    
+    if (playersToShow.length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">플레이어가 없습니다.</p>';
+        return;
+    }
+    
+    container.innerHTML = playersToShow.map(player => {
+        const isSelected = window.manualMatchSelectedPlayers.some(p => p.userId === player.userId);
+        return `
+            <div class="player-item" style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; ${isSelected ? 'background: #e3f2fd;' : ''}" 
+                 onclick="togglePlayerSelection('${player.userId}')">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} style="margin-right: 10px;" onchange="togglePlayerSelection('${player.userId}')">
+                <div style="flex: 1;">
+                    <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
+                    <div style="font-size: 0.85rem; color: #666;">${player.email || ''} ${player.dupr ? `| DUPR: ${player.dupr}` : ''}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 플레이어 선택/해제
+function togglePlayerSelection(userId) {
+    const player = window.manualMatchPlayers.find(p => p.userId === userId);
+    if (!player) return;
+    
+    const index = window.manualMatchSelectedPlayers.findIndex(p => p.userId === userId);
+    if (index >= 0) {
+        // 해제
+        window.manualMatchSelectedPlayers.splice(index, 1);
+    } else {
+        // 선택
+        window.manualMatchSelectedPlayers.push(player);
+    }
+    
+    // UI 업데이트
+    renderPlayerListForManualMatch(document.getElementById('player-search')?.value || '');
+    updateSelectedPlayersDisplay();
+    updateManualMatchesDisplay();
+}
+
+// 선택된 플레이어 표시 업데이트
+function updateSelectedPlayersDisplay() {
+    const container = document.getElementById('selected-players');
+    if (!container) return;
+    
+    if (window.manualMatchSelectedPlayers.length === 0) {
+        container.innerHTML = '<span style="color: #999;">플레이어를 선택하세요 (최소 4명)</span>';
+        return;
+    }
+    
+    container.innerHTML = window.manualMatchSelectedPlayers.map(player => `
+        <span class="selected-player-badge" style="display: inline-flex; align-items: center; padding: 6px 12px; background: #2196F3; color: white; border-radius: 20px; font-size: 0.9rem;">
+            ${player.userName || '이름 없음'}
+            <button onclick="removePlayerFromSelection('${player.userId}')" style="margin-left: 8px; background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
+        </span>
+    `).join('');
+}
+
+// 플레이어 선택 해제
+function removePlayerFromSelection(userId) {
+    const index = window.manualMatchSelectedPlayers.findIndex(p => p.userId === userId);
+    if (index >= 0) {
+        window.manualMatchSelectedPlayers.splice(index, 1);
+        renderPlayerListForManualMatch(document.getElementById('player-search')?.value || '');
+        updateSelectedPlayersDisplay();
+        updateManualMatchesDisplay();
+    }
+}
+
+// 플레이어 검색 필터링
+function filterPlayersForManualMatch(searchTerm) {
+    renderPlayerListForManualMatch(searchTerm);
+}
+
+// 수동 경기 추가
+function addManualMatchRow() {
+    if (window.manualMatchSelectedPlayers.length < 4) {
+        showToast('최소 4명의 플레이어가 필요합니다.', 'warning');
+        return;
+    }
+    
+    // 자동으로 경기 생성 (선택된 플레이어를 4명씩 나누어 경기 생성)
+    updateManualMatchesDisplay();
+}
+
+// 수동 경기 표시 업데이트
+function updateManualMatchesDisplay() {
+    const container = document.getElementById('manual-matches-container');
+    if (!container) return;
+    
+    if (window.manualMatchSelectedPlayers.length < 4) {
+        container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">플레이어를 선택하면 자동으로 경기가 생성됩니다. (최소 4명 필요)</p>';
+        return;
+    }
+    
+    // 선택된 플레이어를 4명씩 나누어 경기 생성
+    const players = [...window.manualMatchSelectedPlayers];
+    const matches = [];
+    let matchIndex = 0;
+    let courtNumber = 1;
+    let roundNumber = 1;
+    
+    while (players.length >= 4) {
+        // 4명씩 추출
+        const teamA = [players.shift(), players.shift()];
+        const teamB = [players.shift(), players.shift()];
+        
+        matches.push({
+            id: `manual_${matchIndex++}`,
+            roundNumber: roundNumber,
+            courtNumber: courtNumber,
+            teamA: teamA,
+            teamB: teamB,
+            scoreA: null,
+            scoreB: null
+        });
+        
+        // 코트 번호 증가 (최대 3개 코트)
+        courtNumber++;
+        if (courtNumber > 3) {
+            courtNumber = 1;
+            roundNumber++;
+        }
+    }
+    
+    window.manualMatchMatches = matches;
+    
+    // UI 렌더링
+    if (matches.length === 0) {
+        container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">경기를 생성할 수 없습니다. (최소 4명 필요)</p>';
+        return;
+    }
+    
+    container.innerHTML = matches.map((match, index) => {
+        const teamANames = match.teamA.map(p => p.userName).join(', ');
+        const teamBNames = match.teamB.map(p => p.userName).join(', ');
+        
+        return `
+            <div class="manual-match-row" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: #f9f9f9;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <strong>라운드 ${match.roundNumber} - 코트 ${match.courtNumber}</strong>
+                    </div>
+                    <button onclick="removeManualMatch(${index})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; align-items: center;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">팀 A</label>
+                        <div style="padding: 8px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                            ${teamANames}
+                        </div>
+                        <input type="number" min="0" max="15" placeholder="점수" 
+                               id="manual-scoreA-${index}" 
+                               value="${match.scoreA || ''}" 
+                               style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="text-align: center; font-size: 1.5rem; font-weight: bold;">VS</div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">팀 B</label>
+                        <div style="padding: 8px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                            ${teamBNames}
+                        </div>
+                        <input type="number" min="0" max="15" placeholder="점수" 
+                               id="manual-scoreB-${index}" 
+                               value="${match.scoreB || ''}" 
+                               style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 수동 경기 삭제
+function removeManualMatch(index) {
+    if (confirm('이 경기를 삭제하시겠습니까?')) {
+        window.manualMatchMatches.splice(index, 1);
+        // 삭제된 플레이어를 다시 선택 가능하도록
+        updateManualMatchesDisplay();
+    }
+}
+
+// 수동 대진표 저장
+async function saveManualMatchSchedule() {
+    try {
+        const date = document.getElementById('manual-match-date')?.value;
+        const timeSlot = document.getElementById('manual-match-time-slot')?.value;
+        
+        if (!date || !timeSlot) {
+            showToast('날짜와 시간대를 입력하세요.', 'error');
+            return;
+        }
+        
+        if (window.manualMatchMatches.length === 0) {
+            showToast('최소 하나의 경기를 생성하세요.', 'error');
+            return;
+        }
+        
+        const db = window.db || firebase.firestore();
+        if (!db) {
+            showToast('데이터베이스 연결 오류', 'error');
+            return;
+        }
+        
+        showLoading();
+        
+        // 각 경기를 matches 컬렉션에 저장
+        for (const match of window.manualMatchMatches) {
+            const matchIndex = window.manualMatchMatches.indexOf(match);
+            const scoreA = document.getElementById(`manual-scoreA-${matchIndex}`)?.value;
+            const scoreB = document.getElementById(`manual-scoreB-${matchIndex}`)?.value;
+            
+            const matchData = {
+                date: date,
+                timeSlot: timeSlot,
+                roundNumber: match.roundNumber,
+                courtNumber: match.courtNumber,
+                teamA: match.teamA.map(p => ({
+                    userId: p.userId,
+                    userName: p.userName,
+                    dupr: p.dupr || null
+                })),
+                teamB: match.teamB.map(p => ({
+                    userId: p.userId,
+                    userName: p.userName,
+                    dupr: p.dupr || null
+                })),
+                status: (scoreA && scoreB && scoreA !== scoreB) ? 'completed' : 'scheduled',
+                scoreA: scoreA ? Number(scoreA) : null,
+                scoreB: scoreB ? Number(scoreB) : null,
+                teamMode: 'manual',
+                createdAt: new Date(),
+                createdBy: firebase.auth().currentUser?.uid || null
+            };
+            
+            await db.collection('matches').add(matchData);
+            
+            // 점수가 입력되어 있으면 게임 결과 기록
+            if (scoreA && scoreB && scoreA !== scoreB) {
+                const aWins = Number(scoreA) > Number(scoreB);
+                const winners = aWins ? match.teamA : match.teamB;
+                const losers = aWins ? match.teamB : match.teamA;
+                
+                await recordGameResult(`${match.id}_manual`, {
+                    date: date,
+                    timeSlot: timeSlot,
+                    courtNumber: match.courtNumber,
+                    roundNumber: match.roundNumber,
+                    gameNumber: match.roundNumber,
+                    gameStartTime: null,
+                    gameEndTime: null,
+                    winners: winners.map(p => p.userId),
+                    losers: losers.map(p => p.userId),
+                    score: `${scoreA}-${scoreB}`,
+                    players: [...match.teamA, ...match.teamB].map(p => p.userId)
+                });
+            }
+        }
+        
+        showToast('대진표가 저장되었습니다!', 'success');
+        closeManualMatchCreateModal();
+        
+        // 대진표 탭 새로고침
+        const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
+        await loadMatchesForDate(currentDate);
+        
+    } catch (error) {
+        console.error('수동 대진표 저장 오류:', error);
+        showToast('대진표 저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
 }
