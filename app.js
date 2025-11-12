@@ -166,6 +166,12 @@ if (switchToLogin) {
 // 햄버거 메뉴 토글
 if (hamburger && navMenu) {
     hamburger.addEventListener('click', () => {
+        // 태블릿 사이즈(769px ~ 1024px)에서는 메뉴 토글하지 않음
+        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
+        if (isTablet) {
+            return;
+        }
+        
         navMenu.classList.toggle('active');
         hamburger.classList.toggle('active');
         document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : 'auto';
@@ -175,6 +181,12 @@ if (hamburger && navMenu) {
 // 햄버거 메뉴 외부 클릭 시 닫기
 if (navMenu && hamburger) {
     document.addEventListener('click', (e) => {
+        // 태블릿 사이즈에서는 메뉴를 닫지 않음
+        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
+        if (isTablet) {
+            return;
+        }
+        
         const clickedInside = navMenu.contains(e.target) || hamburger.contains(e.target);
         if (!clickedInside && navMenu.classList.contains('active')) {
             navMenu.classList.remove('active');
@@ -183,6 +195,19 @@ if (navMenu && hamburger) {
         }
     });
 }
+
+// 태블릿 사이즈에서 메뉴 항상 표시
+function handleTabletMenu() {
+    const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
+    if (isTablet && navMenu) {
+        navMenu.classList.add('active');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 초기 로드 및 리사이즈 시 태블릿 메뉴 처리
+handleTabletMenu();
+window.addEventListener('resize', handleTabletMenu);
 
 // 모달 외부 클릭 시 닫기 (회원가입과 DUPR 수정, 비밀번호 변경만)
 window.addEventListener('click', (e) => {

@@ -4200,9 +4200,25 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     /* 태블릿에서 네비게이션 메뉴 표시 */
     .nav-menu {
         display: flex !important;
-        flex-direction: row;
+        position: static !important; /* fixed에서 static으로 변경 */
+        flex-direction: row !important;
         align-items: center;
         gap: 15px;
+        background: transparent !important; /* 배경 제거 */
+        width: auto !important;
+        max-width: none !important;
+        left: auto !important;
+        transform: none !important;
+        padding: 0 !important;
+        backdrop-filter: none !important;
+        z-index: auto !important;
+        text-align: left !important;
+    }
+    
+    .nav-menu.active {
+        display: flex !important; /* active 상태와 관계없이 항상 표시 */
+        position: static !important;
+        transform: none !important;
     }
     
     .hamburger {
@@ -4210,7 +4226,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .user-menu {
-        flex-direction: row; /* 태블릿에서는 가로 배치 */
+        flex-direction: row !important; /* 태블릿에서는 가로 배치 */
         gap: 12px;
     }
     
@@ -4243,16 +4259,34 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .desktop-nav-tabs {
         display: flex !important;
         justify-content: center;
-        gap: 10px;
-        margin: 20px auto;
-        padding: 0 20px;
+        gap: 12px;
+        margin: 20px auto 30px auto;
+        padding: 15px 20px;
         max-width: 750px;
         flex-wrap: wrap;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
     
     .desktop-tab-btn {
         padding: 12px 20px;
         font-size: 0.95rem;
+        background: rgba(102, 126, 234, 0.1) !important;
+        color: #667eea !important;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    
+    .desktop-tab-btn:hover {
+        background: rgba(102, 126, 234, 0.2) !important;
+        transform: translateY(-2px);
+    }
+    
+    .desktop-tab-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: 1px solid transparent;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
     
     /* 태블릿에서 메달 시상식 크기 조정 */
