@@ -3479,19 +3479,27 @@ function drawWinRateChart(data, groupBy = 'all') {
     const totalPoints = data.length;
     
     // 표시할 레이블 인덱스 계산 (왼쪽부터 일정 간격으로)
-    const labelIndices = [];
-    if (totalPoints <= maxLabels) {
+    const labelIndicesSet = new Set();
+    
+    if (totalPoints === 0) {
+        // 데이터가 없으면 아무것도 표시하지 않음
+    } else if (totalPoints <= maxLabels) {
         // 데이터가 10개 이하면 모두 표시
         for (let i = 0; i < totalPoints; i++) {
-            labelIndices.push(i);
+            labelIndicesSet.add(i);
         }
     } else {
         // 데이터가 10개보다 많으면 왼쪽부터 일정 간격으로 10개 선택
+        // 첫 번째와 마지막은 항상 포함
+        labelIndicesSet.add(0); // 첫 번째
+        
         const step = (totalPoints - 1) / (maxLabels - 1);
-        for (let i = 0; i < maxLabels; i++) {
+        for (let i = 1; i < maxLabels - 1; i++) {
             const index = Math.round(i * step);
-            labelIndices.push(index);
+            labelIndicesSet.add(index);
         }
+        
+        labelIndicesSet.add(totalPoints - 1); // 마지막
     }
     
     data.forEach((point, index) => {
@@ -3499,7 +3507,7 @@ function drawWinRateChart(data, groupBy = 'all') {
         const x = padding.left + index * xScale;
         
         // 레이블을 표시할 인덱스인지 확인
-        if (labelIndices.includes(index)) {
+        if (labelIndicesSet.has(index)) {
             const date = new Date(point.date);
             let dateStr;
             
