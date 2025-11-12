@@ -12863,10 +12863,6 @@ function updateManualMatchesDisplay() {
                         <div style="padding: 8px; background: white; border-radius: 4px; border: 1px solid #ddd;">
                             ${teamANames}
                         </div>
-                        <input type="number" min="0" max="15" placeholder="점수" 
-                               id="manual-scoreA-${index}" 
-                               value="${match.scoreA || ''}" 
-                               style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                     <div style="text-align: center; font-size: 1.5rem; font-weight: bold;">VS</div>
                     <div>
@@ -12874,10 +12870,6 @@ function updateManualMatchesDisplay() {
                         <div style="padding: 8px; background: white; border-radius: 4px; border: 1px solid #ddd;">
                             ${teamBNames}
                         </div>
-                        <input type="number" min="0" max="15" placeholder="점수" 
-                               id="manual-scoreB-${index}" 
-                               value="${match.scoreB || ''}" 
-                               style="width: 100%; margin-top: 5px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
                     </div>
                 </div>
             </div>
@@ -12936,11 +12928,21 @@ async function saveManualMatchSchedule() {
         
         showLoading();
         
-        // 각 경기를 matches 컬렉션에 저장
+        // 각 경기를 matches 컬렉션에 저장 (점수 없이 대진표만 생성)
         for (const match of window.manualMatchMatches) {
-            const matchIndex = window.manualMatchMatches.indexOf(match);
-            const scoreA = document.getElementById(`manual-scoreA-${matchIndex}`)?.value;
-            const scoreB = document.getElementById(`manual-scoreB-${matchIndex}`)?.value;
+            // 각 경기의 시간 계산 (15분 단위로 증가)
+            const minutesPerGame = 15;
+            const gameStartMinutes = (match.roundNumber - 1) * minutesPerGame;
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
+            const gameStartHour = Math.floor(totalStartMinutes / 60);
+            const gameStartMin = totalStartMinutes % 60;
+            const totalEndMinutes = totalStartMinutes + minutesPerGame;
+            const gameEndHour = Math.floor(totalEndMinutes / 60);
+            const gameEndMin = totalEndMinutes % 60;
+            
+            const gameStartTime = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
+            const gameEndTime = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
             
             const matchData = {
                 date: date,
@@ -12957,36 +12959,17 @@ async function saveManualMatchSchedule() {
                     userName: p.userName,
                     dupr: p.dupr || null
                 })),
-                status: (scoreA && scoreB && scoreA !== scoreB) ? 'completed' : 'scheduled',
-                scoreA: scoreA ? Number(scoreA) : null,
-                scoreB: scoreB ? Number(scoreB) : null,
+                status: 'scheduled', // 항상 scheduled로 저장 (점수는 나중에 입력)
+                scoreA: null,
+                scoreB: null,
+                gameStartTime: gameStartTime, // 게임 시작 시간
+                gameEndTime: gameEndTime,     // 게임 종료 시간
                 teamMode: 'manual',
                 createdAt: new Date(),
                 createdBy: firebase.auth().currentUser?.uid || null
             };
             
             await db.collection('matches').add(matchData);
-            
-            // 점수가 입력되어 있으면 게임 결과 기록
-            if (scoreA && scoreB && scoreA !== scoreB) {
-                const aWins = Number(scoreA) > Number(scoreB);
-                const winners = aWins ? match.teamA : match.teamB;
-                const losers = aWins ? match.teamB : match.teamA;
-                
-                await recordGameResult(`${match.id}_manual`, {
-                    date: date,
-                    timeSlot: timeSlot,
-                    courtNumber: match.courtNumber,
-                    roundNumber: match.roundNumber,
-                    gameNumber: match.roundNumber,
-                    gameStartTime: null,
-                    gameEndTime: null,
-                    winners: winners.map(p => p.userId),
-                    losers: losers.map(p => p.userId),
-                    score: `${scoreA}-${scoreB}`,
-                    players: [...match.teamA, ...match.teamB].map(p => p.userId)
-                });
-            }
         }
         
         showToast('대진표가 저장되었습니다!', 'success');
