@@ -3446,10 +3446,19 @@ function drawWinRateChart(data, groupBy = 'all') {
     const maxLabels = Math.min(data.length, 10); // 최대 10개 레이블
     const dateInterval = Math.max(1, Math.floor(data.length / maxLabels));
     
+    // 오른쪽 끝에서 최소 거리 (레이블이 오른쪽 끝에 붙지 않도록)
+    const minRightMargin = 40;
+    
     data.forEach((point, index) => {
-        if (index % dateInterval === 0 || index === data.length - 1) {
-            // 항상 왼쪽부터 시작
-            const x = padding.left + index * xScale;
+        // 항상 왼쪽부터 시작
+        const x = padding.left + index * xScale;
+        
+        // 마지막 레이블이 오른쪽 끝에 붙지 않도록 체크
+        const isLastPoint = index === data.length - 1;
+        const tooCloseToRight = x > width - padding.right - minRightMargin;
+        
+        // 레이블 표시 조건: 간격에 맞거나 마지막 포인트인데 오른쪽 끝에서 충분히 떨어져 있을 때
+        if (index % dateInterval === 0 || (isLastPoint && !tooCloseToRight)) {
             const date = new Date(point.date);
             let dateStr;
             
@@ -5675,10 +5684,15 @@ async function loadReservationsTimeline() {
                             // 관리자 버튼들 (관리자만 표시/활성화)
                             if (isAdminUser) {
                                 // 대진표 생성 버튼
-                                const canGenerate = reservations.length >= 4;
+                                const canGenerate = reservations.length >= 4 && !isClosed;
                                 const buttonDisabled = !canGenerate ? 'disabled' : '';
                                 const buttonStyle = 'margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;' + (!canGenerate ? ' opacity: 0.5;' : '');
-                                const buttonTitle = !canGenerate ? '최소 4명이 필요합니다' : '';
+                                let buttonTitle = '';
+                                if (isClosed) {
+                                    buttonTitle = '마감된 시간대입니다';
+                                } else if (reservations.length < 4) {
+                                    buttonTitle = '최소 4명이 필요합니다';
+                                }
                                 buttons += `<button class="btn btn-primary force-generate-btn" 
                                                    data-time-slot="${slotKey}" 
                                                    data-date="${targetDate}"
