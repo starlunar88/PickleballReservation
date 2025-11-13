@@ -4227,21 +4227,28 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
     }
     
-    /* 태블릿에서 메뉴바를 화면 끝까지 확장 - 내용 영역도 넓게 */
+    /* 태블릿에서 메뉴바를 화면 끝까지 완전히 확장 */
     .nav-container {
-        max-width: 100% !important; /* 화면 전체 너비 사용 */
-        width: 100% !important; /* 화면 끝까지 */
+        max-width: 100vw !important; /* 뷰포트 전체 너비 사용 */
+        width: 100vw !important; /* 뷰포트 전체 너비 */
+        min-width: 100vw !important; /* 최소 너비도 뷰포트 전체 */
         margin: 0 !important; /* 모든 마진 제거 */
         padding: 0 8px !important; /* 패딩 최소화하여 내용 영역 최대화 */
         height: 60px !important; /* 원래 높이로 복원 */
         border-radius: 0 !important; /* 모서리 둥글기 제거하여 끝까지 나오도록 */
         box-sizing: border-box !important;
+        left: 0 !important; /* 왼쪽 끝부터 */
+        right: 0 !important; /* 오른쪽 끝까지 */
     }
     
     /* 태블릿에서 navbar의 패딩도 제거하여 완전히 끝까지 나오도록 */
     .navbar {
         padding: 0 !important;
         margin: 0 !important;
+        width: 100vw !important; /* 뷰포트 전체 너비 */
+        max-width: 100vw !important;
+        left: 0 !important;
+        right: 0 !important;
     }
     
     /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
@@ -4358,10 +4365,35 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 90px !important; /* 탭 높이만큼 여백 확보 */
     }
     
-    /* 태블릿에서 데스크톱 탭 완전히 숨기기 */
+    /* 태블릿에서 데스크톱 탭 완전히 숨기기 - 모든 선택자 포함 */
     .main-container .desktop-nav-tabs,
+    .main-container > .desktop-nav-tabs,
     .desktop-nav-tabs,
-    .desktop-nav-tabs * {
+    .desktop-nav-tabs *,
+    div.desktop-nav-tabs,
+    .main-container div.desktop-nav-tabs {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        max-height: 0 !important;
+        max-width: 0 !important;
+        min-height: 0 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
+        z-index: -1 !important;
+    }
+    
+    .desktop-tab-btn,
+    button.desktop-tab-btn,
+    .desktop-nav-tabs .desktop-tab-btn,
+    .desktop-nav-tabs button {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -4372,16 +4404,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 0 !important;
     }
     
-    .desktop-tab-btn {
+    .desktop-tab-btn:hover,
+    .desktop-tab-btn.active,
+    .desktop-tab-btn:focus,
+    .desktop-tab-btn:active {
         display: none !important;
-    }
-    
-    .desktop-tab-btn:hover {
-        display: none !important;
-    }
-    
-    .desktop-tab-btn.active {
-        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
     
     /* 태블릿에서 메달 시상식 크기 조정 */
