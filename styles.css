@@ -4227,12 +4227,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
     }
     
-    /* 태블릿에서 메뉴바를 화면 끝까지 확장 */
+    /* 태블릿에서 메뉴바를 화면 끝까지 확장 - 내용 영역도 넓게 */
     .nav-container {
         max-width: 100% !important; /* 화면 전체 너비 사용 */
         width: 100% !important; /* 화면 끝까지 */
         margin: 0 !important; /* 모든 마진 제거 */
-        padding: 0 15px !important; /* 최소한의 패딩만 유지 */
+        padding: 0 8px !important; /* 패딩 최소화하여 내용 영역 최대화 */
         height: 60px !important; /* 원래 높이로 복원 */
         border-radius: 0 !important; /* 모서리 둥글기 제거하여 끝까지 나오도록 */
         box-sizing: border-box !important;
