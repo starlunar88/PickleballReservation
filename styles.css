@@ -4222,7 +4222,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .nav-container {
-        max-width: 95% !important; /* 태블릿에서 메뉴바를 더 넓게 표시 */
+        max-width: 1200px !important; /* 본문과 같은 너비로 맞춤 */
         width: 100% !important;
         margin: 8px auto !important;
         padding: 0 20px !important;
