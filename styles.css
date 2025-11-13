@@ -4358,25 +4358,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 90px !important; /* 탭 높이만큼 여백 확보 */
     }
     
-    /* 태블릿에서 데스크톱 탭 강제 표시 */
+    /* 태블릿에서 데스크톱 탭 숨기기 */
     .main-container .desktop-nav-tabs,
     .desktop-nav-tabs {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        justify-content: center !important;
-        gap: 12px !important;
-        margin: 20px auto 30px auto !important;
-        padding: 15px 20px !important;
-        max-width: 1200px !important; /* 컨테이너와 일치하도록 조정 */
-        width: 100% !important;
-        flex-wrap: wrap !important;
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-        position: relative !important;
-        z-index: 100 !important;
-        box-sizing: border-box !important;
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
     
     .desktop-tab-btn {
