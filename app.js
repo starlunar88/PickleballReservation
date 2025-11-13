@@ -166,16 +166,7 @@ if (switchToLogin) {
 // 햄버거 메뉴 토글
 if (hamburger && navMenu) {
     hamburger.addEventListener('click', () => {
-        // 태블릿 사이즈(769px ~ 2000px)에서는 메뉴 토글하지 않음 - Lenovo P11 지원
-        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
-        if (isTablet) {
-            // 태블릿에서는 메뉴가 항상 표시되므로 active 클래스 제거
-            navMenu.classList.remove('active');
-            hamburger.classList.remove('active');
-            document.body.style.overflow = 'auto';
-            return;
-        }
-        
+        // 태블릿에서도 정상적으로 토글 작동
         navMenu.classList.toggle('active');
         hamburger.classList.toggle('active');
         document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : 'auto';
@@ -185,18 +176,6 @@ if (hamburger && navMenu) {
 // 햄버거 메뉴 외부 클릭 시 닫기
 if (navMenu && hamburger) {
     document.addEventListener('click', (e) => {
-        // 태블릿 사이즈에서는 메뉴를 닫지 않음 - Lenovo P11 지원
-        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
-        if (isTablet) {
-            // 태블릿에서는 메뉴가 항상 표시되므로 active 클래스 제거
-            if (navMenu.classList.contains('active')) {
-                navMenu.classList.remove('active');
-                hamburger.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
-            return;
-        }
-        
         const clickedInside = navMenu.contains(e.target) || hamburger.contains(e.target);
         if (!clickedInside && navMenu.classList.contains('active')) {
             navMenu.classList.remove('active');
@@ -206,20 +185,17 @@ if (navMenu && hamburger) {
     });
 }
 
-// 태블릿 사이즈에서 메뉴 항상 표시 (CSS로 처리하므로 active 클래스는 제거) - Lenovo P11 지원
+// 태블릿 사이즈에서 메뉴 초기화 - 기본적으로 닫힌 상태
 function handleTabletMenu() {
     const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
     if (isTablet && navMenu) {
-        // 태블릿에서는 active 클래스를 제거하고 CSS가 자동으로 처리하도록 함
-        // CSS에서 이미 display: flex !important로 설정되어 있음
-        navMenu.classList.remove('active');
-        if (hamburger) {
-            hamburger.classList.remove('active');
+        // 태블릿에서는 기본적으로 메뉴가 닫혀있어야 함
+        // 사용자가 햄버거 버튼을 클릭하면 active 클래스가 추가되어 메뉴가 열림
+        // 페이지 로드 시 기본적으로 닫힌 상태로 시작
+        if (!hamburger || !hamburger.classList.contains('active')) {
+            navMenu.classList.remove('active');
+            document.body.style.overflow = 'auto';
         }
-        document.body.style.overflow = 'auto';
-    } else if (navMenu) {
-        // 태블릿이 아닐 때는 기본 동작 유지
-        // active 클래스가 없으면 CSS의 display: none이 적용됨
     }
 }
 
