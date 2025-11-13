@@ -4180,6 +4180,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin: 0 auto;
         padding-left: 20px;
         padding-right: 20px;
+        padding-top: 95px !important; /* 태블릿에서 메뉴바 높이 증가에 맞춰 여백 조정 (80px -> 95px) */
         box-sizing: border-box;
     }
     
@@ -4226,12 +4227,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
     }
     
-    /* 태블릿에서 메뉴바를 본문과 정확히 같은 너비로 맞춤 */
+    /* 태블릿에서 메뉴바를 본문과 정확히 같은 너비로 맞춤 - 더 크게 */
     .nav-container {
         max-width: 1200px !important; /* 본문과 같은 너비 */
         width: calc(100% - 40px) !important; /* 좌우 패딩 20px씩 고려 */
         margin: 8px auto !important;
-        padding: 0 20px !important; /* 본문과 같은 패딩 */
+        padding: 0 30px !important; /* 태블릿에서 패딩 증가 (20px -> 30px) */
+        height: 75px !important; /* 태블릿에서 높이 증가 (60px -> 75px) */
         box-sizing: border-box !important;
     }
     
@@ -4265,37 +4267,41 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: none !important; /* 태블릿에서는 햄버거 메뉴 숨김 */
     }
     
-    /* 태블릿에서 로고 영역 확장 - 모든 제한 제거 */
+    /* 태블릿에서 로고 영역 확장 - 모든 제한 제거, 더 크게 */
     .nav-logo {
         max-width: none !important; /* 너비 제한 완전 제거 */
         min-width: auto !important; /* 최소 너비 제한 제거 */
         width: auto !important;
-        flex: 0 1 auto !important; /* 축소 방지, 필요시 확장 허용 */
+        flex: 0 0 auto !important; /* 축소/확장 방지, 고정 크기 */
         flex-shrink: 0 !important; /* 축소 완전 방지 */
         flex-grow: 0 !important; /* 자동 확장 방지 */
         overflow: visible !important; /* 넘치는 내용 표시 */
-        font-size: 1.3rem !important; /* 태블릿에서 폰트 크기 더 크게 */
-        gap: 8px !important;
+        font-size: 1.5rem !important; /* 태블릿에서 폰트 크기 더 크게 (1.3rem -> 1.5rem) */
+        gap: 10px !important; /* 간격 증가 */
         white-space: nowrap !important; /* 한 줄 유지 */
+        padding: 0 !important; /* 패딩 제거 */
+        margin: 0 !important; /* 마진 제거 */
     }
     
     .nav-logo i {
-        font-size: 1.6rem !important; /* 태블릿에서 아이콘 크기 더 크게 */
-        margin-right: 10px !important;
+        font-size: 1.8rem !important; /* 태블릿에서 아이콘 크기 더 크게 (1.6rem -> 1.8rem) */
+        margin-right: 12px !important; /* 간격 증가 */
         flex-shrink: 0 !important; /* 아이콘 크기 고정 */
     }
     
     .version-badge {
-        font-size: 0.9rem !important; /* 태블릿에서 버전 배지 크기 증가 */
-        padding: 4px 10px !important;
+        font-size: 1rem !important; /* 태블릿에서 버전 배지 크기 증가 (0.9rem -> 1rem) */
+        padding: 5px 12px !important; /* 패딩 증가 */
         flex-shrink: 0 !important; /* 버전 배지 크기 고정 */
         white-space: nowrap !important; /* 한 줄 유지 */
+        margin-left: 0 !important; /* 마진 제거 */
     }
     
     /* 태블릿에서 nav-container의 flex 속성 조정 */
     .nav-container {
         justify-content: flex-start !important; /* 로고를 왼쪽에 배치하고 공간 확보 */
-        gap: 20px !important; /* 로고와 메뉴 사이 간격 */
+        gap: 30px !important; /* 로고와 메뉴 사이 간격 증가 (20px -> 30px) */
+        align-items: center !important; /* 수직 중앙 정렬 */
     }
     
     .user-menu {
