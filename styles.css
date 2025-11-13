@@ -4716,14 +4716,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         box-sizing: border-box;
     }
     
-    /* PC에서 메뉴바를 본문 컨텐츠와 같은 너비로 제한 */
+    /* PC에서 메뉴바를 본문 컨텐츠와 같은 너비로 제한 - 태블릿 스타일 오버라이드 */
     .nav-container {
         max-width: 480px !important; /* 본문과 같은 너비로 제한 */
-        width: 100% !important;
+        width: 100% !important; /* 태블릿의 100vw 오버라이드 */
+        min-width: auto !important; /* 태블릿의 min-width: 100vw 오버라이드 */
         margin: 0 auto !important; /* 본문과 동일한 마진으로 정렬 */
-        padding: 0 12px !important;
+        padding: 0 12px !important; /* 태블릿의 padding: 0 8px 오버라이드 */
         height: 60px !important; /* PC에서도 높이 고정 */
+        border-radius: 12px !important; /* 태블릿의 border-radius: 0 오버라이드 */
         box-sizing: border-box !important;
+        position: relative !important;
+        left: auto !important; /* 태블릿의 left: 0 오버라이드 */
+        right: auto !important; /* 태블릿의 right: 0 오버라이드 */
     }
     
     /* PC에서 navbar도 본문과 맞춤 */
