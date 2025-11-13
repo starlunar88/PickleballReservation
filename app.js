@@ -8515,23 +8515,6 @@ async function processTimeSlotReservations(date, timeSlot) {
         window[processingKey] = true;
         
         try {
-            // 해당 시간 슬롯의 예약 가져오기 (모든 pending 예약)
-            const reservationsSnapshot = await db.collection('reservations')
-                .where('date', '==', date)
-                .where('timeSlot', '==', timeSlot)
-                .where('status', '==', 'pending')
-                .get();
-            
-            if (reservationsSnapshot.empty) {
-                console.log(`처리할 예약이 없음: ${date} ${timeSlot}`);
-                return;
-            }
-            
-            const reservations = [];
-            reservationsSnapshot.forEach(doc => {
-                reservations.push({ id: doc.id, ...doc.data() });
-            });
-            
             // 게임 시작 시간 확인 - 게임 시작 시간이 지난 경우 예약 취소를 절대 하지 않음
             const settings = await getSystemSettings();
             const [slotStart] = timeSlot.split('-');
@@ -8544,42 +8527,84 @@ async function processTimeSlotReservations(date, timeSlot) {
                 return;
             }
             
+            // 해당 시간 슬롯의 예약 가져오기 (pending과 confirmed 모두 확인)
+            const pendingSnapshot = await db.collection('reservations')
+                .where('date', '==', date)
+                .where('timeSlot', '==', timeSlot)
+                .where('status', '==', 'pending')
+                .get();
+            
+            const confirmedSnapshot = await db.collection('reservations')
+                .where('date', '==', date)
+                .where('timeSlot', '==', timeSlot)
+                .where('status', '==', 'confirmed')
+                .get();
+            
+            const pendingReservations = [];
+            pendingSnapshot.forEach(doc => {
+                pendingReservations.push({ id: doc.id, ...doc.data() });
+            });
+            
+            const totalReservations = pendingReservations.length + confirmedSnapshot.size;
+            
+            // pending과 confirmed 모두 없으면 처리할 예약이 없음
+            if (totalReservations === 0) {
+                console.log(`처리할 예약이 없음: ${date} ${timeSlot}`);
+                return;
+            }
+            
+            // confirmed 예약은 절대 취소하지 않음 (이미 확정된 예약)
+            // pending 예약만 취소 대상으로 고려
             // 최소 4명 이상인지 확인
-            // 단, confirmed 상태의 예약도 함께 확인하여 총 예약자 수가 4명 이상이면 취소하지 않음
-            if (reservations.length < 4) {
-                // confirmed 상태의 예약도 확인
-                const confirmedSnapshot = await db.collection('reservations')
-                    .where('date', '==', date)
-                    .where('timeSlot', '==', timeSlot)
-                    .where('status', '==', 'confirmed')
-                    .get();
-                
-                const totalReservations = reservations.length + confirmedSnapshot.size;
-                
+            if (totalReservations < 4) {
                 // 대진표가 이미 생성되어 있는지 확인
                 const existingMatches = await db.collection('matches')
                     .where('date', '==', date)
                     .where('timeSlot', '==', timeSlot)
                     .get();
                 
-                // 1~3명인 경우에만 취소 (게임 시작 시간 전에만)
-                if (totalReservations < 4) {
-                    console.log(`예약자 수 부족 (pending: ${reservations.length}명, confirmed: ${confirmedSnapshot.size}명, 총: ${totalReservations}명): ${date} ${timeSlot}`);
+                // 1~3명인 경우에만 pending 예약 취소 (게임 시작 시간 전에만)
+                // confirmed 예약은 절대 취소하지 않음
+                if (totalReservations < 4 && pendingReservations.length > 0) {
+                    console.log(`예약자 수 부족 (pending: ${pendingReservations.length}명, confirmed: ${confirmedSnapshot.size}명, 총: ${totalReservations}명): ${date} ${timeSlot}`);
                     
-                    // 예약 취소 처리 (게임 시작 시간 전에만, 1~3명인 경우에만)
-                    await cancelInsufficientReservations(reservations, date, timeSlot);
+                    // pending 예약만 취소 처리 (게임 시작 시간 전에만, 1~3명인 경우에만)
+                    await cancelInsufficientReservations(pendingReservations, date, timeSlot);
                     return;
-                } else if (!existingMatches.empty) {
-                    // 대진표가 이미 생성되어 있고, 총 예약자 수가 4명 이상이면 pending 예약을 취소하지 않음
-                    // (이미 대진표에 포함되었거나, 다음 대진표 재생성 시 포함될 수 있음)
-                    console.log(`⚠️ 대진표가 이미 생성되어 있고, pending 예약 ${reservations.length}명 + confirmed 예약 ${confirmedSnapshot.size}명 = 총 ${totalReservations}명이므로 취소하지 않습니다.`);
+                } else if (totalReservations < 4 && confirmedSnapshot.size > 0) {
+                    // confirmed만 있고 4명 미만인 경우 - confirmed는 절대 취소하지 않음
+                    console.log(`⚠️ confirmed 예약 ${confirmedSnapshot.size}명만 있어 4명 미만이지만, confirmed 예약은 절대 취소하지 않습니다: ${date} ${timeSlot}`);
                     return;
-                } else {
-                    // 대진표가 없지만 총 예약자 수가 4명 이상이면 pending 예약을 취소하지 않고 계속 진행
-                    console.log(`⚠️ pending 예약이 ${reservations.length}명이지만, confirmed 예약 ${confirmedSnapshot.size}명이 있어 총 ${totalReservations}명이므로 취소하지 않고 계속 진행합니다.`);
-                    // 계속 진행하여 팀 배정 및 대진표 생성
                 }
             }
+            
+            // pending 예약이 없고 confirmed만 있는 경우도 처리해야 함
+            // confirmed만 있어도 대진표가 없으면 생성해야 함
+            if (pendingReservations.length === 0 && confirmedSnapshot.size >= 4) {
+                // 대진표 확인
+                const existingMatches = await db.collection('matches')
+                    .where('date', '==', date)
+                    .where('timeSlot', '==', timeSlot)
+                    .get();
+                
+                if (existingMatches.empty) {
+                    // confirmed만 있고 대진표가 없으면 대진표 생성
+                    console.log(`⚠️ confirmed 예약 ${confirmedSnapshot.size}명만 있고 대진표가 없어 대진표를 생성합니다: ${date} ${timeSlot}`);
+                    await generateMatchSchedule(date, timeSlot, 'balanced');
+                    return;
+                } else {
+                    console.log(`⚠️ confirmed 예약 ${confirmedSnapshot.size}명만 있고 대진표가 이미 존재합니다: ${date} ${timeSlot}`);
+                    return;
+                }
+            }
+            
+            // pending 예약이 있는 경우에만 팀 배정 및 대진표 생성 진행
+            if (pendingReservations.length === 0) {
+                console.log(`pending 예약이 없고 confirmed만 ${confirmedSnapshot.size}명 있습니다: ${date} ${timeSlot}`);
+                return;
+            }
+            
+            const reservations = pendingReservations;
             
             // 시스템 설정에서 최대 코트 수 가져오기 (이미 위에서 가져옴)
             const maxCourts = settings?.courtCount || 3; // 기본값 3
@@ -13179,3 +13204,4 @@ async function saveManualMatchSchedule() {
         hideLoading();
     }
 }
+
