@@ -4358,33 +4358,30 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         height: 90px !important; /* 탭 높이만큼 여백 확보 */
     }
     
-    /* 태블릿에서 데스크톱 탭 숨기기 */
+    /* 태블릿에서 데스크톱 탭 완전히 숨기기 */
     .main-container .desktop-nav-tabs,
-    .desktop-nav-tabs {
+    .desktop-nav-tabs,
+    .desktop-nav-tabs * {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     .desktop-tab-btn {
-        padding: 12px 24px !important; /* 태블릿에 맞게 패딩 증가 */
-        font-size: 1rem !important; /* 폰트 크기 약간 증가 */
-        background: rgba(102, 126, 234, 0.1) !important;
-        color: #667eea !important;
-        border: 1px solid rgba(102, 126, 234, 0.2);
-        min-width: 120px !important; /* 최소 너비 설정 */
+        display: none !important;
     }
     
     .desktop-tab-btn:hover {
-        background: rgba(102, 126, 234, 0.2) !important;
-        transform: translateY(-2px);
+        display: none !important;
     }
     
     .desktop-tab-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
-        border: 1px solid transparent;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        display: none !important;
     }
     
     /* 태블릿에서 메달 시상식 크기 조정 */
