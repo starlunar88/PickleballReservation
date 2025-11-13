@@ -9589,8 +9589,8 @@ function createBalancedTeamConfigs(candidate) {
     const avgScore = totalScore / 2;
     const duprRange = (sorted[0].dupr || 0) - (sorted[3].dupr || 0);
     
-    // DUPR 범위가 좁을 때(0.5 이하) 더 많은 조합 생성
-    const isNarrowRange = duprRange <= 0.5;
+    // DUPR 범위가 좁을 때(0.3 이하) 더 많은 조합 생성
+    const isNarrowRange = duprRange <= 0.3;
     
     // 조합 1: [최강, 최약] vs [차강, 차약] - 완벽 밸런스
     const teamA1 = [sorted[0], sorted[3]].map(p => p.userId).sort();
