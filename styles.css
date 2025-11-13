@@ -4231,10 +4231,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .nav-container {
         max-width: 100% !important; /* 화면 전체 너비 사용 */
         width: 100% !important; /* 화면 끝까지 */
-        margin: 8px 0 !important; /* 좌우 마진 제거 */
-        padding: 0 20px !important; /* 좌우 패딩만 유지 */
+        margin: 0 !important; /* 모든 마진 제거 */
+        padding: 0 15px !important; /* 최소한의 패딩만 유지 */
         height: 60px !important; /* 원래 높이로 복원 */
+        border-radius: 0 !important; /* 모서리 둥글기 제거하여 끝까지 나오도록 */
         box-sizing: border-box !important;
+    }
+    
+    /* 태블릿에서 navbar의 패딩도 제거하여 완전히 끝까지 나오도록 */
+    .navbar {
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
     /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
