@@ -4180,10 +4180,14 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin: 0 auto;
         padding-left: 20px;
         padding-right: 20px;
+        box-sizing: border-box;
     }
     
     .tab-contents {
         padding: 20px 15px 20px 15px !important; /* 하단 탭바 제거로 여백 조정 */
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
     }
     
     .reservations-container,
@@ -4191,17 +4195,30 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .stats-container,
     .rankings-container,
     .matches-container {
-        max-width: 1200px; /* 태블릿 사이즈에 맞게 조정 */
-        width: 100%;
-        margin: 0 auto;
-        padding: 0 15px 20px 15px;
-        box-sizing: border-box;
+        max-width: 1200px !important; /* 태블릿 사이즈에 맞게 조정 */
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 15px 20px 15px !important;
+        box-sizing: border-box !important;
     }
     
     .reservations-board {
-        margin: 0;
-        width: 100%;
-        box-sizing: border-box;
+        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 0 !important;
+    }
+    
+    .section-header {
+        padding: 15px 20px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+    }
+    
+    .reservations-timeline {
+        padding: 15px !important;
+        box-sizing: border-box !important;
     }
     
     .nav-container {
@@ -4209,6 +4226,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
         margin: 8px auto !important;
         padding: 0 20px !important;
+        box-sizing: border-box !important;
     }
     
     /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
@@ -4287,7 +4305,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         gap: 12px !important;
         margin: 20px auto 30px auto !important;
         padding: 15px 20px !important;
-        max-width: 750px !important;
+        max-width: 1200px !important; /* 컨테이너와 일치하도록 조정 */
         width: 100% !important;
         flex-wrap: wrap !important;
         background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
@@ -4295,14 +4313,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
         position: relative !important;
         z-index: 100 !important;
+        box-sizing: border-box !important;
     }
     
     .desktop-tab-btn {
-        padding: 12px 20px;
-        font-size: 0.95rem;
+        padding: 12px 24px !important; /* 태블릿에 맞게 패딩 증가 */
+        font-size: 1rem !important; /* 폰트 크기 약간 증가 */
         background: rgba(102, 126, 234, 0.1) !important;
         color: #667eea !important;
         border: 1px solid rgba(102, 126, 234, 0.2);
+        min-width: 120px !important; /* 최소 너비 설정 */
     }
     
     .desktop-tab-btn:hover {
