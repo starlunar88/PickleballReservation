@@ -4158,8 +4158,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 0 4px 140px 4px !important; /* 예약, 대진표 탭 수준의 여백 */
     }
     
-/* 태블릿 사이즈 (768px ~ 1024px) */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* 태블릿 사이즈 (768px ~ 2000px) - Lenovo P11 등 대형 태블릿 지원 */
+@media (min-width: 769px) and (max-width: 2000px) {
     /* 네비게이션 바 전체 스타일 */
     .navbar {
         position: fixed;
@@ -4175,7 +4175,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .main-container {
-        max-width: 750px; /* 태블릿 사이즈에 맞게 조정 */
+        max-width: 1200px; /* 태블릿 사이즈에 맞게 조정 (Lenovo P11: 2000x1200) */
         width: 100%;
         margin: 0 auto;
         padding-left: 20px;
@@ -4191,7 +4191,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .stats-container,
     .rankings-container,
     .matches-container {
-        max-width: 750px; /* 태블릿 사이즈에 맞게 조정 */
+        max-width: 1200px; /* 태블릿 사이즈에 맞게 조정 */
         width: 100%;
         margin: 0 auto;
         padding: 0 15px 20px 15px;
@@ -4205,7 +4205,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .nav-container {
-        max-width: 750px !important;
+        max-width: 1200px !important;
         width: 100% !important;
         margin: 8px auto !important;
         padding: 0 20px !important;
@@ -7506,8 +7506,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
 }
 
-/* Tablet Styles */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Tablet Styles - Lenovo P11 등 대형 태블릿 지원 */
+@media (min-width: 769px) and (max-width: 2000px) {
     .hero {
         padding: 80px 0;
     }

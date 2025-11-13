@@ -166,9 +166,13 @@ if (switchToLogin) {
 // 햄버거 메뉴 토글
 if (hamburger && navMenu) {
     hamburger.addEventListener('click', () => {
-        // 태블릿 사이즈(769px ~ 1024px)에서는 메뉴 토글하지 않음
-        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
+        // 태블릿 사이즈(769px ~ 2000px)에서는 메뉴 토글하지 않음 - Lenovo P11 지원
+        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
         if (isTablet) {
+            // 태블릿에서는 메뉴가 항상 표시되므로 active 클래스 제거
+            navMenu.classList.remove('active');
+            hamburger.classList.remove('active');
+            document.body.style.overflow = 'auto';
             return;
         }
         
@@ -181,9 +185,15 @@ if (hamburger && navMenu) {
 // 햄버거 메뉴 외부 클릭 시 닫기
 if (navMenu && hamburger) {
     document.addEventListener('click', (e) => {
-        // 태블릿 사이즈에서는 메뉴를 닫지 않음
-        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
+        // 태블릿 사이즈에서는 메뉴를 닫지 않음 - Lenovo P11 지원
+        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
         if (isTablet) {
+            // 태블릿에서는 메뉴가 항상 표시되므로 active 클래스 제거
+            if (navMenu.classList.contains('active')) {
+                navMenu.classList.remove('active');
+                hamburger.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
             return;
         }
         
@@ -196,13 +206,16 @@ if (navMenu && hamburger) {
     });
 }
 
-// 태블릿 사이즈에서 메뉴 항상 표시 (CSS로 처리하므로 active 클래스는 제거)
+// 태블릿 사이즈에서 메뉴 항상 표시 (CSS로 처리하므로 active 클래스는 제거) - Lenovo P11 지원
 function handleTabletMenu() {
-    const isTablet = window.innerWidth >= 769 && window.innerWidth <= 1024;
+    const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
     if (isTablet && navMenu) {
         // 태블릿에서는 active 클래스를 제거하고 CSS가 자동으로 처리하도록 함
         // CSS에서 이미 display: flex !important로 설정되어 있음
         navMenu.classList.remove('active');
+        if (hamburger) {
+            hamburger.classList.remove('active');
+        }
         document.body.style.overflow = 'auto';
     } else if (navMenu) {
         // 태블릿이 아닐 때는 기본 동작 유지
@@ -11528,12 +11541,19 @@ if (hamburger) {
     });
 }
 
-// 모바일 메뉴 링크 클릭 시 메뉴 닫기
+// 모바일 메뉴 링크 클릭 시 메뉴 닫기 (태블릿에서는 제외)
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
+        // 태블릿 사이즈에서는 메뉴를 닫지 않음 - Lenovo P11 지원
+        const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
+        if (isTablet) {
+            return;
+        }
+        
         if (navMenu.classList.contains('active')) {
             navMenu.classList.remove('active');
             hamburger.classList.remove('active');
+            document.body.style.overflow = 'auto';
         }
     });
 });
