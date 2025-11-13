@@ -12745,17 +12745,16 @@ function renderPlayerListForManualMatch(searchTerm = '') {
         
         return `
             <div class="player-item" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; ${isSelected ? 'background: #f0f0f0;' : ''}">
-                <div style="flex: 1;">
-                    <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
-                    <div style="font-size: 0.85rem; color: #666;">${player.email || ''} ${player.dupr ? `| DUPR: ${player.dupr}` : ''}</div>
+                <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;">
+                    <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${player.userName || '이름 없음'}</div>
                 </div>
-                <div style="display: flex; gap: 5px;">
+                <div style="display: flex; gap: 5px; flex-shrink: 0;">
                     <button onclick="addPlayerToTeam('${player.userId}', 'A')" 
-                            style="padding: 5px 10px; background: ${inTeamA ? '#2196F3' : '#e3f2fd'}; color: ${inTeamA ? 'white' : '#1976D2'}; border: 1px solid #2196F3; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                            style="padding: 5px 10px; background: ${inTeamA ? '#2196F3' : '#e3f2fd'}; color: ${inTeamA ? 'white' : '#1976D2'}; border: 1px solid #2196F3; border-radius: 4px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
                         ${inTeamA ? '✓ 팀 A' : '팀 A'}
                     </button>
                     <button onclick="addPlayerToTeam('${player.userId}', 'B')" 
-                            style="padding: 5px 10px; background: ${inTeamB ? '#FF9800' : '#fff3e0'}; color: ${inTeamB ? 'white' : '#F57C00'}; border: 1px solid #FF9800; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                            style="padding: 5px 10px; background: ${inTeamB ? '#FF9800' : '#fff3e0'}; color: ${inTeamB ? 'white' : '#F57C00'}; border: 1px solid #FF9800; border-radius: 4px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
                         ${inTeamB ? '✓ 팀 B' : '팀 B'}
                     </button>
                 </div>
@@ -12839,11 +12838,10 @@ function updateTeamPlayersDisplay() {
         } else {
             teamAContainer.innerHTML = window.manualMatchTeamAPlayers.map(player => `
                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: white; border-radius: 4px; border: 1px solid #2196F3;">
-                    <div>
-                        <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
-                        <div style="font-size: 0.8rem; color: #666;">${player.email || ''}</div>
+                    <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;">
+                        <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${player.userName || '이름 없음'}</div>
                     </div>
-                    <button onclick="removePlayerFromTeam('${player.userId}', 'A')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                    <button onclick="removePlayerFromTeam('${player.userId}', 'A')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; flex-shrink: 0; margin-left: 8px;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -12859,11 +12857,10 @@ function updateTeamPlayersDisplay() {
         } else {
             teamBContainer.innerHTML = window.manualMatchTeamBPlayers.map(player => `
                 <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: white; border-radius: 4px; border: 1px solid #FF9800;">
-                    <div>
-                        <div style="font-weight: 500;">${player.userName || '이름 없음'}</div>
-                        <div style="font-size: 0.8rem; color: #666;">${player.email || ''}</div>
+                    <div style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;">
+                        <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${player.userName || '이름 없음'}</div>
                     </div>
-                    <button onclick="removePlayerFromTeam('${player.userId}', 'B')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                    <button onclick="removePlayerFromTeam('${player.userId}', 'B')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; flex-shrink: 0; margin-left: 8px;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>

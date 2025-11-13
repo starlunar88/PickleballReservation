@@ -2269,6 +2269,40 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     #admin-settings-modal .modal-footer {
         padding: 10px 20px 15px 20px;
     }
+    
+    /* 수동 대진표 생성 모달 모바일 최적화 */
+    #manual-match-create-modal .modal-content {
+        width: 95vw;
+        max-height: 95vh;
+        margin: 2.5vh auto;
+        padding: 0;
+    }
+    
+    #manual-match-create-modal .modal-body {
+        max-height: calc(95vh - 120px);
+        padding: 15px;
+        overflow-y: auto;
+    }
+    
+    /* 플레이어 목록 컨테이너 모바일 최적화 */
+    #player-list-container {
+        max-height: 300px !important;
+        padding: 8px !important;
+    }
+    
+    /* 플레이어 아이템 모바일 최적화 */
+    #player-list-container .player-item {
+        padding: 6px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    /* 팀 플레이어 컨테이너 모바일 최적화 */
+    #team-a-players,
+    #team-b-players {
+        min-height: 200px !important;
+        max-height: 300px !important;
+        padding: 8px !important;
+    }
 }
 
 /* 새로운 메인 컨테이너 - 모바일 기준 */
@@ -4257,11 +4291,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         right: 0 !important;
     }
     
-    /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
+    /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 (active 상태 무관) */
     .navbar .nav-container .nav-menu,
     .navbar .nav-container .nav-menu.active,
     #nav-menu,
-    #nav-menu.active {
+    #nav-menu.active,
+    .nav-menu,
+    .nav-menu.active {
         display: flex !important;
         position: static !important; /* fixed에서 static으로 변경 */
         flex-direction: row !important;
@@ -4281,10 +4317,27 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         border-radius: 0 !important;
         visibility: visible !important;
         opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
     }
     
-    .hamburger {
-        display: none !important; /* 태블릿에서는 햄버거 메뉴 숨김 */
+    /* 태블릿에서 햄버거 버튼 완전히 숨김 */
+    .hamburger,
+    #hamburger,
+    .navbar .hamburger {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    
+    /* 태블릿에서 햄버거 버튼의 active 상태도 제거 */
+    .hamburger.active,
+    #hamburger.active {
+        display: none !important;
     }
     
     /* 태블릿에서 로고 영역 - 원래 크기로 복원 */
