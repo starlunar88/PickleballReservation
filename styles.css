@@ -4265,6 +4265,25 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: none !important; /* 태블릿에서는 햄버거 메뉴 숨김 */
     }
     
+    /* 태블릿에서 로고 영역 확장 */
+    .nav-logo {
+        max-width: none !important; /* 너비 제한 제거 */
+        width: auto !important;
+        flex: 0 0 auto !important; /* 축소 방지 */
+        font-size: 1.1rem !important; /* 태블릿에서 폰트 크기 증가 */
+        gap: 6px !important;
+    }
+    
+    .nav-logo i {
+        font-size: 1.4rem !important; /* 태블릿에서 아이콘 크기 증가 */
+        margin-right: 8px !important;
+    }
+    
+    .version-badge {
+        font-size: 0.85rem !important; /* 태블릿에서 버전 배지 크기 증가 */
+        padding: 3px 8px !important;
+    }
+    
     .user-menu {
         flex-direction: row !important; /* 태블릿에서는 가로 배치 */
         gap: 12px;
