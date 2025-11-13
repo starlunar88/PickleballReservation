@@ -4184,7 +4184,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .tab-contents {
-        padding: 20px 15px 20px 15px !important; /* 하단 탭바 제거로 여백 조정 */
+        padding: 20px 15px 120px 15px !important; /* 하단 탭바를 위한 여백 확보 */
         max-width: 1200px !important;
         margin: 0 auto !important;
         box-sizing: border-box !important;
@@ -4198,7 +4198,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         max-width: 1200px !important; /* 태블릿 사이즈에 맞게 조정 */
         width: 100% !important;
         margin: 0 auto !important;
-        padding: 0 15px 20px 15px !important;
+        padding: 0 15px 120px 15px !important; /* 하단 탭바를 위한 여백 확보 */
         box-sizing: border-box !important;
     }
     
@@ -4221,17 +4221,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         box-sizing: border-box !important;
     }
     
-    .nav-container {
-        max-width: 1200px !important; /* 본문과 같은 너비로 맞춤 */
-        width: 100% !important;
-        margin: 8px auto !important;
-        padding: 0 20px !important;
-        box-sizing: border-box !important;
-    }
-    
     /* 태블릿에서 네비게이션 바 전체 너비 조정 */
     .navbar {
         width: 100% !important;
+    }
+    
+    /* 태블릿에서 메뉴바를 본문과 정확히 같은 너비로 맞춤 */
+    .nav-container {
+        max-width: 1200px !important; /* 본문과 같은 너비 */
+        width: calc(100% - 40px) !important; /* 좌우 패딩 20px씩 고려 */
+        margin: 8px auto !important;
+        padding: 0 20px !important; /* 본문과 같은 패딩 */
+        box-sizing: border-box !important;
     }
     
     /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
@@ -4286,18 +4287,31 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         font-size: 0.8rem;
     }
     
-    /* 태블릿에서 모바일 탭 완전히 숨기기 */
+    /* 태블릿에서 모바일 탭 표시 */
     .mobile-nav-tabs {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        height: 0 !important;
-        overflow: hidden !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 2000 !important;
+        width: 100% !important;
+        max-width: 1200px !important; /* 본문과 같은 너비 */
+        background: white !important;
+        border-top: 1px solid #e9ecef !important;
+        padding: 14px 0 !important;
+        min-height: 90px !important;
+        border-top-left-radius: 12px !important;
+        border-top-right-radius: 12px !important;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.06) !important;
+        box-sizing: border-box !important;
     }
     
     .mobile-nav-tabs-spacer {
-        display: none !important;
-        height: 0 !important;
+        display: block !important;
+        height: 90px !important; /* 탭 높이만큼 여백 확보 */
     }
     
     /* 태블릿에서 데스크톱 탭 강제 표시 */
