@@ -4222,11 +4222,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     }
     
     .nav-container {
-        max-width: 1200px !important;
+        max-width: 95% !important; /* 태블릿에서 메뉴바를 더 넓게 표시 */
         width: 100% !important;
         margin: 8px auto !important;
         padding: 0 20px !important;
         box-sizing: border-box !important;
+    }
+    
+    /* 태블릿에서 네비게이션 바 전체 너비 조정 */
+    .navbar {
+        width: 100% !important;
     }
     
     /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 */
