@@ -4720,7 +4720,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .nav-container {
         max-width: 480px !important; /* 본문과 같은 너비로 제한 */
         width: 100% !important;
-        margin: 8px auto !important; /* 중앙 정렬 */
+        margin: 0 auto !important; /* 본문과 동일한 마진으로 정렬 */
         padding: 0 12px !important;
         height: 60px !important; /* PC에서도 높이 고정 */
         box-sizing: border-box !important;
@@ -4729,6 +4729,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     /* PC에서 navbar도 본문과 맞춤 */
     .navbar {
         width: 100% !important;
+    }
+    
+    /* PC에서 메뉴바 상단 여백은 padding-top으로 처리 */
+    .main-container {
+        padding-top: 80px !important; /* 메뉴바 높이(60px) + 여백(20px) */
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
