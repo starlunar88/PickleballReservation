@@ -65,6 +65,13 @@ body {
     box-sizing: border-box;
 }
 
+/* 태블릿에서 nav-container 기본 스타일 오버라이드 */
+@media (min-width: 769px) and (max-width: 2000px) {
+    .nav-container {
+        margin: 0 !important; /* 기본 margin 완전 제거 */
+    }
+}
+
 .nav-logo {
     display: flex;
     align-items: center;
@@ -2339,7 +2346,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 데스크톱 네비게이션 탭 - 숨김 */
 .desktop-nav-tabs {
-    display: none; /* 모바일 탭만 사용 */
+    display: none !important; /* 모바일 탭만 사용 */
 }
 
 .desktop-tab-btn {
@@ -4172,6 +4179,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
+        max-width: 100vw !important; /* 뷰포트 전체 너비 사용 */
+        width: 100vw !important; /* 뷰포트 전체 너비 */
+        min-width: 100vw !important; /* 최소 너비도 뷰포트 전체 */
+        margin: 0 !important; /* 모든 마진 완전 제거 */
+        padding: 0 8px !important; /* 패딩 최소화 */
+        height: 60px !important;
+        border-radius: 0 !important; /* 모서리 둥글기 제거 */
+        box-sizing: border-box !important;
+        position: relative !important;
+        left: 0 !important;
+        right: 0 !important;
     }
     
     .main-container {
@@ -4227,19 +4245,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
     }
     
-    /* 태블릿에서 메뉴바를 화면 끝까지 완전히 확장 */
-    .nav-container {
-        max-width: 100vw !important; /* 뷰포트 전체 너비 사용 */
-        width: 100vw !important; /* 뷰포트 전체 너비 */
-        min-width: 100vw !important; /* 최소 너비도 뷰포트 전체 */
-        margin: 0 !important; /* 모든 마진 제거 */
-        padding: 0 8px !important; /* 패딩 최소화하여 내용 영역 최대화 */
-        height: 60px !important; /* 원래 높이로 복원 */
-        border-radius: 0 !important; /* 모서리 둥글기 제거하여 끝까지 나오도록 */
-        box-sizing: border-box !important;
-        left: 0 !important; /* 왼쪽 끝부터 */
-        right: 0 !important; /* 오른쪽 끝까지 */
-    }
+    /* 태블릿에서 메뉴바를 화면 끝까지 완전히 확장 - 중복 제거됨 (위에서 이미 설정) */
     
     /* 태블릿에서 navbar의 패딩도 제거하여 완전히 끝까지 나오도록 */
     .navbar {
