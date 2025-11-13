@@ -4232,8 +4232,16 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         margin: 0 auto;
         padding-left: 20px;
         padding-right: 20px;
-        padding-top: 80px !important; /* 원래 여백으로 복원 */
+        padding-top: 70px !important; /* 메뉴바 높이(60px) + 여백(10px) */
+        margin-top: 0 !important; /* 상단 마진 제거 */
         box-sizing: border-box;
+    }
+    
+    /* 태블릿에서 데스크톱 탭이 있던 공간의 여백 제거 */
+    .desktop-nav-tabs {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 0 !important;
     }
     
     .tab-contents {
@@ -4304,11 +4312,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         pointer-events: auto !important;
     }
     
-    /* 태블릿에서 메뉴는 기본적으로 숨김, active일 때만 표시 */
+    /* 태블릿에서 메뉴는 기본적으로 숨김, active일 때만 표시 - 팝업 스타일 제거 */
     .nav-menu,
     #nav-menu {
         display: none !important; /* 기본적으로 숨김 */
-        position: fixed !important; /* fixed 유지 */
+        position: fixed !important;
         top: 70px !important;
         flex-direction: column !important;
         background-color: rgba(102, 126, 234, 0.95) !important;
@@ -4323,6 +4331,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         z-index: 3000 !important;
         visibility: hidden !important;
         opacity: 0 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        border-radius: 12px !important;
     }
     
     /* 태블릿에서 메뉴가 active일 때만 표시 */
