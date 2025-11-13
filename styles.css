@@ -4291,53 +4291,46 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         right: 0 !important;
     }
     
-    /* 태블릿에서 네비게이션 메뉴 표시 - 모든 스타일 강제 적용 (active 상태 무관) */
-    .navbar .nav-container .nav-menu,
-    .navbar .nav-container .nav-menu.active,
-    #nav-menu,
-    #nav-menu.active,
-    .nav-menu,
-    .nav-menu.active {
-        display: flex !important;
-        position: static !important; /* fixed에서 static으로 변경 */
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 15px !important;
-        background: transparent !important; /* 배경 제거 */
-        width: auto !important;
-        max-width: none !important;
-        left: auto !important;
-        top: auto !important;
-        transform: none !important;
-        padding: 0 !important;
-        backdrop-filter: none !important;
-        z-index: auto !important;
-        text-align: left !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        height: auto !important;
-        overflow: visible !important;
-    }
-    
-    /* 태블릿에서 햄버거 버튼 완전히 숨김 */
+    /* 태블릿에서 햄버거 버튼 표시 */
     .hamburger,
     #hamburger,
     .navbar .hamburger {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        width: 0 !important;
-        height: 0 !important;
-        overflow: hidden !important;
-        pointer-events: none !important;
+        display: flex !important; /* 햄버거 버튼 표시 */
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+        pointer-events: auto !important;
     }
     
-    /* 태블릿에서 햄버거 버튼의 active 상태도 제거 */
-    .hamburger.active,
-    #hamburger.active {
-        display: none !important;
+    /* 태블릿에서 메뉴는 기본적으로 숨김, active일 때만 표시 */
+    .nav-menu,
+    #nav-menu {
+        display: none !important; /* 기본적으로 숨김 */
+        position: fixed !important; /* fixed 유지 */
+        top: 70px !important;
+        flex-direction: column !important;
+        background-color: rgba(102, 126, 234, 0.95) !important;
+        width: 100% !important;
+        max-width: 480px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        text-align: center !important;
+        transition: 0.3s !important;
+        padding: 20px 0 !important;
+        backdrop-filter: blur(10px) !important;
+        z-index: 3000 !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    
+    /* 태블릿에서 메뉴가 active일 때만 표시 */
+    .nav-menu.active,
+    #nav-menu.active {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     /* 태블릿에서 로고 영역 - 원래 크기로 복원 */
