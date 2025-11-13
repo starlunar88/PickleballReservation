@@ -5710,11 +5710,17 @@ async function loadReservationsTimeline() {
                         </div>
                     </div>
                     <div class="timeline-players">
-                        ${reservations.map(res => `
-                            <div class="player-item">
-                                <span class="player-name">${res.userName || '익명'}</span>
-                            </div>
-                        `).join('')}
+                        ${(() => {
+                            // 마감 여부와 관계없이 모든 예약자를 표시
+                            // basePlayerCount는 코트 계산용이지 표시 제한용이 아님
+                            const allReservations = reservations;
+                            console.log(`[표시 예정] ${slotKey} (마감: ${isClosed}): ${allReservations.length}명의 예약자 표시`);
+                            return allReservations.map(res => `
+                                <div class="player-item">
+                                    <span class="player-name">${res.userName || '익명'}</span>
+                                </div>
+                            `).join('');
+                        })()}
                     </div>
                     <div class="timeline-actions">
                         ${(() => {
