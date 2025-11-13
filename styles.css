@@ -4265,23 +4265,37 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         display: none !important; /* 태블릿에서는 햄버거 메뉴 숨김 */
     }
     
-    /* 태블릿에서 로고 영역 확장 */
+    /* 태블릿에서 로고 영역 확장 - 모든 제한 제거 */
     .nav-logo {
-        max-width: none !important; /* 너비 제한 제거 */
+        max-width: none !important; /* 너비 제한 완전 제거 */
+        min-width: auto !important; /* 최소 너비 제한 제거 */
         width: auto !important;
-        flex: 0 0 auto !important; /* 축소 방지 */
-        font-size: 1.1rem !important; /* 태블릿에서 폰트 크기 증가 */
-        gap: 6px !important;
+        flex: 0 1 auto !important; /* 축소 방지, 필요시 확장 허용 */
+        flex-shrink: 0 !important; /* 축소 완전 방지 */
+        flex-grow: 0 !important; /* 자동 확장 방지 */
+        overflow: visible !important; /* 넘치는 내용 표시 */
+        font-size: 1.3rem !important; /* 태블릿에서 폰트 크기 더 크게 */
+        gap: 8px !important;
+        white-space: nowrap !important; /* 한 줄 유지 */
     }
     
     .nav-logo i {
-        font-size: 1.4rem !important; /* 태블릿에서 아이콘 크기 증가 */
-        margin-right: 8px !important;
+        font-size: 1.6rem !important; /* 태블릿에서 아이콘 크기 더 크게 */
+        margin-right: 10px !important;
+        flex-shrink: 0 !important; /* 아이콘 크기 고정 */
     }
     
     .version-badge {
-        font-size: 0.85rem !important; /* 태블릿에서 버전 배지 크기 증가 */
-        padding: 3px 8px !important;
+        font-size: 0.9rem !important; /* 태블릿에서 버전 배지 크기 증가 */
+        padding: 4px 10px !important;
+        flex-shrink: 0 !important; /* 버전 배지 크기 고정 */
+        white-space: nowrap !important; /* 한 줄 유지 */
+    }
+    
+    /* 태블릿에서 nav-container의 flex 속성 조정 */
+    .nav-container {
+        justify-content: flex-start !important; /* 로고를 왼쪽에 배치하고 공간 확보 */
+        gap: 20px !important; /* 로고와 메뉴 사이 간격 */
     }
     
     .user-menu {
