@@ -190,12 +190,12 @@ function handleTabletMenu() {
     const isTablet = window.innerWidth >= 769 && window.innerWidth <= 2000;
     if (isTablet && navMenu) {
         // 태블릿에서는 기본적으로 메뉴가 닫혀있어야 함
-        // 사용자가 햄버거 버튼을 클릭하면 active 클래스가 추가되어 메뉴가 열림
-        // 페이지 로드 시 기본적으로 닫힌 상태로 시작
-        if (!hamburger || !hamburger.classList.contains('active')) {
-            navMenu.classList.remove('active');
-            document.body.style.overflow = 'auto';
+        // 페이지 로드 시 무조건 닫힌 상태로 시작
+        navMenu.classList.remove('active');
+        if (hamburger) {
+            hamburger.classList.remove('active');
         }
+        document.body.style.overflow = 'auto';
     }
 }
 
