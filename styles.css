@@ -4722,6 +4722,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
         margin: 8px auto !important; /* 중앙 정렬 */
         padding: 0 12px !important;
+        height: 60px !important; /* PC에서도 높이 고정 */
         box-sizing: border-box !important;
     }
     
@@ -7645,6 +7646,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         width: 100% !important;
         margin: 8px auto !important; /* 중앙 정렬 */
         padding: 0 12px !important;
+        height: 60px !important; /* PC에서도 높이 고정 */
     }
     
     .nav-logo {
