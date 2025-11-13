@@ -4716,11 +4716,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         box-sizing: border-box;
     }
     
+    /* PC에서 메뉴바를 본문 컨텐츠와 같은 너비로 제한 */
     .nav-container {
-        max-width: 480px !important; /* 모바일 사이즈로 제한 */
+        max-width: 480px !important; /* 본문과 같은 너비로 제한 */
         width: 100% !important;
         margin: 8px auto !important; /* 중앙 정렬 */
         padding: 0 12px !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* PC에서 navbar도 본문과 맞춤 */
+    .navbar {
+        width: 100% !important;
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
