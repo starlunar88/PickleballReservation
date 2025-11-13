@@ -10189,26 +10189,127 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             }
                         }
                         
-                        // 각 팀 구성이 이전 경기와 다른지 확인
+                        // 각 팀 구성이 이전 경기와 다른지 확인 (밸런스 모드에서는 더 엄격하게)
+                        // 밸런스 모드에서는 모든 조합을 평가하여 가장 다른 조합 선택
+                        let bestConfig = null;
+                        let bestScore = -1; // 중복이 적을수록 높은 점수
+                        
                         for (const config of teamConfigs) {
                             const teamAKey = config.teamA.join(',');
                             const teamBKey = config.teamB.join(',');
                             const matchKey = `${teamAKey}|${teamBKey}`;
                             
                             // 이전 경기와 중복되는지 확인 (팀 순서 무관)
-                            const isUnique = previousMatchConfigs.every(prev => {
-                                // 같은 팀 구성인지 확인 (팀 순서 무관)
+                            let isUnique = true;
+                            let duplicateCount = 0; // 중복 정도 계산
+                            
+                            for (const prev of previousMatchConfigs) {
                                 const prevKey1 = `${prev.teamAIds}|${prev.teamBIds}`;
                                 const prevKey2 = `${prev.teamBIds}|${prev.teamAIds}`;
-                                return matchKey !== prevKey1 && matchKey !== prevKey2;
-                            });
+                                
+                                // 완전히 같은 팀 구성인지 확인
+                                if (matchKey === prevKey1 || matchKey === prevKey2) {
+                                    isUnique = false;
+                                    duplicateCount += 10; // 완전 중복은 큰 패널티
+                                    continue;
+                                }
+                                
+                                // 부분 중복 체크: 같은 팀 조합이 있는지 확인
+                                const prevTeamA = prev.teamAIds.split(',');
+                                const prevTeamB = prev.teamBIds.split(',');
+                                const currentTeamA = config.teamA;
+                                const currentTeamB = config.teamB;
+                                
+                                // 같은 팀 조합이 있는지 확인 (팀 내 순서 무관)
+                                const prevTeamASet = new Set(prevTeamA);
+                                const prevTeamBSet = new Set(prevTeamB);
+                                const currentTeamASet = new Set(currentTeamA);
+                                const currentTeamBSet = new Set(currentTeamB);
+                                
+                                // 같은 팀 조합이 있으면 패널티
+                                if (prevTeamASet.size === currentTeamASet.size && 
+                                    [...prevTeamASet].every(id => currentTeamASet.has(id))) {
+                                    duplicateCount += 5;
+                                }
+                                if (prevTeamASet.size === currentTeamBSet.size && 
+                                    [...prevTeamASet].every(id => currentTeamBSet.has(id))) {
+                                    duplicateCount += 5;
+                                }
+                                if (prevTeamBSet.size === currentTeamASet.size && 
+                                    [...prevTeamBSet].every(id => currentTeamASet.has(id))) {
+                                    duplicateCount += 5;
+                                }
+                                if (prevTeamBSet.size === currentTeamBSet.size && 
+                                    [...prevTeamBSet].every(id => currentTeamBSet.has(id))) {
+                                    duplicateCount += 5;
+                                }
+                                
+                                // 개인별 매칭 이력 체크: 같은 팀원/상대팀원과 반복 매칭되는지 확인
+                                for (const playerId of config.teamA) {
+                                    const history = playerPairHistory.get(playerId);
+                                    if (history) {
+                                        // 같은 팀원과 반복되는지
+                                        for (const teammateId of config.teamA) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                duplicateCount += 2;
+                                            }
+                                        }
+                                        // 상대팀원과 반복되는지
+                                        for (const opponentId of config.teamB) {
+                                            if (history.has(opponentId)) {
+                                                duplicateCount += 1;
+                                            }
+                                        }
+                                    }
+                                }
+                                for (const playerId of config.teamB) {
+                                    const history = playerPairHistory.get(playerId);
+                                    if (history) {
+                                        // 같은 팀원과 반복되는지
+                                        for (const teammateId of config.teamB) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                duplicateCount += 2;
+                                            }
+                                        }
+                                        // 상대팀원과 반복되는지
+                                        for (const opponentId of config.teamA) {
+                                            if (history.has(opponentId)) {
+                                                duplicateCount += 1;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             
-                            if (isUnique || previousMatchConfigs.length === 0) {
+                            // 중복이 적을수록 높은 점수 (음수로 변환)
+                            const score = -duplicateCount;
+                            
+                            // 밸런스 모드에서는 가장 중복이 적은 조합 선택
+                            if (teamMode === 'balanced') {
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    bestConfig = config;
+                                }
+                            } else {
+                                // 다른 모드에서는 완전히 고유한 조합을 우선 선택
+                                if (isUnique || previousMatchConfigs.length === 0) {
+                                    fourPlayers = candidate;
+                                    selectedTeamA = config.teamA.map(id => candidate.find(p => p.userId === id));
+                                    selectedTeamB = config.teamB.map(id => candidate.find(p => p.userId === id));
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // 밸런스 모드에서 최적 조합 선택
+                        if (teamMode === 'balanced' && bestConfig) {
+                            // 완전 중복이 아니거나, 완전 중복이어도 가장 덜 중복된 조합 선택
+                            if (bestScore >= -5 || previousMatchConfigs.length === 0) {
                                 fourPlayers = candidate;
-                                selectedTeamA = config.teamA.map(id => candidate.find(p => p.userId === id));
-                                selectedTeamB = config.teamB.map(id => candidate.find(p => p.userId === id));
+                                selectedTeamA = bestConfig.teamA.map(id => candidate.find(p => p.userId === id));
+                                selectedTeamB = bestConfig.teamB.map(id => candidate.find(p => p.userId === id));
                                 found = true;
-                                break;
                             }
                         }
                     }
