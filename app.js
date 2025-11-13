@@ -8697,9 +8697,20 @@ async function cancelInsufficientReservations(reservations, date, timeSlot) {
             return;
         }
         
+        // confirmed 예약은 절대 취소하지 않음 (안전장치)
+        const pendingOnly = reservations.filter(r => r.status !== 'confirmed');
+        if (pendingOnly.length !== reservations.length) {
+            console.warn(`⚠️ confirmed 예약이 포함되어 있어 제외합니다. pending만 취소합니다: ${date} ${timeSlot}`);
+        }
+        
+        if (pendingOnly.length === 0) {
+            console.log(`⚠️ 취소할 pending 예약이 없습니다: ${date} ${timeSlot}`);
+            return;
+        }
+        
         const batch = db.batch();
         
-        for (const reservation of reservations) {
+        for (const reservation of pendingOnly) {
             const reservationRef = db.collection('reservations').doc(reservation.id);
             batch.update(reservationRef, {
                 status: 'cancelled',
@@ -8710,12 +8721,12 @@ async function cancelInsufficientReservations(reservations, date, timeSlot) {
         
         await batch.commit();
         
-        // 취소 알림 전송
-        for (const reservation of reservations) {
+        // 취소 알림 전송 (pending 예약만)
+        for (const reservation of pendingOnly) {
             await sendCancellationNotification(reservation, date, timeSlot);
         }
         
-        console.log(`예약 취소 완료: ${reservations.length}건 (게임 시작 시간 전)`);
+        console.log(`예약 취소 완료: ${pendingOnly.length}건 (pending 예약만, 게임 시작 시간 전)`);
         
     } catch (error) {
         console.error('예약 취소 처리 오류:', error);
