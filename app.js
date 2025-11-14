@@ -5829,6 +5829,21 @@ async function loadReservationsTimeline() {
                         return;
                     }
                     
+                    // 기존 대진표 확인
+                    const existingMatches = await db.collection('matches')
+                        .where('date', '==', date)
+                        .where('timeSlot', '==', timeSlot)
+                        .get();
+                    
+                    if (!existingMatches.empty) {
+                        // 기존 대진표가 있으면 확인 팝업
+                        const confirmMessage = '이미 대진표가 존재합니다. 기존 대진표를 삭제하고 새로 생성하시겠습니까?';
+                        if (!confirm(confirmMessage)) {
+                            console.log('대진표 생성 취소됨');
+                            return;
+                        }
+                    }
+                    
                     // 모달 열기 (옵션 선택)
                     openMatchScheduleOptionsModal(date, timeSlot);
                 } catch (error) {
@@ -9173,27 +9188,25 @@ function addTestButtonEventListeners() {
                     return;
                 }
                 
-                // 모달 열기 (옵션 선택)
-                openMatchScheduleOptionsModal(date, timeSlot);
-                
-                // 대진표 표시
+                // 기존 대진표 확인
                 const existingMatches = await db.collection('matches')
                     .where('date', '==', date)
                     .where('timeSlot', '==', timeSlot)
                     .get();
                 
                 if (!existingMatches.empty) {
-                    const matches = existingMatches.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    matches.sort((a, b) => {
-                        if (a.roundNumber !== b.roundNumber) {
-                            return a.roundNumber - b.roundNumber;
-                        }
-                        return a.courtNumber - b.courtNumber;
-                    });
-                    await renderMatchSchedule(matches, date, timeSlot);
-                } else {
-                    showToast('대진표 생성 후 데이터를 찾을 수 없습니다.', 'warning');
+                    // 기존 대진표가 있으면 확인 팝업
+                    const confirmMessage = '이미 대진표가 존재합니다. 기존 대진표를 삭제하고 새로 생성하시겠습니까?';
+                    if (!confirm(confirmMessage)) {
+                        console.log('대진표 생성 취소됨');
+                        return;
+                    }
                 }
+                
+                // 모달 열기 (옵션 선택)
+                openMatchScheduleOptionsModal(date, timeSlot);
+                
+                // 대진표 표시 (모달에서 생성 후 자동으로 표시되므로 여기서는 제거)
             } catch (error) {
                 console.error('강제 대진표 생성 오류:', error);
                 showToast('대진표 생성 중 오류', 'error');
