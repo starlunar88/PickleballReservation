@@ -4335,18 +4335,18 @@ function drawTeamBarChart(data, canvasId, color) {
     });
     
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
-    // 좌우 여백 최소화하여 차트 영역 최대화
-    const padding = { 
-        top: isMobile ? 15 : 12, // 상단 여백 감소
-        right: isMobile ? 20 : 15, // 오른쪽 여백 대폭 감소
-        bottom: isMobile ? 25 : 20, // 하단 여백 감소
-        left: isMobile ? Math.max(maxNameWidth + 5, 75) : Math.max(maxNameWidth + 5, 75)
-    };
+    // 차트 영역의 좌우 여백을 동일하게 맞춤
+    const sidePadding = isMobile ? 15 : 12; // 차트 영역 좌우 동일한 여백
+    const nameAreaWidth = Math.max(maxNameWidth + 6, 65); // 이름 표시에 필요한 최소 공간
+    const nameAreaMaxWidth = isMobile ? 85 : 80; // 이름 영역 최대 너비 제한
+    const finalNameAreaWidth = Math.min(nameAreaWidth, nameAreaMaxWidth);
     
-    // PC에서 너무 넓지 않도록 최대값 제한 (여백 최소화)
-    if (!isMobile) {
-        padding.left = Math.min(padding.left, 100);
-    }
+    const padding = { 
+        top: isMobile ? 15 : 12, // 상단 여백
+        right: sidePadding, // 오른쪽 여백 (차트 영역 기준)
+        bottom: isMobile ? 25 : 20, // 하단 여백
+        left: finalNameAreaWidth + sidePadding // 이름 영역 + 좌우 동일한 여백
+    };
     
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
