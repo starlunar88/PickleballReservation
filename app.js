@@ -2964,6 +2964,40 @@ function setupStatsEventListeners() {
             await loadWinRateChart();
         });
     }
+    
+    // 플레이어 전적 조회
+    const h2hPlayerSelect = document.getElementById('h2h-player-select');
+    const viewH2hBtn = document.getElementById('view-h2h-btn');
+    
+    if (h2hPlayerSelect) {
+        h2hPlayerSelect.addEventListener('change', (e) => {
+            const selectedUserId = e.target.value;
+            if (selectedUserId && viewH2hBtn) {
+                viewH2hBtn.style.display = 'inline-block';
+            } else if (viewH2hBtn) {
+                viewH2hBtn.style.display = 'none';
+                const h2hDisplay = document.getElementById('h2h-stats-display');
+                if (h2hDisplay) {
+                    h2hDisplay.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    if (viewH2hBtn) {
+        viewH2hBtn.addEventListener('click', async () => {
+            const selectedUserId = h2hPlayerSelect?.value;
+            if (!selectedUserId) {
+                showToast('플레이어를 선택해주세요.', 'warning');
+                return;
+            }
+            
+            const selectedOption = h2hPlayerSelect.options[h2hPlayerSelect.selectedIndex];
+            const selectedUserName = selectedOption.textContent;
+            
+            await showPlayerHeadToHeadInStats(selectedUserId, selectedUserName);
+        });
+    }
 }
 
 // 경기 통계 로드
@@ -3116,7 +3150,9 @@ async function loadUserList() {
         if (!db) return;
         
         const userSelect = document.getElementById('growth-user-select');
-        if (!userSelect) return;
+        const h2hPlayerSelect = document.getElementById('h2h-player-select');
+        
+        if (!userSelect && !h2hPlayerSelect) return;
         
         // 사용자 ID 수집 (matches와 gameResults 모두에서)
         const userIds = new Set();
@@ -3164,7 +3200,7 @@ async function loadUserList() {
         });
         
         // 사용자 이름 가져오기 및 드롭다운 채우기
-        userSelect.innerHTML = ''; // "전체" 옵션 제거
+        const userOptions = [];
         
         // 이름이 이미 있는 경우 우선 사용, 없으면 users 컬렉션에서 찾기
         for (const userId of userIds) {
@@ -3198,24 +3234,39 @@ async function loadUserList() {
                 continue;
             }
             
-            const option = document.createElement('option');
-            option.value = userId;
-            option.textContent = userName;
-            userSelect.appendChild(option);
+            userOptions.push({ userId, userName });
         }
         
         // 이름 순으로 정렬
-        const options = Array.from(userSelect.options);
-        options.sort((a, b) => {
-            return a.textContent.localeCompare(b.textContent);
+        userOptions.sort((a, b) => {
+            return a.userName.localeCompare(b.userName);
         });
         
-        userSelect.innerHTML = '';
-        options.forEach(option => userSelect.appendChild(option));
+        // growth-user-select 채우기
+        if (userSelect) {
+            userSelect.innerHTML = '';
+            userOptions.forEach(({ userId, userName }) => {
+                const option = document.createElement('option');
+                option.value = userId;
+                option.textContent = userName;
+                userSelect.appendChild(option);
+            });
+            
+            // 첫 번째 사용자를 기본으로 선택
+            if (userSelect.options.length > 0) {
+                userSelect.value = userSelect.options[0].value;
+            }
+        }
         
-        // 첫 번째 사용자를 기본으로 선택
-        if (userSelect.options.length > 0) {
-            userSelect.value = userSelect.options[0].value;
+        // h2h-player-select 채우기
+        if (h2hPlayerSelect) {
+            h2hPlayerSelect.innerHTML = '<option value="">플레이어를 선택하세요</option>';
+            userOptions.forEach(({ userId, userName }) => {
+                const option = document.createElement('option');
+                option.value = userId;
+                option.textContent = userName;
+                h2hPlayerSelect.appendChild(option);
+            });
         }
         
     } catch (error) {
@@ -13557,6 +13608,139 @@ function closePlayerHeadToHeadModal() {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
+}
+
+// 통계 탭에서 전적 표시 (모달 없이 인라인)
+async function showPlayerHeadToHeadInStats(targetUserId, targetUserName) {
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        const h2hDisplay = document.getElementById('h2h-stats-display');
+        if (!h2hDisplay) {
+            console.error('전적 표시 영역을 찾을 수 없습니다.');
+            return;
+        }
+        
+        // 로딩 표시
+        h2hDisplay.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>전적을 불러오는 중...</p></div>';
+        h2hDisplay.style.display = 'block';
+        
+        // 전적 데이터 가져오기
+        const h2hData = await getPlayerHeadToHead(user.uid, targetUserId, targetUserName);
+        
+        // UI 렌더링 (인라인 버전)
+        renderPlayerHeadToHeadInline(h2hData, targetUserName, h2hDisplay);
+        
+    } catch (error) {
+        console.error('전적 조회 오류:', error);
+        showToast('전적을 불러오는 중 오류가 발생했습니다.', 'error');
+        const h2hDisplay = document.getElementById('h2h-stats-display');
+        if (h2hDisplay) {
+            h2hDisplay.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>전적을 불러올 수 없습니다</p></div>';
+        }
+    }
+}
+
+// 전적 인라인 렌더링 (통계 탭용)
+function renderPlayerHeadToHeadInline(h2hData, targetUserName, container) {
+    if (!container) return;
+    
+    if (!h2hData || h2hData.totalGames === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-user-friends"></i>
+                <p><strong>${targetUserName}</strong>님과의 전적이 없습니다.</p>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 10px;">아직 함께 경기한 기록이 없습니다.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const user = auth.currentUser;
+    let currentUserName = '나';
+    if (user) {
+        // 현재 사용자 이름 가져오기
+        db.collection('users').doc(user.uid).get().then(doc => {
+            if (doc.exists) {
+                const userData = doc.data();
+                currentUserName = userData.displayName || userData.name || user.email || '나';
+            }
+        }).catch(() => {});
+    }
+    
+    const winRateClass = parseFloat(h2hData.winRate) >= 50 ? 'win' : 'loss';
+    
+    let matchesHTML = '';
+    h2hData.matches.forEach((match, index) => {
+        const teamALabel = match.teamA.map(p => p.userName || p.name || '알 수 없음').join(', ');
+        const teamBLabel = match.teamB.map(p => p.userName || p.name || '알 수 없음').join(', ');
+        const resultClass = match.currentUserWon ? 'match-won' : 'match-lost';
+        const resultText = match.currentUserWon ? '승' : '패';
+        const resultIcon = match.currentUserWon ? 'fa-check-circle' : 'fa-times-circle';
+        
+        matchesHTML += `
+            <div class="h2h-match-item ${resultClass}">
+                <div class="h2h-match-header">
+                    <span class="h2h-match-date">${match.date} ${match.timeSlot || ''}</span>
+                    <span class="h2h-match-result ${resultClass}">
+                        <i class="fas ${resultIcon}"></i> ${resultText}
+                    </span>
+                </div>
+                <div class="h2h-match-teams">
+                    <div class="h2h-team ${match.currentUserTeam === 'A' ? 'current-team' : ''}">
+                        <span class="h2h-team-label">팀 A:</span>
+                        <span class="h2h-team-players">${teamALabel}</span>
+                        <span class="h2h-team-score">${match.scoreA}</span>
+                    </div>
+                    <div class="h2h-team ${match.currentUserTeam === 'B' ? 'current-team' : ''}">
+                        <span class="h2h-team-label">팀 B:</span>
+                        <span class="h2h-team-players">${teamBLabel}</span>
+                        <span class="h2h-team-score">${match.scoreB}</span>
+                    </div>
+                </div>
+                <div class="h2h-match-info">
+                    <span class="h2h-court-info">코트 #${match.courtNumber}</span>
+                    ${match.roundNumber ? `<span class="h2h-round-info">${match.roundNumber}경기</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = `
+        <div class="h2h-header">
+            <div class="h2h-title">
+                <h3><i class="fas fa-user-friends"></i> ${currentUserName} vs ${targetUserName}</h3>
+            </div>
+            <div class="h2h-stats">
+                <div class="h2h-stat-card">
+                    <div class="h2h-stat-value ${winRateClass}">${h2hData.winRate}%</div>
+                    <div class="h2h-stat-label">승률</div>
+                </div>
+                <div class="h2h-stat-card">
+                    <div class="h2h-stat-value win">${h2hData.wins}</div>
+                    <div class="h2h-stat-label">승</div>
+                </div>
+                <div class="h2h-stat-card">
+                    <div class="h2h-stat-value loss">${h2hData.losses}</div>
+                    <div class="h2h-stat-label">패</div>
+                </div>
+                <div class="h2h-stat-card">
+                    <div class="h2h-stat-value">${h2hData.totalGames}</div>
+                    <div class="h2h-stat-label">총 경기</div>
+                </div>
+            </div>
+        </div>
+        <div class="h2h-matches-section">
+            <h4><i class="fas fa-history"></i> 경기 기록 (${h2hData.matches.length}경기)</h4>
+            <div class="h2h-matches-list">
+                ${matchesHTML}
+            </div>
+        </div>
+    `;
 }
 
 // 전적 모달 이벤트 리스너 등록

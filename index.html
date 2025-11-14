@@ -373,6 +373,31 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- 플레이어 전적 섹션 -->
+                    <div class="player-h2h-section">
+                        <div class="stats-section-header">
+                            <i class="fas fa-user-friends"></i>
+                            <h2>플레이어 전적</h2>
+                        </div>
+                        <div class="h2h-selector-container">
+                            <div class="h2h-selector-wrapper">
+                                <label for="h2h-player-select" class="h2h-label">
+                                    <i class="fas fa-user"></i> 플레이어 선택:
+                                </label>
+                                <select id="h2h-player-select" class="h2h-player-select">
+                                    <option value="">플레이어를 선택하세요</option>
+                                    <!-- 사용자 목록은 JavaScript에서 동적으로 추가됨 -->
+                                </select>
+                                <button class="btn btn-primary" id="view-h2h-btn" style="display: none;">
+                                    <i class="fas fa-search"></i> 전적 보기
+                                </button>
+                            </div>
+                        </div>
+                        <div id="h2h-stats-display" class="h2h-stats-display" style="display: none;">
+                            <!-- 전적 통계가 여기에 표시됨 -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
