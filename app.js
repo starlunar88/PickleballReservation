@@ -5731,11 +5731,9 @@ async function loadReservationsTimeline() {
                             
                             // 예약하기/취소하기 버튼 (항상 표시)
                             if (isClosed) {
-                                // 마감 후에도 예약 취소는 가능, 예약하기는 비활성화
+                                // 마감 후에는 예약하기와 예약 취소 모두 비활성화
                                 if (userReservation) {
-                                    buttons += `<button class="timeline-cancel-btn" 
-                                                   data-time-slot="${slotKey}" 
-                                                   data-date="${targetDate}">
+                                    buttons += `<button class="timeline-cancel-btn" disabled style="opacity: 0.5;">
                                                 취소하기
                                             </button>`;
                                 } else {
