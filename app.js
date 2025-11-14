@@ -5765,14 +5765,12 @@ async function loadReservationsTimeline() {
                             
                             // 관리자 버튼들 (관리자만 표시/활성화)
                             if (isAdminUser) {
-                                // 대진표 생성 버튼
-                                const canGenerate = reservations.length >= 4 && !isClosed;
+                                // 대진표 생성 버튼 (마감 시간과 관계없이 항상 활성화, 단 최소 4명 필요)
+                                const canGenerate = reservations.length >= 4;
                                 const buttonDisabled = !canGenerate ? 'disabled' : '';
                                 const buttonStyle = 'margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;' + (!canGenerate ? ' opacity: 0.5;' : '');
                                 let buttonTitle = '';
-                                if (isClosed) {
-                                    buttonTitle = '마감된 시간대입니다';
-                                } else if (reservations.length < 4) {
+                                if (reservations.length < 4) {
                                     buttonTitle = '최소 4명이 필요합니다';
                                 }
                                 buttons += `<button class="btn btn-primary force-generate-btn" 
@@ -9611,8 +9609,12 @@ const pairingPatterns = [
 // 밸런스 모드를 위한 여러 밸런스 조합 생성 함수
 function createBalancedTeamConfigs(candidate) {
     const configs = [];
-    // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
-    const sorted = [...candidate].sort((a, b) => {
+    
+    // 더 많은 다양성을 위해 여러 정렬 방식 시도
+    const sortVariations = [];
+    
+    // 정렬 방식 1: DUPR 점수 순 (기본)
+    const sorted1 = [...candidate].sort((a, b) => {
         const duprA = b.dupr || 0;
         const duprB = a.dupr || 0;
         const diff = duprA - duprB;
@@ -9622,76 +9624,120 @@ function createBalancedTeamConfigs(candidate) {
         }
         return diff;
     });
+    sortVariations.push(sorted1);
     
-    const totalScore = sorted.reduce((sum, p) => sum + (p.dupr || 0), 0);
-    const avgScore = totalScore / 2;
-    const duprRange = (sorted[0].dupr || 0) - (sorted[3].dupr || 0);
+    // 정렬 방식 2: 랜덤 셔플 후 DUPR 점수 순 (다양성 확보)
+    const shuffled = [...candidate].sort(() => Math.random() - 0.5);
+    const sorted2 = shuffled.sort((a, b) => {
+        const duprA = b.dupr || 0;
+        const duprB = a.dupr || 0;
+        const diff = duprA - duprB;
+        if (Math.abs(diff) < 0.15) { // 더 넓은 범위에서 랜덤
+            return Math.random() - 0.5;
+        }
+        return diff;
+    });
+    sortVariations.push(sorted2);
     
-    // DUPR 범위가 좁을 때(0.3 이하) 더 많은 조합 생성
-    const isNarrowRange = duprRange <= 0.3;
-    
-    // 조합 1: [최강, 최약] vs [차강, 차약] - 완벽 밸런스
-    const teamA1 = [sorted[0], sorted[3]].map(p => p.userId).sort();
-    const teamB1 = [sorted[1], sorted[2]].map(p => p.userId).sort();
-    const score1A = (sorted[0].dupr || 0) + (sorted[3].dupr || 0);
-    const score1B = (sorted[1].dupr || 0) + (sorted[2].dupr || 0);
-    const diff1 = Math.abs(score1A - score1B);
-    configs.push({ teamA: teamA1, teamB: teamB1, balanceDiff: diff1 });
-    
-    // 조합 2: [최강, 차약] vs [차강, 최약] - 약간의 차이 있지만 밸런스
-    const teamA2 = [sorted[0], sorted[2]].map(p => p.userId).sort();
-    const teamB2 = [sorted[1], sorted[3]].map(p => p.userId).sort();
-    const score2A = (sorted[0].dupr || 0) + (sorted[2].dupr || 0);
-    const score2B = (sorted[1].dupr || 0) + (sorted[3].dupr || 0);
-    const diff2 = Math.abs(score2A - score2B);
-    
-    // 점수 차이가 평균의 30% 이내면 밸런스로 인정 (범위가 좁을 때는 50%까지 허용)
-    const balanceThreshold = isNarrowRange ? 0.5 : 0.3;
-    if (diff2 <= avgScore * balanceThreshold) {
-        configs.push({ teamA: teamA2, teamB: teamB2, balanceDiff: diff2 });
-    }
-    
-    // DUPR 범위가 좁을 때 추가 조합 생성 (다양성 확보)
-    if (isNarrowRange) {
-        // 조합 3: [최강, 차강] vs [차약, 최약] - 약간의 불균형이지만 허용
+    // 각 정렬 방식에 대해 조합 생성
+    for (const sorted of sortVariations) {
+        const totalScore = sorted.reduce((sum, p) => sum + (p.dupr || 0), 0);
+        const avgScore = totalScore / 2;
+        const duprRange = (sorted[0].dupr || 0) - (sorted[3].dupr || 0);
+        
+        // DUPR 범위가 좁을 때(0.3 이하) 더 많은 조합 생성
+        const isNarrowRange = duprRange <= 0.3;
+        
+        // 조합 1: [최강, 최약] vs [차강, 차약] - 완벽 밸런스
+        const teamA1 = [sorted[0], sorted[3]].map(p => p.userId).sort();
+        const teamB1 = [sorted[1], sorted[2]].map(p => p.userId).sort();
+        const score1A = (sorted[0].dupr || 0) + (sorted[3].dupr || 0);
+        const score1B = (sorted[1].dupr || 0) + (sorted[2].dupr || 0);
+        const diff1 = Math.abs(score1A - score1B);
+        configs.push({ teamA: teamA1, teamB: teamB1, balanceDiff: diff1 });
+        
+        // 조합 2: [최강, 차약] vs [차강, 최약] - 약간의 차이 있지만 밸런스
+        const teamA2 = [sorted[0], sorted[2]].map(p => p.userId).sort();
+        const teamB2 = [sorted[1], sorted[3]].map(p => p.userId).sort();
+        const score2A = (sorted[0].dupr || 0) + (sorted[2].dupr || 0);
+        const score2B = (sorted[1].dupr || 0) + (sorted[3].dupr || 0);
+        const diff2 = Math.abs(score2A - score2B);
+        
+        // 점수 차이가 평균의 30% 이내면 밸런스로 인정 (범위가 좁을 때는 50%까지 허용)
+        const balanceThreshold = isNarrowRange ? 0.5 : 0.3;
+        if (diff2 <= avgScore * balanceThreshold) {
+            configs.push({ teamA: teamA2, teamB: teamB2, balanceDiff: diff2 });
+        }
+        
+        // 조합 3: [최강, 차강] vs [차약, 최약] - 약간의 불균형이지만 허용 (항상 생성)
         const teamA3 = [sorted[0], sorted[1]].map(p => p.userId).sort();
         const teamB3 = [sorted[2], sorted[3]].map(p => p.userId).sort();
         const score3A = (sorted[0].dupr || 0) + (sorted[1].dupr || 0);
         const score3B = (sorted[2].dupr || 0) + (sorted[3].dupr || 0);
         const diff3 = Math.abs(score3A - score3B);
-        if (diff3 <= avgScore * 0.5) {
+        // 밸런스 차이가 평균의 60% 이내면 포함 (더 많은 조합 생성)
+        if (diff3 <= avgScore * 0.6) {
             configs.push({ teamA: teamA3, teamB: teamB3, balanceDiff: diff3 });
         }
         
-        // 조합 4: [최강, 차약] vs [차강, 최약] (다른 순서)
-        const teamA4 = [sorted[0], sorted[3]].map(p => p.userId).sort();
-        const teamB4 = [sorted[1], sorted[2]].map(p => p.userId).sort();
-        const score4A = (sorted[0].dupr || 0) + (sorted[3].dupr || 0);
-        const score4B = (sorted[1].dupr || 0) + (sorted[2].dupr || 0);
+        // 조합 4: [차강, 최약] vs [최강, 차약] (순서 변경)
+        const teamA4 = [sorted[1], sorted[3]].map(p => p.userId).sort();
+        const teamB4 = [sorted[0], sorted[2]].map(p => p.userId).sort();
+        const score4A = (sorted[1].dupr || 0) + (sorted[3].dupr || 0);
+        const score4B = (sorted[0].dupr || 0) + (sorted[2].dupr || 0);
         const diff4 = Math.abs(score4A - score4B);
-        if (diff4 <= avgScore * 0.5) {
+        if (diff4 <= avgScore * balanceThreshold) {
             configs.push({ teamA: teamA4, teamB: teamB4, balanceDiff: diff4 });
+        }
+        
+        // DUPR 범위가 좁을 때 추가 조합 생성 (다양성 확보)
+        if (isNarrowRange) {
+            // 조합 5: [차강, 차약] vs [최강, 최약] - 다른 조합
+            const teamA5 = [sorted[1], sorted[2]].map(p => p.userId).sort();
+            const teamB5 = [sorted[0], sorted[3]].map(p => p.userId).sort();
+            const score5A = (sorted[1].dupr || 0) + (sorted[2].dupr || 0);
+            const score5B = (sorted[0].dupr || 0) + (sorted[3].dupr || 0);
+            const diff5 = Math.abs(score5A - score5B);
+            if (diff5 <= avgScore * 0.5) {
+                configs.push({ teamA: teamA5, teamB: teamB5, balanceDiff: diff5 });
+            }
+        }
+        
+        // 팀 순서만 바꾼 조합 (다양성 확보)
+        configs.push({ teamA: teamB1, teamB: teamA1, balanceDiff: diff1 });
+        if (diff2 <= avgScore * balanceThreshold) {
+            configs.push({ teamA: teamB2, teamB: teamA2, balanceDiff: diff2 });
+        }
+        if (diff3 <= avgScore * 0.6) {
+            configs.push({ teamA: teamB3, teamB: teamA3, balanceDiff: diff3 });
         }
     }
     
-    // 팀 순서만 바꾼 조합 (다양성 확보)
-    configs.push({ teamA: teamB1, teamB: teamA1, balanceDiff: diff1 });
-    if (diff2 <= avgScore * balanceThreshold) {
-        configs.push({ teamA: teamB2, teamB: teamA2, balanceDiff: diff2 });
+    // 중복 제거 (같은 팀 조합은 하나만 유지)
+    const uniqueConfigs = [];
+    const seen = new Set();
+    for (const config of configs) {
+        const key1 = `${config.teamA.join(',')}|${config.teamB.join(',')}`;
+        const key2 = `${config.teamB.join(',')}|${config.teamA.join(',')}`;
+        if (!seen.has(key1) && !seen.has(key2)) {
+            seen.add(key1);
+            seen.add(key2);
+            uniqueConfigs.push(config);
+        }
     }
     
     // 밸런스 차이 순으로 정렬하되, 비슷한 밸런스 차이 내에서는 랜덤하게 섞기
-    configs.sort((a, b) => {
+    uniqueConfigs.sort((a, b) => {
         const diff = a.balanceDiff - b.balanceDiff;
-        // 밸런스 차이가 0.2 이내면 비슷한 것으로 간주하고 랜덤하게 섞기
-        if (Math.abs(diff) < 0.2) {
+        // 밸런스 차이가 0.3 이내면 비슷한 것으로 간주하고 랜덤하게 섞기 (범위 확대)
+        if (Math.abs(diff) < 0.3) {
             return Math.random() - 0.5;
         }
         return diff;
     });
     
     // balanceDiff 제거하고 teamA, teamB만 반환
-    return configs.map(config => ({ teamA: config.teamA, teamB: config.teamB }));
+    return uniqueConfigs.map(config => ({ teamA: config.teamA, teamB: config.teamB }));
 }
 
 // 매치 스케줄 빌드 (간단 로테이션, 동적 코트 지원, 코트 배정 유지)
