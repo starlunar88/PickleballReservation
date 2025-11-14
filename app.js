@@ -773,7 +773,7 @@ async function getSystemSettings() {
             ],
             closingTime: 60,
             playersPerCourt: 4,
-            gamesPerHour: 4
+            gamesPerHour: 8
         };
     } catch (error) {
         console.error('시스템 설정 가져오기 오류:', error);
@@ -1490,7 +1490,7 @@ async function handleAdminSettings() {
             timeSlots,
             closingTime,
             playersPerCourt: 4,
-            gamesPerHour: 4
+            gamesPerHour: 8
         };
         
         await saveSystemSettings(settings);
@@ -2155,7 +2155,7 @@ async function loadMatchesForDate(date) {
                         const timeSlotStart = timeSlotStartStr.split(':');
                         const startHour = parseInt(timeSlotStart[0]);
                         const startMin = parseInt(timeSlotStart[1]);
-                        const minutesPerGame = 15;
+                        const minutesPerGame = 60 / 8; // 7.5분 (시간당 8경기)
                         const gameStartMinutes = (parseInt(roundNum) - 1) * minutesPerGame;
                         const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
                         const gameStartHour = Math.floor(totalStartMinutes / 60);
@@ -4796,7 +4796,7 @@ async function renderRecords(matches) {
         // 경기 시간 표시 (gameStartTime/gameEndTime 우선, 없으면 계산)
         let displayTime = '';
         if (match.gameStartTime && match.gameEndTime) {
-            // 저장된 시간이 있으면 사용 (15분 간격으로 계산된 시간)
+            // 저장된 시간이 있으면 사용 (시간당 8경기 간격으로 계산된 시간)
             displayTime = `${match.gameStartTime} ~ ${match.gameEndTime}`;
         } else {
             // 저장된 시간이 없으면 roundNumber 기반으로 계산
@@ -4808,7 +4808,7 @@ async function renderRecords(matches) {
                 const timeSlotStart = startTime.split(':');
                 const startHour = parseInt(timeSlotStart[0]) || 12;
                 const startMin = parseInt(timeSlotStart[1]) || 0;
-                const minutesPerGame = 15;
+                const minutesPerGame = 60 / 8; // 7.5분 (시간당 8경기)
                 const gameStartMinutes = (roundNum - 1) * minutesPerGame;
                 const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
                 const gameStartHour = Math.floor(totalStartMinutes / 60);
@@ -7024,8 +7024,8 @@ async function recordGameResult(teamId, gameResult) {
             courtNumber: gameResult.courtNumber || 1,
             roundNumber: gameResult.roundNumber || gameResult.gameNumber || 1,
             gameNumber: gameResult.gameNumber || gameResult.roundNumber || 1,
-            gameStartTime: gameResult.gameStartTime || null, // 15분 간격으로 계산된 시작 시간
-            gameEndTime: gameResult.gameEndTime || null,     // 15분 간격으로 계산된 종료 시간
+            gameStartTime: gameResult.gameStartTime || null, // 시간당 8경기 간격으로 계산된 시작 시간
+            gameEndTime: gameResult.gameEndTime || null,     // 시간당 8경기 간격으로 계산된 종료 시간
             players: gameResult.players,
             winners: gameResult.winners, // 승자 팀의 플레이어 ID 배열
             losers: gameResult.losers,   // 패자 팀의 플레이어 ID 배열
@@ -9539,7 +9539,7 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             await deleteBatch.commit();
             console.log('기존 대진표 삭제 완료:', existingMatches.size, '개');
         }
-        const rounds = Math.max(1, settings?.gamesPerHour || 4); // 4경기 (15분 단위)
+        const rounds = Math.max(1, settings?.gamesPerHour || 8); // 8경기 (시간당)
 
         // teamMode에 따라 대진표 생성 (같은 게임 내에서만 중복 매칭 방지)
         const { schedule, unassignedPlayers } = buildMatchSchedule(playersToUse, courtCount, rounds, {}, teamMode);
@@ -9650,8 +9650,8 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             const matchId = `${date}_${timeSlot}_R${match.round}_C${match.court}`;
             const ref = db.collection('matches').doc(matchId);
             
-            // 각 경기의 시간 계산 (15분 단위로 증가)
-            const minutesPerGame = 15;
+            // 각 경기의 시간 계산 (시간당 8경기 = 7.5분 간격)
+            const minutesPerGame = 60 / 8; // 7.5분
             const gameStartMinutes = (match.round - 1) * minutesPerGame;
             const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
             const gameStartHour = Math.floor(totalStartMinutes / 60);
@@ -11313,7 +11313,7 @@ async function saveMatchScore(match, scoreA, scoreB) {
         console.log(`🎯 [승패 판정] 승자 팀: ${winners.map(p => p.userName || p.userId).join(', ')}`);
         console.log(`🎯 [승패 판정] 패자 팀: ${losers.map(p => p.userName || p.userId).join(', ')}`);
 
-        // 경기 시간 계산 (15분 간격)
+        // 경기 시간 계산 (시간당 8경기 = 7.5분 간격)
         let gameStartTime, gameEndTime;
         if (match.gameStartTime && match.gameEndTime) {
             // 저장된 시간이 있으면 사용
@@ -11325,7 +11325,7 @@ async function saveMatchScore(match, scoreA, scoreB) {
             const timeSlotStart = match.timeSlot ? match.timeSlot.split('-')[0].split(':') : ['12', '00'];
             const startHour = parseInt(timeSlotStart[0]);
             const startMin = parseInt(timeSlotStart[1]);
-            const minutesPerGame = 15;
+            const minutesPerGame = 60 / 8; // 7.5분
             const gameStartMinutes = (roundNum - 1) * minutesPerGame;
             const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
             const gameStartHour = Math.floor(totalStartMinutes / 60);
@@ -11345,8 +11345,8 @@ async function saveMatchScore(match, scoreA, scoreB) {
             courtNumber: match.courtNumber || match.court || 1,
             roundNumber: match.roundNumber || match.round || 1,
             gameNumber: match.roundNumber || match.round || 1,
-            gameStartTime: gameStartTime, // 15분 간격으로 계산된 시간
-            gameEndTime: gameEndTime,     // 15분 간격으로 계산된 시간
+            gameStartTime: gameStartTime, // 시간당 8경기 간격으로 계산된 시간
+            gameEndTime: gameEndTime,     // 시간당 8경기 간격으로 계산된 시간
             winners: winners.map(p => p.userId),
             losers: losers.map(p => p.userId),
             score: `${scoreA}-${scoreB}`,
@@ -12877,7 +12877,7 @@ async function openManualMatchCreateModal() {
     window.manualMatchTeamBPlayers = [];
     window.manualMatchMatches = [];
     
-    // 15분 단위 시간 옵션 로드
+    // 시간 단위 시간 옵션 로드
     loadTimeSlotOptions();
     
     // 플레이어 목록 로드
@@ -12896,19 +12896,17 @@ async function openManualMatchCreateModal() {
     modal.style.display = 'flex';
 }
 
-// 15분 단위 시간 옵션 생성
+// 시간 단위 시간 옵션 생성
 function loadTimeSlotOptions() {
     const startSelect = document.getElementById('manual-match-time-slot-start');
     
     if (!startSelect) return;
     
-    // 15분 단위로 시간 생성 (00:00 ~ 23:45)
+    // 시간 단위로 시간 생성 (00:00 ~ 23:00)
     const timeOptions = [];
     for (let hour = 0; hour < 24; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-            const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-            timeOptions.push(timeString);
-        }
+        const timeString = `${String(hour).padStart(2, '0')}:00`;
+        timeOptions.push(timeString);
     }
     
     // 시작 시간 옵션 생성
@@ -13271,10 +13269,10 @@ async function saveManualMatchSchedule() {
             return;
         }
         
-        // 시작 시간에서 15분 뒤 종료 시간 자동 계산
+        // 시작 시간에서 1시간 뒤 종료 시간 자동 계산
         const [startHour, startMinute] = startTime.split(':').map(Number);
         const startTotalMinutes = startHour * 60 + startMinute;
-        const endTotalMinutes = startTotalMinutes + 15;
+        const endTotalMinutes = startTotalMinutes + 60; // 1시간 추가
         const endHour = Math.floor(endTotalMinutes / 60);
         const endMinute = endTotalMinutes % 60;
         
@@ -13286,7 +13284,7 @@ async function saveManualMatchSchedule() {
         
         const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
         
-        // 시간대 형식으로 조합 (예: 09:00-09:15)
+        // 시간대 형식으로 조합 (예: 09:00-10:00)
         const timeSlot = `${startTime}-${endTime}`;
         
         if (window.manualMatchMatches.length === 0) {
@@ -13304,8 +13302,8 @@ async function saveManualMatchSchedule() {
         
         // 각 경기를 matches 컬렉션에 저장 (점수 없이 대진표만 생성)
         for (const match of window.manualMatchMatches) {
-            // 각 경기의 시간 계산 (15분 단위로 증가)
-            const minutesPerGame = 15;
+            // 각 경기의 시간 계산 (시간당 8경기 = 7.5분 간격)
+            const minutesPerGame = 60 / 8; // 7.5분
             const gameStartMinutes = (match.roundNumber - 1) * minutesPerGame;
             const [startHour, startMin] = startTime.split(':').map(Number);
             const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
