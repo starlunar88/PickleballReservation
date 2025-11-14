@@ -4331,15 +4331,15 @@ function drawTeamBarChart(data, canvasId, color) {
     // padding 계산 (팀 이름 가로 표시 공간 + 최소 여백)
     // 좌우 여백 최소화하여 차트 영역 최대화
     const padding = { 
-        top: isMobile ? 20 : 20, 
-        right: isMobile ? 30 : 25, // 오른쪽 여백 대폭 감소
-        bottom: isMobile ? 30 : 30, 
-        left: isMobile ? Math.max(maxNameWidth + 10, 90) : Math.max(maxNameWidth + 10, 90)
+        top: isMobile ? 15 : 12, // 상단 여백 감소
+        right: isMobile ? 20 : 15, // 오른쪽 여백 대폭 감소
+        bottom: isMobile ? 25 : 20, // 하단 여백 감소
+        left: isMobile ? Math.max(maxNameWidth + 8, 85) : Math.max(maxNameWidth + 8, 85)
     };
     
-    // PC에서 너무 넓지 않도록 최대값 제한
+    // PC에서 너무 넓지 않도록 최대값 제한 (여백 최소화)
     if (!isMobile) {
-        padding.left = Math.min(padding.left, 120);
+        padding.left = Math.min(padding.left, 110);
     }
     
     const chartWidth = width - padding.left - padding.right;
@@ -4353,7 +4353,7 @@ function drawTeamBarChart(data, canvasId, color) {
     // 승률이므로 항상 0-100% 범위 표시
     const maxValue = 100;
     const barHeight = chartHeight / Math.max(data.length, 1);
-    const barSpacing = barHeight * 0.1; // spacing 감소
+    const barSpacing = barHeight * 0.08; // spacing 더 감소하여 바가 더 크게 보이도록
     
     // 그리드 그리기 (20% 간격으로 표시)
     ctx.strokeStyle = '#e0e0e0';
@@ -4375,7 +4375,7 @@ function drawTeamBarChart(data, canvasId, color) {
     for (let i = 0; i <= 5; i++) {
         // 차트 영역 내에서 정확히 배치 (100%는 차트 영역 끝에)
         const x = padding.left + (i / 5) * chartWidth;
-        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 15);
+        ctx.fillText(`${i * 20}%`, x, height - padding.bottom + 12);
     }
     
     // 바 차트 그리기
@@ -4404,7 +4404,7 @@ function drawTeamBarChart(data, canvasId, color) {
         
         // 이름을 쉼표로 분리하여 두 줄로 표시
         const names = item.playerNames.split(',').map(name => name.trim());
-        const maxNameDisplayWidth = padding.left - (isMobile ? 10 : 12);
+        const maxNameDisplayWidth = padding.left - (isMobile ? 8 : 10);
         const lineHeight = parseFloat(nameFontSize) * 1.2; // 줄 간격
         
         // 첫 번째 이름 (위 줄)
@@ -4415,7 +4415,7 @@ function drawTeamBarChart(data, canvasId, color) {
             }
             firstName = firstName + '...';
         }
-        ctx.fillText(firstName, padding.left - 5, y + actualBarHeight / 2 - lineHeight / 2 + 4);
+        ctx.fillText(firstName, padding.left - 3, y + actualBarHeight / 2 - lineHeight / 2 + 4);
         
         // 두 번째 이름 (아래 줄)
         if (names.length > 1) {
@@ -4426,7 +4426,7 @@ function drawTeamBarChart(data, canvasId, color) {
                 }
                 secondName = secondName + '...';
             }
-            ctx.fillText(secondName, padding.left - 5, y + actualBarHeight / 2 + lineHeight / 2 + 4);
+            ctx.fillText(secondName, padding.left - 3, y + actualBarHeight / 2 + lineHeight / 2 + 4);
         }
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
@@ -4435,9 +4435,9 @@ function drawTeamBarChart(data, canvasId, color) {
         ctx.font = `${labelFontSize} "Malgun Gothic", Arial, sans-serif`;
         const labelText = `${item.winRate.toFixed(0)}%`;
         const labelTextWidth = ctx.measureText(labelText).width;
-        const labelX = x + barWidth + (isMobile ? 8 : 6);
+        const labelX = x + barWidth + (isMobile ? 6 : 4);
         // 차트 영역 내에서만 표시되도록 제한 (오른쪽 padding 최소화)
-        const maxLabelX = padding.left + chartWidth - labelTextWidth - 5;
+        const maxLabelX = padding.left + chartWidth - labelTextWidth - 3;
         
         // 레이블이 차트 영역을 벗어나면 막대 안에 표시
         if (labelX > maxLabelX) {
