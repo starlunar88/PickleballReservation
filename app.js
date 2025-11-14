@@ -9678,26 +9678,7 @@ function createBalancedTeamConfigs(candidate) {
             configs.push({ teamA: teamA2, teamB: teamB2, balanceDiff: diff2 });
         }
         
-        // 조합 3: [최강, 차강] vs [차약, 최약] - 약간의 불균형이지만 허용 (항상 생성)
-        const teamA3 = [sorted[0], sorted[1]].map(p => p.userId).sort();
-        const teamB3 = [sorted[2], sorted[3]].map(p => p.userId).sort();
-        const score3A = (sorted[0].dupr || 0) + (sorted[1].dupr || 0);
-        const score3B = (sorted[2].dupr || 0) + (sorted[3].dupr || 0);
-        const diff3 = Math.abs(score3A - score3B);
-        // 밸런스 차이가 평균의 60% 이내면 포함 (더 많은 조합 생성)
-        if (diff3 <= avgScore * 0.6) {
-            configs.push({ teamA: teamA3, teamB: teamB3, balanceDiff: diff3 });
-        }
-        
-        // 조합 4: [차강, 최약] vs [최강, 차약] (순서 변경)
-        const teamA4 = [sorted[1], sorted[3]].map(p => p.userId).sort();
-        const teamB4 = [sorted[0], sorted[2]].map(p => p.userId).sort();
-        const score4A = (sorted[1].dupr || 0) + (sorted[3].dupr || 0);
-        const score4B = (sorted[0].dupr || 0) + (sorted[2].dupr || 0);
-        const diff4 = Math.abs(score4A - score4B);
-        if (diff4 <= avgScore * balanceThreshold) {
-            configs.push({ teamA: teamA4, teamB: teamB4, balanceDiff: diff4 });
-        }
+        // 조합 3과 조합 4 제거: 조합 3은 밸런스가 깨지고, 조합 4는 조합 2와 중복
         
         // DUPR 범위가 좁을 때 추가 조합 생성 (다양성 확보)
         if (isNarrowRange) {
@@ -9716,9 +9697,6 @@ function createBalancedTeamConfigs(candidate) {
         configs.push({ teamA: teamB1, teamB: teamA1, balanceDiff: diff1 });
         if (diff2 <= avgScore * balanceThreshold) {
             configs.push({ teamA: teamB2, teamB: teamA2, balanceDiff: diff2 });
-        }
-        if (diff3 <= avgScore * 0.6) {
-            configs.push({ teamA: teamB3, teamB: teamA3, balanceDiff: diff3 });
         }
     }
     
@@ -10397,8 +10375,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         
                         // 밸런스 모드에서 최적 조합 선택
                         if (teamMode === 'balanced' && bestConfig) {
-                            // 완전 중복이 아니거나, 완전 중복이어도 가장 덜 중복된 조합 선택
-                            if (bestScore >= -5 || previousMatchConfigs.length === 0) {
+                            // 완전 중복(-10)과 같은 팀 조합 반복(-5)은 제외, 개인별 반복만 허용
+                            // bestScore >= 0: 완전히 새로운 조합
+                            // bestScore >= -2: 같은 팀원 반복만 있는 경우 (허용)
+                            // bestScore >= -4: 상대팀원 반복만 있는 경우 (허용)
+                            // bestScore < -4: 같은 팀 조합 반복 또는 완전 중복 (제외)
+                            if (bestScore >= -4 || previousMatchConfigs.length === 0) {
                                 fourPlayers = candidate;
                                 selectedTeamA = bestConfig.teamA.map(id => candidate.find(p => p.userId === id));
                                 selectedTeamB = bestConfig.teamB.map(id => candidate.find(p => p.userId === id));
