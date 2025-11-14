@@ -4302,6 +4302,10 @@ function drawTeamBarChart(data, canvasId, color) {
     // 컨텍스트 스케일 조정
     ctx.scale(dpr, dpr);
     
+    // 텍스트 렌더링 품질 개선
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
     const width = containerWidth;
     const height = containerHeight;
     
@@ -4321,7 +4325,9 @@ function drawTeamBarChart(data, canvasId, color) {
     
     // 팀 이름 가로로 표시할 때 필요한 공간 계산 (모바일에서는 더 큰 폰트)
     const nameFontSize = isMobile ? '13px' : '12px';
-    ctx.font = `${nameFontSize} "Malgun Gothic", Arial, sans-serif`;
+    // 텍스트 측정을 위한 폰트 설정 (렌더링 품질 개선)
+    ctx.font = `${nameFontSize} "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", Arial, sans-serif`;
+    ctx.textBaseline = 'middle';
     let maxNameWidth = 0;
     data.forEach(item => {
         const textWidth = ctx.measureText(item.playerNames).width;
@@ -4334,12 +4340,12 @@ function drawTeamBarChart(data, canvasId, color) {
         top: isMobile ? 15 : 12, // 상단 여백 감소
         right: isMobile ? 20 : 15, // 오른쪽 여백 대폭 감소
         bottom: isMobile ? 25 : 20, // 하단 여백 감소
-        left: isMobile ? Math.max(maxNameWidth + 8, 85) : Math.max(maxNameWidth + 8, 85)
+        left: isMobile ? Math.max(maxNameWidth + 5, 75) : Math.max(maxNameWidth + 5, 75)
     };
     
     // PC에서 너무 넓지 않도록 최대값 제한 (여백 최소화)
     if (!isMobile) {
-        padding.left = Math.min(padding.left, 110);
+        padding.left = Math.min(padding.left, 100);
     }
     
     const chartWidth = width - padding.left - padding.right;
@@ -4399,15 +4405,17 @@ function drawTeamBarChart(data, canvasId, color) {
         
         // 팀 이름 레이블 (두 줄로 표시)
         ctx.fillStyle = '#333';
-        ctx.font = `${nameFontSize} "Malgun Gothic", Arial, sans-serif`;
+        // 텍스트 렌더링 품질 개선을 위한 폰트 설정
+        ctx.font = `${nameFontSize} "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", Arial, sans-serif`;
         ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle'; // 수직 정렬 개선
         
         // 이름을 쉼표로 분리하여 두 줄로 표시
         const names = item.playerNames.split(',').map(name => name.trim());
-        const maxNameDisplayWidth = padding.left - (isMobile ? 8 : 10);
+        const maxNameDisplayWidth = padding.left - (isMobile ? 6 : 8);
         const lineHeight = parseFloat(nameFontSize) * 1.2; // 줄 간격
         
-        // 첫 번째 이름 (위 줄)
+        // 첫 번째 이름 (위 줄) - 픽셀 정렬을 위해 좌표 반올림
         let firstName = names[0] || '';
         if (ctx.measureText(firstName).width > maxNameDisplayWidth) {
             while (firstName.length > 0 && ctx.measureText(firstName + '...').width > maxNameDisplayWidth) {
@@ -4415,9 +4423,10 @@ function drawTeamBarChart(data, canvasId, color) {
             }
             firstName = firstName + '...';
         }
-        ctx.fillText(firstName, padding.left - 3, y + actualBarHeight / 2 - lineHeight / 2 + 4);
+        const firstNameY = Math.round(y + actualBarHeight / 2 - lineHeight / 2);
+        ctx.fillText(firstName, Math.round(padding.left - 2), firstNameY);
         
-        // 두 번째 이름 (아래 줄)
+        // 두 번째 이름 (아래 줄) - 픽셀 정렬을 위해 좌표 반올림
         if (names.length > 1) {
             let secondName = names[1] || '';
             if (ctx.measureText(secondName).width > maxNameDisplayWidth) {
@@ -4426,7 +4435,8 @@ function drawTeamBarChart(data, canvasId, color) {
                 }
                 secondName = secondName + '...';
             }
-            ctx.fillText(secondName, padding.left - 3, y + actualBarHeight / 2 + lineHeight / 2 + 4);
+            const secondNameY = Math.round(y + actualBarHeight / 2 + lineHeight / 2);
+            ctx.fillText(secondName, Math.round(padding.left - 2), secondNameY);
         }
         
         // 승률 레이블 (막대 오른쪽 또는 차트 영역 내)
