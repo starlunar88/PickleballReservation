@@ -1680,30 +1680,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 테스트용 임시 사람 추가 버튼 (임시로 다시 추가)
-    const addRandomPersonBtn = document.getElementById('add-random-person-btn');
-    if (addRandomPersonBtn) {
-        addRandomPersonBtn.addEventListener('click', async () => {
+    // 테스트용 임시 사람 추가 버튼 (각 시간대별 버튼 - 이벤트 위임 사용)
+    // 동적으로 생성되는 버튼이므로 이벤트 위임 방식 사용
+    document.addEventListener('click', async (e) => {
+        if (e.target.closest('.add-random-person-btn')) {
+            const btn = e.target.closest('.add-random-person-btn');
+            const timeSlot = btn.getAttribute('data-time-slot');
+            const date = btn.getAttribute('data-date') || window.currentDate || new Date().toISOString().slice(0, 10);
+            
+            if (!timeSlot) {
+                showToast('시간대 정보를 찾을 수 없습니다.', 'error');
+                return;
+            }
+            
             try {
-                const date = window.currentDate || new Date().toISOString().slice(0, 10);
-                const settings = await getSystemSettings();
-                
-                if (!settings || !settings.timeSlots || settings.timeSlots.length === 0) {
-                    showToast('시간대 설정을 불러올 수 없습니다.', 'error');
-                    return;
-                }
-                
-                // 모든 시간대에 한 명씩 무작위로 추가
-                let addedCount = 0;
-                for (const slot of settings.timeSlots) {
-                    const timeSlot = `${slot.start}-${slot.end}`;
-                    await addRandomReservation(date, timeSlot);
-                    addedCount++;
-                    // 약간의 지연을 주어 순차적으로 추가
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                showToast(`${addedCount}명의 무작위 예약자가 추가되었습니다.`, 'success');
+                await addRandomReservation(date, timeSlot);
                 
                 // 타임라인 새로고침
                 if (typeof loadReservationsTimeline === 'function') {
@@ -1713,8 +1704,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('무작위 사람 추가 오류:', error);
                 showToast('무작위 사람 추가 중 오류가 발생했습니다.', 'error');
             }
-        });
-    }
+        }
+    });
     
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
@@ -5904,6 +5895,15 @@ async function loadReservationsTimeline() {
                                                    style="${buttonStyle}"
                                                    title="${buttonTitle}">
                                                 <i class="fas fa-calendar-alt"></i> 대진표 생성
+                                            </button>`;
+                                
+                                // 임의 생성 버튼 (테스트용)
+                                buttons += `<button class="btn btn-outline add-random-person-btn" 
+                                                   data-time-slot="${slotKey}" 
+                                                   data-date="${targetDate}"
+                                                   style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;"
+                                                   title="임의 사람 생성 (테스트용)">
+                                                <i class="fas fa-user-plus"></i> 임의 생성
                                             </button>`;
                             }
                             
