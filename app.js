@@ -2180,17 +2180,11 @@ async function loadMatchesForDate(date) {
                         const timeSlotStart = timeSlotStartStr.split(':');
                         const startHour = parseInt(timeSlotStart[0]);
                         const startMin = parseInt(timeSlotStart[1]);
-                        const minutesPerGame = 60 / 8; // 7.5분 (시간당 8경기)
-                        const gameStartMinutes = (parseInt(roundNum) - 1) * minutesPerGame;
-                        const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-                        const gameStartHour = Math.floor(totalStartMinutes / 60);
-                        const gameStartMin = totalStartMinutes % 60;
-                        const totalEndMinutes = totalStartMinutes + minutesPerGame;
-                        const gameEndHour = Math.floor(totalEndMinutes / 60);
-                        const gameEndMin = totalEndMinutes % 60;
-                        
-                        gameStart = String(gameStartHour).padStart(2, '0') + ':' + String(gameStartMin).padStart(2, '0');
-                        gameEnd = String(gameEndHour).padStart(2, '0') + ':' + String(gameEndMin).padStart(2, '0');
+                        // 1시간에 8경기 (분 단위 계산 없이)
+                        gameStart = String(startHour).padStart(2, '0') + ':' + String(startMin).padStart(2, '0');
+                        // 종료 시간은 1시간 후
+                        const endHour = (startHour + 1) % 24;
+                        gameEnd = String(endHour).padStart(2, '0') + ':' + String(startMin).padStart(2, '0');
                     }
                     
                     // 라운드 헤더
@@ -4833,17 +4827,11 @@ async function renderRecords(matches) {
                 const timeSlotStart = startTime.split(':');
                 const startHour = parseInt(timeSlotStart[0]) || 12;
                 const startMin = parseInt(timeSlotStart[1]) || 0;
-                const minutesPerGame = 60 / 8; // 7.5분 (시간당 8경기)
-                const gameStartMinutes = (roundNum - 1) * minutesPerGame;
-                const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-                const gameStartHour = Math.floor(totalStartMinutes / 60);
-                const gameStartMin = totalStartMinutes % 60;
-                const totalEndMinutes = totalStartMinutes + minutesPerGame;
-                const gameEndHour = Math.floor(totalEndMinutes / 60);
-                const gameEndMin = totalEndMinutes % 60;
-                
-                const gameStart = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-                const gameEnd = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+                // 1시간에 8경기 (분 단위 계산 없이)
+                const gameStart = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
+                // 종료 시간은 1시간 후
+                const endHour = (startHour + 1) % 24;
+                const gameEnd = `${String(endHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
                 displayTime = `${gameStart} ~ ${gameEnd}`;
             } else {
                 displayTime = '12:00 ~ 12:15'; // 기본값
@@ -9684,18 +9672,12 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             const matchId = `${date}_${timeSlot}_R${match.round}_C${match.court}`;
             const ref = db.collection('matches').doc(matchId);
             
-            // 각 경기의 시간 계산 (시간당 8경기 = 7.5분 간격)
-            const minutesPerGame = 60 / 8; // 7.5분
-            const gameStartMinutes = (match.round - 1) * minutesPerGame;
-            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-            const gameStartHour = Math.floor(totalStartMinutes / 60);
-            const gameStartMin = totalStartMinutes % 60;
-            const totalEndMinutes = totalStartMinutes + minutesPerGame;
-            const gameEndHour = Math.floor(totalEndMinutes / 60);
-            const gameEndMin = totalEndMinutes % 60;
-            
-            const gameStartTime = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-            const gameEndTime = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+            // 각 경기의 시간 계산 (1시간에 8경기)
+            // 경기 번호에 따라 시작 시간만 계산 (분 단위 계산 없이)
+            const gameStartTime = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
+            // 종료 시간은 1시간 후
+            const endHour = (startHour + 1) % 24;
+            const gameEndTime = `${String(endHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
             
             batch.set(ref, {
                 matchId,
@@ -11347,29 +11329,22 @@ async function saveMatchScore(match, scoreA, scoreB) {
         console.log(`🎯 [승패 판정] 승자 팀: ${winners.map(p => p.userName || p.userId).join(', ')}`);
         console.log(`🎯 [승패 판정] 패자 팀: ${losers.map(p => p.userName || p.userId).join(', ')}`);
 
-        // 경기 시간 계산 (시간당 8경기 = 7.5분 간격)
+        // 경기 시간 계산 (1시간에 8경기)
         let gameStartTime, gameEndTime;
         if (match.gameStartTime && match.gameEndTime) {
             // 저장된 시간이 있으면 사용
             gameStartTime = match.gameStartTime;
             gameEndTime = match.gameEndTime;
         } else {
-            // 저장된 시간이 없으면 계산
-            const roundNum = match.roundNumber || match.round || 1;
+            // 저장된 시간이 없으면 계산 (분 단위 계산 없이)
             const timeSlotStart = match.timeSlot ? match.timeSlot.split('-')[0].split(':') : ['12', '00'];
             const startHour = parseInt(timeSlotStart[0]);
             const startMin = parseInt(timeSlotStart[1]);
-            const minutesPerGame = 60 / 8; // 7.5분
-            const gameStartMinutes = (roundNum - 1) * minutesPerGame;
-            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-            const gameStartHour = Math.floor(totalStartMinutes / 60);
-            const gameStartMin = totalStartMinutes % 60;
-            const totalEndMinutes = totalStartMinutes + minutesPerGame;
-            const gameEndHour = Math.floor(totalEndMinutes / 60);
-            const gameEndMin = totalEndMinutes % 60;
-            
-            gameStartTime = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-            gameEndTime = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+            // 1시간에 8경기
+            gameStartTime = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
+            // 종료 시간은 1시간 후
+            const endHour = (startHour + 1) % 24;
+            gameEndTime = `${String(endHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
         }
         
         // 기존 recordGameResult API 재사용 (teamId는 match 기반 가짜 아이디)
@@ -13336,19 +13311,13 @@ async function saveManualMatchSchedule() {
         
         // 각 경기를 matches 컬렉션에 저장 (점수 없이 대진표만 생성)
         for (const match of window.manualMatchMatches) {
-            // 각 경기의 시간 계산 (시간당 8경기 = 7.5분 간격)
-            const minutesPerGame = 60 / 8; // 7.5분
-            const gameStartMinutes = (match.roundNumber - 1) * minutesPerGame;
+            // 각 경기의 시간 계산 (1시간에 8경기, 분 단위 계산 없이)
             const [startHour, startMin] = startTime.split(':').map(Number);
-            const totalStartMinutes = startHour * 60 + startMin + gameStartMinutes;
-            const gameStartHour = Math.floor(totalStartMinutes / 60);
-            const gameStartMin = totalStartMinutes % 60;
-            const totalEndMinutes = totalStartMinutes + minutesPerGame;
-            const gameEndHour = Math.floor(totalEndMinutes / 60);
-            const gameEndMin = totalEndMinutes % 60;
-            
-            const gameStartTime = `${String(gameStartHour).padStart(2, '0')}:${String(gameStartMin).padStart(2, '0')}`;
-            const gameEndTime = `${String(gameEndHour).padStart(2, '0')}:${String(gameEndMin).padStart(2, '0')}`;
+            // 1시간에 8경기
+            const gameStartTime = `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
+            // 종료 시간은 1시간 후
+            const endHour = (startHour + 1) % 24;
+            const gameEndTime = `${String(endHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`;
             
             const matchData = {
                 date: date,
