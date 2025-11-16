@@ -10184,6 +10184,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }))
                     });
                     
+                    console.log(`✅ 경기 ${matchNum} 생성 완료: ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
+                    
                     // 코트 번호 증가 (다음 코트로)
                     currentCourt = (currentCourt % courtCount) + 1;
                     
@@ -10223,9 +10225,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     }))
                 });
                 
+                console.log(`✅ 경기 ${matchNum} 생성 완료 (fallback): ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
+                
                 currentCourt = (currentCourt % courtCount) + 1;
             }
         }
+        console.log(`🎯 총 ${schedule.length}경기 생성 완료`);
     } else {
         // 밸런스 모드와 그룹 모드: 기존 로직 (코트별로 경기 생성)
         // 각 코트별로 라운드별 경기 생성
