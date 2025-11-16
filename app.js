@@ -1680,7 +1680,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 테스트용 임시 사람 추가 버튼 (제거됨 - 각 시간대별로 개별 버튼 사용)
+    // 테스트용 임시 사람 추가 버튼 (임시로 다시 추가)
+    const addRandomPersonBtn = document.getElementById('add-random-person-btn');
+    if (addRandomPersonBtn) {
+        addRandomPersonBtn.addEventListener('click', async () => {
+            try {
+                const date = window.currentDate || new Date().toISOString().slice(0, 10);
+                const settings = await getSystemSettings();
+                
+                if (!settings || !settings.timeSlots || settings.timeSlots.length === 0) {
+                    showToast('시간대 설정을 불러올 수 없습니다.', 'error');
+                    return;
+                }
+                
+                // 모든 시간대에 한 명씩 무작위로 추가
+                let addedCount = 0;
+                for (const slot of settings.timeSlots) {
+                    const timeSlot = `${slot.start}-${slot.end}`;
+                    await addRandomReservation(date, timeSlot);
+                    addedCount++;
+                    // 약간의 지연을 주어 순차적으로 추가
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                showToast(`${addedCount}명의 무작위 예약자가 추가되었습니다.`, 'success');
+                
+                // 타임라인 새로고침
+                if (typeof loadReservationsTimeline === 'function') {
+                    await loadReservationsTimeline();
+                }
+            } catch (error) {
+                console.error('무작위 사람 추가 오류:', error);
+                showToast('무작위 사람 추가 중 오류가 발생했습니다.', 'error');
+            }
+        });
+    }
     
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
