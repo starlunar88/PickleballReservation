@@ -9888,6 +9888,9 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
     const allMatches = [];
     
     for (let r = 1; r <= rounds; r++) {
+        // 같은 라운드 내에서 이미 배정된 플레이어 추적 (1경기에서는 한명이 두번 배정될 수 없음)
+        const assignedPlayersInRound = new Set();
+        
         for (let c = 1; c <= courtCount; c++) {
             if (matchNumber >= totalMatches) break;
             
@@ -9905,53 +9908,84 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                 
                 // 다양한 조합 시도
                 let found = false;
-                const maxAttempts = Math.min(20, Math.max(upperGroup.length, lowerGroup.length));
+                const maxAttempts = Math.min(50, Math.max(upperGroup.length, lowerGroup.length) * 5); // 더 많은 시도
                 
                 for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
-                    // 상위 그룹에서 2명 선택
+                    // 상위 그룹에서 2명 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
                     let upperIndices = [];
-                    if (upperGroup.length >= 2) {
-                        const idx1 = (rotationBase + attempt) % upperGroup.length;
-                        const idx2 = (rotationBase + attempt + 1) % upperGroup.length;
-                        upperIndices = [idx1, idx2];
-                    } else if (upperGroup.length === 1) {
-                        upperIndices = [0];
+                    let upperCandidates = upperGroup.filter((p, idx) => !assignedPlayersInRound.has(p.userId));
+                    if (upperCandidates.length >= 2) {
+                        const baseIdx = (rotationBase + attempt) % upperCandidates.length;
+                        const nextIdx = (baseIdx + 1) % upperCandidates.length;
+                        // 원본 그룹에서의 인덱스 찾기
+                        const originalIdx1 = upperGroup.indexOf(upperCandidates[baseIdx]);
+                        const originalIdx2 = upperGroup.indexOf(upperCandidates[nextIdx]);
+                        if (originalIdx1 !== -1 && originalIdx2 !== -1 && originalIdx1 !== originalIdx2) {
+                            upperIndices = [originalIdx1, originalIdx2];
+                        } else if (originalIdx1 !== -1) {
+                            // 1명만 찾았으면 다른 인덱스 찾기
+                            for (let i = 0; i < upperCandidates.length && upperIndices.length < 2; i++) {
+                                const origIdx = upperGroup.indexOf(upperCandidates[i]);
+                                if (origIdx !== -1 && !upperIndices.includes(origIdx)) {
+                                    upperIndices.push(origIdx);
+                                }
+                            }
+                        }
+                    } else if (upperCandidates.length === 1) {
+                        upperIndices = [upperGroup.indexOf(upperCandidates[0])];
                     }
                     
-                    // 하위 그룹에서 2명 선택
+                    // 하위 그룹에서 2명 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
                     let lowerIndices = [];
-                    if (lowerGroup.length >= 2) {
-                        const idx1 = (rotationBase + attempt) % lowerGroup.length;
-                        const idx2 = (rotationBase + attempt + 1) % lowerGroup.length;
-                        lowerIndices = [idx1, idx2];
-                    } else if (lowerGroup.length === 1) {
-                        lowerIndices = [0];
+                    let lowerCandidates = lowerGroup.filter((p, idx) => !assignedPlayersInRound.has(p.userId));
+                    if (lowerCandidates.length >= 2) {
+                        const baseIdx = (rotationBase + attempt) % lowerCandidates.length;
+                        const nextIdx = (baseIdx + 1) % lowerCandidates.length;
+                        // 원본 그룹에서의 인덱스 찾기
+                        const originalIdx1 = lowerGroup.indexOf(lowerCandidates[baseIdx]);
+                        const originalIdx2 = lowerGroup.indexOf(lowerCandidates[nextIdx]);
+                        if (originalIdx1 !== -1 && originalIdx2 !== -1 && originalIdx1 !== originalIdx2) {
+                            lowerIndices = [originalIdx1, originalIdx2];
+                        } else if (originalIdx1 !== -1) {
+                            // 1명만 찾았으면 다른 인덱스 찾기
+                            for (let i = 0; i < lowerCandidates.length && lowerIndices.length < 2; i++) {
+                                const origIdx = lowerGroup.indexOf(lowerCandidates[i]);
+                                if (origIdx !== -1 && !lowerIndices.includes(origIdx)) {
+                                    lowerIndices.push(origIdx);
+                                }
+                            }
+                        }
+                    } else if (lowerCandidates.length === 1) {
+                        lowerIndices = [lowerGroup.indexOf(lowerCandidates[0])];
                     }
                     
                     // 4명이 모이지 않으면 다른 방식 시도
                     if (upperIndices.length + lowerIndices.length < 4) {
-                        // 부족한 인원은 다른 그룹에서 보충
-                        if (upperGroup.length > upperIndices.length) {
-                            for (let i = 0; i < upperGroup.length && upperIndices.length < 2; i++) {
-                                if (!upperIndices.includes(i)) {
-                                    upperIndices.push(i);
+                        // 부족한 인원은 다른 그룹에서 보충 (같은 라운드에서 이미 배정된 플레이어 제외)
+                        if (upperCandidates.length > upperIndices.length) {
+                            for (let i = 0; i < upperCandidates.length && upperIndices.length < 2; i++) {
+                                const origIdx = upperGroup.indexOf(upperCandidates[i]);
+                                if (origIdx !== -1 && !upperIndices.includes(origIdx)) {
+                                    upperIndices.push(origIdx);
                                 }
                             }
                         }
-                        if (lowerGroup.length > lowerIndices.length) {
-                            for (let i = 0; i < lowerGroup.length && lowerIndices.length < 2; i++) {
-                                if (!lowerIndices.includes(i)) {
-                                    lowerIndices.push(i);
+                        if (lowerCandidates.length > lowerIndices.length) {
+                            for (let i = 0; i < lowerCandidates.length && lowerIndices.length < 2; i++) {
+                                const origIdx = lowerGroup.indexOf(lowerCandidates[i]);
+                                if (origIdx !== -1 && !lowerIndices.includes(origIdx)) {
+                                    lowerIndices.push(origIdx);
                                 }
                             }
                         }
                     }
                     
-                    // 플레이어 선택
-                    selectedPlayers = [
-                        ...upperIndices.map(idx => upperGroup[idx]),
-                        ...lowerIndices.map(idx => lowerGroup[idx])
-                    ].slice(0, 4);
+                    // 플레이어 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
+                    const candidatePlayers = [
+                        ...upperIndices.map(idx => upperGroup[idx]).filter(p => !assignedPlayersInRound.has(p.userId)),
+                        ...lowerIndices.map(idx => lowerGroup[idx]).filter(p => !assignedPlayersInRound.has(p.userId))
+                    ];
+                    selectedPlayers = candidatePlayers.slice(0, 4);
                     
                     if (selectedPlayers.length === 4) {
                         // 밸런스 조합: [최강, 최약] vs [차강, 차약]
@@ -10034,27 +10068,32 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                     found = true;
                 }
             } else if (groupCount === 3) {
-                // 3그룹 방식: 각 그룹에서 골고루 선택
+                // 3그룹 방식: 각 그룹에서 골고루 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
                 const rotationBase = ((r - 1) * courtCount + (c - 1)) * 3;
                 
                 // 각 그룹에서 1-2명씩 선택하여 4명 구성
                 const selectedFromGroups = [];
                 for (let g = 0; g < groupCount; g++) {
-                    if (groups[g].length > 0) {
-                        const idx = (rotationBase + g + c) % groups[g].length;
-                        selectedFromGroups.push(groups[g][idx]);
+                    // 같은 라운드에서 이미 배정된 플레이어 제외
+                    const availablePlayers = groups[g].filter(p => !assignedPlayersInRound.has(p.userId));
+                    if (availablePlayers.length > 0) {
+                        const idx = (rotationBase + g + c) % availablePlayers.length;
+                        selectedFromGroups.push(availablePlayers[idx]);
                     }
                 }
                 
-                // 부족한 인원은 다른 그룹에서 보충
-                while (selectedFromGroups.length < 4) {
+                // 부족한 인원은 다른 그룹에서 보충 (같은 라운드에서 이미 배정된 플레이어 제외)
+                let attempts = 0;
+                while (selectedFromGroups.length < 4 && attempts < 50) {
+                    attempts++;
                     for (let g = 0; g < groupCount && selectedFromGroups.length < 4; g++) {
-                        if (groups[g].length > 0) {
-                            const idx = (rotationBase + selectedFromGroups.length) % groups[g].length;
-                            const player = groups[g][idx];
-                            if (!selectedFromGroups.find(p => p.userId === player.userId)) {
-                                selectedFromGroups.push(player);
-                            }
+                        const availablePlayers = groups[g].filter(p => 
+                            !assignedPlayersInRound.has(p.userId) && 
+                            !selectedFromGroups.find(sp => sp.userId === p.userId)
+                        );
+                        if (availablePlayers.length > 0) {
+                            const idx = (rotationBase + selectedFromGroups.length + attempts) % availablePlayers.length;
+                            selectedFromGroups.push(availablePlayers[idx]);
                         }
                     }
                     if (selectedFromGroups.length < 4 && selectedFromGroups.length === selectedFromGroups.filter((p, i, arr) => arr.findIndex(p2 => p2.userId === p.userId) === i).length) {
@@ -10073,8 +10112,19 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
             
             // 경기 생성 (일단 임시 코트로 저장)
             if (selectedTeamA.length === 2 && selectedTeamB.length === 2) {
-                // 개인별 매칭 이력 업데이트
+                // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
                 const allPlayerIds = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
+                const hasDuplicate = allPlayerIds.some(id => assignedPlayersInRound.has(id));
+                
+                if (hasDuplicate) {
+                    // 중복이 있으면 이 경기는 건너뛰기
+                    continue;
+                }
+                
+                // 같은 라운드 내에서 배정된 플레이어로 표시
+                allPlayerIds.forEach(id => assignedPlayersInRound.add(id));
+                
+                // 개인별 매칭 이력 업데이트
                 for (let i = 0; i < allPlayerIds.length; i++) {
                     for (let j = i + 1; j < allPlayerIds.length; j++) {
                         const player1 = allPlayerIds[i];
@@ -10744,10 +10794,39 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     // 충분한 후보가 있으면 랜덤하게 섞어서 다른 조합 시도
                     const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
                     
-                    // 이전 경기와 다른 조합 찾기 (최대 50번 시도 - 더 많은 조합 시도)
+                    // 이전 경기와 다른 조합 찾기 (그룹 모드에서는 더 많은 조합 시도)
                     let found = false;
-                    for (let attempt = 0; attempt < 50 && attempt < shuffled.length - 3 && !found; attempt++) {
-                        const candidate = shuffled.slice(attempt, attempt + 4);
+                    const maxAttempts = teamMode === 'grouped' ? 
+                        Math.min(100, Math.max(50, shuffled.length * 10)) : // 그룹 모드: 더 많은 시도
+                        Math.min(50, shuffled.length - 3);
+                    for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
+                        // 그룹 모드: 더 다양한 조합을 시도하기 위해 인덱스를 다양하게 선택
+                        let candidate;
+                        if (teamMode === 'grouped' && shuffled.length >= 4) {
+                            // 그룹 모드: 다양한 인덱스 조합 시도
+                            const indices = [];
+                            while (indices.length < 4) {
+                                const idx = (attempt * 7 + indices.length * 3) % shuffled.length;
+                                if (!indices.includes(idx)) {
+                                    indices.push(idx);
+                                } else {
+                                    // 중복이면 다음 인덱스 시도
+                                    const nextIdx = (idx + 1) % shuffled.length;
+                                    if (!indices.includes(nextIdx)) {
+                                        indices.push(nextIdx);
+                                    } else {
+                                        // 여전히 중복이면 랜덤 선택
+                                        const randomIdx = Math.floor(Math.random() * shuffled.length);
+                                        if (!indices.includes(randomIdx)) {
+                                            indices.push(randomIdx);
+                                        }
+                                    }
+                                }
+                            }
+                            candidate = indices.map(idx => shuffled[idx]);
+                        } else {
+                            candidate = shuffled.slice(attempt, attempt + 4);
+                        }
                         
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
@@ -10831,19 +10910,22 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                                 
                                 // 개인별 매칭 이력 체크: 같은 팀원/상대팀원과 반복 매칭되는지 확인
+                                // 그룹 모드에서는 같은 사람과 팀을 하는 것을 더 엄격하게 제한
                                 for (const playerId of config.teamA) {
                                     const history = playerPairHistory.get(playerId);
                                     if (history) {
-                                        // 같은 팀원과 반복되는지
+                                        // 같은 팀원과 반복되는지 (그룹 모드에서는 더 강한 패널티)
                                         for (const teammateId of config.teamA) {
                                             if (teammateId !== playerId && history.has(teammateId)) {
-                                                duplicateCount += 2;
+                                                // 그룹 모드: 같은 팀원과 반복은 큰 패널티 (완전 제외)
+                                                duplicateCount += teamMode === 'grouped' ? 10 : 2;
                                             }
                                         }
                                         // 상대팀원과 반복되는지
                                         for (const opponentId of config.teamB) {
                                             if (history.has(opponentId)) {
-                                                duplicateCount += 1;
+                                                // 그룹 모드: 상대팀원과 반복도 더 강한 패널티
+                                                duplicateCount += teamMode === 'grouped' ? 5 : 1;
                                             }
                                         }
                                     }
@@ -10851,16 +10933,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 for (const playerId of config.teamB) {
                                     const history = playerPairHistory.get(playerId);
                                     if (history) {
-                                        // 같은 팀원과 반복되는지
+                                        // 같은 팀원과 반복되는지 (그룹 모드에서는 더 강한 패널티)
                                         for (const teammateId of config.teamB) {
                                             if (teammateId !== playerId && history.has(teammateId)) {
-                                                duplicateCount += 2;
+                                                // 그룹 모드: 같은 팀원과 반복은 큰 패널티 (완전 제외)
+                                                duplicateCount += teamMode === 'grouped' ? 10 : 2;
                                             }
                                         }
                                         // 상대팀원과 반복되는지
                                         for (const opponentId of config.teamA) {
                                             if (history.has(opponentId)) {
-                                                duplicateCount += 1;
+                                                // 그룹 모드: 상대팀원과 반복도 더 강한 패널티
+                                                duplicateCount += teamMode === 'grouped' ? 5 : 1;
                                             }
                                         }
                                     }
