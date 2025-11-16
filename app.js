@@ -9927,11 +9927,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         const playerPairHistory = new Map(); // 개인별 매칭 이력: userId -> Set<matchedUserId>
         
         // 전체 경기 생성 (코트는 동적으로 배정)
+        // 1시간에 8경기 생성 (플레이어 수와 무관하게)
         let currentCourt = 1;
-        const totalMatches = Math.floor(shuffledAllPlayers.length / 4) * rounds;
+        const totalMatches = rounds; // 총 경기 수는 rounds (8경기)
         
-        for (let r = 1; r <= rounds; r++) {
-            // 현재 라운드에서 경기할 수 있는 최대 경기 수
+        // 총 8경기 생성
+        for (let matchNum = 1; matchNum <= totalMatches; matchNum++) {
+            // 현재 경기에서 사용할 수 있는 플레이어 (모든 플레이어 사용 가능)
             const availablePlayers = [...shuffledAllPlayers];
             
             // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
@@ -9949,26 +9951,22 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 return Math.random() - 0.5;
             });
             
-            // 현재 라운드에서 생성 가능한 경기 수
-            const matchesThisRound = Math.floor(availablePlayers.length / 4);
+            // 현재 경기에서 사용 가능한 플레이어 필터링 (이미 선택된 플레이어 제외하지 않음 - 재사용 가능)
+            const availableThisMatch = availablePlayers;
             
-            // 현재 라운드에서 이미 선택된 플레이어 추적
-            const selectedPlayersThisRound = new Set();
+            if (availableThisMatch.length < 4) {
+                // 4명이 안 되면 경기 생성 중단
+                break;
+            }
             
-            for (let m = 0; m < matchesThisRound; m++) {
-                // 현재 라운드에서 아직 선택되지 않은 플레이어만 필터링
-                const availableThisMatch = availablePlayers.filter(p => !selectedPlayersThisRound.has(p.userId));
-                
-                if (availableThisMatch.length < 4) {
-                    // 4명이 안 되면 경기 생성 중단
-                    break;
-                }
-                
-                // 참여 횟수가 적은 플레이어들을 우선 선택
-                const minCount = Math.min(...availableThisMatch.map(p => playerPlayCount[p.userId] || 0));
-                const candidatesWithMinCount = availableThisMatch.filter(p => 
-                    (playerPlayCount[p.userId] || 0) === minCount && !selectedPlayersThisRound.has(p.userId)
-                );
+            // 라운드 번호 계산 (1~8)
+            const r = matchNum;
+            
+            // 참여 횟수가 적은 플레이어들을 우선 선택
+            const minCount = Math.min(...availableThisMatch.map(p => playerPlayCount[p.userId] || 0));
+            const candidatesWithMinCount = availableThisMatch.filter(p => 
+                (playerPlayCount[p.userId] || 0) === minCount
+            );
                 
                 // 밸런스 모드에서는 더 다양하게 선택하기 위해 여러 조합 시도
                 let fourPlayers = null;
@@ -10062,16 +10060,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 }
                 
                 // 4명이 안 되면 상위 플레이어 추가
-                if (fourPlayers.length < 4) {
+                if (fourPlayers && fourPlayers.length < 4) {
                     const needed = 4 - fourPlayers.length;
                     const additionalPlayers = availableThisMatch
-                        .filter(p => (playerPlayCount[p.userId] || 0) > minCount && !selectedPlayersThisRound.has(p.userId))
+                        .filter(p => (playerPlayCount[p.userId] || 0) > minCount)
                         .sort(() => Math.random() - 0.5)
                         .slice(0, needed);
                     fourPlayers = [...fourPlayers, ...additionalPlayers].slice(0, 4);
                 }
                 
-                if (fourPlayers.length < 4) {
+                if (!fourPlayers || fourPlayers.length < 4) {
                     break;
                 }
                 
@@ -10176,11 +10174,6 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 코트 번호 증가 (다음 코트로)
                         currentCourt = (currentCourt % courtCount) + 1;
                         
-                        // 선택된 플레이어들을 현재 라운드에서 선택된 것으로 표시
-                        fourPlayers.forEach(player => {
-                            selectedPlayersThisRound.add(player.userId);
-                        });
-                        
                         found = true;
                         break;
                     }
@@ -10218,13 +10211,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     });
                     
                     currentCourt = (currentCourt % courtCount) + 1;
-                    
-                    // 선택된 플레이어들을 현재 라운드에서 선택된 것으로 표시
-                    fourPlayers.forEach(player => {
-                        selectedPlayersThisRound.add(player.userId);
-                    });
                 }
-            }
         }
     } else {
         // 밸런스 모드와 그룹 모드: 기존 로직 (코트별로 경기 생성)
