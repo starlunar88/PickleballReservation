@@ -11247,8 +11247,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 밸런스 모드와 그룹 모드에서 최적 조합 선택
                         if ((teamMode === 'balanced' || teamMode === 'grouped') && bestConfig) {
                             if (teamMode === 'grouped') {
-                                // 그룹 모드: 완전 중복(-10)과 같은 팀 조합 반복(-5)은 완전히 제외, 개인별 반복도 제외
+                                // 그룹 모드: 완전 중복(-10)과 같은 팀 조합 반복(-5)은 완전히 제외, 같은 팀원 반복(-10)은 완전 제외
                                 // bestScore >= 0: 완전히 새로운 조합만 허용
+                                // bestScore < 0: 같은 팀원 반복(-10) 또는 완전 중복(-10) 또는 같은 팀 조합 반복(-5) (제외)
                                 if (bestScore >= 0 || previousMatchConfigs.length === 0) {
                                     fourPlayers = candidate;
                                     selectedTeamA = bestConfig.teamA.map(id => candidate.find(p => p.userId === id));
