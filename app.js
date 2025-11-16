@@ -10071,42 +10071,152 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                 // 3그룹 방식: 각 그룹에서 골고루 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
                 const rotationBase = ((r - 1) * courtCount + (c - 1)) * 3;
                 
-                // 각 그룹에서 1-2명씩 선택하여 4명 구성
-                const selectedFromGroups = [];
-                for (let g = 0; g < groupCount; g++) {
-                    // 같은 라운드에서 이미 배정된 플레이어 제외
-                    const availablePlayers = groups[g].filter(p => !assignedPlayersInRound.has(p.userId));
-                    if (availablePlayers.length > 0) {
-                        const idx = (rotationBase + g + c) % availablePlayers.length;
-                        selectedFromGroups.push(availablePlayers[idx]);
-                    }
-                }
+                // 다양한 조합 시도
+                let found = false;
+                let selectedPlayers = [];
+                const maxAttempts = 50;
                 
-                // 부족한 인원은 다른 그룹에서 보충 (같은 라운드에서 이미 배정된 플레이어 제외)
-                let attempts = 0;
-                while (selectedFromGroups.length < 4 && attempts < 50) {
-                    attempts++;
-                    for (let g = 0; g < groupCount && selectedFromGroups.length < 4; g++) {
-                        const availablePlayers = groups[g].filter(p => 
-                            !assignedPlayersInRound.has(p.userId) && 
-                            !selectedFromGroups.find(sp => sp.userId === p.userId)
-                        );
+                for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
+                    // 각 그룹에서 1-2명씩 선택하여 4명 구성
+                    const selectedFromGroups = [];
+                    for (let g = 0; g < groupCount; g++) {
+                        // 같은 라운드에서 이미 배정된 플레이어 제외
+                        const availablePlayers = groups[g].filter(p => !assignedPlayersInRound.has(p.userId));
                         if (availablePlayers.length > 0) {
-                            const idx = (rotationBase + selectedFromGroups.length + attempts) % availablePlayers.length;
+                            const idx = (rotationBase + g + c + attempt) % availablePlayers.length;
                             selectedFromGroups.push(availablePlayers[idx]);
                         }
                     }
-                    if (selectedFromGroups.length < 4 && selectedFromGroups.length === selectedFromGroups.filter((p, i, arr) => arr.findIndex(p2 => p2.userId === p.userId) === i).length) {
-                        break; // 무한 루프 방지
+                    
+                    // 부족한 인원은 다른 그룹에서 보충 (같은 라운드에서 이미 배정된 플레이어 제외)
+                    let subAttempts = 0;
+                    while (selectedFromGroups.length < 4 && subAttempts < 50) {
+                        subAttempts++;
+                        for (let g = 0; g < groupCount && selectedFromGroups.length < 4; g++) {
+                            const availablePlayers = groups[g].filter(p => 
+                                !assignedPlayersInRound.has(p.userId) && 
+                                !selectedFromGroups.find(sp => sp.userId === p.userId)
+                            );
+                            if (availablePlayers.length > 0) {
+                                const idx = (rotationBase + selectedFromGroups.length + attempt + subAttempts) % availablePlayers.length;
+                                selectedFromGroups.push(availablePlayers[idx]);
+                            }
+                        }
+                        if (selectedFromGroups.length < 4 && selectedFromGroups.length === selectedFromGroups.filter((p, i, arr) => arr.findIndex(p2 => p2.userId === p.userId) === i).length) {
+                            break; // 무한 루프 방지
+                        }
+                    }
+                    
+                    const candidatePlayers = selectedFromGroups.slice(0, 4);
+                    
+                    if (candidatePlayers.length === 4) {
+                        // 밸런스 조합: [최강, 최약] vs [차강, 차약]
+                        const sorted = [...candidatePlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        const teamA = [sorted[0], sorted[3]]; // 최강, 최약
+                        const teamB = [sorted[1], sorted[2]]; // 차강, 차약
+                        
+                        // 중복 체크
+                        const teamAIds = teamA.map(p => p.userId).sort().join(',');
+                        const teamBIds = teamB.map(p => p.userId).sort().join(',');
+                        const combinationKey1 = `${teamAIds}|${teamBIds}`;
+                        const combinationKey2 = `${teamBIds}|${teamAIds}`;
+                        
+                        // 개인별 매칭 이력 체크: 같은 팀원과 반복되는지 확인
+                        let hasRepeatedPair = false;
+                        const allPlayerIds = [...teamA.map(p => p.userId), ...teamB.map(p => p.userId)];
+                        for (let i = 0; i < allPlayerIds.length; i++) {
+                            for (let j = i + 1; j < allPlayerIds.length; j++) {
+                                const player1 = allPlayerIds[i];
+                                const player2 = allPlayerIds[j];
+                                if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
+                                    // 같은 팀원과 반복되는지 확인
+                                    const isTeammate = (teamA.some(p => p.userId === player1) && teamA.some(p => p.userId === player2)) || 
+                                                       (teamB.some(p => p.userId === player1) && teamB.some(p => p.userId === player2));
+                                    if (isTeammate) {
+                                        // 같은 팀원과 반복은 큰 패널티
+                                        hasRepeatedPair = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (hasRepeatedPair) break;
+                        }
+                        
+                        if (!usedCombinations.has(combinationKey1) && 
+                            !usedCombinations.has(combinationKey2) && 
+                            !hasRepeatedPair) {
+                            selectedPlayers = candidatePlayers;
+                            selectedTeamA = teamA;
+                            selectedTeamB = teamB;
+                            usedCombinations.add(combinationKey1);
+                            usedCombinations.add(combinationKey2);
+                            found = true;
+                        } else {
+                            // 중복이 있어도 밸런스 조합은 유지하되 다른 조합 시도
+                            // [최강, 차약] vs [차강, 최약]
+                            const teamA2 = [sorted[0], sorted[2]];
+                            const teamB2 = [sorted[1], sorted[3]];
+                            const teamAIds2 = teamA2.map(p => p.userId).sort().join(',');
+                            const teamBIds2 = teamB2.map(p => p.userId).sort().join(',');
+                            const combinationKey3 = `${teamAIds2}|${teamBIds2}`;
+                            const combinationKey4 = `${teamBIds2}|${teamAIds2}`;
+                            
+                            // 개인별 매칭 이력 다시 체크
+                            hasRepeatedPair = false;
+                            const allPlayerIds2 = [...teamA2.map(p => p.userId), ...teamB2.map(p => p.userId)];
+                            for (let i = 0; i < allPlayerIds2.length; i++) {
+                                for (let j = i + 1; j < allPlayerIds2.length; j++) {
+                                    const player1 = allPlayerIds2[i];
+                                    const player2 = allPlayerIds2[j];
+                                    if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
+                                        // 같은 팀원과 반복되는지 확인
+                                        const isTeammate = (teamA2.some(p => p.userId === player1) && teamA2.some(p => p.userId === player2)) || 
+                                                           (teamB2.some(p => p.userId === player1) && teamB2.some(p => p.userId === player2));
+                                        if (isTeammate) {
+                                            hasRepeatedPair = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (hasRepeatedPair) break;
+                            }
+                            
+                            if (!usedCombinations.has(combinationKey3) && 
+                                !usedCombinations.has(combinationKey4) && 
+                                !hasRepeatedPair) {
+                                selectedPlayers = candidatePlayers;
+                                selectedTeamA = teamA2;
+                                selectedTeamB = teamB2;
+                                usedCombinations.add(combinationKey3);
+                                usedCombinations.add(combinationKey4);
+                                found = true;
+                            }
+                        }
                     }
                 }
                 
-                selectedPlayers = selectedFromGroups.slice(0, 4);
-                
-                if (selectedPlayers.length === 4) {
-                    const sorted = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
-                    selectedTeamA = [sorted[0], sorted[3]];
-                    selectedTeamB = [sorted[1], sorted[2]];
+                // 여전히 찾지 못했으면 마지막 시도한 조합 사용 (중복 허용)
+                if (!found) {
+                    // 마지막 시도에서 선택된 플레이어가 있으면 사용
+                    if (selectedPlayers.length === 4) {
+                        const sorted = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        selectedTeamA = [sorted[0], sorted[3]];
+                        selectedTeamB = [sorted[1], sorted[2]];
+                        found = true;
+                    } else {
+                        // 플레이어가 부족하면 사용 가능한 플레이어로 구성 시도
+                        const allAvailable = [];
+                        for (let g = 0; g < groupCount; g++) {
+                            const availablePlayers = groups[g].filter(p => !assignedPlayersInRound.has(p.userId));
+                            allAvailable.push(...availablePlayers);
+                        }
+                        if (allAvailable.length >= 4) {
+                            const sorted = [...allAvailable.slice(0, 4)].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                            selectedTeamA = [sorted[0], sorted[3]];
+                            selectedTeamB = [sorted[1], sorted[2]];
+                            found = true;
+                        }
+                    }
                 }
             }
             
