@@ -11256,12 +11256,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     found = true;
                                 }
                             } else {
-                                // 밸런스 모드: 완전 중복(-10)과 같은 팀 조합 반복(-5)은 제외, 개인별 반복만 허용
-                                // bestScore >= 0: 완전히 새로운 조합
-                                // bestScore >= -2: 같은 팀원 반복만 있는 경우 (허용)
-                                // bestScore >= -4: 상대팀원 반복만 있는 경우 (허용)
-                                // bestScore < -4: 같은 팀 조합 반복 또는 완전 중복 (제외)
-                                if (bestScore >= -4 || previousMatchConfigs.length === 0) {
+                            // 밸런스 모드: 완전 중복(-10)과 같은 팀 조합 반복(-5)은 제외, 같은 팀원 반복은 완전 제외
+                            // bestScore >= 0: 완전히 새로운 조합
+                            // bestScore >= -4: 같은 팀 조합 반복만 있는 경우 (허용)
+                            // bestScore < -4: 같은 팀원 반복(-10) 또는 완전 중복 (제외)
+                            if (bestScore >= -4 || previousMatchConfigs.length === 0) {
                                     fourPlayers = candidate;
                                     selectedTeamA = bestConfig.teamA.map(id => candidate.find(p => p.userId === id));
                                     selectedTeamB = bestConfig.teamB.map(id => candidate.find(p => p.userId === id));
