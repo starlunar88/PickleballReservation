@@ -9842,6 +9842,372 @@ function createBalancedTeamConfigs(candidate) {
     return uniqueConfigs.map(config => ({ teamA: config.teamA, teamB: config.teamB }));
 }
 
+// 그룹 기반 밸런스 로테이션 스케줄 생성 함수
+// DUPR 점수 순으로 정렬 후 상위/하위 그룹으로 나누어 밸런스 유지하며 로테이션
+function createBalancedRotationSchedule(players, courtCount, rounds) {
+    // 플레이어를 DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
+    const sortedPlayers = [...players].sort((a, b) => {
+        const duprA = b.dupr || 0;
+        const duprB = a.dupr || 0;
+        const diff = duprA - duprB;
+        // DUPR 2.0~3.0 범위에 최적화: 0.15 이내 차이는 같은 점수 범위로 간주
+        if (Math.abs(diff) < 0.15) {
+            return Math.random() - 0.5;
+        }
+        return diff;
+    });
+    
+    const schedule = [];
+    const totalPlayers = sortedPlayers.length;
+    const totalMatches = rounds * courtCount;
+    
+    // 그룹 수 결정: 플레이어 수에 따라 2그룹 또는 3그룹
+    let groupCount = 2;
+    if (totalPlayers >= 12) {
+        groupCount = 3; // 12명 이상이면 3그룹
+    }
+    
+    // 그룹으로 나누기
+    const groupSize = Math.floor(totalPlayers / groupCount);
+    const groups = [];
+    for (let g = 0; g < groupCount; g++) {
+        const startIdx = g * groupSize;
+        const endIdx = (g === groupCount - 1) ? totalPlayers : (g + 1) * groupSize;
+        groups.push(sortedPlayers.slice(startIdx, endIdx));
+    }
+    
+    // 중복 방지를 위한 조합 추적
+    const usedCombinations = new Set();
+    const playerPairHistory = new Map(); // 개인별 매칭 이력
+    const playerCourtHistory = new Map(); // 플레이어별 코트 사용 이력: userId -> Map<court, count>
+    
+    // 경기 생성
+    let matchNumber = 0;
+    
+    // 모든 경기를 먼저 생성한 후 코트 배정
+    const allMatches = [];
+    
+    for (let r = 1; r <= rounds; r++) {
+        for (let c = 1; c <= courtCount; c++) {
+            if (matchNumber >= totalMatches) break;
+            
+            let selectedPlayers = [];
+            let selectedTeamA = [];
+            let selectedTeamB = [];
+            
+            if (groupCount === 2) {
+                // 2그룹 방식: 상위 그룹과 하위 그룹에서 각각 2명씩 선택
+                const upperGroup = groups[0];
+                const lowerGroup = groups[1];
+                
+                // 로테이션 인덱스 계산 (라운드와 코트에 따라 변화)
+                const rotationBase = ((r - 1) * courtCount + (c - 1)) * 2;
+                
+                // 다양한 조합 시도
+                let found = false;
+                const maxAttempts = Math.min(20, Math.max(upperGroup.length, lowerGroup.length));
+                
+                for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
+                    // 상위 그룹에서 2명 선택
+                    let upperIndices = [];
+                    if (upperGroup.length >= 2) {
+                        const idx1 = (rotationBase + attempt) % upperGroup.length;
+                        const idx2 = (rotationBase + attempt + 1) % upperGroup.length;
+                        upperIndices = [idx1, idx2];
+                    } else if (upperGroup.length === 1) {
+                        upperIndices = [0];
+                    }
+                    
+                    // 하위 그룹에서 2명 선택
+                    let lowerIndices = [];
+                    if (lowerGroup.length >= 2) {
+                        const idx1 = (rotationBase + attempt) % lowerGroup.length;
+                        const idx2 = (rotationBase + attempt + 1) % lowerGroup.length;
+                        lowerIndices = [idx1, idx2];
+                    } else if (lowerGroup.length === 1) {
+                        lowerIndices = [0];
+                    }
+                    
+                    // 4명이 모이지 않으면 다른 방식 시도
+                    if (upperIndices.length + lowerIndices.length < 4) {
+                        // 부족한 인원은 다른 그룹에서 보충
+                        if (upperGroup.length > upperIndices.length) {
+                            for (let i = 0; i < upperGroup.length && upperIndices.length < 2; i++) {
+                                if (!upperIndices.includes(i)) {
+                                    upperIndices.push(i);
+                                }
+                            }
+                        }
+                        if (lowerGroup.length > lowerIndices.length) {
+                            for (let i = 0; i < lowerGroup.length && lowerIndices.length < 2; i++) {
+                                if (!lowerIndices.includes(i)) {
+                                    lowerIndices.push(i);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 플레이어 선택
+                    selectedPlayers = [
+                        ...upperIndices.map(idx => upperGroup[idx]),
+                        ...lowerIndices.map(idx => lowerGroup[idx])
+                    ].slice(0, 4);
+                    
+                    if (selectedPlayers.length === 4) {
+                        // 밸런스 조합: [최강, 최약] vs [차강, 차약]
+                        const sorted = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                        const teamA = [sorted[0], sorted[3]]; // 최강, 최약
+                        const teamB = [sorted[1], sorted[2]]; // 차강, 차약
+                        
+                        // 중복 체크
+                        const teamAIds = teamA.map(p => p.userId).sort().join(',');
+                        const teamBIds = teamB.map(p => p.userId).sort().join(',');
+                        const combinationKey1 = `${teamAIds}|${teamBIds}`;
+                        const combinationKey2 = `${teamBIds}|${teamAIds}`;
+                        
+                        // 개인별 매칭 이력 체크
+                        let hasRepeatedPair = false;
+                        const allPlayerIds = [...teamA.map(p => p.userId), ...teamB.map(p => p.userId)];
+                        for (let i = 0; i < allPlayerIds.length; i++) {
+                            for (let j = i + 1; j < allPlayerIds.length; j++) {
+                                const player1 = allPlayerIds[i];
+                                const player2 = allPlayerIds[j];
+                                if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
+                                    hasRepeatedPair = true;
+                                    break;
+                                }
+                            }
+                            if (hasRepeatedPair) break;
+                        }
+                        
+                        if (!usedCombinations.has(combinationKey1) && 
+                            !usedCombinations.has(combinationKey2) && 
+                            !hasRepeatedPair) {
+                            selectedTeamA = teamA;
+                            selectedTeamB = teamB;
+                            usedCombinations.add(combinationKey1);
+                            usedCombinations.add(combinationKey2);
+                            found = true;
+                        } else {
+                            // 중복이 있어도 밸런스 조합은 유지하되 다른 조합 시도
+                            // [최강, 차약] vs [차강, 최약]
+                            const teamA2 = [sorted[0], sorted[2]];
+                            const teamB2 = [sorted[1], sorted[3]];
+                            const teamAIds2 = teamA2.map(p => p.userId).sort().join(',');
+                            const teamBIds2 = teamB2.map(p => p.userId).sort().join(',');
+                            const combinationKey3 = `${teamAIds2}|${teamBIds2}`;
+                            const combinationKey4 = `${teamBIds2}|${teamAIds2}`;
+                            
+                            // 개인별 매칭 이력 다시 체크
+                            hasRepeatedPair = false;
+                            const allPlayerIds2 = [...teamA2.map(p => p.userId), ...teamB2.map(p => p.userId)];
+                            for (let i = 0; i < allPlayerIds2.length; i++) {
+                                for (let j = i + 1; j < allPlayerIds2.length; j++) {
+                                    const player1 = allPlayerIds2[i];
+                                    const player2 = allPlayerIds2[j];
+                                    if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
+                                        hasRepeatedPair = true;
+                                        break;
+                                    }
+                                }
+                                if (hasRepeatedPair) break;
+                            }
+                            
+                            if (!usedCombinations.has(combinationKey3) && 
+                                !usedCombinations.has(combinationKey4) && 
+                                !hasRepeatedPair) {
+                                selectedTeamA = teamA2;
+                                selectedTeamB = teamB2;
+                                usedCombinations.add(combinationKey3);
+                                usedCombinations.add(combinationKey4);
+                                found = true;
+                            }
+                        }
+                    }
+                }
+                
+                // 여전히 찾지 못했으면 밸런스 조합 사용 (중복 허용)
+                if (!found && selectedPlayers.length === 4) {
+                    const sorted = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                    selectedTeamA = [sorted[0], sorted[3]];
+                    selectedTeamB = [sorted[1], sorted[2]];
+                    found = true;
+                }
+            } else if (groupCount === 3) {
+                // 3그룹 방식: 각 그룹에서 골고루 선택
+                const rotationBase = ((r - 1) * courtCount + (c - 1)) * 3;
+                
+                // 각 그룹에서 1-2명씩 선택하여 4명 구성
+                const selectedFromGroups = [];
+                for (let g = 0; g < groupCount; g++) {
+                    if (groups[g].length > 0) {
+                        const idx = (rotationBase + g + c) % groups[g].length;
+                        selectedFromGroups.push(groups[g][idx]);
+                    }
+                }
+                
+                // 부족한 인원은 다른 그룹에서 보충
+                while (selectedFromGroups.length < 4) {
+                    for (let g = 0; g < groupCount && selectedFromGroups.length < 4; g++) {
+                        if (groups[g].length > 0) {
+                            const idx = (rotationBase + selectedFromGroups.length) % groups[g].length;
+                            const player = groups[g][idx];
+                            if (!selectedFromGroups.find(p => p.userId === player.userId)) {
+                                selectedFromGroups.push(player);
+                            }
+                        }
+                    }
+                    if (selectedFromGroups.length < 4 && selectedFromGroups.length === selectedFromGroups.filter((p, i, arr) => arr.findIndex(p2 => p2.userId === p.userId) === i).length) {
+                        break; // 무한 루프 방지
+                    }
+                }
+                
+                selectedPlayers = selectedFromGroups.slice(0, 4);
+                
+                if (selectedPlayers.length === 4) {
+                    const sorted = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+                    selectedTeamA = [sorted[0], sorted[3]];
+                    selectedTeamB = [sorted[1], sorted[2]];
+                }
+            }
+            
+            // 경기 생성 (일단 임시 코트로 저장)
+            if (selectedTeamA.length === 2 && selectedTeamB.length === 2) {
+                // 개인별 매칭 이력 업데이트
+                const allPlayerIds = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
+                for (let i = 0; i < allPlayerIds.length; i++) {
+                    for (let j = i + 1; j < allPlayerIds.length; j++) {
+                        const player1 = allPlayerIds[i];
+                        const player2 = allPlayerIds[j];
+                        if (!playerPairHistory.has(player1)) {
+                            playerPairHistory.set(player1, new Set());
+                        }
+                        if (!playerPairHistory.has(player2)) {
+                            playerPairHistory.set(player2, new Set());
+                        }
+                        playerPairHistory.get(player1).add(player2);
+                        playerPairHistory.get(player2).add(player1);
+                    }
+                }
+                
+                allMatches.push({
+                    round: r,
+                    tempCourt: c, // 임시 코트 (나중에 재배정)
+                    teamA: selectedTeamA.map(player => ({
+                        userId: player.userId,
+                        userName: player.userName,
+                        internalRating: player.internalRating || 0,
+                        score: player.score || 0,
+                        dupr: player.dupr || 0
+                    })),
+                    teamB: selectedTeamB.map(player => ({
+                        userId: player.userId,
+                        userName: player.userName,
+                        internalRating: player.internalRating || 0,
+                        score: player.score || 0,
+                        dupr: player.dupr || 0
+                    }))
+                });
+                matchNumber++;
+            }
+        }
+    }
+    
+    // 코트 재배정: 플레이어가 다양한 코트에서 경기하도록
+    // 라운드별로 그룹화
+    const matchesByRound = {};
+    allMatches.forEach(match => {
+        if (!matchesByRound[match.round]) {
+            matchesByRound[match.round] = [];
+        }
+        matchesByRound[match.round].push(match);
+    });
+    
+    // 각 라운드별로 코트 재배정
+    for (const round in matchesByRound) {
+        const roundMatches = matchesByRound[round];
+        
+        // 각 경기의 플레이어들이 사용한 코트 점수 계산
+        const matchCourtScores = roundMatches.map(match => {
+            const allPlayers = [...match.teamA, ...match.teamB];
+            let totalCourtUsage = 0;
+            const courtUsageCount = {};
+            
+            allPlayers.forEach(player => {
+                if (!playerCourtHistory.has(player.userId)) {
+                    playerCourtHistory.set(player.userId, new Map());
+                }
+                const history = playerCourtHistory.get(player.userId);
+                
+                // 각 코트별 사용 횟수 계산
+                for (let c = 1; c <= courtCount; c++) {
+                    if (!courtUsageCount[c]) courtUsageCount[c] = 0;
+                    courtUsageCount[c] += (history.get(c) || 0);
+                }
+            });
+            
+            return { match, courtUsageCount };
+        });
+        
+        // 코트 배정: 각 경기를 가장 적게 사용한 코트에 배정
+        const assignedCourts = new Set();
+        const sortedMatches = [...matchCourtScores].sort((a, b) => {
+            // 총 사용 횟수가 적은 경기부터 배정
+            const totalA = Object.values(a.courtUsageCount).reduce((sum, count) => sum + count, 0);
+            const totalB = Object.values(b.courtUsageCount).reduce((sum, count) => sum + count, 0);
+            return totalA - totalB;
+        });
+        
+        sortedMatches.forEach(({ match, courtUsageCount }) => {
+            // 사용 횟수가 가장 적은 코트 찾기
+            let bestCourt = 1;
+            let minUsage = courtUsageCount[1] || 0;
+            
+            for (let c = 1; c <= courtCount; c++) {
+                const usage = courtUsageCount[c] || 0;
+                if (usage < minUsage || (usage === minUsage && !assignedCourts.has(c))) {
+                    minUsage = usage;
+                    bestCourt = c;
+                }
+            }
+            
+            // 이미 배정된 코트가 있으면 다음으로 적게 사용한 코트 선택
+            if (assignedCourts.has(bestCourt)) {
+                for (let c = 1; c <= courtCount; c++) {
+                    if (!assignedCourts.has(c)) {
+                        bestCourt = c;
+                        break;
+                    }
+                }
+            }
+            
+            assignedCourts.add(bestCourt);
+            
+            // 코트 배정
+            match.court = bestCourt;
+            
+            // 플레이어별 코트 사용 이력 업데이트
+            const allPlayers = [...match.teamA, ...match.teamB];
+            allPlayers.forEach(player => {
+                if (!playerCourtHistory.has(player.userId)) {
+                    playerCourtHistory.set(player.userId, new Map());
+                }
+                const history = playerCourtHistory.get(player.userId);
+                history.set(bestCourt, (history.get(bestCourt) || 0) + 1);
+            });
+            
+            schedule.push({
+                round: match.round,
+                court: bestCourt,
+                teamA: match.teamA,
+                teamB: match.teamB
+            });
+        });
+    }
+    
+    return schedule;
+}
+
 // 매치 스케줄 빌드 (간단 로테이션, 동적 코트 지원, 코트 배정 유지)
 function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, teamMode = 'random') {
     // Player 객체로 변환 (점수 정보 포함)
@@ -9906,8 +10272,25 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
     
     const schedule = [];
     
-    // 랜덤 모드와 밸런스 모드: 코트 분배하지 않고 전체 플레이어를 하나의 풀로 취급
-    if (teamMode === 'random' || teamMode === 'balanced') {
+    // 밸런스 모드: 그룹 기반 로테이션 방식 사용
+    if (teamMode === 'balanced') {
+        // 모든 플레이어를 하나의 풀로 합치기 (이미 배정된 플레이어도 포함)
+        const allPlayersPool = [];
+        for (let c = 1; c <= courtCount; c++) {
+            if (courtPlayers[c]) {
+                allPlayersPool.push(...courtPlayers[c]);
+            }
+        }
+        allPlayersPool.push(...unassignedPlayers);
+        
+        // 그룹 기반 밸런스 로테이션 스케줄 생성
+        const rotationSchedule = createBalancedRotationSchedule(allPlayersPool, courtCount, rounds);
+        schedule.push(...rotationSchedule);
+        
+        console.log(`✅ 그룹 기반 밸런스 로테이션 스케줄 생성 완료: ${rotationSchedule.length}경기`);
+    }
+    // 랜덤 모드: 기존 로직 사용
+    else if (teamMode === 'random') {
         // 모든 플레이어를 하나의 풀로 합치기 (이미 배정된 플레이어도 포함)
         const allPlayersPool = [];
         for (let c = 1; c <= courtCount; c++) {
