@@ -9878,7 +9878,8 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
     
     // 중복 방지를 위한 조합 추적
     const usedCombinations = new Set();
-    const playerPairHistory = new Map(); // 개인별 매칭 이력
+    const teammateHistory = new Map(); // 같은 팀원 이력: userId -> Set<teammateUserId>
+    const opponentHistory = new Map(); // 상대팀원 이력: userId -> Set<opponentUserId>
     const playerCourtHistory = new Map(); // 플레이어별 코트 사용 이력: userId -> Map<court, count>
     
     // 경기 생성
@@ -9994,24 +9995,44 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         const teamB = [sorted[1], sorted[2]]; // 차강, 차약
                         
                         // 중복 체크
-                        const teamAIds = teamA.map(p => p.userId).sort().join(',');
-                        const teamBIds = teamB.map(p => p.userId).sort().join(',');
-                        const combinationKey1 = `${teamAIds}|${teamBIds}`;
-                        const combinationKey2 = `${teamBIds}|${teamAIds}`;
+                        const teamAIdsStr = teamA.map(p => p.userId).sort().join(',');
+                        const teamBIdsStr = teamB.map(p => p.userId).sort().join(',');
+                        const combinationKey1 = `${teamAIdsStr}|${teamBIdsStr}`;
+                        const combinationKey2 = `${teamBIdsStr}|${teamAIdsStr}`;
                         
-                        // 개인별 매칭 이력 체크
-                        let hasRepeatedPair = false;
-                        const allPlayerIds = [...teamA.map(p => p.userId), ...teamB.map(p => p.userId)];
-                        for (let i = 0; i < allPlayerIds.length; i++) {
-                            for (let j = i + 1; j < allPlayerIds.length; j++) {
-                                const player1 = allPlayerIds[i];
-                                const player2 = allPlayerIds[j];
-                                if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
-                                    hasRepeatedPair = true;
-                                    break;
+                        // 같은 팀원 반복 체크 (같은 팀원과 1번이라도 만났으면 다시 같은 팀이 되지 않도록)
+                        let hasRepeatedTeammate = false;
+                        const teamAIds = teamA.map(p => p.userId);
+                        const teamBIds = teamB.map(p => p.userId);
+                        
+                        // Team A 내에서 같은 팀원 반복 체크
+                        for (const playerId of teamAIds) {
+                            const history = teammateHistory.get(playerId);
+                            if (history) {
+                                for (const teammateId of teamAIds) {
+                                    if (teammateId !== playerId && history.has(teammateId)) {
+                                        hasRepeatedTeammate = true;
+                                        break;
+                                    }
+                                }
+                                if (hasRepeatedTeammate) break;
+                            }
+                        }
+                        
+                        // Team B 내에서 같은 팀원 반복 체크
+                        if (!hasRepeatedTeammate) {
+                            for (const playerId of teamBIds) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamBIds) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate) break;
                                 }
                             }
-                            if (hasRepeatedPair) break;
                         }
                         
                         if (!usedCombinations.has(combinationKey1) && 
@@ -10032,24 +10053,44 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                             const combinationKey3 = `${teamAIds2}|${teamBIds2}`;
                             const combinationKey4 = `${teamBIds2}|${teamAIds2}`;
                             
-                            // 개인별 매칭 이력 다시 체크
-                            hasRepeatedPair = false;
-                            const allPlayerIds2 = [...teamA2.map(p => p.userId), ...teamB2.map(p => p.userId)];
-                            for (let i = 0; i < allPlayerIds2.length; i++) {
-                                for (let j = i + 1; j < allPlayerIds2.length; j++) {
-                                    const player1 = allPlayerIds2[i];
-                                    const player2 = allPlayerIds2[j];
-                                    if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
-                                        hasRepeatedPair = true;
-                                        break;
+                            // 같은 팀원 반복 체크 (대체 조합)
+                            let hasRepeatedTeammate2 = false;
+                            const teamA2Ids = teamA2.map(p => p.userId);
+                            const teamB2Ids = teamB2.map(p => p.userId);
+                            
+                            // Team A2 내에서 같은 팀원 반복 체크
+                            for (const playerId of teamA2Ids) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamA2Ids) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate2 = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate2) break;
+                                }
+                            }
+                            
+                            // Team B2 내에서 같은 팀원 반복 체크
+                            if (!hasRepeatedTeammate2) {
+                                for (const playerId of teamB2Ids) {
+                                    const history = teammateHistory.get(playerId);
+                                    if (history) {
+                                        for (const teammateId of teamB2Ids) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                hasRepeatedTeammate2 = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasRepeatedTeammate2) break;
                                     }
                                 }
-                                if (hasRepeatedPair) break;
                             }
                             
                             if (!usedCombinations.has(combinationKey3) && 
                                 !usedCombinations.has(combinationKey4) && 
-                                !hasRepeatedPair) {
+                                !hasRepeatedTeammate2) {
                                 selectedTeamA = teamA2;
                                 selectedTeamB = teamB2;
                                 usedCombinations.add(combinationKey3);
@@ -10116,35 +10157,49 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         const teamB = [sorted[1], sorted[2]]; // 차강, 차약
                         
                         // 중복 체크
-                        const teamAIds = teamA.map(p => p.userId).sort().join(',');
-                        const teamBIds = teamB.map(p => p.userId).sort().join(',');
-                        const combinationKey1 = `${teamAIds}|${teamBIds}`;
-                        const combinationKey2 = `${teamBIds}|${teamAIds}`;
+                        const teamAIdsStr = teamA.map(p => p.userId).sort().join(',');
+                        const teamBIdsStr = teamB.map(p => p.userId).sort().join(',');
+                        const combinationKey1 = `${teamAIdsStr}|${teamBIdsStr}`;
+                        const combinationKey2 = `${teamBIdsStr}|${teamAIdsStr}`;
                         
-                        // 개인별 매칭 이력 체크: 같은 팀원과 반복되는지 확인
-                        let hasRepeatedPair = false;
-                        const allPlayerIds = [...teamA.map(p => p.userId), ...teamB.map(p => p.userId)];
-                        for (let i = 0; i < allPlayerIds.length; i++) {
-                            for (let j = i + 1; j < allPlayerIds.length; j++) {
-                                const player1 = allPlayerIds[i];
-                                const player2 = allPlayerIds[j];
-                                if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
-                                    // 같은 팀원과 반복되는지 확인
-                                    const isTeammate = (teamA.some(p => p.userId === player1) && teamA.some(p => p.userId === player2)) || 
-                                                       (teamB.some(p => p.userId === player1) && teamB.some(p => p.userId === player2));
-                                    if (isTeammate) {
-                                        // 같은 팀원과 반복은 큰 패널티
-                                        hasRepeatedPair = true;
+                        // 같은 팀원 반복 체크 (같은 팀원과 1번이라도 만났으면 다시 같은 팀이 되지 않도록)
+                        let hasRepeatedTeammate = false;
+                        const teamAIds = teamA.map(p => p.userId);
+                        const teamBIds = teamB.map(p => p.userId);
+                        
+                        // Team A 내에서 같은 팀원 반복 체크
+                        for (const playerId of teamAIds) {
+                            const history = teammateHistory.get(playerId);
+                            if (history) {
+                                for (const teammateId of teamAIds) {
+                                    if (teammateId !== playerId && history.has(teammateId)) {
+                                        hasRepeatedTeammate = true;
                                         break;
                                     }
                                 }
+                                if (hasRepeatedTeammate) break;
                             }
-                            if (hasRepeatedPair) break;
+                        }
+                        
+                        // Team B 내에서 같은 팀원 반복 체크
+                        if (!hasRepeatedTeammate) {
+                            for (const playerId of teamBIds) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamBIds) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate) break;
+                                }
+                            }
                         }
                         
                         if (!usedCombinations.has(combinationKey1) && 
                             !usedCombinations.has(combinationKey2) && 
-                            !hasRepeatedPair) {
+                            !hasRepeatedTeammate) {
                             selectedPlayers = candidatePlayers;
                             selectedTeamA = teamA;
                             selectedTeamB = teamB;
@@ -10161,29 +10216,44 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                             const combinationKey3 = `${teamAIds2}|${teamBIds2}`;
                             const combinationKey4 = `${teamBIds2}|${teamAIds2}`;
                             
-                            // 개인별 매칭 이력 다시 체크
-                            hasRepeatedPair = false;
-                            const allPlayerIds2 = [...teamA2.map(p => p.userId), ...teamB2.map(p => p.userId)];
-                            for (let i = 0; i < allPlayerIds2.length; i++) {
-                                for (let j = i + 1; j < allPlayerIds2.length; j++) {
-                                    const player1 = allPlayerIds2[i];
-                                    const player2 = allPlayerIds2[j];
-                                    if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
-                                        // 같은 팀원과 반복되는지 확인
-                                        const isTeammate = (teamA2.some(p => p.userId === player1) && teamA2.some(p => p.userId === player2)) || 
-                                                           (teamB2.some(p => p.userId === player1) && teamB2.some(p => p.userId === player2));
-                                        if (isTeammate) {
-                                            hasRepeatedPair = true;
+                            // 같은 팀원 반복 체크 (대체 조합)
+                            let hasRepeatedTeammate2 = false;
+                            const teamA2Ids = teamA2.map(p => p.userId);
+                            const teamB2Ids = teamB2.map(p => p.userId);
+                            
+                            // Team A2 내에서 같은 팀원 반복 체크
+                            for (const playerId of teamA2Ids) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamA2Ids) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate2 = true;
                                             break;
                                         }
                                     }
+                                    if (hasRepeatedTeammate2) break;
                                 }
-                                if (hasRepeatedPair) break;
+                            }
+                            
+                            // Team B2 내에서 같은 팀원 반복 체크
+                            if (!hasRepeatedTeammate2) {
+                                for (const playerId of teamB2Ids) {
+                                    const history = teammateHistory.get(playerId);
+                                    if (history) {
+                                        for (const teammateId of teamB2Ids) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                hasRepeatedTeammate2 = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasRepeatedTeammate2) break;
+                                    }
+                                }
                             }
                             
                             if (!usedCombinations.has(combinationKey3) && 
                                 !usedCombinations.has(combinationKey4) && 
-                                !hasRepeatedPair) {
+                                !hasRepeatedTeammate2) {
                                 selectedPlayers = candidatePlayers;
                                 selectedTeamA = teamA2;
                                 selectedTeamB = teamB2;
@@ -10234,19 +10304,53 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                 // 같은 라운드 내에서 배정된 플레이어로 표시
                 allPlayerIds.forEach(id => assignedPlayersInRound.add(id));
                 
-                // 개인별 매칭 이력 업데이트
-                for (let i = 0; i < allPlayerIds.length; i++) {
-                    for (let j = i + 1; j < allPlayerIds.length; j++) {
-                        const player1 = allPlayerIds[i];
-                        const player2 = allPlayerIds[j];
-                        if (!playerPairHistory.has(player1)) {
-                            playerPairHistory.set(player1, new Set());
+                // 같은 팀원 이력과 상대팀원 이력 업데이트
+                const teamAIds = selectedTeamA.map(p => p.userId);
+                const teamBIds = selectedTeamB.map(p => p.userId);
+                
+                // 같은 팀원 이력 업데이트 (Team A)
+                for (let i = 0; i < teamAIds.length; i++) {
+                    for (let j = i + 1; j < teamAIds.length; j++) {
+                        const player1 = teamAIds[i];
+                        const player2 = teamAIds[j];
+                        if (!teammateHistory.has(player1)) {
+                            teammateHistory.set(player1, new Set());
                         }
-                        if (!playerPairHistory.has(player2)) {
-                            playerPairHistory.set(player2, new Set());
+                        if (!teammateHistory.has(player2)) {
+                            teammateHistory.set(player2, new Set());
                         }
-                        playerPairHistory.get(player1).add(player2);
-                        playerPairHistory.get(player2).add(player1);
+                        teammateHistory.get(player1).add(player2);
+                        teammateHistory.get(player2).add(player1);
+                    }
+                }
+                
+                // 같은 팀원 이력 업데이트 (Team B)
+                for (let i = 0; i < teamBIds.length; i++) {
+                    for (let j = i + 1; j < teamBIds.length; j++) {
+                        const player1 = teamBIds[i];
+                        const player2 = teamBIds[j];
+                        if (!teammateHistory.has(player1)) {
+                            teammateHistory.set(player1, new Set());
+                        }
+                        if (!teammateHistory.has(player2)) {
+                            teammateHistory.set(player2, new Set());
+                        }
+                        teammateHistory.get(player1).add(player2);
+                        teammateHistory.get(player2).add(player1);
+                    }
+                }
+                
+                // 상대팀원 이력 업데이트 (Team A vs Team B)
+                for (const player1 of teamAIds) {
+                    for (const player2 of teamBIds) {
+                        if (!opponentHistory.has(player1)) {
+                            opponentHistory.set(player1, new Set());
+                        }
+                        if (!opponentHistory.has(player2)) {
+                            opponentHistory.set(player2, new Set());
+                        }
+                        opponentHistory.get(player1).add(player2);
+                        opponentHistory.get(player2).add(player1);
                     }
                 }
                 
@@ -10478,7 +10582,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         // 이전 경기 조합을 추적하여 중복 방지 (같은 게임 내에서만)
         // 같은 사람과의 반복 매칭을 방지하기 위해 개인별 매칭 이력도 추적
         const previousMatchConfigs = []; // 팀 조합 이력
-        const playerPairHistory = new Map(); // 개인별 매칭 이력: userId -> Set<matchedUserId>
+        const teammateHistory = new Map(); // 같은 팀원 이력: userId -> Set<teammateUserId>
+        const opponentHistory = new Map(); // 상대팀원 이력: userId -> Set<opponentUserId>
         
         // 전체 경기 생성 (각 코트마다 8경기씩 생성)
         // 1시간에 코트당 8경기 생성 (총 rounds * courtCount 경기)
@@ -10669,32 +10774,43 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         });
                     }
                     
-                    // 2. 개인별 매칭 이력 체크는 완화 (8경기 생성을 위해)
-                    // 경기 수가 적을 때만 엄격하게 체크, 많을 때는 완화
-                    const allPlayerIds = [...config.teamA, ...config.teamB];
-                    let hasRepeatedPair = false;
-                    // 이미 생성된 경기가 4개 미만일 때만 엄격하게 체크
-                    if (previousMatchConfigs.length < 4) {
-                        for (let i = 0; i < allPlayerIds.length; i++) {
-                            for (let j = i + 1; j < allPlayerIds.length; j++) {
-                                const player1 = allPlayerIds[i];
-                                const player2 = allPlayerIds[j];
-                                // 같은 팀이거나 상대 팀이어도 이미 매칭된 적이 있으면 체크
-                                if (playerPairHistory.has(player1) && playerPairHistory.get(player1).has(player2)) {
-                                    hasRepeatedPair = true;
-                                    break;
-                                }
-                                if (playerPairHistory.has(player2) && playerPairHistory.get(player2).has(player1)) {
-                                    hasRepeatedPair = true;
+                    // 2. 같은 팀원 반복 체크 (같은 팀원과 1번이라도 만났으면 다시 같은 팀이 되지 않도록)
+                    let hasRepeatedTeammate = false;
+                    const teamAIds = config.teamA;
+                    const teamBIds = config.teamB;
+                    
+                    // Team A 내에서 같은 팀원 반복 체크
+                    for (const playerId of teamAIds) {
+                        const history = teammateHistory.get(playerId);
+                        if (history) {
+                            for (const teammateId of teamAIds) {
+                                if (teammateId !== playerId && history.has(teammateId)) {
+                                    hasRepeatedTeammate = true;
                                     break;
                                 }
                             }
-                            if (hasRepeatedPair) break;
+                            if (hasRepeatedTeammate) break;
                         }
                     }
                     
-                    // 팀 조합이 고유하고, 개인별 반복 매칭이 없으면 선택 (또는 경기가 4개 이상이면 완화)
-                    if ((isUniqueTeam || previousMatchConfigs.length === 0 || previousMatchConfigs.length >= 4) && !hasRepeatedPair) {
+                    // Team B 내에서 같은 팀원 반복 체크
+                    if (!hasRepeatedTeammate) {
+                        for (const playerId of teamBIds) {
+                            const history = teammateHistory.get(playerId);
+                            if (history) {
+                                for (const teammateId of teamBIds) {
+                                    if (teammateId !== playerId && history.has(teammateId)) {
+                                        hasRepeatedTeammate = true;
+                                        break;
+                                    }
+                                }
+                                if (hasRepeatedTeammate) break;
+                            }
+                        }
+                    }
+                    
+                    // 팀 조합이 고유하고, 같은 팀원 반복이 없으면 선택
+                    if ((isUniqueTeam || previousMatchConfigs.length === 0 || previousMatchConfigs.length >= 4) && !hasRepeatedTeammate) {
                         const selectedTeamA = config.teamA.map(id => fourPlayers.find(p => p.userId === id));
                         const selectedTeamB = config.teamB.map(id => fourPlayers.find(p => p.userId === id));
                         
@@ -10706,20 +10822,53 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 이전 경기 조합에 추가
                         previousMatchConfigs.push({ teamAIds: teamAKey, teamBIds: teamBKey });
                         
-                        // 개인별 매칭 이력 업데이트
-                        const allPlayerIds2 = [...config.teamA, ...config.teamB];
-                        for (let i = 0; i < allPlayerIds2.length; i++) {
-                            for (let j = i + 1; j < allPlayerIds2.length; j++) {
-                                const player1 = allPlayerIds2[i];
-                                const player2 = allPlayerIds2[j];
-                                if (!playerPairHistory.has(player1)) {
-                                    playerPairHistory.set(player1, new Set());
+                        // 같은 팀원 이력과 상대팀원 이력 업데이트
+                        const teamAIds2 = config.teamA;
+                        const teamBIds2 = config.teamB;
+                        
+                        // 같은 팀원 이력 업데이트 (Team A)
+                        for (let i = 0; i < teamAIds2.length; i++) {
+                            for (let j = i + 1; j < teamAIds2.length; j++) {
+                                const player1 = teamAIds2[i];
+                                const player2 = teamAIds2[j];
+                                if (!teammateHistory.has(player1)) {
+                                    teammateHistory.set(player1, new Set());
                                 }
-                                if (!playerPairHistory.has(player2)) {
-                                    playerPairHistory.set(player2, new Set());
+                                if (!teammateHistory.has(player2)) {
+                                    teammateHistory.set(player2, new Set());
                                 }
-                                playerPairHistory.get(player1).add(player2);
-                                playerPairHistory.get(player2).add(player1);
+                                teammateHistory.get(player1).add(player2);
+                                teammateHistory.get(player2).add(player1);
+                            }
+                        }
+                        
+                        // 같은 팀원 이력 업데이트 (Team B)
+                        for (let i = 0; i < teamBIds2.length; i++) {
+                            for (let j = i + 1; j < teamBIds2.length; j++) {
+                                const player1 = teamBIds2[i];
+                                const player2 = teamBIds2[j];
+                                if (!teammateHistory.has(player1)) {
+                                    teammateHistory.set(player1, new Set());
+                                }
+                                if (!teammateHistory.has(player2)) {
+                                    teammateHistory.set(player2, new Set());
+                                }
+                                teammateHistory.get(player1).add(player2);
+                                teammateHistory.get(player2).add(player1);
+                            }
+                        }
+                        
+                        // 상대팀원 이력 업데이트 (Team A vs Team B)
+                        for (const player1 of teamAIds2) {
+                            for (const player2 of teamBIds2) {
+                                if (!opponentHistory.has(player1)) {
+                                    opponentHistory.set(player1, new Set());
+                                }
+                                if (!opponentHistory.has(player2)) {
+                                    opponentHistory.set(player2, new Set());
+                                }
+                                opponentHistory.get(player1).add(player2);
+                                opponentHistory.get(player2).add(player1);
                             }
                         }
                         
@@ -10886,7 +11035,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 이전 경기 조합을 추적하여 중복 방지 (팀 구성까지 고려)
             // 같은 게임 내에서만 중복 방지
             const previousMatchConfigs = []; // {teamAIds: string, teamBIds: string}
-            const playerPairHistory = new Map(); // 개인별 매칭 이력: userId -> Set<matchedUserId>
+            const teammateHistory = new Map(); // 같은 팀원 이력: userId -> Set<teammateUserId>
+            const opponentHistory = new Map(); // 상대팀원 이력: userId -> Set<opponentUserId>
             
             for (let r = 1; r <= rounds; r++) {
                 // 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
@@ -11046,42 +11196,27 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     duplicateCount += 5;
                                 }
                                 
-                                // 개인별 매칭 이력 체크: 같은 팀원/상대팀원과 반복 매칭되는지 확인
-                                // 그룹 모드에서는 같은 사람과 팀을 하는 것을 더 엄격하게 제한
+                                // 같은 팀원 반복 체크 (같은 팀원과 1번이라도 만났으면 다시 같은 팀이 되지 않도록)
                                 for (const playerId of config.teamA) {
-                                    const history = playerPairHistory.get(playerId);
+                                    const history = teammateHistory.get(playerId);
                                     if (history) {
-                                        // 같은 팀원과 반복되는지 (그룹 모드에서는 더 강한 패널티)
+                                        // 같은 팀원과 반복되는지
                                         for (const teammateId of config.teamA) {
                                             if (teammateId !== playerId && history.has(teammateId)) {
-                                                // 그룹 모드: 같은 팀원과 반복은 큰 패널티 (완전 제외)
-                                                duplicateCount += teamMode === 'grouped' ? 10 : 2;
-                                            }
-                                        }
-                                        // 상대팀원과 반복되는지
-                                        for (const opponentId of config.teamB) {
-                                            if (history.has(opponentId)) {
-                                                // 그룹 모드: 상대팀원과 반복도 더 강한 패널티
-                                                duplicateCount += teamMode === 'grouped' ? 5 : 1;
+                                                // 같은 팀원과 반복은 큰 패널티 (완전 제외)
+                                                duplicateCount += 10;
                                             }
                                         }
                                     }
                                 }
                                 for (const playerId of config.teamB) {
-                                    const history = playerPairHistory.get(playerId);
+                                    const history = teammateHistory.get(playerId);
                                     if (history) {
-                                        // 같은 팀원과 반복되는지 (그룹 모드에서는 더 강한 패널티)
+                                        // 같은 팀원과 반복되는지
                                         for (const teammateId of config.teamB) {
                                             if (teammateId !== playerId && history.has(teammateId)) {
-                                                // 그룹 모드: 같은 팀원과 반복은 큰 패널티 (완전 제외)
-                                                duplicateCount += teamMode === 'grouped' ? 10 : 2;
-                                            }
-                                        }
-                                        // 상대팀원과 반복되는지
-                                        for (const opponentId of config.teamA) {
-                                            if (history.has(opponentId)) {
-                                                // 그룹 모드: 상대팀원과 반복도 더 강한 패널티
-                                                duplicateCount += teamMode === 'grouped' ? 5 : 1;
+                                                // 같은 팀원과 반복은 큰 패널티 (완전 제외)
+                                                duplicateCount += 10;
                                             }
                                         }
                                     }
@@ -11221,24 +11356,57 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 });
                 
                 // 이전 경기 조합에 추가 (팀 구성 포함)
-                const teamAIds = selectedTeamA.map(p => p.userId).sort().join(',');
-                const teamBIds = selectedTeamB.map(p => p.userId).sort().join(',');
-                previousMatchConfigs.push({ teamAIds, teamBIds });
+                const teamAIdsStr = selectedTeamA.map(p => p.userId).sort().join(',');
+                const teamBIdsStr = selectedTeamB.map(p => p.userId).sort().join(',');
+                previousMatchConfigs.push({ teamAIds: teamAIdsStr, teamBIds: teamBIdsStr });
                 
-                // 개인별 매칭 이력 업데이트
-                const allPlayerIds = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
-                for (let i = 0; i < allPlayerIds.length; i++) {
-                    for (let j = i + 1; j < allPlayerIds.length; j++) {
-                        const player1 = allPlayerIds[i];
-                        const player2 = allPlayerIds[j];
-                        if (!playerPairHistory.has(player1)) {
-                            playerPairHistory.set(player1, new Set());
+                // 같은 팀원 이력과 상대팀원 이력 업데이트
+                const teamAIds = selectedTeamA.map(p => p.userId);
+                const teamBIds = selectedTeamB.map(p => p.userId);
+                
+                // 같은 팀원 이력 업데이트 (Team A)
+                for (let i = 0; i < teamAIds.length; i++) {
+                    for (let j = i + 1; j < teamAIds.length; j++) {
+                        const player1 = teamAIds[i];
+                        const player2 = teamAIds[j];
+                        if (!teammateHistory.has(player1)) {
+                            teammateHistory.set(player1, new Set());
                         }
-                        if (!playerPairHistory.has(player2)) {
-                            playerPairHistory.set(player2, new Set());
+                        if (!teammateHistory.has(player2)) {
+                            teammateHistory.set(player2, new Set());
                         }
-                        playerPairHistory.get(player1).add(player2);
-                        playerPairHistory.get(player2).add(player1);
+                        teammateHistory.get(player1).add(player2);
+                        teammateHistory.get(player2).add(player1);
+                    }
+                }
+                
+                // 같은 팀원 이력 업데이트 (Team B)
+                for (let i = 0; i < teamBIds.length; i++) {
+                    for (let j = i + 1; j < teamBIds.length; j++) {
+                        const player1 = teamBIds[i];
+                        const player2 = teamBIds[j];
+                        if (!teammateHistory.has(player1)) {
+                            teammateHistory.set(player1, new Set());
+                        }
+                        if (!teammateHistory.has(player2)) {
+                            teammateHistory.set(player2, new Set());
+                        }
+                        teammateHistory.get(player1).add(player2);
+                        teammateHistory.get(player2).add(player1);
+                    }
+                }
+                
+                // 상대팀원 이력 업데이트 (Team A vs Team B)
+                for (const player1 of teamAIds) {
+                    for (const player2 of teamBIds) {
+                        if (!opponentHistory.has(player1)) {
+                            opponentHistory.set(player1, new Set());
+                        }
+                        if (!opponentHistory.has(player2)) {
+                            opponentHistory.set(player2, new Set());
+                        }
+                        opponentHistory.get(player1).add(player2);
+                        opponentHistory.get(player2).add(player1);
                     }
                 }
                 
