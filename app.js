@@ -5885,14 +5885,14 @@ async function loadReservationsTimeline() {
                                                 <i class="fas fa-calendar-alt"></i> 대진표 생성
                                             </button>`;
                                 
-                                // 임의 생성 버튼 (테스트용)
-                                buttons += `<button class="btn btn-outline add-random-person-btn" 
-                                                   data-time-slot="${slotKey}" 
-                                                   data-date="${targetDate}"
-                                                   style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;"
-                                                   title="임의 사람 생성 (테스트용)">
-                                                <i class="fas fa-user-plus"></i> 임의 생성
-                                            </button>`;
+                                // 임의 생성 버튼 (테스트용) - 숨김 처리
+                                // buttons += `<button class="btn btn-outline add-random-person-btn" 
+                                //                    data-time-slot="${slotKey}" 
+                                //                    data-date="${targetDate}"
+                                //                    style="margin-left: 8px; padding: 6px 12px; font-size: 0.8rem;"
+                                //                    title="임의 사람 생성 (테스트용)">
+                                //                 <i class="fas fa-user-plus"></i> 임의 생성
+                                //             </button>`;
                             }
                             
                             return buttons;
