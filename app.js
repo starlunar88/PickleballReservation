@@ -8307,8 +8307,10 @@ function createRandomTeams(players) {
 }
 
 // 2. 밸런스 모드 팀 짜기 (균형 맞추기)
+// 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
 function createBalancedTeams(players) {
     // 플레이어를 DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+    // 내부 랭킹(internalRating)이나 combinedScore는 사용하지 않고 DUPR만 사용
     const sortedPlayers = [...players].sort((a, b) => {
         const duprA = b.dupr || 0;
         const duprB = a.dupr || 0;
@@ -9727,10 +9729,12 @@ const pairingPatterns = [
 ];
 
 // 밸런스 모드를 위한 여러 밸런스 조합 생성 함수
+// 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
 function createBalancedTeamConfigs(candidate) {
     const configs = [];
     
     // 더 많은 다양성을 위해 여러 정렬 방식 시도
+    // 모든 정렬은 DUPR 점수만 사용 (내부 랭킹 미사용)
     const sortVariations = [];
     
     // 정렬 방식 1: DUPR 점수 순 (기본)
@@ -10273,6 +10277,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             let sortedAllPlayers;
             if (teamMode === 'balanced') {
                 // 밸런스 모드: DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                // 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
                 sortedAllPlayers = [...courtPlayerList].sort((a, b) => {
                     const duprA = b.dupr || 0;
                     const duprB = a.dupr || 0;
@@ -10320,6 +10325,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         return countA - countB; // 참여 횟수가 적은 순
                     }
                     // 밸런스 모드와 그룹 모드에서는 같은 횟수일 때 DUPR 점수 범위 내에서 랜덤하게 섞기
+                    // 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
                     if (teamMode === 'balanced' || teamMode === 'grouped') {
                         const duprA = b.dupr || 0;
                         const duprB = a.dupr || 0;
@@ -10357,6 +10363,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         const teamConfigs = [];
                         if (teamMode === 'balanced') {
                             // 밸런스 모드: 여러 밸런스 조합 시도 (반복 방지)
+                            // 주의: DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
                             const balancedConfigs = createBalancedTeamConfigs(candidate);
                             teamConfigs.push(...balancedConfigs);
                         } else if (teamMode === 'grouped') {
@@ -10545,7 +10552,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬
+                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -10574,7 +10581,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬
+                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -10665,6 +10672,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             let sortedAllPlayers;
             if (teamMode === 'balanced') {
                 // 밸런스 모드: DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                // 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
                 sortedAllPlayers = [...courtPlayerList].sort((a, b) => {
                     const duprA = b.dupr || 0;
                     const duprB = a.dupr || 0;
@@ -10714,6 +10722,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         return countA - countB;
                     }
                     // 밸런스 모드에서는 같은 횟수일 때 DUPR 점수 범위 내에서 랜덤하게 섞기
+                    // 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
                     if (teamMode === 'balanced') {
                         const duprA = b.dupr || 0;
                         const duprB = a.dupr || 0;
@@ -10853,7 +10862,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬
+                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -10882,7 +10891,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬
+                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
                         selectedTeamA = [sorted[0], sorted[3]];
                         selectedTeamB = [sorted[1], sorted[2]];
@@ -10993,6 +11002,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         let teamA, teamB;
                         if (teamMode === 'balanced') {
                             // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                            // 주의: 밸런스 모드에서는 DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
                             const sorted = [...fourPlayers].sort((a, b) => {
                                 const duprA = b.dupr || 0;
                                 const duprB = a.dupr || 0;
