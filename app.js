@@ -9561,7 +9561,8 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             await deleteBatch.commit();
             console.log('기존 대진표 삭제 완료:', existingMatches.size, '개');
         }
-        const rounds = Math.max(1, settings?.gamesPerHour || 8); // 8경기 (시간당)
+        // 1시간에 항상 8경기 생성 (설정값과 무관하게)
+        const rounds = 8;
 
         // teamMode에 따라 대진표 생성 (같은 게임 내에서만 중복 매칭 방지)
         const { schedule, unassignedPlayers } = buildMatchSchedule(playersToUse, courtCount, rounds, {}, teamMode);
