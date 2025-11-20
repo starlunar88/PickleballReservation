@@ -8735,12 +8735,39 @@ async function processTimeSlotReservations(date, timeSlot) {
             
             const reservations = pendingReservations;
             
+            // pending 예약만으로는 4명 미만일 수 있으므로 확인
+            // confirmed 예약도 함께 고려하여 총 인원이 4명 이상인지 확인
+            const totalPlayers = reservations.length + confirmedSnapshot.size;
+            
+            if (reservations.length < 4 && totalPlayers < 4) {
+                console.log(`⚠️ 팀 배정 불가: pending ${reservations.length}명, confirmed ${confirmedSnapshot.size}명, 총 ${totalPlayers}명 (최소 4명 필요): ${date} ${timeSlot}`);
+                return;
+            }
+            
+            // pending 예약만으로 4명 미만이지만 총 인원이 4명 이상인 경우
+            // confirmed 예약도 함께 포함하여 팀 배정
+            let reservationsToUse = reservations;
+            if (reservations.length < 4 && totalPlayers >= 4) {
+                // confirmed 예약도 함께 포함
+                const confirmedReservations = [];
+                confirmedSnapshot.forEach(doc => {
+                    confirmedReservations.push({ id: doc.id, ...doc.data() });
+                });
+                reservationsToUse = [...reservations, ...confirmedReservations];
+                console.log(`⚠️ pending ${reservations.length}명만으로는 부족하여 confirmed ${confirmedSnapshot.size}명도 함께 포함하여 팀 배정: ${date} ${timeSlot}`);
+            }
+            
             // 시스템 설정에서 최대 코트 수 가져오기 (이미 위에서 가져옴)
             const maxCourts = settings?.courtCount || 3; // 기본값 3
             
             // 모든 예약자를 사용 (인원 제한 없음)
             // 4~7명: 코트 1개, 8~11명: 코트 2개, 12명 이상: 코트 3개에 모든 인원 배정
-            const reservationsToUse = reservations;
+            
+            // 최종 확인: 사용할 예약이 4명 미만이면 팀 배정 불가
+            if (reservationsToUse.length < 4) {
+                console.log(`⚠️ 팀 배정 불가: 사용 가능한 예약 ${reservationsToUse.length}명 (최소 4명 필요): ${date} ${timeSlot}`);
+                return;
+            }
             
             // 기본 팀 짜기 모드 (밸런스 모드)
             const teams = await createTeams(reservationsToUse, TEAM_MODE.BALANCED);
