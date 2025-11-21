@@ -10064,7 +10064,7 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         
                         if (!usedCombinations.has(combinationKey1) && 
                             !usedCombinations.has(combinationKey2) && 
-                            !hasRepeatedPair) {
+                            !hasRepeatedTeammate) {
                             selectedTeamA = teamA;
                             selectedTeamB = teamB;
                             usedCombinations.add(combinationKey1);
