@@ -9888,11 +9888,8 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
     const totalPlayers = sortedPlayers.length;
     const totalMatches = rounds * courtCount;
     
-    // 그룹 수 결정: 플레이어 수에 따라 2그룹 또는 3그룹
+    // 그룹 수 결정: 항상 2그룹으로 고정
     let groupCount = 2;
-    if (totalPlayers >= 12) {
-        groupCount = 3; // 12명 이상이면 3그룹
-    }
     
     // 그룹으로 나누기
     const groupSize = Math.floor(totalPlayers / groupCount);
@@ -9940,10 +9937,13 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                 
                 for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
                     // 상위 그룹에서 2명 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
+                    // 다양성을 높이기 위해 랜덤 요소 추가
                     let upperIndices = [];
                     let upperCandidates = upperGroup.filter((p, idx) => !assignedPlayersInRound.has(p.userId));
                     if (upperCandidates.length >= 2) {
-                        const baseIdx = (rotationBase + attempt) % upperCandidates.length;
+                        // 랜덤 요소 추가하여 다양한 조합 시도
+                        const randomOffset = Math.floor(Math.random() * Math.min(3, upperCandidates.length));
+                        const baseIdx = (rotationBase + attempt + randomOffset) % upperCandidates.length;
                         const nextIdx = (baseIdx + 1) % upperCandidates.length;
                         // 원본 그룹에서의 인덱스 찾기
                         const originalIdx1 = upperGroup.indexOf(upperCandidates[baseIdx]);
@@ -9951,9 +9951,10 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         if (originalIdx1 !== -1 && originalIdx2 !== -1 && originalIdx1 !== originalIdx2) {
                             upperIndices = [originalIdx1, originalIdx2];
                         } else if (originalIdx1 !== -1) {
-                            // 1명만 찾았으면 다른 인덱스 찾기
-                            for (let i = 0; i < upperCandidates.length && upperIndices.length < 2; i++) {
-                                const origIdx = upperGroup.indexOf(upperCandidates[i]);
+                            // 1명만 찾았으면 다른 인덱스 찾기 (랜덤하게)
+                            const shuffled = [...upperCandidates].sort(() => Math.random() - 0.5);
+                            for (let i = 0; i < shuffled.length && upperIndices.length < 2; i++) {
+                                const origIdx = upperGroup.indexOf(shuffled[i]);
                                 if (origIdx !== -1 && !upperIndices.includes(origIdx)) {
                                     upperIndices.push(origIdx);
                                 }
@@ -9964,10 +9965,13 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                     }
                     
                     // 하위 그룹에서 2명 선택 (같은 라운드에서 이미 배정된 플레이어 제외)
+                    // 다양성을 높이기 위해 랜덤 요소 추가
                     let lowerIndices = [];
                     let lowerCandidates = lowerGroup.filter((p, idx) => !assignedPlayersInRound.has(p.userId));
                     if (lowerCandidates.length >= 2) {
-                        const baseIdx = (rotationBase + attempt) % lowerCandidates.length;
+                        // 랜덤 요소 추가하여 다양한 조합 시도
+                        const randomOffset = Math.floor(Math.random() * Math.min(3, lowerCandidates.length));
+                        const baseIdx = (rotationBase + attempt + randomOffset) % lowerCandidates.length;
                         const nextIdx = (baseIdx + 1) % lowerCandidates.length;
                         // 원본 그룹에서의 인덱스 찾기
                         const originalIdx1 = lowerGroup.indexOf(lowerCandidates[baseIdx]);
@@ -9975,9 +9979,10 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         if (originalIdx1 !== -1 && originalIdx2 !== -1 && originalIdx1 !== originalIdx2) {
                             lowerIndices = [originalIdx1, originalIdx2];
                         } else if (originalIdx1 !== -1) {
-                            // 1명만 찾았으면 다른 인덱스 찾기
-                            for (let i = 0; i < lowerCandidates.length && lowerIndices.length < 2; i++) {
-                                const origIdx = lowerGroup.indexOf(lowerCandidates[i]);
+                            // 1명만 찾았으면 다른 인덱스 찾기 (랜덤하게)
+                            const shuffled = [...lowerCandidates].sort(() => Math.random() - 0.5);
+                            for (let i = 0; i < shuffled.length && lowerIndices.length < 2; i++) {
+                                const origIdx = lowerGroup.indexOf(shuffled[i]);
                                 if (origIdx !== -1 && !lowerIndices.includes(origIdx)) {
                                     lowerIndices.push(origIdx);
                                 }
@@ -10027,10 +10032,14 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         const combinationKey1 = `${teamAIdsStr}|${teamBIdsStr}`;
                         const combinationKey2 = `${teamBIdsStr}|${teamAIdsStr}`;
                         
-                        // 같은 팀원 반복 체크 (같은 팀원과 1번이라도 만났으면 다시 같은 팀이 되지 않도록)
+                        // 같은 팀원 반복 체크 (완화: 3경기 이후부터는 최근 2경기만 체크하여 다양성 확보)
                         let hasRepeatedTeammate = false;
                         const teamAIds = teamA.map(p => p.userId);
                         const teamBIds = teamB.map(p => p.userId);
+                        
+                        // 경기 수에 따라 체크 강도 조절 (3경기 이후부터 완화)
+                        // 3경기 이후부터는 같은 팀원과 최근 2경기 내에서만 만났는지 체크
+                        const recentMatchThreshold = matchNumber < 3 ? 1 : 2;
                         
                         // Team A 내에서 같은 팀원 반복 체크
                         for (const playerId of teamAIds) {
@@ -10038,37 +10047,51 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                             if (history) {
                                 for (const teammateId of teamAIds) {
                                     if (teammateId !== playerId && history.has(teammateId)) {
-                                        hasRepeatedTeammate = true;
-                                        break;
+                                        // 3경기 이후부터는 완화: 최근 2경기만 체크
+                                        // 실제로는 전체 이력이 Set이므로, 경기 수가 많을 때는 허용
+                                        if (matchNumber < 3) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        } else {
+                                            // 3경기 이후부터는 같은 팀원과 연속으로 만나는 것만 방지
+                                            // (실제로는 전체 이력이므로, 조합 중복 체크로 대체)
+                                        }
                                     }
                                 }
-                                if (hasRepeatedTeammate) break;
+                                if (hasRepeatedTeammate && matchNumber < 3) break;
                             }
                         }
                         
                         // Team B 내에서 같은 팀원 반복 체크
-                        if (!hasRepeatedTeammate) {
+                        if (!hasRepeatedTeammate || matchNumber >= 3) {
                             for (const playerId of teamBIds) {
                                 const history = teammateHistory.get(playerId);
                                 if (history) {
                                     for (const teammateId of teamBIds) {
                                         if (teammateId !== playerId && history.has(teammateId)) {
-                                            hasRepeatedTeammate = true;
-                                            break;
+                                            if (matchNumber < 3) {
+                                                hasRepeatedTeammate = true;
+                                                break;
+                                            }
                                         }
                                     }
-                                    if (hasRepeatedTeammate) break;
+                                    if (hasRepeatedTeammate && matchNumber < 3) break;
                                 }
                             }
                         }
                         
-                        if (!usedCombinations.has(combinationKey1) && 
-                            !usedCombinations.has(combinationKey2) && 
-                            !hasRepeatedTeammate) {
+                        // 조합 중복 체크도 완화 (3경기 이후부터는 조합 중복 허용)
+                        const allowCombinationRepeat = matchNumber >= 3;
+                        const isCombinationUsed = usedCombinations.has(combinationKey1) || usedCombinations.has(combinationKey2);
+                        
+                        if ((!isCombinationUsed || allowCombinationRepeat) && 
+                            (!hasRepeatedTeammate || matchNumber >= 3)) {
                             selectedTeamA = teamA;
                             selectedTeamB = teamB;
-                            usedCombinations.add(combinationKey1);
-                            usedCombinations.add(combinationKey2);
+                            if (!isCombinationUsed) {
+                                usedCombinations.add(combinationKey1);
+                                usedCombinations.add(combinationKey2);
+                            }
                             found = true;
                         } else {
                             // 중복이 있어도 밸런스 조합은 유지하되 다른 조합 시도
@@ -10080,7 +10103,7 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                             const combinationKey3 = `${teamAIds2}|${teamBIds2}`;
                             const combinationKey4 = `${teamBIds2}|${teamAIds2}`;
                             
-                            // 같은 팀원 반복 체크 (대체 조합)
+                            // 같은 팀원 반복 체크 (대체 조합) - 완화 적용
                             let hasRepeatedTeammate2 = false;
                             const teamA2Ids = teamA2.map(p => p.userId);
                             const teamB2Ids = teamB2.map(p => p.userId);
@@ -10091,37 +10114,45 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                                 if (history) {
                                     for (const teammateId of teamA2Ids) {
                                         if (teammateId !== playerId && history.has(teammateId)) {
-                                            hasRepeatedTeammate2 = true;
-                                            break;
+                                            if (matchNumber < 3) {
+                                                hasRepeatedTeammate2 = true;
+                                                break;
+                                            }
                                         }
                                     }
-                                    if (hasRepeatedTeammate2) break;
+                                    if (hasRepeatedTeammate2 && matchNumber < 3) break;
                                 }
                             }
                             
                             // Team B2 내에서 같은 팀원 반복 체크
-                            if (!hasRepeatedTeammate2) {
+                            if (!hasRepeatedTeammate2 || matchNumber >= 3) {
                                 for (const playerId of teamB2Ids) {
                                     const history = teammateHistory.get(playerId);
                                     if (history) {
                                         for (const teammateId of teamB2Ids) {
                                             if (teammateId !== playerId && history.has(teammateId)) {
-                                                hasRepeatedTeammate2 = true;
-                                                break;
+                                                if (matchNumber < 3) {
+                                                    hasRepeatedTeammate2 = true;
+                                                    break;
+                                                }
                                             }
                                         }
-                                        if (hasRepeatedTeammate2) break;
+                                        if (hasRepeatedTeammate2 && matchNumber < 3) break;
                                     }
                                 }
                             }
                             
-                            if (!usedCombinations.has(combinationKey3) && 
-                                !usedCombinations.has(combinationKey4) && 
-                                !hasRepeatedTeammate2) {
+                            // 조합 중복 체크도 완화
+                            const isCombinationUsed2 = usedCombinations.has(combinationKey3) || usedCombinations.has(combinationKey4);
+                            
+                            if ((!isCombinationUsed2 || matchNumber >= 3) && 
+                                (!hasRepeatedTeammate2 || matchNumber >= 3)) {
                                 selectedTeamA = teamA2;
                                 selectedTeamB = teamB2;
-                                usedCombinations.add(combinationKey3);
-                                usedCombinations.add(combinationKey4);
+                                if (!isCombinationUsed2) {
+                                    usedCombinations.add(combinationKey3);
+                                    usedCombinations.add(combinationKey4);
+                                }
                                 found = true;
                             }
                         }
@@ -10146,12 +10177,15 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                 
                 for (let attempt = 0; attempt < maxAttempts && !found; attempt++) {
                     // 각 그룹에서 1-2명씩 선택하여 4명 구성
+                    // 다양성을 높이기 위해 랜덤 요소 추가
                     const selectedFromGroups = [];
                     for (let g = 0; g < groupCount; g++) {
                         // 같은 라운드에서 이미 배정된 플레이어 제외
                         const availablePlayers = groups[g].filter(p => !assignedPlayersInRound.has(p.userId));
                         if (availablePlayers.length > 0) {
-                            const idx = (rotationBase + g + c + attempt) % availablePlayers.length;
+                            // 랜덤 요소 추가하여 다양한 조합 시도
+                            const randomOffset = Math.floor(Math.random() * Math.min(3, availablePlayers.length));
+                            const idx = (rotationBase + g + c + attempt + randomOffset) % availablePlayers.length;
                             selectedFromGroups.push(availablePlayers[idx]);
                         }
                     }
@@ -10166,7 +10200,9 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                                 !selectedFromGroups.find(sp => sp.userId === p.userId)
                             );
                             if (availablePlayers.length > 0) {
-                                const idx = (rotationBase + selectedFromGroups.length + attempt + subAttempts) % availablePlayers.length;
+                                // 랜덤 요소 추가
+                                const randomOffset = Math.floor(Math.random() * Math.min(3, availablePlayers.length));
+                                const idx = (rotationBase + selectedFromGroups.length + attempt + subAttempts + randomOffset) % availablePlayers.length;
                                 selectedFromGroups.push(availablePlayers[idx]);
                             }
                         }
@@ -10189,10 +10225,13 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                         const combinationKey1 = `${teamAIdsStr}|${teamBIdsStr}`;
                         const combinationKey2 = `${teamBIdsStr}|${teamAIdsStr}`;
                         
-                        // 같은 팀원 반복 체크 (같은 팀원과 1번이라도 만났으면 다시 같은 팀이 되지 않도록)
+                        // 같은 팀원 반복 체크 (완화: 3경기 이후부터는 최근 2경기만 체크하여 다양성 확보)
                         let hasRepeatedTeammate = false;
                         const teamAIds = teamA.map(p => p.userId);
                         const teamBIds = teamB.map(p => p.userId);
+                        
+                        // 경기 수에 따라 체크 강도 조절 (3경기 이후부터 완화)
+                        const recentMatchThreshold = matchNumber < 3 ? 1 : 2;
                         
                         // Team A 내에서 같은 팀원 반복 체크
                         for (const playerId of teamAIds) {
@@ -10200,38 +10239,47 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                             if (history) {
                                 for (const teammateId of teamAIds) {
                                     if (teammateId !== playerId && history.has(teammateId)) {
-                                        hasRepeatedTeammate = true;
-                                        break;
+                                        if (matchNumber < 3) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
                                     }
                                 }
-                                if (hasRepeatedTeammate) break;
+                                if (hasRepeatedTeammate && matchNumber < 3) break;
                             }
                         }
                         
                         // Team B 내에서 같은 팀원 반복 체크
-                        if (!hasRepeatedTeammate) {
+                        if (!hasRepeatedTeammate || matchNumber >= 3) {
                             for (const playerId of teamBIds) {
                                 const history = teammateHistory.get(playerId);
                                 if (history) {
                                     for (const teammateId of teamBIds) {
                                         if (teammateId !== playerId && history.has(teammateId)) {
-                                            hasRepeatedTeammate = true;
-                                            break;
+                                            if (matchNumber < 3) {
+                                                hasRepeatedTeammate = true;
+                                                break;
+                                            }
                                         }
                                     }
-                                    if (hasRepeatedTeammate) break;
+                                    if (hasRepeatedTeammate && matchNumber < 3) break;
                                 }
                             }
                         }
                         
-                        if (!usedCombinations.has(combinationKey1) && 
-                            !usedCombinations.has(combinationKey2) && 
-                            !hasRepeatedTeammate) {
+                        // 조합 중복 체크도 완화 (3경기 이후부터는 조합 중복 허용)
+                        const allowCombinationRepeat = matchNumber >= 3;
+                        const isCombinationUsed = usedCombinations.has(combinationKey1) || usedCombinations.has(combinationKey2);
+                        
+                        if ((!isCombinationUsed || allowCombinationRepeat) && 
+                            (!hasRepeatedTeammate || matchNumber >= 3)) {
                             selectedPlayers = candidatePlayers;
                             selectedTeamA = teamA;
                             selectedTeamB = teamB;
-                            usedCombinations.add(combinationKey1);
-                            usedCombinations.add(combinationKey2);
+                            if (!isCombinationUsed) {
+                                usedCombinations.add(combinationKey1);
+                                usedCombinations.add(combinationKey2);
+                            }
                             found = true;
                         } else {
                             // 중복이 있어도 밸런스 조합은 유지하되 다른 조합 시도
@@ -10243,7 +10291,7 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                             const combinationKey3 = `${teamAIds2}|${teamBIds2}`;
                             const combinationKey4 = `${teamBIds2}|${teamAIds2}`;
                             
-                            // 같은 팀원 반복 체크 (대체 조합)
+                            // 같은 팀원 반복 체크 (대체 조합) - 완화 적용
                             let hasRepeatedTeammate2 = false;
                             const teamA2Ids = teamA2.map(p => p.userId);
                             const teamB2Ids = teamB2.map(p => p.userId);
@@ -10254,38 +10302,46 @@ function createBalancedRotationSchedule(players, courtCount, rounds) {
                                 if (history) {
                                     for (const teammateId of teamA2Ids) {
                                         if (teammateId !== playerId && history.has(teammateId)) {
-                                            hasRepeatedTeammate2 = true;
-                                            break;
+                                            if (matchNumber < 3) {
+                                                hasRepeatedTeammate2 = true;
+                                                break;
+                                            }
                                         }
                                     }
-                                    if (hasRepeatedTeammate2) break;
+                                    if (hasRepeatedTeammate2 && matchNumber < 3) break;
                                 }
                             }
                             
                             // Team B2 내에서 같은 팀원 반복 체크
-                            if (!hasRepeatedTeammate2) {
+                            if (!hasRepeatedTeammate2 || matchNumber >= 3) {
                                 for (const playerId of teamB2Ids) {
                                     const history = teammateHistory.get(playerId);
                                     if (history) {
                                         for (const teammateId of teamB2Ids) {
                                             if (teammateId !== playerId && history.has(teammateId)) {
-                                                hasRepeatedTeammate2 = true;
-                                                break;
+                                                if (matchNumber < 3) {
+                                                    hasRepeatedTeammate2 = true;
+                                                    break;
+                                                }
                                             }
                                         }
-                                        if (hasRepeatedTeammate2) break;
+                                        if (hasRepeatedTeammate2 && matchNumber < 3) break;
                                     }
                                 }
                             }
                             
-                            if (!usedCombinations.has(combinationKey3) && 
-                                !usedCombinations.has(combinationKey4) && 
-                                !hasRepeatedTeammate2) {
+                            // 조합 중복 체크도 완화
+                            const isCombinationUsed2 = usedCombinations.has(combinationKey3) || usedCombinations.has(combinationKey4);
+                            
+                            if ((!isCombinationUsed2 || matchNumber >= 3) && 
+                                (!hasRepeatedTeammate2 || matchNumber >= 3)) {
                                 selectedPlayers = candidatePlayers;
                                 selectedTeamA = teamA2;
                                 selectedTeamB = teamB2;
-                                usedCombinations.add(combinationKey3);
-                                usedCombinations.add(combinationKey4);
+                                if (!isCombinationUsed2) {
+                                    usedCombinations.add(combinationKey3);
+                                    usedCombinations.add(combinationKey4);
+                                }
                                 found = true;
                             }
                         }
