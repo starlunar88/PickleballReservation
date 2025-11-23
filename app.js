@@ -11124,10 +11124,55 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 코트별 경기 번호 추적 (밸런스 모드에서 경기 번호에 따라 조합 결정)
             let courtMatchNumber = 0;
             
+            // 밸런스 모드에서 6명 이상인 경우: 상위 4명 고정
+            let topFourPlayers = null;
+            let remainingPlayers = null;
+            if (teamMode === 'balanced' && totalPlayers >= 6) {
+                // 상위 4명 고정 (최강, 차강, 차약, 최약)
+                topFourPlayers = sortedAllPlayers.slice(0, 4);
+                // 나머지 플레이어들
+                remainingPlayers = sortedAllPlayers.slice(4);
+            }
+            
             for (let r = 1; r <= rounds; r++) {
-                // 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
-                // 각 라운드마다 현재까지 참여 횟수가 가장 적은 4명을 선택
-                const availablePlayers = [...sortedAllPlayers];
+                // 밸런스 모드에서 6명 이상인 경우: 경기 번호에 따라 상위 4명 또는 나머지 플레이어 선택
+                let availablePlayers;
+                if (teamMode === 'balanced' && totalPlayers >= 6 && topFourPlayers) {
+                    courtMatchNumber++;
+                    const matchPattern = courtMatchNumber % 4;
+                    
+                    // 1,2,5,6 경기: 상위 4명 고정
+                    if (matchPattern === 1 || matchPattern === 2) {
+                        availablePlayers = [...topFourPlayers];
+                    } else {
+                        // 3,4,7,8 경기: 나머지 플레이어 + 상위 4명 중 일부
+                        // 나머지 플레이어가 2명 이상이면 나머지 플레이어 + 상위 4명 중 2명
+                        // 나머지 플레이어가 1명이면 나머지 플레이어 + 상위 4명 중 3명
+                        if (remainingPlayers.length >= 2) {
+                            // 나머지 2명 + 상위 4명 중 2명 (참여 횟수가 적은 순)
+                            const topFourByCount = [...topFourPlayers].sort((a, b) => {
+                                const countA = playerPlayCount[a.userId] || 0;
+                                const countB = playerPlayCount[b.userId] || 0;
+                                return countA - countB;
+                            });
+                            availablePlayers = [...remainingPlayers, ...topFourByCount.slice(0, 2)];
+                        } else if (remainingPlayers.length === 1) {
+                            // 나머지 1명 + 상위 4명 중 3명
+                            const topFourByCount = [...topFourPlayers].sort((a, b) => {
+                                const countA = playerPlayCount[a.userId] || 0;
+                                const countB = playerPlayCount[b.userId] || 0;
+                                return countA - countB;
+                            });
+                            availablePlayers = [...remainingPlayers, ...topFourByCount.slice(0, 3)];
+                        } else {
+                            // 나머지 플레이어가 없으면 상위 4명 사용
+                            availablePlayers = [...topFourPlayers];
+                        }
+                    }
+                } else {
+                    // 기존 로직: 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
+                    availablePlayers = [...sortedAllPlayers];
+                }
                 
                 // 현재 대진표 내 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 DUPR 점수 고려 후 랜덤)
                 availablePlayers.sort((a, b) => {
@@ -11206,7 +11251,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         if (teamMode === 'balanced') {
                             // 밸런스 모드: 경기 번호에 따라 조합 결정
                             // 주의: DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
-                            courtMatchNumber++;
+                            // courtMatchNumber는 이미 위에서 증가했으므로 여기서는 사용만
                             const matchPattern = courtMatchNumber % 4;
                             
                             // 점수별로 정렬 (최강 -> 최약)
