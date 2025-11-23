@@ -11121,6 +11121,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             const teammateHistory = new Map(); // 같은 팀원 이력: userId -> Set<teammateUserId>
             const opponentHistory = new Map(); // 상대팀원 이력: userId -> Set<opponentUserId>
             
+            // 코트별 경기 번호 추적 (밸런스 모드에서 경기 번호에 따라 조합 결정)
+            let courtMatchNumber = 0;
+            
             for (let r = 1; r <= rounds; r++) {
                 // 현재까지 이 대진표에서 참여 횟수가 적은 플레이어를 우선 선택
                 // 각 라운드마다 현재까지 참여 횟수가 가장 적은 4명을 선택
@@ -11201,10 +11204,67 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
                         if (teamMode === 'balanced') {
-                            // 밸런스 모드: 여러 밸런스 조합 시도 (반복 방지)
+                            // 밸런스 모드: 경기 번호에 따라 조합 결정
                             // 주의: DUPR 점수만 사용하며, 내부 랭킹은 사용하지 않습니다.
-                            const balancedConfigs = createBalancedTeamConfigs(candidate);
-                            teamConfigs.push(...balancedConfigs);
+                            courtMatchNumber++;
+                            const matchPattern = courtMatchNumber % 4;
+                            
+                            // 점수별로 정렬 (최강 -> 최약)
+                            const sorted = [...candidate].sort((a, b) => {
+                                const duprA = b.dupr || 0;
+                                const duprB = a.dupr || 0;
+                                return duprA - duprB;
+                            });
+                            
+                            // 경기 번호에 따라 조합 결정
+                            if (matchPattern === 1) {
+                                // 1경기, 5경기: 최강+최약 vs 차강+차약
+                                const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
+                                const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
+                                teamConfigs.push({ teamA, teamB });
+                            } else if (matchPattern === 2) {
+                                // 2경기, 6경기: 최강+차약 vs 차강+최약
+                                const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort();
+                                const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort();
+                                teamConfigs.push({ teamA, teamB });
+                            } else {
+                                // 3,4,7,8 경기: 위 두 조합 제외하고 다른 조합
+                                // 가능한 다른 조합들 생성
+                                const forbidden1 = [[sorted[0].userId, sorted[3].userId].sort().join(','), [sorted[1].userId, sorted[2].userId].sort().join(',')];
+                                const forbidden2 = [[sorted[0].userId, sorted[2].userId].sort().join(','), [sorted[1].userId, sorted[3].userId].sort().join(',')];
+                                
+                                // 다른 조합들 시도
+                                const otherCombinations = [
+                                    [[sorted[0].userId, sorted[1].userId].sort(), [sorted[2].userId, sorted[3].userId].sort()],
+                                    [[sorted[1].userId, sorted[2].userId].sort(), [sorted[0].userId, sorted[3].userId].sort()],
+                                    [[sorted[1].userId, sorted[3].userId].sort(), [sorted[0].userId, sorted[2].userId].sort()],
+                                    [[sorted[2].userId, sorted[3].userId].sort(), [sorted[0].userId, sorted[1].userId].sort()]
+                                ];
+                                
+                                // 금지된 조합 제외하고 추가
+                                for (const combo of otherCombinations) {
+                                    const teamAIds = combo[0].sort().join(',');
+                                    const teamBIds = combo[1].sort().join(',');
+                                    const isForbidden1 = (teamAIds === forbidden1[0] && teamBIds === forbidden1[1]) || 
+                                                         (teamAIds === forbidden1[1] && teamBIds === forbidden1[0]);
+                                    const isForbidden2 = (teamAIds === forbidden2[0] && teamBIds === forbidden2[1]) || 
+                                                         (teamAIds === forbidden2[1] && teamBIds === forbidden2[0]);
+                                    
+                                    if (!isForbidden1 && !isForbidden2) {
+                                        teamConfigs.push({ 
+                                            teamA: combo[0].map(id => id), 
+                                            teamB: combo[1].map(id => id) 
+                                        });
+                                    }
+                                }
+                                
+                                // 금지된 조합만 있으면 허용 (fallback)
+                                if (teamConfigs.length === 0) {
+                                    const teamA = [sorted[0].userId, sorted[1].userId].sort();
+                                    const teamB = [sorted[2].userId, sorted[3].userId].sort();
+                                    teamConfigs.push({ teamA, teamB });
+                                }
+                            }
                         } else if (teamMode === 'grouped') {
                             // 그룹 모드: 코트 내에서는 랜덤하게 팀 구성
                             // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 랜덤하게 구성)
@@ -11358,19 +11418,30 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 고유한 조합을 찾지 못했으면 fallback 로직
                         fourPlayers = shuffled.slice(0, 4);
                         if (teamMode === 'balanced') {
-                            // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                            // 경기 번호에 따라 조합 결정
+                            courtMatchNumber++;
+                            const matchPattern = courtMatchNumber % 4;
+                            
+                            // DUPR 점수 순으로 정렬
                             const sorted = [...fourPlayers].sort((a, b) => {
                                 const duprA = b.dupr || 0;
                                 const duprB = a.dupr || 0;
-                                const diff = duprA - duprB;
-                                // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
-                                if (Math.abs(diff) < 0.1) {
-                                    return Math.random() - 0.5;
-                                }
-                                return diff;
+                                return duprA - duprB;
                             });
-                            selectedTeamA = [sorted[0], sorted[3]];
-                            selectedTeamB = [sorted[1], sorted[2]];
+                            
+                            if (matchPattern === 1) {
+                                // 1경기, 5경기: 최강+최약 vs 차강+차약
+                                selectedTeamA = [sorted[0], sorted[3]];
+                                selectedTeamB = [sorted[1], sorted[2]];
+                            } else if (matchPattern === 2) {
+                                // 2경기, 6경기: 최강+차약 vs 차강+최약
+                                selectedTeamA = [sorted[0], sorted[2]];
+                                selectedTeamB = [sorted[1], sorted[3]];
+                            } else {
+                                // 3,4,7,8 경기: 다른 조합 (최강+차강 vs 차약+최약)
+                                selectedTeamA = [sorted[0], sorted[1]];
+                                selectedTeamB = [sorted[2], sorted[3]];
+                            }
                         } else if (teamMode === 'grouped') {
                             // 그룹 모드: 코트가 이미 점수별로 나눠져 있으므로 완전 랜덤하게 팀 구성
                             const shuffledPlayers = [...fourPlayers].sort(() => Math.random() - 0.5);
@@ -11397,10 +11468,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
+                        // 경기 번호에 따라 조합 결정
+                        courtMatchNumber++;
+                        const matchPattern = courtMatchNumber % 4;
+                        
+                        // DUPR 점수 순으로 정렬
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
-                        selectedTeamA = [sorted[0], sorted[3]];
-                        selectedTeamB = [sorted[1], sorted[2]];
+                        
+                        if (matchPattern === 1) {
+                            // 1경기, 5경기: 최강+최약 vs 차강+차약
+                            selectedTeamA = [sorted[0], sorted[3]];
+                            selectedTeamB = [sorted[1], sorted[2]];
+                        } else if (matchPattern === 2) {
+                            // 2경기, 6경기: 최강+차약 vs 차강+최약
+                            selectedTeamA = [sorted[0], sorted[2]];
+                            selectedTeamB = [sorted[1], sorted[3]];
+                        } else {
+                            // 3,4,7,8 경기: 다른 조합 (최강+차강 vs 차약+최약)
+                            selectedTeamA = [sorted[0], sorted[1]];
+                            selectedTeamB = [sorted[2], sorted[3]];
+                        }
                     } else if (teamMode === 'grouped') {
                         // 그룹 모드: 코트가 이미 점수별로 나눠져 있으므로 완전 랜덤하게 팀 구성
                         const shuffled = [...fourPlayers].sort(() => Math.random() - 0.5);
@@ -11417,10 +11504,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
+                        // 경기 번호에 따라 조합 결정
+                        courtMatchNumber++;
+                        const matchPattern = courtMatchNumber % 4;
+                        
+                        // DUPR 점수 순으로 정렬
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
-                        selectedTeamA = [sorted[0], sorted[3]];
-                        selectedTeamB = [sorted[1], sorted[2]];
+                        
+                        if (matchPattern === 1) {
+                            // 1경기, 5경기: 최강+최약 vs 차강+차약
+                            selectedTeamA = [sorted[0], sorted[3]];
+                            selectedTeamB = [sorted[1], sorted[2]];
+                        } else if (matchPattern === 2) {
+                            // 2경기, 6경기: 최강+차약 vs 차강+최약
+                            selectedTeamA = [sorted[0], sorted[2]];
+                            selectedTeamB = [sorted[1], sorted[3]];
+                        } else {
+                            // 3,4,7,8 경기: 다른 조합 (최강+차강 vs 차약+최약)
+                            selectedTeamA = [sorted[0], sorted[1]];
+                            selectedTeamB = [sorted[2], sorted[3]];
+                        }
                     } else if (teamMode === 'grouped') {
                         // 그룹 모드: 코트가 이미 점수별로 나눠져 있으므로 완전 랜덤하게 팀 구성
                         const shuffled = [...fourPlayers].sort(() => Math.random() - 0.5);
@@ -11560,6 +11663,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 이전 경기 조합을 추적하여 중복 방지 (플레이어 4명 + 팀 구성 모두 체크)
             const previousMatchConfigs = []; // {playerIds: string, teamAIds: string, teamBIds: string}
             
+            // 코트별 경기 번호 추적 (밸런스 모드에서 경기 번호에 따라 조합 결정)
+            let courtMatchNumber2 = 0;
+            
             // 각 라운드마다 4명씩 선택하여 경기 생성
             for (let r = 1; r <= rounds; r++) {
                 const availablePlayers = [...sortedAllPlayers];
@@ -11636,9 +11742,66 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 팀 구성 생성 (모든 패턴 시도)
                         const teamConfigs = [];
                         if (teamMode === 'balanced') {
-                            // 밸런스 모드: 여러 밸런스 조합 시도 (반복 방지)
-                            const balancedConfigs = createBalancedTeamConfigs(candidate);
-                            teamConfigs.push(...balancedConfigs);
+                            // 밸런스 모드: 경기 번호에 따라 조합 결정
+                            courtMatchNumber2++;
+                            const matchPattern = courtMatchNumber2 % 4;
+                            
+                            // 점수별로 정렬 (최강 -> 최약)
+                            const sorted = [...candidate].sort((a, b) => {
+                                const duprA = b.dupr || 0;
+                                const duprB = a.dupr || 0;
+                                return duprA - duprB;
+                            });
+                            
+                            // 경기 번호에 따라 조합 결정
+                            if (matchPattern === 1) {
+                                // 1경기, 5경기: 최강+최약 vs 차강+차약
+                                const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
+                                const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
+                                teamConfigs.push({ teamA, teamB });
+                            } else if (matchPattern === 2) {
+                                // 2경기, 6경기: 최강+차약 vs 차강+최약
+                                const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort();
+                                const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort();
+                                teamConfigs.push({ teamA, teamB });
+                            } else {
+                                // 3,4,7,8 경기: 위 두 조합 제외하고 다른 조합
+                                // 가능한 다른 조합들 생성
+                                const forbidden1 = [[sorted[0].userId, sorted[3].userId].sort().join(','), [sorted[1].userId, sorted[2].userId].sort().join(',')];
+                                const forbidden2 = [[sorted[0].userId, sorted[2].userId].sort().join(','), [sorted[1].userId, sorted[3].userId].sort().join(',')];
+                                
+                                // 다른 조합들 시도
+                                const otherCombinations = [
+                                    [[sorted[0].userId, sorted[1].userId].sort(), [sorted[2].userId, sorted[3].userId].sort()],
+                                    [[sorted[1].userId, sorted[2].userId].sort(), [sorted[0].userId, sorted[3].userId].sort()],
+                                    [[sorted[1].userId, sorted[3].userId].sort(), [sorted[0].userId, sorted[2].userId].sort()],
+                                    [[sorted[2].userId, sorted[3].userId].sort(), [sorted[0].userId, sorted[1].userId].sort()]
+                                ];
+                                
+                                // 금지된 조합 제외하고 추가
+                                for (const combo of otherCombinations) {
+                                    const teamAIds = combo[0].sort().join(',');
+                                    const teamBIds = combo[1].sort().join(',');
+                                    const isForbidden1 = (teamAIds === forbidden1[0] && teamBIds === forbidden1[1]) || 
+                                                         (teamAIds === forbidden1[1] && teamBIds === forbidden1[0]);
+                                    const isForbidden2 = (teamAIds === forbidden2[0] && teamBIds === forbidden2[1]) || 
+                                                         (teamAIds === forbidden2[1] && teamBIds === forbidden2[0]);
+                                    
+                                    if (!isForbidden1 && !isForbidden2) {
+                                        teamConfigs.push({ 
+                                            teamA: combo[0].map(id => id), 
+                                            teamB: combo[1].map(id => id) 
+                                        });
+                                    }
+                                }
+                                
+                                // 금지된 조합만 있으면 허용 (fallback)
+                                if (teamConfigs.length === 0) {
+                                    const teamA = [sorted[0].userId, sorted[1].userId].sort();
+                                    const teamB = [sorted[2].userId, sorted[3].userId].sort();
+                                    teamConfigs.push({ teamA, teamB });
+                                }
+                            }
                         } else if (teamMode === 'grouped') {
                             // 그룹 모드: 코트 내에서는 랜덤하게 팀 구성
                             // (그룹 모드는 이미 코트가 점수별로 나눠졌으므로, 코트 내에서는 완전 랜덤하게 구성)
@@ -11686,19 +11849,30 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 고유한 조합을 찾지 못했으면 fallback 로직
                         fourPlayers = shuffled.slice(0, 4);
                         if (teamMode === 'balanced') {
-                            // DUPR 점수 순으로 정렬하되, 같은 점수 범위 내에서는 랜덤하게 섞기
+                            // 경기 번호에 따라 조합 결정
+                            courtMatchNumber2++;
+                            const matchPattern = courtMatchNumber2 % 4;
+                            
+                            // DUPR 점수 순으로 정렬
                             const sorted = [...fourPlayers].sort((a, b) => {
                                 const duprA = b.dupr || 0;
                                 const duprB = a.dupr || 0;
-                                const diff = duprA - duprB;
-                                // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
-                                if (Math.abs(diff) < 0.1) {
-                                    return Math.random() - 0.5;
-                                }
-                                return diff;
+                                return duprA - duprB;
                             });
-                            selectedTeamA = [sorted[0], sorted[3]];
-                            selectedTeamB = [sorted[1], sorted[2]];
+                            
+                            if (matchPattern === 1) {
+                                // 1경기, 5경기: 최강+최약 vs 차강+차약
+                                selectedTeamA = [sorted[0], sorted[3]];
+                                selectedTeamB = [sorted[1], sorted[2]];
+                            } else if (matchPattern === 2) {
+                                // 2경기, 6경기: 최강+차약 vs 차강+최약
+                                selectedTeamA = [sorted[0], sorted[2]];
+                                selectedTeamB = [sorted[1], sorted[3]];
+                            } else {
+                                // 3,4,7,8 경기: 다른 조합 (최강+차강 vs 차약+최약)
+                                selectedTeamA = [sorted[0], sorted[1]];
+                                selectedTeamB = [sorted[2], sorted[3]];
+                            }
                         } else if (teamMode === 'grouped') {
                             // 그룹 모드: 코트가 이미 점수별로 나눠져 있으므로 완전 랜덤하게 팀 구성
                             const shuffledPlayers = [...fourPlayers].sort(() => Math.random() - 0.5);
@@ -11725,10 +11899,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     
                     fourPlayers = [...candidatesWithMinCount, ...additionalPlayers].slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
+                        // 경기 번호에 따라 조합 결정
+                        courtMatchNumber2++;
+                        const matchPattern = courtMatchNumber2 % 4;
+                        
+                        // DUPR 점수 순으로 정렬
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
-                        selectedTeamA = [sorted[0], sorted[3]];
-                        selectedTeamB = [sorted[1], sorted[2]];
+                        
+                        if (matchPattern === 1) {
+                            // 1경기, 5경기: 최강+최약 vs 차강+차약
+                            selectedTeamA = [sorted[0], sorted[3]];
+                            selectedTeamB = [sorted[1], sorted[2]];
+                        } else if (matchPattern === 2) {
+                            // 2경기, 6경기: 최강+차약 vs 차강+최약
+                            selectedTeamA = [sorted[0], sorted[2]];
+                            selectedTeamB = [sorted[1], sorted[3]];
+                        } else {
+                            // 3,4,7,8 경기: 다른 조합 (최강+차강 vs 차약+최약)
+                            selectedTeamA = [sorted[0], sorted[1]];
+                            selectedTeamB = [sorted[2], sorted[3]];
+                        }
                     } else if (teamMode === 'grouped') {
                         // 그룹 모드: 코트가 이미 점수별로 나눠져 있으므로 완전 랜덤하게 팀 구성
                         const shuffled = [...fourPlayers].sort(() => Math.random() - 0.5);
@@ -11745,10 +11935,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 if (!fourPlayers || fourPlayers.length < 4) {
                     fourPlayers = availablePlayers.slice(0, 4);
                     if (teamMode === 'balanced') {
-                        // DUPR 점수 순으로 정렬 (내부 랭킹 미사용)
+                        // 경기 번호에 따라 조합 결정
+                        courtMatchNumber2++;
+                        const matchPattern = courtMatchNumber2 % 4;
+                        
+                        // DUPR 점수 순으로 정렬
                         const sorted = [...fourPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
-                        selectedTeamA = [sorted[0], sorted[3]];
-                        selectedTeamB = [sorted[1], sorted[2]];
+                        
+                        if (matchPattern === 1) {
+                            // 1경기, 5경기: 최강+최약 vs 차강+차약
+                            selectedTeamA = [sorted[0], sorted[3]];
+                            selectedTeamB = [sorted[1], sorted[2]];
+                        } else if (matchPattern === 2) {
+                            // 2경기, 6경기: 최강+차약 vs 차강+최약
+                            selectedTeamA = [sorted[0], sorted[2]];
+                            selectedTeamB = [sorted[1], sorted[3]];
+                        } else {
+                            // 3,4,7,8 경기: 다른 조합 (최강+차강 vs 차약+최약)
+                            selectedTeamA = [sorted[0], sorted[1]];
+                            selectedTeamB = [sorted[2], sorted[3]];
+                        }
                     } else if (teamMode === 'grouped') {
                         // 그룹 모드: 코트가 이미 점수별로 나눠져 있으므로 완전 랜덤하게 팀 구성
                         const shuffled = [...fourPlayers].sort(() => Math.random() - 0.5);
