@@ -11123,11 +11123,24 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 teamB: [sorted[1], sorted[2]].map(p => p.userId) 
                             });
                         } else {
-                            // 중복이면 다른 조합 사용 (최강+차약 vs 차강+최약)
-                            teamConfigs.push({ 
-                                teamA: [sorted[0], sorted[2]].map(p => p.userId), 
-                                teamB: [sorted[1], sorted[3]].map(p => p.userId) 
-                            });
+                            // 중복이면 다른 조합 사용 (6경기 기본 조합과 겹치지 않도록 최강+차강 vs 차약+최약)
+                            // 단, 이 조합은 7경기에서 사용될 수 있으므로 가능한 다른 조합도 시도
+                            const altCombo1 = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
+                            const altCombo2 = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
+                            const altComboKey = `${altCombo1}|${altCombo2}`;
+                            
+                            if (!forbiddenCombinations.has(altComboKey)) {
+                                teamConfigs.push({ 
+                                    teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                    teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                                });
+                            } else {
+                                // 그래도 중복이면 최강+차약 vs 차강+최약 사용 (6경기와 겹칠 수 있지만 어쩔 수 없음)
+                                teamConfigs.push({ 
+                                    teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                                    teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                                });
+                            }
                         }
                     } else if (matchNum === 6) {
                         // 6경기: 최강+차약 vs 차강+최약 (1,2,5 경기와 중복 방지)
@@ -11151,11 +11164,24 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 teamB: [sorted[1], sorted[3]].map(p => p.userId) 
                             });
                         } else {
-                            // 중복이면 다른 조합 사용 (최강+최약 vs 차강+차약)
-                            teamConfigs.push({ 
-                                teamA: [sorted[0], sorted[3]].map(p => p.userId), 
-                                teamB: [sorted[1], sorted[2]].map(p => p.userId) 
-                            });
+                            // 중복이면 다른 조합 사용 (5경기 기본 조합과 겹치지 않도록 최강+차강 vs 차약+최약)
+                            // 단, 이 조합은 7경기에서 사용될 수 있으므로 가능한 다른 조합도 시도
+                            const altCombo1 = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
+                            const altCombo2 = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
+                            const altComboKey = `${altCombo1}|${altCombo2}`;
+                            
+                            if (!forbiddenCombinations.has(altComboKey)) {
+                                teamConfigs.push({ 
+                                    teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                    teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                                });
+                            } else {
+                                // 그래도 중복이면 최강+최약 vs 차강+차약 사용 (5경기 기본과 겹칠 수 있지만 어쩔 수 없음)
+                                teamConfigs.push({ 
+                                    teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                                    teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                                });
+                            }
                         }
                     } else if (matchNum === 7) {
                         // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
@@ -11872,11 +11898,24 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         teamB: [sorted[1], sorted[2]].map(p => p.userId) 
                                     });
                                 } else {
-                                    // 중복이면 다른 조합 사용 (최강+차약 vs 차강+최약)
-                                    teamConfigs.push({ 
-                                        teamA: [sorted[0], sorted[2]].map(p => p.userId), 
-                                        teamB: [sorted[1], sorted[3]].map(p => p.userId) 
-                                    });
+                                    // 중복이면 다른 조합 사용 (6경기 기본 조합과 겹치지 않도록 최강+차강 vs 차약+최약)
+                                    // 단, 이 조합은 7경기에서 사용될 수 있으므로 가능한 다른 조합도 시도
+                                    const altCombo1 = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
+                                    const altCombo2 = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
+                                    const altComboKey = `${altCombo1}|${altCombo2}`;
+                                    
+                                    if (!forbiddenCombinations.has(altComboKey)) {
+                                        teamConfigs.push({ 
+                                            teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                            teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                                        });
+                                    } else {
+                                        // 그래도 중복이면 최강+차약 vs 차강+최약 사용 (6경기와 겹칠 수 있지만 어쩔 수 없음)
+                                        teamConfigs.push({ 
+                                            teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                                            teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                                        });
+                                    }
                                 }
                             } else if (matchNum === 6) {
                                 // 6경기: 최강+차약 vs 차강+최약 (1,2,5 경기와 중복 방지)
@@ -11899,12 +11938,25 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         teamA: [sorted[0], sorted[2]].map(p => p.userId), 
                                         teamB: [sorted[1], sorted[3]].map(p => p.userId) 
                                     });
-                            } else {
-                                    // 중복이면 다른 조합 사용 (최강+최약 vs 차강+차약)
-                                    teamConfigs.push({ 
-                                        teamA: [sorted[0], sorted[3]].map(p => p.userId), 
-                                        teamB: [sorted[1], sorted[2]].map(p => p.userId) 
-                                    });
+                                } else {
+                                    // 중복이면 다른 조합 사용 (5경기 기본 조합과 겹치지 않도록 최강+차강 vs 차약+최약)
+                                    // 단, 이 조합은 7경기에서 사용될 수 있으므로 가능한 다른 조합도 시도
+                                    const altCombo1 = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
+                                    const altCombo2 = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
+                                    const altComboKey = `${altCombo1}|${altCombo2}`;
+                                    
+                                    if (!forbiddenCombinations.has(altComboKey)) {
+                                        teamConfigs.push({ 
+                                            teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                            teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                                        });
+                                    } else {
+                                        // 그래도 중복이면 최강+최약 vs 차강+차약 사용 (5경기 기본과 겹칠 수 있지만 어쩔 수 없음)
+                                        teamConfigs.push({ 
+                                            teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                                            teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                                        });
+                                    }
                                 }
                             } else if (matchNum === 7) {
                                 // 7경기: 잘하는 사람들끼리, 못하는 사람들끼리 (1,2 경기와 같은 조합이지만 중복 방지)
