@@ -10853,12 +10853,50 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 }
                 
                 if (availableThisMatch.length < 4) {
-                    // 4명이 안 되면 이 코트의 경기 건너뛰기
-                    console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 플레이어 부족 (${availableThisMatch.length}명)`);
+                    // 4명이 안 되면 전체 플레이어 풀에서 선택 (fallback)
+                    console.warn(`⚠️ 라운드 ${r}, 코트 ${c}: 플레이어 부족 (${availableThisMatch.length}명), 전체 플레이어 풀에서 선택합니다.`);
+                    
                     if (teamMode === 'balanced') {
-                        console.warn(`  - 밸런스 모드: availablePlayers가 제대로 설정되지 않았을 수 있습니다.`);
+                        // 밸런스 모드: 전체 플레이어 풀에서 DUPR 점수 순으로 선택
+                        const sortedAll = [...shuffledAllPlayers].sort((a, b) => {
+                            const duprA = b.dupr || 0;
+                            const duprB = a.dupr || 0;
+                            const diff = duprA - duprB;
+                            if (Math.abs(diff) < 0.15) {
+                                return Math.random() - 0.5;
+                            }
+                            return diff;
+                        });
+                        
+                        // 같은 라운드에서 이미 배정된 플레이어를 제외하되, 부족하면 포함
+                        const filtered = sortedAll.filter(p => !assignedPlayersInRound.has(p.userId));
+                        if (filtered.length >= 4) {
+                            availablePlayers = filtered.slice(0, 4);
+                        } else {
+                            // 여전히 부족하면 전체 플레이어에서 선택 (중복 허용)
+                            availablePlayers = sortedAll.slice(0, 4);
+                            console.warn(`  - 경고: 같은 라운드 내 중복 플레이어 포함 (${availablePlayers.length}명)`);
+                        }
+                    } else {
+                        // 랜덤 모드: 전체 플레이어 풀에서 선택
+                        const filtered = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
+                        if (filtered.length >= 4) {
+                            availablePlayers = filtered.slice(0, 4);
+                        } else {
+                            // 여전히 부족하면 전체 플레이어에서 선택 (중복 허용)
+                            availablePlayers = shuffledAllPlayers.slice(0, 4);
+                            console.warn(`  - 경고: 같은 라운드 내 중복 플레이어 포함 (${availablePlayers.length}명)`);
+                        }
                     }
-                    continue;
+                    
+                    // availableThisMatch를 업데이트된 플레이어로 교체
+                    availableThisMatch.splice(0, availableThisMatch.length, ...availablePlayers);
+                    
+                    if (availableThisMatch.length < 4) {
+                        // 여전히 4명이 안 되면 경기 건너뛰기
+                        console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 플레이어 부족 (${availableThisMatch.length}명)`);
+                        continue;
+                    }
                 }
                 
                 // 플레이어 선택
