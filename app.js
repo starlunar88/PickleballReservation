@@ -1662,7 +1662,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 알림 버튼
     const notificationsBtn = document.getElementById('notifications-btn');
     if (notificationsBtn) {
-        notificationsBtn.addEventListener('click', openNotificationsModal);
+        notificationsBtn.addEventListener('click', () => {
+            if (typeof openNotificationsModal === 'function') {
+                openNotificationsModal();
+            } else {
+                console.warn('openNotificationsModal 함수가 아직 정의되지 않았습니다.');
+            }
+        });
     }
 
     // 새로고침 버튼 이벤트 리스너
