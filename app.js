@@ -1716,7 +1716,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 알림 모달 닫기
     const closeNotifications = document.getElementById('close-notifications');
     if (closeNotifications) {
-        closeNotifications.addEventListener('click', closeNotificationsModal);
+        closeNotifications.addEventListener('click', () => {
+            if (typeof closeNotificationsModal === 'function') {
+                closeNotificationsModal();
+            } else {
+                console.warn('closeNotificationsModal 함수가 아직 정의되지 않았습니다.');
+            }
+        });
     }
     
     // 대시보드 탭 전환
