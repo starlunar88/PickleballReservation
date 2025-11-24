@@ -11004,7 +11004,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort();
                         teamConfigs.push({ teamA, teamB });
                     } else if (matchNum === 7) {
-                        // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (최강+차강 vs 차강+차약)
+                        // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
                         // 1,2 경기 조합과 중복되지 않는 조합 생성
                         const forbiddenCombinations = new Set();
                         for (const prev of previousMatchConfigs) {
@@ -11017,18 +11017,19 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                         
                         // 잘하는 사람끼리 vs 잘하는 사람끼리 조합 시도
-                        // 최강+차강 vs 차강+차약
+                        // 상위 4명: sorted[0] (최강), sorted[1] (차강), sorted[2] (차강), sorted[3] (차약)
+                        // 최강+차강 vs 차강+차약 (중복 없이)
                         const teamA = [sorted[0], sorted[1]].map(p => p.userId).sort(); // 최강+차강
-                        const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort(); // 차강+차약
+                        const teamB = [sorted[2], sorted[3]].map(p => p.userId).sort(); // 차강+차약
                         const comboKey = `${teamA.join(',')}|${teamB.join(',')}`;
                         
                         if (!forbiddenCombinations.has(comboKey)) {
                             teamConfigs.push({ teamA, teamB });
                         } else {
-                            // 중복이면 최강+차강 vs 차강+차약 (다른 조합)
+                            // 중복이면 다른 조합 사용 (최강+차강 vs 차강+차약)
                             teamConfigs.push({ 
                                 teamA: [sorted[0], sorted[2]].map(p => p.userId).sort(), // 최강+차강
-                                teamB: [sorted[1], sorted[2]].map(p => p.userId).sort()  // 차강+차약
+                                teamB: [sorted[1], sorted[3]].map(p => p.userId).sort()  // 차강+차약
                             });
                         }
                         
@@ -11036,11 +11037,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         if (teamConfigs.length === 0) {
                             teamConfigs.push({ 
                                 teamA: [sorted[0], sorted[1]].map(p => p.userId), // 잘하는 사람들 (최강+차강)
-                                teamB: [sorted[1], sorted[2]].map(p => p.userId)  // 잘하는 사람들 (차강+차약)
+                                teamB: [sorted[2], sorted[3]].map(p => p.userId)  // 잘하는 사람들 (차강+차약)
                             });
                         }
                     } else if (matchNum === 8) {
-                        // 8경기: 못하는 사람끼리 vs 못하는 사람끼리 (차약+최약 vs 차약+최약)
+                        // 8경기: 못하는 사람끼리 vs 못하는 사람끼리 (하위 4명 중에서)
                         // 7경기와 중복 방지
                         const forbiddenCombinations = new Set();
                         for (const prev of previousMatchConfigs) {
@@ -11053,19 +11054,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                         
                         // 못하는 사람끼리 vs 못하는 사람끼리 조합 시도
-                        // 하위 4명 중에서: 차약+최약 vs 차약+최약 (실제로는 차약+최약 vs 차약+차약)
-                        // sorted는 DUPR 점수 높은 순이므로, sorted[2], sorted[3]이 하위 2명
-                        const teamA = [sorted[2], sorted[3]].map(p => p.userId).sort(); // 차약+최약
-                        const teamB = [sorted[2], sorted[1]].map(p => p.userId).sort(); // 차약+차강 (차강이 상위이지만 차약과 조합)
+                        // 하위 4명이 이미 선택되어 있으므로, sorted는 하위 4명 기준으로 정렬됨
+                        // sorted[0] = 하위 1위, sorted[1] = 하위 2위, sorted[2] = 하위 3위, sorted[3] = 하위 4위
+                        // 차약+최약 vs 차약+차강 (중복 없이)
+                        const teamA = [sorted[2], sorted[3]].map(p => p.userId).sort(); // 하위 3위+하위 4위 (차약+최약)
+                        const teamB = [sorted[0], sorted[1]].map(p => p.userId).sort(); // 하위 1위+하위 2위 (차약+차강)
                         const comboKey = `${teamA.join(',')}|${teamB.join(',')}`;
                         
                         if (!forbiddenCombinations.has(comboKey)) {
-                            teamConfigs.push({ teamA, teamB });
+                            teamConfigs.push({ 
+                                teamA: teamA, // 차약+최약
+                                teamB: teamB  // 차약+차강
+                            });
                         } else {
-                            // 중복이면 다른 조합 사용
+                            // 중복이면 다른 조합 사용 (차약+최약 vs 차강+차약)
                             teamConfigs.push({ 
                                 teamA: [sorted[2], sorted[3]].map(p => p.userId).sort(), // 차약+최약
-                                teamB: [sorted[1], sorted[3]].map(p => p.userId).sort()  // 차강+최약
+                                teamB: [sorted[1], sorted[2]].map(p => p.userId).sort()  // 차강+차약
                             });
                         }
                         
@@ -11073,7 +11078,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         if (teamConfigs.length === 0) {
                             teamConfigs.push({ 
                                 teamA: [sorted[2], sorted[3]].map(p => p.userId), // 못하는 사람들 (차약+최약)
-                                teamB: [sorted[1], sorted[2]].map(p => p.userId)  // 차강+차약
+                                teamB: [sorted[0], sorted[1]].map(p => p.userId)  // 차약+차강
                             });
                         }
                     }
@@ -11879,18 +11884,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 selectedTeamA = [sorted[0], sorted[2]];
                                 selectedTeamB = [sorted[1], sorted[3]];
                             } else if (matchNum === 7) {
-                                // 7경기: 코트가 2개 이상이면 잘하는 사람들끼리, 못하는 사람들끼리
-                                // 코트가 1개면 밸런스 조합
+                                // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
                                 if (courtCount >= 2) {
                                     selectedTeamA = [sorted[0], sorted[1]]; // 잘하는 사람들 (최강+차강)
-                                    selectedTeamB = [sorted[2], sorted[3]]; // 못하는 사람들 (차약+최약)
+                                    selectedTeamB = [sorted[2], sorted[3]]; // 잘하는 사람들 (차강+차약)
                                 } else {
                                     selectedTeamA = [sorted[0], sorted[3]]; // 최강+최약
                                     selectedTeamB = [sorted[1], sorted[2]]; // 차강+차약
                                 }
                             } else if (matchNum === 8) {
-                                // 8경기: 7경기와 중복 방지
-                                // 7경기 조합 확인
+                                // 8경기: 못하는 사람끼리 vs 못하는 사람끼리 (하위 4명 중에서)
+                                // 7경기와 중복 방지
                                 let isDuplicateWith7 = false;
                                 const match7Key = `${sorted[0].userId},${sorted[1].userId}|${sorted[2].userId},${sorted[3].userId}`;
                                 const match7Key2 = `${sorted[2].userId},${sorted[3].userId}|${sorted[0].userId},${sorted[1].userId}`;
@@ -11906,13 +11910,14 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                                 
                                 if (courtCount >= 2) {
+                                    // 하위 4명 기준: sorted[0], sorted[1] = 하위 1,2위, sorted[2], sorted[3] = 하위 3,4위
                                     if (isDuplicateWith7) {
                                         // 7경기와 중복이면 다른 조합 사용
-                                        selectedTeamA = [sorted[0], sorted[2]]; // 최강+차약
-                                        selectedTeamB = [sorted[1], sorted[3]]; // 차강+최약
+                                        selectedTeamA = [sorted[2], sorted[3]]; // 차약+최약
+                                        selectedTeamB = [sorted[1], sorted[2]]; // 차강+차약
                                     } else {
-                                        selectedTeamA = [sorted[0], sorted[1]]; // 잘하는 사람들 (최강+차강)
-                                        selectedTeamB = [sorted[2], sorted[3]]; // 못하는 사람들 (차약+최약)
+                                        selectedTeamA = [sorted[2], sorted[3]]; // 못하는 사람들 (차약+최약)
+                                        selectedTeamB = [sorted[0], sorted[1]]; // 못하는 사람들 (차약+차강)
                                     }
                                 } else {
                                     selectedTeamA = [sorted[0], sorted[3]]; // 최강+최약
