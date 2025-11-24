@@ -10709,17 +10709,46 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 if (teamMode === 'balanced' && topFourPlayers) {
                     const matchNum = courtMatchNumbers[c];
                     
+                    // 밸런스 모드에서는 각 코트마다 독립적으로 플레이어 선택
+                    // 같은 라운드 내 중복 방지는 하되, 각 코트마다 상위 4명을 독립적으로 선택
+                    const allAvailablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
+                    
+                    // 현재 코트에서 사용 가능한 상위 4명 (DUPR 점수 순)
+                    const availableTopFour = allAvailablePlayers
+                        .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
+                        .sort((a, b) => {
+                            const duprA = b.dupr || 0;
+                            const duprB = a.dupr || 0;
+                            return duprA - duprB;
+                        });
+                    
+                    // 현재 코트에서 사용 가능한 나머지 플레이어
+                    const availableRemaining = allAvailablePlayers
+                        .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
+                        .sort((a, b) => {
+                            const duprA = b.dupr || 0;
+                            const duprB = a.dupr || 0;
+                            return duprA - duprB;
+                        });
+                    
                     if (matchNum === 1 || matchNum === 2) {
                         // 1,2 경기: 잘하는 사람들끼리, 못하는 사람들끼리 (상위 4명)
-                        availablePlayers = topFourPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
+                        // 각 코트마다 독립적으로 상위 4명 선택
+                        if (availableTopFour.length >= 4) {
+                            availablePlayers = availableTopFour.slice(0, 4);
+                        } else {
+                            // 상위 4명이 부족하면 나머지 플레이어로 보충
+                            const needed = 4 - availableTopFour.length;
+                            availablePlayers = [...availableTopFour, ...availableRemaining.slice(0, needed)];
+                        }
                     } else if (matchNum === 3 || matchNum === 4) {
                         // 3,4 경기: 참여 안한 나머지 플레이어 + 상위 4명 중 일부
-                        const notPlayed = remainingPlayers.filter(p => !playedPlayers.has(p.userId) && !assignedPlayersInRound.has(p.userId));
-                        const topFourByCount = [...topFourPlayers].sort((a, b) => {
+                        const notPlayed = availableRemaining.filter(p => !playedPlayers.has(p.userId));
+                        const topFourByCount = [...availableTopFour].sort((a, b) => {
                             const countA = playerPlayCount[a.userId] || 0;
                             const countB = playerPlayCount[b.userId] || 0;
                             return countA - countB;
-                        }).filter(p => !assignedPlayersInRound.has(p.userId));
+                        });
                         
                         const needed = 4 - notPlayed.length;
                         if (needed > 0 && notPlayed.length > 0) {
@@ -10732,15 +10761,21 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                     } else if (matchNum === 5 || matchNum === 6) {
                         // 5,6 경기: 상위 4명 (밸런스 조합)
-                        availablePlayers = topFourPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
+                        if (availableTopFour.length >= 4) {
+                            availablePlayers = availableTopFour.slice(0, 4);
+                        } else {
+                            // 상위 4명이 부족하면 나머지 플레이어로 보충
+                            const needed = 4 - availableTopFour.length;
+                            availablePlayers = [...availableTopFour, ...availableRemaining.slice(0, needed)];
+                        }
                     } else {
                         // 7,8 경기: 참여 안한 사람 우선 포함
-                        const notPlayed = remainingPlayers.filter(p => !playedPlayers.has(p.userId) && !assignedPlayersInRound.has(p.userId));
-                        const topFourByCount = [...topFourPlayers].sort((a, b) => {
+                        const notPlayed = availableRemaining.filter(p => !playedPlayers.has(p.userId));
+                        const topFourByCount = [...availableTopFour].sort((a, b) => {
                             const countA = playerPlayCount[a.userId] || 0;
                             const countB = playerPlayCount[b.userId] || 0;
                             return countA - countB;
-                        }).filter(p => !assignedPlayersInRound.has(p.userId));
+                        });
                         
                         const needed = 4 - notPlayed.length;
                         if (needed > 0 && notPlayed.length > 0) {
