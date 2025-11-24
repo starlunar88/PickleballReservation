@@ -10628,7 +10628,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
     const schedule = [];
     
     // 랜덤 모드: 전체 플레이어 풀에서 동적으로 선택
-    if (teamMode === 'random') {
+    if (teamMode === 'random' || teamMode === 'balanced') {
         // 모든 플레이어를 하나의 풀로 합치기 (이미 배정된 플레이어도 포함)
         const allPlayersPool = [];
         for (let c = 1; c <= courtCount; c++) {
@@ -10801,6 +10801,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         } else {
                             availablePlayers = topFourByCount.slice(0, 4);
                         }
+                    }
+                    } else {
+                        // topFourPlayers가 없으면 전체 플레이어에서 선택
+                        availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
                     }
                 } else {
                     // 랜덤 모드: 현재 경기에서 사용할 수 있는 플레이어 (같은 라운드에서 이미 배정된 플레이어 제외)
@@ -11210,8 +11214,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             console.log(`✅ 라운드 ${r} 경기 생성 완료`);
         }
         console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
-    } else {
-        // 밸런스 모드와 그룹 모드: 기존 로직 (코트별로 경기 생성)
+    } else if (teamMode === 'grouped') {
+        // 그룹 모드: 기존 로직 (코트별로 경기 생성)
         // 각 코트별로 라운드별 경기 생성
         for (let c = 1; c <= courtCount; c++) {
             const courtPlayerList = [...(courtPlayers[c] || [])];
