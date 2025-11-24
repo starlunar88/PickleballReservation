@@ -11253,10 +11253,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     const teamBKey = config.teamB.join(',');
                     const matchKey = `${teamAKey}|${teamBKey}`;
                     
-                    // 1. 팀 조합 중복 체크 (8경기 생성을 위해 완화)
-                    // 이미 생성된 경기가 4개 미만일 때만 엄격하게 체크
+                    // 1. 팀 조합 중복 체크 (항상 엄격하게 체크)
+                    // 코트가 2개 이상일 때는 더욱 엄격하게 중복 방지
                     let isUniqueTeam = true;
-                    if (previousMatchConfigs.length < 4) {
+                    // 코트가 2개 이상이고 플레이어가 8명 이상일 때는 항상 엄격하게 체크
+                    const shouldStrictCheck = courtCount >= 2 && shuffledAllPlayers.length >= 8;
+                    if (shouldStrictCheck || previousMatchConfigs.length < 4) {
                         isUniqueTeam = previousMatchConfigs.every(prev => {
                             const prevKey1 = `${prev.teamAIds}|${prev.teamBIds}`;
                             const prevKey2 = `${prev.teamBIds}|${prev.teamAIds}`;
@@ -11300,7 +11302,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     }
                     
                     // 팀 조합이 고유하고, 같은 팀원 반복이 없으면 선택
-                    if ((isUniqueTeam || previousMatchConfigs.length === 0 || previousMatchConfigs.length >= 4) && !hasRepeatedTeammate) {
+                    // 코트가 2개 이상이고 플레이어가 8명 이상일 때는 항상 엄격하게 체크
+                    if ((isUniqueTeam || (previousMatchConfigs.length === 0) || (!shouldStrictCheck && previousMatchConfigs.length >= 4)) && !hasRepeatedTeammate) {
                         const selectedTeamA = config.teamA.map(id => fourPlayers.find(p => p.userId === id));
                         const selectedTeamB = config.teamB.map(id => fourPlayers.find(p => p.userId === id));
                         
@@ -12137,10 +12140,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                             } else {
                             // 밸런스 모드: 완전 중복(-10)과 같은 팀 조합 반복(-5)은 제외, 같은 팀원 반복은 완전 제외
+                            // 코트가 2개 이상이고 플레이어가 8명 이상일 때는 더 엄격하게 체크
+                            const shouldStrictCheck = courtCount >= 2 && sortedAllPlayers.length >= 8;
                             // bestScore >= 0: 완전히 새로운 조합
-                            // bestScore >= -4: 같은 팀 조합 반복만 있는 경우 (허용)
-                            // bestScore < -4: 같은 팀원 반복(-10) 또는 완전 중복 (제외)
-                            if (bestScore >= -4 || previousMatchConfigs.length === 0) {
+                            // 코트가 2개 이상일 때: 같은 팀 조합 반복도 제외 (bestScore >= 0만 허용)
+                            // 코트가 1개일 때: 같은 팀 조합 반복은 허용 (bestScore >= -4)
+                            const threshold = shouldStrictCheck ? 0 : -4;
+                            if (bestScore >= threshold || previousMatchConfigs.length === 0) {
                                     fourPlayers = candidate;
                                     selectedTeamA = bestConfig.teamA.map(id => candidate.find(p => p.userId === id));
                                     selectedTeamB = bestConfig.teamB.map(id => candidate.find(p => p.userId === id));
