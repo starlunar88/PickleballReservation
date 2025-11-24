@@ -10994,73 +10994,63 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     });
                     
                     if (matchNum === 1 || matchNum === 2) {
-                        // 1,2 경기: 상위 사람들끼리 vs 상위 사람들끼리, 하위 사람들끼리 vs 하위 사람들끼리
-                        // 코트 번호에 따라 상위/하위 배정 (홀수 코트: 상위, 짝수 코트: 하위)
-                        if (c % 2 === 1) {
-                            // 홀수 코트: 상위 4명 중에서 잘하는 사람들끼리 vs 잘하는 사람들끼리
-                            // 1경기와 2경기 중복 방지
-                            const forbiddenCombinations = new Set();
-                            if (matchNum === 2) {
-                                for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 1 && prev.court === c) {
-                                        const prevTeamA = prev.teamAIds;
-                                        const prevTeamB = prev.teamBIds;
-                                        forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                        forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                        // 1,2 경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
+                        // 같은 팀원 안만나도록 설정
+                        // 가능한 조합들 생성 (같은 팀원 체크 포함)
+                        const possibleCombos = [
+                            [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 최강+차강 vs 차약+최약
+                            [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
+                            [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+최약 vs 차강+차약
+                        ];
+                        
+                        for (const combo of possibleCombos) {
+                            const teamAIds = combo[0].map(p => p.userId);
+                            const teamBIds = combo[1].map(p => p.userId);
+                            
+                            // 같은 팀원 체크: 1,2 경기에서 같은 팀원이었던 사람끼리 다시 같은 팀이 되지 않도록
+                            let hasRepeatedTeammate = false;
+                            for (const playerId of teamAIds) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamAIds) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate) break;
+                                }
+                            }
+                            if (!hasRepeatedTeammate) {
+                                for (const playerId of teamBIds) {
+                                    const history = teammateHistory.get(playerId);
+                                    if (history) {
+                                        for (const teammateId of teamBIds) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                hasRepeatedTeammate = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasRepeatedTeammate) break;
                                     }
                                 }
                             }
                             
-                            // 최강+차강 vs 차강+차약
-                            const teamA = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
-                            const teamB = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
-                            const comboKey = `${teamA}|${teamB}`;
-                            
-                            if (!forbiddenCombinations.has(comboKey)) {
+                            if (!hasRepeatedTeammate) {
                                 teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[1]].map(p => p.userId), 
-                                    teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                                    teamA: teamAIds, 
+                                    teamB: teamBIds 
                                 });
-                            } else {
-                                // 중복이면 다른 조합 사용
-                                teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[2]].map(p => p.userId), 
-                                    teamB: [sorted[1], sorted[3]].map(p => p.userId) 
-                                });
+                                break; // 첫 번째 유효한 조합 사용
                             }
-                        } else {
-                            // 짝수 코트: 하위 4명 중에서 못하는 사람들끼리 vs 못하는 사람들끼리
-                            // 하위 4명 기준: sorted[0] = 하위 1위, sorted[1] = 하위 2위, sorted[2] = 하위 3위, sorted[3] = 하위 4위
-                            // 1경기와 2경기 중복 방지
-                            const forbiddenCombinations = new Set();
-                            if (matchNum === 2) {
-                                for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 1 && prev.court === c) {
-                                        const prevTeamA = prev.teamAIds;
-                                        const prevTeamB = prev.teamBIds;
-                                        forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                        forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
-                                    }
-                                }
-                            }
-                            
-                            // 차약+최약 vs 차약+차강
-                            const teamA = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
-                            const teamB = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
-                            const comboKey = `${teamA}|${teamB}`;
-                            
-                            if (!forbiddenCombinations.has(comboKey)) {
-                                teamConfigs.push({ 
-                                    teamA: [sorted[2], sorted[3]].map(p => p.userId), 
-                                    teamB: [sorted[0], sorted[1]].map(p => p.userId) 
-                                });
-                            } else {
-                                // 중복이면 다른 조합 사용
-                                teamConfigs.push({ 
-                                    teamA: [sorted[2], sorted[3]].map(p => p.userId), 
-                                    teamB: [sorted[1], sorted[2]].map(p => p.userId) 
-                                });
-                            }
+                        }
+                        
+                        // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
+                        if (teamConfigs.length === 0) {
+                            teamConfigs.push({ 
+                                teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                            });
                         }
                     } else if (matchNum === 3 || matchNum === 4) {
                         // 3,4 경기: 밸런스 조합 (가능한 조합들 생성, 중복 방지)
@@ -11102,163 +11092,131 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             );
                         }
                     } else if (matchNum === 5) {
-                        // 5경기: 최강+최약 vs 차강+차약 (1,2 경기와 중복 방지)
-                        const forbiddenCombinations = new Set();
-                        for (const prev of previousMatchConfigs) {
-                            if (prev.matchNum === 1 || prev.matchNum === 2) {
-                                const prevTeamA = prev.teamAIds;
-                                const prevTeamB = prev.teamBIds;
-                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
-                            }
-                        }
-                        
-                        const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort().join(',');
-                        const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort().join(',');
-                        const comboKey = `${teamA}|${teamB}`;
-                        
-                        if (!forbiddenCombinations.has(comboKey)) {
-                            teamConfigs.push({ 
-                                teamA: [sorted[0], sorted[3]].map(p => p.userId), 
-                                teamB: [sorted[1], sorted[2]].map(p => p.userId) 
-                            });
-                        } else {
-                            // 중복이면 다른 조합 사용 (6경기 기본 조합과 겹치지 않도록 최강+차강 vs 차약+최약)
-                            // 단, 이 조합은 7경기에서 사용될 수 있으므로 가능한 다른 조합도 시도
-                            const altCombo1 = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
-                            const altCombo2 = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
-                            const altComboKey = `${altCombo1}|${altCombo2}`;
-                            
-                            if (!forbiddenCombinations.has(altComboKey)) {
-                                teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[1]].map(p => p.userId), 
-                                    teamB: [sorted[2], sorted[3]].map(p => p.userId) 
-                                });
-                            } else {
-                                // 그래도 중복이면 최강+차약 vs 차강+최약 사용 (6경기와 겹칠 수 있지만 어쩔 수 없음)
-                                teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[2]].map(p => p.userId), 
-                                    teamB: [sorted[1], sorted[3]].map(p => p.userId) 
-                                });
-                            }
-                        }
+                        // 5경기: 최강+최약 vs 차강+차약 (고정 조합, 중복 영향 안받음)
+                        teamConfigs.push({ 
+                            teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                            teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                        });
                     } else if (matchNum === 6) {
-                        // 6경기: 최강+차약 vs 차강+최약 (1,2,5 경기와 중복 방지)
-                        const forbiddenCombinations = new Set();
-                        for (const prev of previousMatchConfigs) {
-                            if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 5) {
-                                const prevTeamA = prev.teamAIds;
-                                const prevTeamB = prev.teamBIds;
-                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
-                            }
-                        }
-                        
-                        const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort().join(',');
-                        const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort().join(',');
-                        const comboKey = `${teamA}|${teamB}`;
-                        
-                        if (!forbiddenCombinations.has(comboKey)) {
-                            teamConfigs.push({ 
-                                teamA: [sorted[0], sorted[2]].map(p => p.userId), 
-                                teamB: [sorted[1], sorted[3]].map(p => p.userId) 
-                            });
-                        } else {
-                            // 중복이면 다른 조합 사용 (5경기 기본 조합과 겹치지 않도록 최강+차강 vs 차약+최약)
-                            // 단, 이 조합은 7경기에서 사용될 수 있으므로 가능한 다른 조합도 시도
-                            const altCombo1 = [sorted[0], sorted[1]].map(p => p.userId).sort().join(',');
-                            const altCombo2 = [sorted[2], sorted[3]].map(p => p.userId).sort().join(',');
-                            const altComboKey = `${altCombo1}|${altCombo2}`;
-                            
-                            if (!forbiddenCombinations.has(altComboKey)) {
-                                teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[1]].map(p => p.userId), 
-                                    teamB: [sorted[2], sorted[3]].map(p => p.userId) 
-                                });
-                            } else {
-                                // 그래도 중복이면 최강+최약 vs 차강+차약 사용 (5경기 기본과 겹칠 수 있지만 어쩔 수 없음)
-                                teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[3]].map(p => p.userId), 
-                                    teamB: [sorted[1], sorted[2]].map(p => p.userId) 
-                                });
-                            }
-                        }
+                        // 6경기: 최강+차약 vs 차강+최약 (고정 조합, 중복 영향 안받음)
+                        teamConfigs.push({ 
+                            teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                            teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                        });
                     } else if (matchNum === 7) {
-                        // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
-                        // 1,2 경기 조합과 중복되지 않는 조합 생성
-                        const forbiddenCombinations = new Set();
-                        for (const prev of previousMatchConfigs) {
-                            if (prev.matchNum === 1 || prev.matchNum === 2) {
-                                const prevTeamA = prev.teamAIds;
-                                const prevTeamB = prev.teamBIds;
-                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                        // 7경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
+                        // 1,2,7,8 경기는 같은 팀원 안만나도록 설정
+                        const possibleCombos = [
+                            [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 최강+차강 vs 차약+최약
+                            [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
+                            [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+최약 vs 차강+차약
+                        ];
+                        
+                        for (const combo of possibleCombos) {
+                            const teamAIds = combo[0].map(p => p.userId);
+                            const teamBIds = combo[1].map(p => p.userId);
+                            
+                            // 같은 팀원 체크: 1,2,7 경기에서 같은 팀원이었던 사람끼리 다시 같은 팀이 되지 않도록
+                            let hasRepeatedTeammate = false;
+                            for (const playerId of teamAIds) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamAIds) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate) break;
+                                }
+                            }
+                            if (!hasRepeatedTeammate) {
+                                for (const playerId of teamBIds) {
+                                    const history = teammateHistory.get(playerId);
+                                    if (history) {
+                                        for (const teammateId of teamBIds) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                hasRepeatedTeammate = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasRepeatedTeammate) break;
+                                    }
+                                }
+                            }
+                            
+                            if (!hasRepeatedTeammate) {
+                                teamConfigs.push({ 
+                                    teamA: teamAIds, 
+                                    teamB: teamBIds 
+                                });
+                                break; // 첫 번째 유효한 조합 사용
                             }
                         }
                         
-                        // 잘하는 사람끼리 vs 잘하는 사람끼리 조합 시도
-                        // 상위 4명: sorted[0] (최강), sorted[1] (차강), sorted[2] (차강), sorted[3] (차약)
-                        // 최강+차강 vs 차강+차약 (중복 없이)
-                        const teamA = [sorted[0], sorted[1]].map(p => p.userId).sort(); // 최강+차강
-                        const teamB = [sorted[2], sorted[3]].map(p => p.userId).sort(); // 차강+차약
-                        const comboKey = `${teamA.join(',')}|${teamB.join(',')}`;
-                        
-                        if (!forbiddenCombinations.has(comboKey)) {
-                            teamConfigs.push({ teamA, teamB });
-                        } else {
-                            // 중복이면 다른 조합 사용 (최강+차강 vs 차강+차약)
-                            teamConfigs.push({ 
-                                teamA: [sorted[0], sorted[2]].map(p => p.userId).sort(), // 최강+차강
-                                teamB: [sorted[1], sorted[3]].map(p => p.userId).sort()  // 차강+차약
-                            });
-                        }
-                        
-                        // 금지된 조합만 있으면 첫 번째 조합 사용 (fallback)
+                        // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
                         if (teamConfigs.length === 0) {
                             teamConfigs.push({ 
-                                teamA: [sorted[0], sorted[1]].map(p => p.userId), // 잘하는 사람들 (최강+차강)
-                                teamB: [sorted[2], sorted[3]].map(p => p.userId)  // 잘하는 사람들 (차강+차약)
+                                teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                teamB: [sorted[2], sorted[3]].map(p => p.userId) 
                             });
                         }
                     } else if (matchNum === 8) {
-                        // 8경기: 못하는 사람끼리 vs 못하는 사람끼리 (하위 4명 중에서)
-                        // 7경기와 중복 방지
-                        const forbiddenCombinations = new Set();
-                        for (const prev of previousMatchConfigs) {
-                            if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 7) {
-                                const prevTeamA = prev.teamAIds;
-                                const prevTeamB = prev.teamBIds;
-                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                        // 8경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
+                        // 1,2,7,8 경기는 같은 팀원 안만나도록 설정
+                        const possibleCombos = [
+                            [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 최강+차강 vs 차약+최약
+                            [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
+                            [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+최약 vs 차강+차약
+                        ];
+                        
+                        for (const combo of possibleCombos) {
+                            const teamAIds = combo[0].map(p => p.userId);
+                            const teamBIds = combo[1].map(p => p.userId);
+                            
+                            // 같은 팀원 체크: 1,2,7,8 경기에서 같은 팀원이었던 사람끼리 다시 같은 팀이 되지 않도록
+                            let hasRepeatedTeammate = false;
+                            for (const playerId of teamAIds) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamAIds) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate) break;
+                                }
+                            }
+                            if (!hasRepeatedTeammate) {
+                                for (const playerId of teamBIds) {
+                                    const history = teammateHistory.get(playerId);
+                                    if (history) {
+                                        for (const teammateId of teamBIds) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                hasRepeatedTeammate = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasRepeatedTeammate) break;
+                                    }
+                                }
+                            }
+                            
+                            if (!hasRepeatedTeammate) {
+                                teamConfigs.push({ 
+                                    teamA: teamAIds, 
+                                    teamB: teamBIds 
+                                });
+                                break; // 첫 번째 유효한 조합 사용
                             }
                         }
                         
-                        // 못하는 사람끼리 vs 못하는 사람끼리 조합 시도
-                        // 하위 4명이 이미 선택되어 있으므로, sorted는 하위 4명 기준으로 정렬됨
-                        // sorted[0] = 하위 1위, sorted[1] = 하위 2위, sorted[2] = 하위 3위, sorted[3] = 하위 4위
-                        // 차약+최약 vs 차약+차강 (중복 없이)
-                        const teamA = [sorted[2], sorted[3]].map(p => p.userId).sort(); // 하위 3위+하위 4위 (차약+최약)
-                        const teamB = [sorted[0], sorted[1]].map(p => p.userId).sort(); // 하위 1위+하위 2위 (차약+차강)
-                        const comboKey = `${teamA.join(',')}|${teamB.join(',')}`;
-                        
-                        if (!forbiddenCombinations.has(comboKey)) {
-                            teamConfigs.push({ 
-                                teamA: teamA, // 차약+최약
-                                teamB: teamB  // 차약+차강
-                            });
-                        } else {
-                            // 중복이면 다른 조합 사용 (차약+최약 vs 차강+차약)
-                            teamConfigs.push({ 
-                                teamA: [sorted[2], sorted[3]].map(p => p.userId).sort(), // 차약+최약
-                                teamB: [sorted[1], sorted[2]].map(p => p.userId).sort()  // 차강+차약
-                            });
-                        }
-                        
-                        // 금지된 조합만 있으면 첫 번째 조합 사용 (fallback)
+                        // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
                         if (teamConfigs.length === 0) {
                             teamConfigs.push({ 
-                                teamA: [sorted[2], sorted[3]].map(p => p.userId), // 못하는 사람들 (차약+최약)
-                                teamB: [sorted[0], sorted[1]].map(p => p.userId)  // 차약+차강
+                                teamA: [sorted[0], sorted[1]].map(p => p.userId), 
+                                teamB: [sorted[2], sorted[3]].map(p => p.userId) 
                             });
                         }
                     }
