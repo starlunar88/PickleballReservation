@@ -11658,7 +11658,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                     } // for (let c = 1; c <= courtCount; c++) 종료
             } // for (let r = 1; r <= rounds; r++) 종료
-        console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
+            console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
+        } // if (teamMode === 'balanced') 종료
     } else if (teamMode === 'random') {
         // 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성
         console.log(`🎯 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성 시작...`);
