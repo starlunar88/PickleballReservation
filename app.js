@@ -10950,10 +10950,33 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         return duprA - duprB;
                     });
                     
-                    if (matchNum === 1 || matchNum === 2) {
-                        // 1,2 경기: 잘하는 사람들끼리, 못하는 사람들끼리
+                    if (matchNum === 1) {
+                        // 1경기: 잘하는 사람들끼리, 못하는 사람들끼리
                         const teamA = [sorted[0], sorted[1]].map(p => p.userId).sort(); // 잘하는 사람들 (최강+차강)
                         const teamB = [sorted[2], sorted[3]].map(p => p.userId).sort(); // 못하는 사람들 (차약+최약)
+                        teamConfigs.push({ teamA, teamB });
+                    } else if (matchNum === 2) {
+                        // 2경기: 1경기와 다른 조합 (중복 방지)
+                        // 1경기 조합과 중복되지 않는 조합 생성
+                        const match1Key = `${sorted[0].userId},${sorted[1].userId}|${sorted[2].userId},${sorted[3].userId}`;
+                        const match1Key2 = `${sorted[2].userId},${sorted[3].userId}|${sorted[0].userId},${sorted[1].userId}`;
+                        
+                        // 이전 경기(1경기) 조합 확인
+                        let isDuplicate = false;
+                        for (const prev of previousMatchConfigs) {
+                            if (prev.matchNum === 1) {
+                                const prevKey = `${prev.teamAIds}|${prev.teamBIds}`;
+                                if (prevKey === match1Key || prevKey === match1Key2) {
+                                    isDuplicate = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // 2경기는 항상 1경기와 다른 조합 사용 (중복 방지)
+                        // 최강+차약 vs 차강+최약 조합 사용 (여전히 잘하는 사람들끼리, 못하는 사람들끼리 패턴 유지)
+                        const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort(); // 최강+차약
+                        const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort(); // 차강+최약
                         teamConfigs.push({ teamA, teamB });
                     } else if (matchNum === 3 || matchNum === 4) {
                         // 3,4 경기: 밸런스 조합 (가능한 조합들 생성)
