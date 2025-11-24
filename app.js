@@ -10848,13 +10848,25 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         }
                                     }
                                 } else if (matchNum === 5 || matchNum === 6) {
-                                    // 5,6 경기: 상위 4명 (밸런스 조합)
-                                    if (availableTopFour.length >= 4) {
-                                        availablePlayers = availableTopFour.slice(0, 4);
+                                    // 5,6 경기: 전체 플레이어 중 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
+                                    // 전체 사용 가능한 플레이어를 DUPR 점수 순으로 정렬
+                                    const allSorted = [...allAvailablePlayers].sort((a, b) => {
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        return duprA - duprB;
+                                    });
+                                    
+                                    if (allSorted.length >= 4) {
+                                        // 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
+                                        const topPlayer = allSorted[0]; // 최강 (1등)
+                                        const secondPlayer = allSorted[1]; // 차강 (2등)
+                                        const secondLastPlayer = allSorted[allSorted.length - 2]; // 차약 (뒤에서 2등)
+                                        const lastPlayer = allSorted[allSorted.length - 1]; // 최약 (꼴찌)
+                                        
+                                        availablePlayers = [topPlayer, secondPlayer, secondLastPlayer, lastPlayer];
                                     } else {
-                                        // 상위 4명이 부족하면 나머지 플레이어로 보충
-                                        const needed = 4 - availableTopFour.length;
-                                        availablePlayers = [...availableTopFour, ...availableRemaining.slice(0, needed)];
+                                        // 플레이어가 4명 미만이면 전체 사용
+                                        availablePlayers = allSorted;
                                     }
                                 } else if (matchNum === 7) {
                                     // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 선택)
@@ -11145,16 +11157,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     );
                                 }
                             } else if (matchNum === 5) {
-                                // 5경기: 최강+최약 vs 차강+차약 (고정 조합, 중복 영향 안받음)
+                                // 5경기: 최강(1등)+최약(꼴찌) vs 차강(2등)+차약(뒤에서 2등) (고정 조합)
+                                // sorted[0] = 최강(1등), sorted[1] = 차강(2등), sorted[2] = 차약(뒤에서 2등), sorted[3] = 최약(꼴찌)
                                 teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[3]].map(p => p.userId), 
-                                    teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                                    teamA: [sorted[0], sorted[3]].map(p => p.userId), // 최강(1등) + 최약(꼴찌)
+                                    teamB: [sorted[1], sorted[2]].map(p => p.userId)  // 차강(2등) + 차약(뒤에서 2등)
                                 });
                             } else if (matchNum === 6) {
-                                // 6경기: 최강+차약 vs 차강+최약 (고정 조합, 중복 영향 안받음)
+                                // 6경기: 최강(1등)+차약(뒤에서 2등) vs 차강(2등)+최약(꼴찌) (고정 조합)
+                                // sorted[0] = 최강(1등), sorted[1] = 차강(2등), sorted[2] = 차약(뒤에서 2등), sorted[3] = 최약(꼴찌)
                                 teamConfigs.push({ 
-                                    teamA: [sorted[0], sorted[2]].map(p => p.userId), 
-                                    teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                                    teamA: [sorted[0], sorted[2]].map(p => p.userId), // 최강(1등) + 차약(뒤에서 2등)
+                                    teamB: [sorted[1], sorted[3]].map(p => p.userId)  // 차강(2등) + 최약(꼴찌)
                                 });
                             } else if (matchNum === 7) {
                                 // 7경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
@@ -11298,15 +11312,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     return duprA - duprB;
                                 });
                                 
-                                // 5경기: 최강+최약 vs 차강+차약
-                                // 6경기: 최강+차약 vs 차강+최약
+                                // 5경기: 최강(1등)+최약(꼴찌) vs 차강(2등)+차약(뒤에서 2등)
+                                // 6경기: 최강(1등)+차약(뒤에서 2등) vs 차강(2등)+최약(꼴찌)
+                                // sorted[0] = 최강(1등), sorted[1] = 차강(2등), sorted[2] = 차약(뒤에서 2등), sorted[3] = 최약(꼴찌)
                                 let selectedTeamA, selectedTeamB;
                                 if (targetMatchNum === 5) {
-                                    selectedTeamA = [sorted[0], sorted[3]]; // 최강+최약
-                                    selectedTeamB = [sorted[1], sorted[2]]; // 차강+차약
+                                    selectedTeamA = [sorted[0], sorted[3]]; // 최강(1등) + 최약(꼴찌)
+                                    selectedTeamB = [sorted[1], sorted[2]]; // 차강(2등) + 차약(뒤에서 2등)
                                 } else { // targetMatchNum === 6
-                                    selectedTeamA = [sorted[0], sorted[2]]; // 최강+차약
-                                    selectedTeamB = [sorted[1], sorted[3]]; // 차강+최약
+                                    selectedTeamA = [sorted[0], sorted[2]]; // 최강(1등) + 차약(뒤에서 2등)
+                                    selectedTeamB = [sorted[1], sorted[3]]; // 차강(2등) + 최약(꼴찌)
                                 }
                                 
                                 // userId 배열로 변환
