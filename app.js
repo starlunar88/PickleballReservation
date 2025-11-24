@@ -10657,7 +10657,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         const courtMatchNumbers = {}; // 코트별 경기 번호: court -> matchNumber
         let topFourPlayers = null;
         let remainingPlayers = null;
-        const playedPlayers = new Set(); // 1,2경기 참여 플레이어 추적
+        const playedPlayers = new Set(); // 5,6,1,2,7,8경기 참여 플레이어 추적 (3,4 경기에서 사용)
         
         if (teamMode === 'balanced') {
             // 코트별 경기 번호 초기화
@@ -10776,22 +10776,42 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             }
                         }
                     } else if (matchNum === 3 || matchNum === 4) {
-                        // 3,4 경기: 참여 안한 나머지 플레이어 + 상위 4명 중 일부
-                        const notPlayed = availableRemaining.filter(p => !playedPlayers.has(p.userId));
-                        const topFourByCount = [...availableTopFour].sort((a, b) => {
+                        // 3,4 경기: 5,6,1,2,7,8 경기에 참여하지 않은 사람들 우선 선택
+                        // 참여 횟수가 적은 사람들을 우선 선택 (참여 안한 사람 우선)
+                        const allAvailable = [...availableTopFour, ...availableRemaining];
+                        
+                        // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤)
+                        const sortedByCount = allAvailable.sort((a, b) => {
                             const countA = playerPlayCount[a.userId] || 0;
                             const countB = playerPlayCount[b.userId] || 0;
-                            return countA - countB;
+                            if (countA !== countB) {
+                                return countA - countB; // 참여 횟수가 적은 순
+                            }
+                            // 같은 횟수면 랜덤하게 섞기
+                            return Math.random() - 0.5;
                         });
                         
-                        const needed = 4 - notPlayed.length;
-                        if (needed > 0 && notPlayed.length > 0) {
-                            availablePlayers = [...notPlayed, ...topFourByCount.slice(0, needed)];
-                        } else if (notPlayed.length >= 4) {
-                            availablePlayers = notPlayed.slice(0, 4);
+                        // 참여 횟수가 가장 적은 사람들 우선 선택 (최소 4명)
+                        const minCount = Math.min(...sortedByCount.map(p => playerPlayCount[p.userId] || 0));
+                        const candidatesWithMinCount = sortedByCount.filter(p => (playerPlayCount[p.userId] || 0) === minCount);
+                        
+                        if (candidatesWithMinCount.length >= 4) {
+                            // 참여 횟수가 가장 적은 사람이 4명 이상이면 그 중에서 선택
+                            availablePlayers = candidatesWithMinCount.slice(0, 4);
                         } else {
-                            // 나머지 플레이어가 부족하면 상위 4명 사용
-                            availablePlayers = topFourByCount.slice(0, 4);
+                            // 참여 횟수가 가장 적은 사람이 4명 미만이면 추가로 선택
+                            const needed = 4 - candidatesWithMinCount.length;
+                            const nextMinCount = sortedByCount.find(p => (playerPlayCount[p.userId] || 0) > minCount);
+                            if (nextMinCount) {
+                                const nextMinCountValue = playerPlayCount[nextMinCount.userId] || 0;
+                                const candidatesWithNextMinCount = sortedByCount.filter(p => 
+                                    (playerPlayCount[p.userId] || 0) === nextMinCountValue
+                                );
+                                availablePlayers = [...candidatesWithMinCount, ...candidatesWithNextMinCount.slice(0, needed)].slice(0, 4);
+                            } else {
+                                // 그래도 부족하면 전체에서 선택
+                                availablePlayers = sortedByCount.slice(0, 4);
+                            }
                         }
                     } else if (matchNum === 5 || matchNum === 6) {
                         // 5,6 경기: 상위 4명 (밸런스 조합)
@@ -11384,10 +11404,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             }))
                         });
                         
-                        // 밸런스 모드: 1,2 경기 참여 플레이어 기록 (3,4 경기에서 사용)
+                        // 밸런스 모드: 5,6,1,2,7,8 경기 참여 플레이어 기록 (3,4 경기에서 사용)
                         if (teamMode === 'balanced') {
                             const matchNum = courtMatchNumbers[c];
-                            if (matchNum === 1 || matchNum === 2) {
+                            if (matchNum === 5 || matchNum === 6 || matchNum === 1 || matchNum === 2 || matchNum === 7 || matchNum === 8) {
                                 fourPlayers.forEach(player => {
                                     playedPlayers.add(player.userId);
                                 });
@@ -11428,10 +11448,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
                     });
                     
-                    // 밸런스 모드: 1,2 경기 참여 플레이어 기록 (3,4 경기에서 사용)
+                    // 밸런스 모드: 5,6,1,2,7,8 경기 참여 플레이어 기록 (3,4 경기에서 사용)
                     if (teamMode === 'balanced') {
                         const matchNum = courtMatchNumbers[c];
-                        if (matchNum === 1 || matchNum === 2) {
+                        if (matchNum === 5 || matchNum === 6 || matchNum === 1 || matchNum === 2 || matchNum === 7 || matchNum === 8) {
                             fourPlayers.forEach(player => {
                                 playedPlayers.add(player.userId);
                             });
@@ -11592,20 +11612,42 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             }
                         }
                     } else if (matchNum === 3 || matchNum === 4) {
-                        // 3,4 경기: 참여 안한 나머지 플레이어 + 상위 4명 중 일부
-                        const notPlayed = remainingPlayers.filter(p => !playedPlayers.has(p.userId));
-                        const topFourByCount = [...topFourPlayers].sort((a, b) => {
+                        // 3,4 경기: 5,6,1,2,7,8 경기에 참여하지 않은 사람들 우선 선택
+                        // 참여 횟수가 적은 사람들을 우선 선택 (참여 안한 사람 우선)
+                        const allAvailable = [...topFourPlayers, ...remainingPlayers];
+                        
+                        // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤)
+                        const sortedByCount = allAvailable.sort((a, b) => {
                             const countA = playerPlayCount[a.userId] || 0;
                             const countB = playerPlayCount[b.userId] || 0;
-                            return countA - countB;
+                            if (countA !== countB) {
+                                return countA - countB; // 참여 횟수가 적은 순
+                            }
+                            // 같은 횟수면 랜덤하게 섞기
+                            return Math.random() - 0.5;
                         });
                         
-                        const needed = 4 - notPlayed.length;
-                        if (needed > 0) {
-                            availablePlayers = [...notPlayed, ...topFourByCount.slice(0, needed)];
+                        // 참여 횟수가 가장 적은 사람들 우선 선택 (최소 4명)
+                        const minCount = Math.min(...sortedByCount.map(p => playerPlayCount[p.userId] || 0));
+                        const candidatesWithMinCount = sortedByCount.filter(p => (playerPlayCount[p.userId] || 0) === minCount);
+                        
+                        if (candidatesWithMinCount.length >= 4) {
+                            // 참여 횟수가 가장 적은 사람이 4명 이상이면 그 중에서 선택
+                            availablePlayers = candidatesWithMinCount.slice(0, 4);
                         } else {
-                            // 나머지 플레이어가 4명 이상이면 처음 4명
-                            availablePlayers = notPlayed.slice(0, 4);
+                            // 참여 횟수가 가장 적은 사람이 4명 미만이면 추가로 선택
+                            const needed = 4 - candidatesWithMinCount.length;
+                            const nextMinCount = sortedByCount.find(p => (playerPlayCount[p.userId] || 0) > minCount);
+                            if (nextMinCount) {
+                                const nextMinCountValue = playerPlayCount[nextMinCount.userId] || 0;
+                                const candidatesWithNextMinCount = sortedByCount.filter(p => 
+                                    (playerPlayCount[p.userId] || 0) === nextMinCountValue
+                                );
+                                availablePlayers = [...candidatesWithMinCount, ...candidatesWithNextMinCount.slice(0, needed)].slice(0, 4);
+                            } else {
+                                // 그래도 부족하면 전체에서 선택
+                                availablePlayers = sortedByCount.slice(0, 4);
+                            }
                         }
                     } else if (matchNum === 5 || matchNum === 6) {
                         // 5,6 경기: 상위 4명 (밸런스 조합)
@@ -12545,8 +12587,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
                 });
                 
-                // 1,2 경기 참여 플레이어 기록 (3,4 경기에서 사용)
-                if (teamMode === 'balanced' && (courtMatchNumber === 1 || courtMatchNumber === 2)) {
+                // 5,6,1,2,7,8 경기 참여 플레이어 기록 (3,4 경기에서 사용)
+                if (teamMode === 'balanced' && (courtMatchNumber === 5 || courtMatchNumber === 6 || courtMatchNumber === 1 || courtMatchNumber === 2 || courtMatchNumber === 7 || courtMatchNumber === 8)) {
                     fourPlayers.forEach(player => {
                         playedPlayers.add(player.userId);
                     });
