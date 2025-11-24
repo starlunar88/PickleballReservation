@@ -11660,140 +11660,125 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             } // for (let r = 1; r <= rounds; r++) 종료
             console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
         } // if (teamMode === 'balanced') 종료
-    } else if (teamMode === 'random') {
-        // 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성
-        console.log(`🎯 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성 시작...`);
-        
-        // 각 라운드별로 경기 생성
-        for (let r = 1; r <= rounds; r++) {
-            // 같은 라운드 내에서 이미 배정된 플레이어 추적
-            const assignedPlayersInRound = new Set();
+        else if (teamMode === 'random') {
+            // 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성
+            console.log(`🎯 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성 시작...`);
             
-            // 각 코트별로 경기 생성
-            for (let c = 1; c <= courtCount; c++) {
-                // 현재 경기에서 사용할 수 있는 플레이어 (같은 라운드에서 이미 배정된 플레이어 제외)
-                let availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
+            // 각 라운드별로 경기 생성
+            for (let r = 1; r <= rounds; r++) {
+                // 같은 라운드 내에서 이미 배정된 플레이어 추적
+                const assignedPlayersInRound = new Set();
                 
-                // availablePlayers가 비어있거나 정의되지 않은 경우 처리
-                if (!availablePlayers || availablePlayers.length === 0) {
-                    console.warn(`⚠️ 라운드 ${r}, 코트 ${c}: availablePlayers가 비어있습니다. 전체 플레이어에서 선택합니다.`);
-                    availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
-                }
-                
-                // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
-                if (availablePlayers.length > 0) {
-                    availablePlayers.sort((a, b) => {
-                        const countA = playerPlayCount[a.userId] || 0;
-                        const countB = playerPlayCount[b.userId] || 0;
-                        if (countA !== countB) {
-                            return countA - countB;
-                        }
-                        return Math.random() - 0.5;
-                    });
-                }
-                
-                // 현재 경기에서 사용 가능한 플레이어 필터링
-                const availableThisMatch = availablePlayers || [];
-                
-                if (availableThisMatch.length < 4) {
-                    // 4명이 안 되면 전체 플레이어 풀에서 선택 (fallback)
-                    console.warn(`⚠️ 라운드 ${r}, 코트 ${c}: 플레이어 부족 (${availableThisMatch.length}명), 전체 플레이어 풀에서 선택합니다.`);
+                // 각 코트별로 경기 생성
+                for (let c = 1; c <= courtCount; c++) {
+                    // 현재 경기에서 사용할 수 있는 플레이어 (같은 라운드에서 이미 배정된 플레이어 제외)
+                    let availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
                     
-                    const filtered = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
-                    if (filtered.length >= 4) {
-                        availablePlayers = filtered.slice(0, 4);
-                    } else {
-                        // 여전히 부족하면 전체 플레이어에서 선택 (중복 허용)
-                        availablePlayers = shuffledAllPlayers.slice(0, 4);
-                        console.warn(`  - 경고: 같은 라운드 내 중복 플레이어 포함 (${availablePlayers.length}명)`);
+                    // availablePlayers가 비어있거나 정의되지 않은 경우 처리
+                    if (!availablePlayers || availablePlayers.length === 0) {
+                        console.warn(`⚠️ 라운드 ${r}, 코트 ${c}: availablePlayers가 비어있습니다. 전체 플레이어에서 선택합니다.`);
+                        availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
                     }
                     
-                    // availableThisMatch를 업데이트된 플레이어로 교체
-                    availableThisMatch.splice(0, availableThisMatch.length, ...availablePlayers);
-                    
-                    if (availableThisMatch.length < 4) {
-                        // 여전히 4명이 안 되면 경기 건너뛰기
-                        console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 플레이어 부족 (${availableThisMatch.length}명)`);
-                        continue;
-                    }
-                }
-                
-                // 플레이어 선택 (참여 횟수가 적은 순으로 4명 선택)
-                const minCount = Math.min(...availableThisMatch.map(p => playerPlayCount[p.userId] || 0));
-                const candidatesWithMinCount = availableThisMatch.filter(p => 
-                    (playerPlayCount[p.userId] || 0) === minCount
-                );
-                
-                let fourPlayers;
-                if (candidatesWithMinCount.length >= 4) {
-                    // 충분한 후보가 있으면 랜덤하게 선택
-                    const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
-                    fourPlayers = shuffled.slice(0, 4);
-                } else {
-                    // 후보가 부족한 경우: 모든 플레이어에서 랜덤하게 4명 선택
-                    const shuffled = [...availableThisMatch].sort(() => Math.random() - 0.5);
-                    fourPlayers = shuffled.slice(0, 4);
-                }
-                
-                // 4명이 안 되면 경기 생성 중단
-                if (!fourPlayers || fourPlayers.length < 4) {
-                    console.warn(`⚠️ 코트 ${c}, 라운드 ${r} 생성 실패: 플레이어 부족 (${fourPlayers ? fourPlayers.length : 0}명)`);
-                    continue;
-                }
-                
-                // 팀 구성 생성 (모든 패턴 시도)
-                const teamConfigs = [];
-                for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
-                    const p = pairingPatterns[patternIdx];
-                    const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
-                    const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
-                    teamConfigs.push({ teamA, teamB });
-                }
-                
-                // 이전 경기와 다른 조합 찾기 (팀 조합 + 개인별 매칭 이력 체크)
-                let found = false;
-                
-                for (const config of teamConfigs) {
-                    const teamAKey = config.teamA.join(',');
-                    const teamBKey = config.teamB.join(',');
-                    const matchKey = `${teamAKey}|${teamBKey}`;
-                    
-                    // 1. 팀 조합 중복 체크
-                    let isUniqueTeam = true;
-                    const shouldStrictCheck = courtCount >= 2 && shuffledAllPlayers.length >= 8;
-                    if (shouldStrictCheck || previousMatchConfigs.length < 4) {
-                        isUniqueTeam = previousMatchConfigs.every(prev => {
-                            const prevKey1 = `${prev.teamAIds}|${prev.teamBIds}`;
-                            const prevKey2 = `${prev.teamBIds}|${prev.teamAIds}`;
-                            return matchKey !== prevKey1 && matchKey !== prevKey2;
+                    // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
+                    if (availablePlayers.length > 0) {
+                        availablePlayers.sort((a, b) => {
+                            const countA = playerPlayCount[a.userId] || 0;
+                            const countB = playerPlayCount[b.userId] || 0;
+                            if (countA !== countB) {
+                                return countA - countB;
+                            }
+                            return Math.random() - 0.5;
                         });
                     }
                     
-                    // 2. 같은 팀원 반복 체크
-                    let hasRepeatedTeammate = false;
-                    const teamAIds = config.teamA;
-                    const teamBIds = config.teamB;
+                    // 현재 경기에서 사용 가능한 플레이어 필터링
+                    const availableThisMatch = availablePlayers || [];
                     
-                    // Team A 내에서 같은 팀원 반복 체크
-                    for (const playerId of teamAIds) {
-                        const history = teammateHistory.get(playerId);
-                        if (history) {
-                            for (const teammateId of teamAIds) {
-                                if (teammateId !== playerId && history.has(teammateId)) {
-                                    hasRepeatedTeammate = true;
-                                    break;
-                                }
-                            }
-                            if (hasRepeatedTeammate) break;
+                    if (availableThisMatch.length < 4) {
+                        // 4명이 안 되면 전체 플레이어 풀에서 선택 (fallback)
+                        console.warn(`⚠️ 라운드 ${r}, 코트 ${c}: 플레이어 부족 (${availableThisMatch.length}명), 전체 플레이어 풀에서 선택합니다.`);
+                        
+                        const filtered = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
+                        if (filtered.length >= 4) {
+                            availablePlayers = filtered.slice(0, 4);
+                        } else {
+                            // 여전히 부족하면 전체 플레이어에서 선택 (중복 허용)
+                            availablePlayers = shuffledAllPlayers.slice(0, 4);
+                            console.warn(`  - 경고: 같은 라운드 내 중복 플레이어 포함 (${availablePlayers.length}명)`);
+                        }
+                        
+                        // availableThisMatch를 업데이트된 플레이어로 교체
+                        availableThisMatch.splice(0, availableThisMatch.length, ...availablePlayers);
+                        
+                        if (availableThisMatch.length < 4) {
+                            // 여전히 4명이 안 되면 경기 건너뛰기
+                            console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 플레이어 부족 (${availableThisMatch.length}명)`);
+                            continue;
                         }
                     }
                     
-                    // Team B 내에서 같은 팀원 반복 체크
-                    if (!hasRepeatedTeammate) {
-                        for (const playerId of teamBIds) {
+                    // 플레이어 선택 (참여 횟수가 적은 순으로 4명 선택)
+                    const minCount = Math.min(...availableThisMatch.map(p => playerPlayCount[p.userId] || 0));
+                    const candidatesWithMinCount = availableThisMatch.filter(p => 
+                        (playerPlayCount[p.userId] || 0) === minCount
+                    );
+                    
+                    let fourPlayers;
+                    if (candidatesWithMinCount.length >= 4) {
+                        // 충분한 후보가 있으면 랜덤하게 선택
+                        const shuffled = [...candidatesWithMinCount].sort(() => Math.random() - 0.5);
+                        fourPlayers = shuffled.slice(0, 4);
+                    } else {
+                        // 후보가 부족한 경우: 모든 플레이어에서 랜덤하게 4명 선택
+                        const shuffled = [...availableThisMatch].sort(() => Math.random() - 0.5);
+                        fourPlayers = shuffled.slice(0, 4);
+                    }
+                    
+                    // 4명이 안 되면 경기 생성 중단
+                    if (!fourPlayers || fourPlayers.length < 4) {
+                        console.warn(`⚠️ 코트 ${c}, 라운드 ${r} 생성 실패: 플레이어 부족 (${fourPlayers ? fourPlayers.length : 0}명)`);
+                        continue;
+                    }
+                    
+                    // 팀 구성 생성 (모든 패턴 시도)
+                    const teamConfigs = [];
+                    for (let patternIdx = 0; patternIdx < pairingPatterns.length; patternIdx++) {
+                        const p = pairingPatterns[patternIdx];
+                        const teamA = [fourPlayers[p[0]], fourPlayers[p[1]]].map(player => player.userId).sort();
+                        const teamB = [fourPlayers[p[2]], fourPlayers[p[3]]].map(player => player.userId).sort();
+                        teamConfigs.push({ teamA, teamB });
+                    }
+                    
+                    // 이전 경기와 다른 조합 찾기 (팀 조합 + 개인별 매칭 이력 체크)
+                    let found = false;
+                    
+                    for (const config of teamConfigs) {
+                        const teamAKey = config.teamA.join(',');
+                        const teamBKey = config.teamB.join(',');
+                        const matchKey = `${teamAKey}|${teamBKey}`;
+                        
+                        // 1. 팀 조합 중복 체크
+                        let isUniqueTeam = true;
+                        const shouldStrictCheck = courtCount >= 2 && shuffledAllPlayers.length >= 8;
+                        if (shouldStrictCheck || previousMatchConfigs.length < 4) {
+                            isUniqueTeam = previousMatchConfigs.every(prev => {
+                                const prevKey1 = `${prev.teamAIds}|${prev.teamBIds}`;
+                                const prevKey2 = `${prev.teamBIds}|${prev.teamAIds}`;
+                                return matchKey !== prevKey1 && matchKey !== prevKey2;
+                            });
+                        }
+                        
+                        // 2. 같은 팀원 반복 체크
+                        let hasRepeatedTeammate = false;
+                        const teamAIds = config.teamA;
+                        const teamBIds = config.teamB;
+                        
+                        // Team A 내에서 같은 팀원 반복 체크
+                        for (const playerId of teamAIds) {
                             const history = teammateHistory.get(playerId);
                             if (history) {
-                                for (const teammateId of teamBIds) {
+                                for (const teammateId of teamAIds) {
                                     if (teammateId !== playerId && history.has(teammateId)) {
                                         hasRepeatedTeammate = true;
                                         break;
@@ -11802,87 +11787,158 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 if (hasRepeatedTeammate) break;
                             }
                         }
+                        
+                        // Team B 내에서 같은 팀원 반복 체크
+                        if (!hasRepeatedTeammate) {
+                            for (const playerId of teamBIds) {
+                                const history = teammateHistory.get(playerId);
+                                if (history) {
+                                    for (const teammateId of teamBIds) {
+                                        if (teammateId !== playerId && history.has(teammateId)) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasRepeatedTeammate) break;
+                                }
+                            }
+                        }
+                        
+                        // 팀 조합이 고유하고, 같은 팀원 반복이 없으면 선택
+                        if ((isUniqueTeam || (previousMatchConfigs.length === 0) || (!shouldStrictCheck && previousMatchConfigs.length >= 4)) && !hasRepeatedTeammate) {
+                            const selectedTeamA = config.teamA.map(id => fourPlayers.find(p => p.userId === id));
+                            const selectedTeamB = config.teamB.map(id => fourPlayers.find(p => p.userId === id));
+                            
+                            // 참여 횟수 증가
+                            fourPlayers.forEach(player => {
+                                playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
+                            });
+                            
+                            // 이전 경기 조합에 추가
+                            previousMatchConfigs.push({ 
+                                teamAIds: teamAKey, 
+                                teamBIds: teamBKey
+                            });
+                            
+                            // 같은 팀원 이력과 상대팀원 이력 업데이트
+                            const teamAIds2 = config.teamA;
+                            const teamBIds2 = config.teamB;
+                            
+                            // 같은 팀원 이력 업데이트 (Team A)
+                            for (let i = 0; i < teamAIds2.length; i++) {
+                                for (let j = i + 1; j < teamAIds2.length; j++) {
+                                    const player1 = teamAIds2[i];
+                                    const player2 = teamAIds2[j];
+                                    if (!teammateHistory.has(player1)) {
+                                        teammateHistory.set(player1, new Set());
+                                    }
+                                    if (!teammateHistory.has(player2)) {
+                                        teammateHistory.set(player2, new Set());
+                                    }
+                                    teammateHistory.get(player1).add(player2);
+                                    teammateHistory.get(player2).add(player1);
+                                }
+                            }
+                            
+                            // 같은 팀원 이력 업데이트 (Team B)
+                            for (let i = 0; i < teamBIds2.length; i++) {
+                                for (let j = i + 1; j < teamBIds2.length; j++) {
+                                    const player1 = teamBIds2[i];
+                                    const player2 = teamBIds2[j];
+                                    if (!teammateHistory.has(player1)) {
+                                        teammateHistory.set(player1, new Set());
+                                    }
+                                    if (!teammateHistory.has(player2)) {
+                                        teammateHistory.set(player2, new Set());
+                                    }
+                                    teammateHistory.get(player1).add(player2);
+                                    teammateHistory.get(player2).add(player1);
+                                }
+                            }
+                            
+                            // 상대팀원 이력 업데이트 (Team A vs Team B)
+                            for (const player1 of teamAIds2) {
+                                for (const player2 of teamBIds2) {
+                                    if (!opponentHistory.has(player1)) {
+                                        opponentHistory.set(player1, new Set());
+                                    }
+                                    if (!opponentHistory.has(player2)) {
+                                        opponentHistory.set(player2, new Set());
+                                    }
+                                    opponentHistory.get(player1).add(player2);
+                                    opponentHistory.get(player2).add(player1);
+                                }
+                            }
+                            
+                            // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
+                            const allPlayerIds3 = [...config.teamA, ...config.teamB];
+                            const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
+                            
+                            if (hasDuplicate) {
+                                // 중복이 있으면 이 경기는 건너뛰기
+                                continue;
+                            }
+                            
+                            // 같은 라운드 내에서 배정된 플레이어로 표시
+                            allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                            
+                            // 경기 생성
+                            schedule.push({
+                                round: r,
+                                court: c,
+                                teamA: selectedTeamA.map(player => ({
+                                    userId: player.userId,
+                                    userName: player.userName,
+                                    internalRating: player.internalRating || 0,
+                                    score: player.score || 0
+                                })),
+                                teamB: selectedTeamB.map(player => ({
+                                    userId: player.userId,
+                                    userName: player.userName,
+                                    internalRating: player.internalRating || 0,
+                                    score: player.score || 0
+                                })),
+                                teamMode: teamMode
+                            });
+                            
+                            console.log(`✅ 코트 ${c}, 라운드 ${r} 생성 완료: ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
+                            
+                            found = true;
+                            break;
+                        }
                     }
                     
-                    // 팀 조합이 고유하고, 같은 팀원 반복이 없으면 선택
-                    if ((isUniqueTeam || (previousMatchConfigs.length === 0) || (!shouldStrictCheck && previousMatchConfigs.length >= 4)) && !hasRepeatedTeammate) {
-                        const selectedTeamA = config.teamA.map(id => fourPlayers.find(p => p.userId === id));
-                        const selectedTeamB = config.teamB.map(id => fourPlayers.find(p => p.userId === id));
-                        
-                        // 참여 횟수 증가
-                        fourPlayers.forEach(player => {
-                            playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
-                        });
-                        
-                        // 이전 경기 조합에 추가
-                        previousMatchConfigs.push({ 
-                            teamAIds: teamAKey, 
-                            teamBIds: teamBKey
-                        });
-                        
-                        // 같은 팀원 이력과 상대팀원 이력 업데이트
-                        const teamAIds2 = config.teamA;
-                        const teamBIds2 = config.teamB;
-                        
-                        // 같은 팀원 이력 업데이트 (Team A)
-                        for (let i = 0; i < teamAIds2.length; i++) {
-                            for (let j = i + 1; j < teamAIds2.length; j++) {
-                                const player1 = teamAIds2[i];
-                                const player2 = teamAIds2[j];
-                                if (!teammateHistory.has(player1)) {
-                                    teammateHistory.set(player1, new Set());
-                                }
-                                if (!teammateHistory.has(player2)) {
-                                    teammateHistory.set(player2, new Set());
-                                }
-                                teammateHistory.get(player1).add(player2);
-                                teammateHistory.get(player2).add(player1);
-                            }
-                        }
-                        
-                        // 같은 팀원 이력 업데이트 (Team B)
-                        for (let i = 0; i < teamBIds2.length; i++) {
-                            for (let j = i + 1; j < teamBIds2.length; j++) {
-                                const player1 = teamBIds2[i];
-                                const player2 = teamBIds2[j];
-                                if (!teammateHistory.has(player1)) {
-                                    teammateHistory.set(player1, new Set());
-                                }
-                                if (!teammateHistory.has(player2)) {
-                                    teammateHistory.set(player2, new Set());
-                                }
-                                teammateHistory.get(player1).add(player2);
-                                teammateHistory.get(player2).add(player1);
-                            }
-                        }
-                        
-                        // 상대팀원 이력 업데이트 (Team A vs Team B)
-                        for (const player1 of teamAIds2) {
-                            for (const player2 of teamBIds2) {
-                                if (!opponentHistory.has(player1)) {
-                                    opponentHistory.set(player1, new Set());
-                                }
-                                if (!opponentHistory.has(player2)) {
-                                    opponentHistory.set(player2, new Set());
-                                }
-                                opponentHistory.get(player1).add(player2);
-                                opponentHistory.get(player2).add(player1);
-                            }
-                        }
+                    // 고유한 조합을 찾지 못했으면 첫 번째 패턴 사용
+                    if (!found) {
+                        const p = pairingPatterns[0];
+                        const selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                        const selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
                         
                         // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
-                        const allPlayerIds3 = [...config.teamA, ...config.teamB];
-                        const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
+                        const allPlayerIds4 = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
+                        const hasDuplicate = allPlayerIds4.some(id => assignedPlayersInRound.has(id));
                         
                         if (hasDuplicate) {
                             // 중복이 있으면 이 경기는 건너뛰기
+                            console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 같은 라운드 내 중복 플레이어`);
                             continue;
                         }
                         
                         // 같은 라운드 내에서 배정된 플레이어로 표시
-                        allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                        allPlayerIds4.forEach(id => assignedPlayersInRound.add(id));
                         
-                        // 경기 생성
+                        fourPlayers.forEach(player => {
+                            playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
+                        });
+                        
+                        const teamAIds = selectedTeamA.map(p => p.userId).sort().join(',');
+                        const teamBIds = selectedTeamB.map(p => p.userId).sort().join(',');
+                        // 이전 경기 조합에 추가
+                        previousMatchConfigs.push({ 
+                            teamAIds, 
+                            teamBIds
+                        });
+                        
                         schedule.push({
                             round: r,
                             court: c,
@@ -11901,67 +11957,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             teamMode: teamMode
                         });
                         
-                        console.log(`✅ 코트 ${c}, 라운드 ${r} 생성 완료: ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
-                        
-                        found = true;
-                        break;
+                        console.log(`✅ 코트 ${c}, 라운드 ${r} 생성 완료 (fallback): ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
                     }
-                }
-                
-                // 고유한 조합을 찾지 못했으면 첫 번째 패턴 사용
-                if (!found) {
-                    const p = pairingPatterns[0];
-                    const selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
-                    const selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
-                    
-                    // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
-                    const allPlayerIds4 = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
-                    const hasDuplicate = allPlayerIds4.some(id => assignedPlayersInRound.has(id));
-                    
-                    if (hasDuplicate) {
-                        // 중복이 있으면 이 경기는 건너뛰기
-                        console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 같은 라운드 내 중복 플레이어`);
-                        continue;
-                    }
-                    
-                    // 같은 라운드 내에서 배정된 플레이어로 표시
-                    allPlayerIds4.forEach(id => assignedPlayersInRound.add(id));
-                    
-                    fourPlayers.forEach(player => {
-                        playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
-                    });
-                    
-                    const teamAIds = selectedTeamA.map(p => p.userId).sort().join(',');
-                    const teamBIds = selectedTeamB.map(p => p.userId).sort().join(',');
-                    // 이전 경기 조합에 추가
-                    previousMatchConfigs.push({ 
-                        teamAIds, 
-                        teamBIds
-                    });
-                    
-                    schedule.push({
-                        round: r,
-                        court: c,
-                        teamA: selectedTeamA.map(player => ({
-                            userId: player.userId,
-                            userName: player.userName,
-                            internalRating: player.internalRating || 0,
-                            score: player.score || 0
-                        })),
-                        teamB: selectedTeamB.map(player => ({
-                            userId: player.userId,
-                            userName: player.userName,
-                            internalRating: player.internalRating || 0,
-                            score: player.score || 0
-                        })),
-                        teamMode: teamMode
-                    });
-                    
-                    console.log(`✅ 코트 ${c}, 라운드 ${r} 생성 완료 (fallback): ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
-                }
-            } // for (let c = 1; c <= courtCount; c++) 종료
-        } // for (let r = 1; r <= rounds; r++) 종료
-        console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
+                } // for (let c = 1; c <= courtCount; c++) 종료
+            } // for (let r = 1; r <= rounds; r++) 종료
+            console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
+        } // else if (teamMode === 'random') 종료
     } else if (teamMode === 'grouped') {
         // 그룹 모드: 기존 로직 (코트별로 경기 생성)
         // 각 코트별로 라운드별 경기 생성
