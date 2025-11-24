@@ -6797,10 +6797,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeManualMatchModal = document.getElementById('close-manual-match-modal');
     const cancelManualMatchBtn = document.getElementById('cancel-manual-match-btn');
     if (closeManualMatchModal) {
-        closeManualMatchModal.addEventListener('click', closeManualMatchCreateModal);
+        closeManualMatchModal.addEventListener('click', () => {
+            if (typeof closeManualMatchCreateModal === 'function') {
+                closeManualMatchCreateModal();
+            } else {
+                console.warn('closeManualMatchCreateModal 함수가 아직 정의되지 않았습니다.');
+            }
+        });
     }
     if (cancelManualMatchBtn) {
-        cancelManualMatchBtn.addEventListener('click', closeManualMatchCreateModal);
+        cancelManualMatchBtn.addEventListener('click', () => {
+            if (typeof closeManualMatchCreateModal === 'function') {
+                closeManualMatchCreateModal();
+            } else {
+                console.warn('closeManualMatchCreateModal 함수가 아직 정의되지 않았습니다.');
+            }
+        });
     }
     
     // 수동 대진표 저장 버튼
