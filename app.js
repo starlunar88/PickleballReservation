@@ -10849,8 +10849,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 } else if (matchNum === 5 || matchNum === 6) {
                                     // 5,6 경기: 전체 플레이어 중 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
-                                    // 전체 사용 가능한 플레이어를 DUPR 점수 순으로 정렬
-                                    const allSorted = [...allAvailablePlayers].sort((a, b) => {
+                                    // 같은 라운드 제외 없이 전체 플레이어에서 선택 (5,6 경기는 최우선이므로)
+                                    const allSorted = [...shuffledAllPlayers].sort((a, b) => {
                                         const duprA = b.dupr || 0;
                                         const duprB = a.dupr || 0;
                                         return duprA - duprB;
@@ -10864,6 +10864,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         const lastPlayer = allSorted[allSorted.length - 1]; // 최약 (꼴찌)
                                         
                                         availablePlayers = [topPlayer, secondPlayer, secondLastPlayer, lastPlayer];
+                                        
+                                        // 디버깅: 선택된 플레이어 확인
+                                        console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                        console.log(`  - 최강(1등): ${topPlayer.userName} (DUPR: ${topPlayer.dupr || 0})`);
+                                        console.log(`  - 차강(2등): ${secondPlayer.userName} (DUPR: ${secondPlayer.dupr || 0})`);
+                                        console.log(`  - 차약(뒤에서 2등): ${secondLastPlayer.userName} (DUPR: ${secondLastPlayer.dupr || 0})`);
+                                        console.log(`  - 최약(꼴찌): ${lastPlayer.userName} (DUPR: ${lastPlayer.dupr || 0})`);
                                     } else {
                                         // 플레이어가 4명 미만이면 전체 사용
                                         availablePlayers = allSorted;
@@ -10927,8 +10934,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                         
                         // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤 순서)
-                        // 밸런스 모드에서는 더 다양하게 선택하기 위해 랜덤 요소 강화
-                        if (availablePlayers.length > 0) {
+                        // 단, 5,6 경기는 이미 최강/최약을 선택했으므로 정렬하지 않음
+                        if (availablePlayers.length > 0 && !(teamMode === 'balanced' && (targetMatchNum === 5 || targetMatchNum === 6))) {
                             availablePlayers.sort((a, b) => {
                                 const countA = playerPlayCount[a.userId] || 0;
                                 const countB = playerPlayCount[b.userId] || 0;
@@ -11057,6 +11064,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 const duprB = a.dupr || 0;
                                 return duprA - duprB;
                             });
+                            
+                            // 5,6 경기 디버깅: 정렬 후 순서 확인
+                            if (matchNum === 5 || matchNum === 6) {
+                                console.log(`🔍 5,6 경기 팀 구성 전 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                console.log(`  - fourPlayers 순서: ${fourPlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                console.log(`  - sorted 순서: ${sorted.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                console.log(`  - sorted[0] (최강): ${sorted[0]?.userName} (DUPR: ${sorted[0]?.dupr || 0})`);
+                                console.log(`  - sorted[1] (차강): ${sorted[1]?.userName} (DUPR: ${sorted[1]?.dupr || 0})`);
+                                console.log(`  - sorted[2] (차약): ${sorted[2]?.userName} (DUPR: ${sorted[2]?.dupr || 0})`);
+                                console.log(`  - sorted[3] (최약): ${sorted[3]?.userName} (DUPR: ${sorted[3]?.dupr || 0})`);
+                            }
                             
                             if (matchNum === 1 || matchNum === 2) {
                                 // 1,2 경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
