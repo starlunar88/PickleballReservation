@@ -10706,7 +10706,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 밸런스 모드: 경기 번호에 따라 플레이어 선택
                 let availablePlayers = [];
-                if (teamMode === 'balanced') {
+                    if (teamMode === 'balanced') {
                     // topFourPlayers가 없으면 전체 플레이어에서 상위 4명 선택
                     if (!topFourPlayers || topFourPlayers.length === 0) {
                         const sortedByDupr = [...shuffledAllPlayers].sort((a, b) => {
@@ -10714,8 +10714,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             const duprB = a.dupr || 0;
                             const diff = duprA - duprB;
                             if (Math.abs(diff) < 0.15) {
-                                return Math.random() - 0.5;
-                            }
+                        return Math.random() - 0.5;
+                    }
                             return diff;
                         });
                         topFourPlayers = sortedByDupr.slice(0, 4);
@@ -10880,8 +10880,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         fourPlayers = shuffled.slice(0, 4);
                     } else {
                         // 후보가 부족한 경우: 모든 플레이어에서 랜덤하게 4명 선택
-                        const shuffled = [...availableThisMatch].sort(() => Math.random() - 0.5);
-                        fourPlayers = shuffled.slice(0, 4);
+                    const shuffled = [...availableThisMatch].sort(() => Math.random() - 0.5);
+                    fourPlayers = shuffled.slice(0, 4);
                     }
                 }
                 
@@ -11060,7 +11060,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         });
                         
                         // 이전 경기 조합에 추가 (경기 번호 포함)
-                        const currentMatchNum = teamMode === 'balanced' ? courtMatchNumber : null;
+                        const currentMatchNum = teamMode === 'balanced' ? courtMatchNumbers[c] : null;
                         previousMatchConfigs.push({ 
                             teamAIds: teamAKey, 
                             teamBIds: teamBKey,
@@ -11147,6 +11147,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             }))
                         });
                         
+                        // 밸런스 모드: 1,2 경기 참여 플레이어 기록 (3,4 경기에서 사용)
+                        if (teamMode === 'balanced') {
+                            const matchNum = courtMatchNumbers[c];
+                            if (matchNum === 1 || matchNum === 2) {
+                                fourPlayers.forEach(player => {
+                                    playedPlayers.add(player.userId);
+                                });
+                            }
+                        }
+                        
                         console.log(`✅ 코트 ${c}, 경기 ${r} 생성 완료: ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
                         
                         found = true;
@@ -11181,10 +11191,20 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
                     });
                     
+                    // 밸런스 모드: 1,2 경기 참여 플레이어 기록 (3,4 경기에서 사용)
+                    if (teamMode === 'balanced') {
+                        const matchNum = courtMatchNumbers[c];
+                        if (matchNum === 1 || matchNum === 2) {
+                            fourPlayers.forEach(player => {
+                                playedPlayers.add(player.userId);
+                            });
+                        }
+                    }
+                    
                     const teamAIds = selectedTeamA.map(p => p.userId).sort().join(',');
                     const teamBIds = selectedTeamB.map(p => p.userId).sort().join(',');
                     // 이전 경기 조합에 추가 (경기 번호 포함 - fallback 경로)
-                    const currentMatchNum = teamMode === 'balanced' ? courtMatchNumber : null;
+                    const currentMatchNum = teamMode === 'balanced' ? courtMatchNumbers[c] : null;
                     previousMatchConfigs.push({ 
                         teamAIds, 
                         teamBIds,
