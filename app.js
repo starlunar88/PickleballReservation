@@ -11026,22 +11026,100 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             teamConfigs.push({ teamA, teamB });
                         }
                     } else if (matchNum === 3 || matchNum === 4) {
-                        // 3,4 경기: 밸런스 조합 (가능한 조합들 생성)
-                        teamConfigs.push(
-                            { teamA: [sorted[0], sorted[3]].map(p => p.userId).sort(), teamB: [sorted[1], sorted[2]].map(p => p.userId).sort() }, // 최강+최약 vs 차강+차약
-                            { teamA: [sorted[0], sorted[2]].map(p => p.userId).sort(), teamB: [sorted[1], sorted[3]].map(p => p.userId).sort() }, // 최강+차약 vs 차강+최약
-                            { teamA: [sorted[0], sorted[1]].map(p => p.userId).sort(), teamB: [sorted[2], sorted[3]].map(p => p.userId).sort() }  // 최강+차강 vs 차약+최약
-                        );
+                        // 3,4 경기: 밸런스 조합 (가능한 조합들 생성, 중복 방지)
+                        const forbiddenCombinations = new Set();
+                        for (const prev of previousMatchConfigs) {
+                            if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                const prevTeamA = prev.teamAIds;
+                                const prevTeamB = prev.teamBIds;
+                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                            }
+                        }
+                        
+                        // 가능한 조합들 시도
+                        const possibleCombos = [
+                            [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
+                            [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
+                            [[sorted[0], sorted[1]], [sorted[2], sorted[3]]]  // 최강+차강 vs 차약+최약
+                        ];
+                        
+                        for (const combo of possibleCombos) {
+                            const teamA = combo[0].map(p => p.userId).sort().join(',');
+                            const teamB = combo[1].map(p => p.userId).sort().join(',');
+                            const comboKey = `${teamA}|${teamB}`;
+                            
+                            if (!forbiddenCombinations.has(comboKey)) {
+                                teamConfigs.push({ 
+                                    teamA: combo[0].map(p => p.userId), 
+                                    teamB: combo[1].map(p => p.userId) 
+                                });
+                                break; // 첫 번째 유효한 조합 사용
+                            }
+                        }
+                        
+                        // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
+                        if (teamConfigs.length === 0) {
+                            teamConfigs.push(
+                                { teamA: [sorted[0], sorted[3]].map(p => p.userId).sort(), teamB: [sorted[1], sorted[2]].map(p => p.userId).sort() }
+                            );
+                        }
                     } else if (matchNum === 5) {
-                        // 5경기: 최강+최약 vs 차강+차약
-                        const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
-                        const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
-                        teamConfigs.push({ teamA, teamB });
+                        // 5경기: 최강+최약 vs 차강+차약 (1,2 경기와 중복 방지)
+                        const forbiddenCombinations = new Set();
+                        for (const prev of previousMatchConfigs) {
+                            if (prev.matchNum === 1 || prev.matchNum === 2) {
+                                const prevTeamA = prev.teamAIds;
+                                const prevTeamB = prev.teamBIds;
+                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                            }
+                        }
+                        
+                        const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort().join(',');
+                        const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort().join(',');
+                        const comboKey = `${teamA}|${teamB}`;
+                        
+                        if (!forbiddenCombinations.has(comboKey)) {
+                            teamConfigs.push({ 
+                                teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                                teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                            });
+                        } else {
+                            // 중복이면 다른 조합 사용 (최강+차약 vs 차강+최약)
+                            teamConfigs.push({ 
+                                teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                                teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                            });
+                        }
                     } else if (matchNum === 6) {
-                        // 6경기: 최강+차약 vs 차강+최약
-                        const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort();
-                        const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort();
-                        teamConfigs.push({ teamA, teamB });
+                        // 6경기: 최강+차약 vs 차강+최약 (1,2,5 경기와 중복 방지)
+                        const forbiddenCombinations = new Set();
+                        for (const prev of previousMatchConfigs) {
+                            if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 5) {
+                                const prevTeamA = prev.teamAIds;
+                                const prevTeamB = prev.teamBIds;
+                                forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                            }
+                        }
+                        
+                        const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort().join(',');
+                        const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort().join(',');
+                        const comboKey = `${teamA}|${teamB}`;
+                        
+                        if (!forbiddenCombinations.has(comboKey)) {
+                            teamConfigs.push({ 
+                                teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                                teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                            });
+                        } else {
+                            // 중복이면 다른 조합 사용 (최강+최약 vs 차강+차약)
+                            teamConfigs.push({ 
+                                teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                                teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                            });
+                        }
                     } else if (matchNum === 7) {
                         // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
                         // 1,2 경기 조합과 중복되지 않는 조합 생성
@@ -11655,8 +11733,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                             } else if (matchNum === 3 || matchNum === 4) {
                                 // 3,4 경기: 참여 안한 나머지 플레이어 + 상위 4명 중 일부
-                                // 점수 순으로 정렬된 상태에서 밸런스 조합
-                                // 가능한 조합들 생성
+                                // 점수 순으로 정렬된 상태에서 밸런스 조합 (중복 방지)
+                                const forbiddenCombinations = new Set();
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                        const prevTeamA = prev.teamAIds;
+                                        const prevTeamB = prev.teamBIds;
+                                        forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                        forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                                    }
+                                }
+                                
+                                // 가능한 조합들 시도
                                 const combinations = [
                                     [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
                                     [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
@@ -11664,20 +11752,82 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 ];
                                 
                                 for (const combo of combinations) {
-                                    const teamA = combo[0].map(p => p.userId).sort();
-                                    const teamB = combo[1].map(p => p.userId).sort();
-                                    teamConfigs.push({ teamA, teamB });
+                                    const teamA = combo[0].map(p => p.userId).sort().join(',');
+                                    const teamB = combo[1].map(p => p.userId).sort().join(',');
+                                    const comboKey = `${teamA}|${teamB}`;
+                                    
+                                    if (!forbiddenCombinations.has(comboKey)) {
+                                        teamConfigs.push({ 
+                                            teamA: combo[0].map(p => p.userId), 
+                                            teamB: combo[1].map(p => p.userId) 
+                                        });
+                                        break; // 첫 번째 유효한 조합 사용
+                                    }
+                                }
+                                
+                                // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
+                                if (teamConfigs.length === 0) {
+                                    teamConfigs.push({ 
+                                        teamA: [sorted[0], sorted[3]].map(p => p.userId).sort(), 
+                                        teamB: [sorted[1], sorted[2]].map(p => p.userId).sort() 
+                                    });
                                 }
                             } else if (matchNum === 5) {
-                                // 5경기: 최강+최약 vs 차강+차약
-                                const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
-                                const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
-                                teamConfigs.push({ teamA, teamB });
+                                // 5경기: 최강+최약 vs 차강+차약 (1,2 경기와 중복 방지)
+                                const forbiddenCombinations = new Set();
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 1 || prev.matchNum === 2) {
+                                        const prevTeamA = prev.teamAIds;
+                                        const prevTeamB = prev.teamBIds;
+                                        forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                        forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                                    }
+                                }
+                                
+                                const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort().join(',');
+                                const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort().join(',');
+                                const comboKey = `${teamA}|${teamB}`;
+                                
+                                if (!forbiddenCombinations.has(comboKey)) {
+                                    teamConfigs.push({ 
+                                        teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                                        teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                                    });
+                                } else {
+                                    // 중복이면 다른 조합 사용 (최강+차약 vs 차강+최약)
+                                    teamConfigs.push({ 
+                                        teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                                        teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                                    });
+                                }
                             } else if (matchNum === 6) {
-                                // 6경기: 최강+차약 vs 차강+최약
-                                const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort();
-                                const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort();
-                                teamConfigs.push({ teamA, teamB });
+                                // 6경기: 최강+차약 vs 차강+최약 (1,2,5 경기와 중복 방지)
+                                const forbiddenCombinations = new Set();
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 5) {
+                                        const prevTeamA = prev.teamAIds;
+                                        const prevTeamB = prev.teamBIds;
+                                        forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                        forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                                    }
+                                }
+                                
+                                const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort().join(',');
+                                const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort().join(',');
+                                const comboKey = `${teamA}|${teamB}`;
+                                
+                                if (!forbiddenCombinations.has(comboKey)) {
+                                    teamConfigs.push({ 
+                                        teamA: [sorted[0], sorted[2]].map(p => p.userId), 
+                                        teamB: [sorted[1], sorted[3]].map(p => p.userId) 
+                                    });
+                                } else {
+                                    // 중복이면 다른 조합 사용 (최강+최약 vs 차강+차약)
+                                    teamConfigs.push({ 
+                                        teamA: [sorted[0], sorted[3]].map(p => p.userId), 
+                                        teamB: [sorted[1], sorted[2]].map(p => p.userId) 
+                                    });
+                                }
                             } else if (matchNum === 7) {
                                 // 7경기: 잘하는 사람들끼리, 못하는 사람들끼리 (1,2 경기와 같은 조합이지만 중복 방지)
                                 // 1,2 경기 조합과 중복되지 않는 조합 생성
@@ -11986,17 +12136,91 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                             } else if (matchNum === 3 || matchNum === 4) {
-                                // 3,4 경기: 참여 안한 나머지 플레이어 + 상위 4명 중 일부
-                                selectedTeamA = [sorted[0], sorted[3]];
-                                selectedTeamB = [sorted[1], sorted[2]];
+                                // 3,4 경기: 참여 안한 나머지 플레이어 + 상위 4명 중 일부 (중복 방지)
+                                const forbiddenTeamCombos = new Set();
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                        const prevTeamA = prev.teamAIds.split(',').sort().join(',');
+                                        const prevTeamB = prev.teamBIds.split(',').sort().join(',');
+                                        forbiddenTeamCombos.add(`${prevTeamA}|${prevTeamB}`);
+                                        forbiddenTeamCombos.add(`${prevTeamB}|${prevTeamA}`);
+                                    }
+                                }
+                                
+                                // 가능한 조합들 시도
+                                const possibleCombos = [
+                                    [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
+                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
+                                    [[sorted[0], sorted[1]], [sorted[2], sorted[3]]]  // 최강+차강 vs 차약+최약
+                                ];
+                                
+                                let foundValidCombo = false;
+                                for (const combo of possibleCombos) {
+                                    const teamA = combo[0].map(p => p.userId).sort().join(',');
+                                    const teamB = combo[1].map(p => p.userId).sort().join(',');
+                                    const comboKey = `${teamA}|${teamB}`;
+                                    
+                                    if (!forbiddenTeamCombos.has(comboKey)) {
+                                        selectedTeamA = combo[0];
+                                        selectedTeamB = combo[1];
+                                        foundValidCombo = true;
+                                        break;
+                                    }
+                                }
+                                
+                                // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
+                                if (!foundValidCombo) {
+                                    selectedTeamA = [sorted[0], sorted[3]];
+                                    selectedTeamB = [sorted[1], sorted[2]];
+                                }
                             } else if (matchNum === 5) {
-                                // 5경기: 최강+최약 vs 차강+차약
-                                selectedTeamA = [sorted[0], sorted[3]];
-                                selectedTeamB = [sorted[1], sorted[2]];
+                                // 5경기: 최강+최약 vs 차강+차약 (1,2 경기와 중복 방지)
+                                const forbiddenTeamCombos = new Set();
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 1 || prev.matchNum === 2) {
+                                        const prevTeamA = prev.teamAIds.split(',').sort().join(',');
+                                        const prevTeamB = prev.teamBIds.split(',').sort().join(',');
+                                        forbiddenTeamCombos.add(`${prevTeamA}|${prevTeamB}`);
+                                        forbiddenTeamCombos.add(`${prevTeamB}|${prevTeamA}`);
+                                    }
+                                }
+                                
+                                const teamA = [sorted[0], sorted[3]].map(p => p.userId).sort().join(',');
+                                const teamB = [sorted[1], sorted[2]].map(p => p.userId).sort().join(',');
+                                const comboKey = `${teamA}|${teamB}`;
+                                
+                                if (!forbiddenTeamCombos.has(comboKey)) {
+                                    selectedTeamA = [sorted[0], sorted[3]];
+                                    selectedTeamB = [sorted[1], sorted[2]];
+                                } else {
+                                    // 중복이면 다른 조합 사용 (최강+차약 vs 차강+최약)
+                                    selectedTeamA = [sorted[0], sorted[2]];
+                                    selectedTeamB = [sorted[1], sorted[3]];
+                                }
                             } else if (matchNum === 6) {
-                                // 6경기: 최강+차약 vs 차강+최약
-                                selectedTeamA = [sorted[0], sorted[2]];
-                                selectedTeamB = [sorted[1], sorted[3]];
+                                // 6경기: 최강+차약 vs 차강+최약 (1,2,5 경기와 중복 방지)
+                                const forbiddenTeamCombos = new Set();
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 5) {
+                                        const prevTeamA = prev.teamAIds.split(',').sort().join(',');
+                                        const prevTeamB = prev.teamBIds.split(',').sort().join(',');
+                                        forbiddenTeamCombos.add(`${prevTeamA}|${prevTeamB}`);
+                                        forbiddenTeamCombos.add(`${prevTeamB}|${prevTeamA}`);
+                                    }
+                                }
+                                
+                                const teamA = [sorted[0], sorted[2]].map(p => p.userId).sort().join(',');
+                                const teamB = [sorted[1], sorted[3]].map(p => p.userId).sort().join(',');
+                                const comboKey = `${teamA}|${teamB}`;
+                                
+                                if (!forbiddenTeamCombos.has(comboKey)) {
+                                    selectedTeamA = [sorted[0], sorted[2]];
+                                    selectedTeamB = [sorted[1], sorted[3]];
+                                } else {
+                                    // 중복이면 다른 조합 사용 (최강+최약 vs 차강+차약)
+                                    selectedTeamA = [sorted[0], sorted[3]];
+                                    selectedTeamB = [sorted[1], sorted[2]];
+                                }
                             } else if (matchNum === 7) {
                                 // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
                                 if (courtCount >= 2) {
