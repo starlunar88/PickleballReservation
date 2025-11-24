@@ -10738,25 +10738,25 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     courtMatchNumbers[c] = targetMatchNum;
                     console.log(`🎯 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum} 생성 중...`);
                 
-                        // 밸런스 모드: 경기 번호에 따라 플레이어 선택
-                        let availablePlayers = [];
-                        if (teamMode === 'balanced') {
-                            // topFourPlayers가 없으면 전체 플레이어에서 상위 4명 선택
-                            if (!topFourPlayers || topFourPlayers.length === 0) {
-                                const sortedByDupr = [...shuffledAllPlayers].sort((a, b) => {
-                                    const duprA = b.dupr || 0;
-                                    const duprB = a.dupr || 0;
-                                    const diff = duprA - duprB;
-                                    if (Math.abs(diff) < 0.15) {
-                                        return Math.random() - 0.5;
-                                    }
-                                    return diff;
-                                });
-                                topFourPlayers = sortedByDupr.slice(0, 4);
-                                remainingPlayers = sortedByDupr.length > 4 ? sortedByDupr.slice(4) : [];
-                            }
-                            
-                            if (topFourPlayers && topFourPlayers.length > 0) {
+                    // 밸런스 모드: 경기 번호에 따라 플레이어 선택
+                    let availablePlayers = [];
+                    if (teamMode === 'balanced') {
+                        // topFourPlayers가 없으면 전체 플레이어에서 상위 4명 선택
+                        if (!topFourPlayers || topFourPlayers.length === 0) {
+                            const sortedByDupr = [...shuffledAllPlayers].sort((a, b) => {
+                                const duprA = b.dupr || 0;
+                                const duprB = a.dupr || 0;
+                                const diff = duprA - duprB;
+                                if (Math.abs(diff) < 0.15) {
+                                    return Math.random() - 0.5;
+                                }
+                                return diff;
+                            });
+                            topFourPlayers = sortedByDupr.slice(0, 4);
+                            remainingPlayers = sortedByDupr.length > 4 ? sortedByDupr.slice(4) : [];
+                        }
+                        
+                        if (topFourPlayers && topFourPlayers.length > 0) {
                                 const matchNum = targetMatchNum; // targetMatchNum 사용
                                 
                                 // 밸런스 모드에서는 각 코트마다 독립적으로 플레이어 선택
@@ -11658,8 +11658,6 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                     } // for (let c = 1; c <= courtCount; c++) 종료
             } // for (let r = 1; r <= rounds; r++) 종료
-            console.log(`✅ 경기 ${targetMatchNum} 생성 완료`);
-        } // for (const targetMatchNum of matchPriority) 종료
         console.log(`🎯 총 ${schedule.length}경기 생성 완료 (코트 ${courtCount}개, 코트당 ${rounds}경기)`);
     } else if (teamMode === 'random') {
         // 랜덤 모드: 각 라운드별, 각 코트별로 경기 생성
@@ -16546,4 +16544,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-}
