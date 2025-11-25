@@ -11121,6 +11121,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+최약 vs 차강+차약
                                 ];
                                 
+                                console.log(`🔍 1,2 경기 팀 구성 시도 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                console.log(`  - sorted: ${sorted.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                
                                 for (const combo of possibleCombos) {
                                     const teamAIds = combo[0].map(p => p.userId);
                                     const teamBIds = combo[1].map(p => p.userId);
@@ -11159,12 +11162,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             teamA: teamAIds, 
                                             teamB: teamBIds 
                                         });
+                                        console.log(`  - 유효한 조합 찾음: ${combo[0].map(p => sorted.find(s => s.userId === p)?.userName).join(',')} vs ${combo[1].map(p => sorted.find(s => s.userId === p)?.userName).join(',')}`);
                                         break; // 첫 번째 유효한 조합 사용
+                                    } else {
+                                        console.log(`  - 같은 팀원 반복으로 건너뜀: ${combo[0].map(p => sorted.find(s => s.userId === p)?.userName).join(',')} vs ${combo[1].map(p => sorted.find(s => s.userId === p)?.userName).join(',')}`);
                                     }
                                 }
                                 
                                 // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
                                 if (teamConfigs.length === 0) {
+                                    console.log(`  - 유효한 조합 없음, fallback 사용`);
                                     teamConfigs.push({ 
                                         teamA: [sorted[0], sorted[1]].map(p => p.userId), 
                                         teamB: [sorted[2], sorted[3]].map(p => p.userId) 
@@ -11619,8 +11626,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
                                 if (hasDuplicate) {
-                                    // 중복이 있으면 이 경기는 건너뛰기
-                                    continue;
+                                    // 중복이 있으면 이 조합은 건너뛰고 다음 조합 시도
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 다음 조합 시도`);
+                                    continue; // 다음 teamConfigs 조합으로
                                 }
                                 
                                 // 같은 라운드 내에서 배정된 플레이어로 표시
