@@ -10728,10 +10728,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 각 코트별로 경기 번호에 따라 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
-                    // 현재 코트의 경기 번호 결정 (같은 라운드에서 모든 코트가 같은 경기 번호를 가짐)
-                    // 각 라운드마다 matchPriority를 순환하여 경기 번호 결정
+                    // 현재 코트의 경기 번호 결정
+                    // 5,6 경기는 코트별로 다른 경기 번호를 가짐 (코트 1: 5경기, 코트 2: 6경기)
+                    // 다른 경기는 같은 라운드에서 모든 코트가 같은 경기 번호를 가짐
                     const matchIndex = (r - 1) % matchPriority.length;
-                    const targetMatchNum = matchPriority[matchIndex];
+                    let targetMatchNum = matchPriority[matchIndex];
+                    
+                    // 5,6 경기는 코트별로 다른 경기 번호 배정
+                    if (targetMatchNum === 5 || targetMatchNum === 6) {
+                        // 코트 1: 5경기, 코트 2: 6경기, 코트 3: 5경기, 코트 4: 6경기...
+                        targetMatchNum = (c % 2 === 1) ? 5 : 6;
+                    }
                     
                     // 경기 번호 업데이트
                     courtMatchNumbers[c] = targetMatchNum;
