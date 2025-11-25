@@ -11391,9 +11391,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         
                         // 5,6 경기는 고정 조합이므로 중복 체크 없이 바로 선택
                         if (teamMode === 'balanced' && (targetMatchNum === 5 || targetMatchNum === 6)) {
-                            if (teamConfigs.length > 0 && fourPlayers.length === 4) {
-                                const config = teamConfigs[0]; // 첫 번째 조합 사용 (고정 조합)
-                                // sorted는 fourPlayers를 DUPR 점수 순으로 정렬한 것이므로 직접 사용
+                            if (fourPlayers && fourPlayers.length === 4) {
+                                // sorted는 fourPlayers를 DUPR 점수 순으로 정렬
                                 const sorted = [...fourPlayers].sort((a, b) => {
                                     const duprA = b.dupr || 0;
                                     const duprB = a.dupr || 0;
