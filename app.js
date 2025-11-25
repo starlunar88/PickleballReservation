@@ -11644,20 +11644,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 
                                 // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
                                 // 1,2 경기는 코트별로 다른 플레이어 그룹을 사용하므로 중복 허용
+                                // 5,6 경기는 고정된 4명(최강, 차강, 차약, 최약)이므로 중복이 발생할 수 없음
                                 const allPlayerIds3 = [...config.teamA, ...config.teamB];
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
-                                if (hasDuplicate && targetMatchNum !== 1 && targetMatchNum !== 2) {
-                                    // 중복이 있으면 이 조합은 건너뛰고 다음 조합 시도 (1,2 경기는 제외)
+                                if (hasDuplicate && targetMatchNum !== 1 && targetMatchNum !== 2 && targetMatchNum !== 5 && targetMatchNum !== 6) {
+                                    // 중복이 있으면 이 조합은 건너뛰고 다음 조합 시도 (1,2,5,6 경기는 제외)
                                     console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 다음 조합 시도`);
                                     continue; // 다음 teamConfigs 조합으로
                                 } else if (hasDuplicate && (targetMatchNum === 1 || targetMatchNum === 2)) {
                                     // 1,2 경기는 중복 허용 (코트별로 다른 플레이어 그룹 사용)
                                     console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (코트별 다른 그룹)`);
+                                } else if (hasDuplicate && (targetMatchNum === 5 || targetMatchNum === 6)) {
+                                    // 5,6 경기는 중복 허용 (고정된 4명이므로 중복이 발생할 수 없음)
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (5,6 경기)`);
                                 }
                                 
-                                // 같은 라운드 내에서 배정된 플레이어로 표시
-                                allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                // 같은 라운드 내에서 배정된 플레이어로 표시 (5,6 경기는 중복 허용)
+                                if (targetMatchNum !== 5 && targetMatchNum !== 6) {
+                                    allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                }
                                 
                                 // 경기 생성
                                 schedule.push({
