@@ -10684,9 +10684,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         const playedPlayers = new Set(); // 5,6,1,2,7,8경기 참여 플레이어 추적 (3,4 경기에서 사용)
         
         if (teamMode === 'balanced') {
-            // 코트별 경기 번호 초기화
+            // 코트별 경기 번호 초기화 (각 코트가 독립적으로 경기 번호를 추적)
             for (let c = 1; c <= courtCount; c++) {
-                courtMatchNumbers[c] = 0;
+                courtMatchNumbers[c] = -1; // -1로 초기화하여 첫 경기부터 시작하도록
             }
             
             // DUPR 점수 순으로 정렬하여 상위 4명 분리
@@ -10728,11 +10728,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 각 코트별로 경기 번호에 따라 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
-                    // 현재 코트의 경기 번호 결정 (라운드별로 순환)
-                    // 각 라운드마다 matchPriority를 순환하여 경기 번호 결정
-                    // 코트별로 약간의 오프셋을 주어 다양성 확보
-                    const matchIndex = ((r - 1) + (c - 1)) % matchPriority.length;
-                    const targetMatchNum = matchPriority[matchIndex];
+                    // 현재 코트의 경기 번호 결정 (각 코트가 독립적으로 1~8 경기를 순차적으로 생성)
+                    // 각 코트가 독립적으로 경기 번호를 추적하여 순차적으로 생성
+                    // 코트별로 오프셋을 주어 같은 라운드에서도 다른 경기 번호를 가지도록 함
+                    let currentMatchIndex;
+                    if (courtMatchNumbers[c] === -1) {
+                        // 첫 경기: 코트별 오프셋 적용
+                        currentMatchIndex = (c - 1) % matchPriority.length;
+                    } else {
+                        // 다음 경기: 현재 경기 번호의 다음 경기 번호
+                        currentMatchIndex = (matchPriority.indexOf(courtMatchNumbers[c]) + 1) % matchPriority.length;
+                    }
+                    const targetMatchNum = matchPriority[currentMatchIndex];
                     
                     // 경기 번호 업데이트
                     courtMatchNumbers[c] = targetMatchNum;
