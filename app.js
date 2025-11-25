@@ -11458,12 +11458,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                                 
                                 // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
+                                // 5,6 경기는 전체 플레이어에서 최강/최약을 선택하므로 같은 라운드 내 중복 허용
                                 const allPlayerIds3 = [...teamAIds, ...teamBIds];
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
-                                if (hasDuplicate) {
-                                    // 중복이 있으면 이 경기는 건너뛰기
+                                if (hasDuplicate && targetMatchNum !== 5 && targetMatchNum !== 6) {
+                                    // 중복이 있으면 이 경기는 건너뛰기 (5,6 경기는 제외)
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 건너뜀`);
                                     continue;
+                                } else if (hasDuplicate && (targetMatchNum === 5 || targetMatchNum === 6)) {
+                                    // 5,6 경기는 중복 허용 (전체 플레이어에서 최강/최약 선택)
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (5,6 경기)`);
                                 }
                                 
                                 // 같은 라운드 내에서 배정된 플레이어로 표시
