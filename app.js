@@ -10725,19 +10725,34 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             for (let r = 1; r <= rounds; r++) {
                 // 같은 라운드 내에서 이미 배정된 플레이어 추적
                 const assignedPlayersInRound = new Set();
+                // 5,6 경기는 같은 라운드에서 한 번씩만 생성되도록 추적
+                const created56Matches = new Set(); // 생성된 5,6 경기 번호 추적
                 
                 // 각 코트별로 경기 번호에 따라 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
                     // 현재 코트의 경기 번호 결정
-                    // 5,6 경기는 코트별로 다른 경기 번호를 가짐 (코트 1: 5경기, 코트 2: 6경기)
-                    // 다른 경기는 같은 라운드에서 모든 코트가 같은 경기 번호를 가짐
                     const matchIndex = (r - 1) % matchPriority.length;
                     let targetMatchNum = matchPriority[matchIndex];
                     
-                    // 5,6 경기는 코트별로 다른 경기 번호 배정
+                    // 5,6 경기는 같은 라운드에서 각 코트마다 한 번씩만 생성
+                    // 라운드 1: 코트 1 → 5경기, 코트 2 → 6경기
+                    // 라운드 2: 코트 1 → 6경기, 코트 2 → 5경기 (다음 라운드에서는 번갈아가며)
                     if (targetMatchNum === 5 || targetMatchNum === 6) {
-                        // 코트 1: 5경기, 코트 2: 6경기, 코트 3: 5경기, 코트 4: 6경기...
-                        targetMatchNum = (c % 2 === 1) ? 5 : 6;
+                        // 코트별로 5,6 경기를 번갈아가며 배정
+                        // 라운드가 홀수: 코트 1→5, 코트 2→6
+                        // 라운드가 짝수: 코트 1→6, 코트 2→5
+                        if (r % 2 === 1) {
+                            targetMatchNum = (c % 2 === 1) ? 5 : 6;
+                        } else {
+                            targetMatchNum = (c % 2 === 1) ? 6 : 5;
+                        }
+                        
+                        // 같은 라운드에서 이미 생성된 5,6 경기인지 확인
+                        if (created56Matches.has(targetMatchNum)) {
+                            console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
+                            continue; // 이미 생성된 5,6 경기는 건너뛰기
+                        }
+                        created56Matches.add(targetMatchNum); // 생성된 5,6 경기 기록
                     }
                     
                     // 경기 번호 업데이트
