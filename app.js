@@ -11833,12 +11833,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 // 각 코트별로 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
                     // 랜덤 모드에서 경기 번호 설정 (1-8 사이의 번호)
-                    // 각 라운드마다 1-8경기가 순서대로 생성되도록 함
-                    // 라운드 1: 코트1=1경기, 코트2=2경기, 코트3=3경기, ...
-                    // 라운드 2: 코트1=4경기, 코트2=5경기, 코트3=6경기, ...
-                    // 라운드 3: 코트1=7경기, 코트2=8경기, 코트3=1경기 (순환)
-                    const matchIndex = ((r - 1) * courtCount + (c - 1)) % 8;
-                    const targetMatchNum = matchIndex + 1;
+                    // 각 라운드마다 모든 코트에서 같은 경기 번호 사용
+                    // 라운드 1: 모든 코트에서 1경기
+                    // 라운드 2: 모든 코트에서 2경기
+                    // 라운드 3: 모든 코트에서 3경기
+                    // ...
+                    // 라운드 8: 모든 코트에서 8경기
+                    const targetMatchNum = r;
                     
                     // 현재 경기에서 사용할 수 있는 플레이어 (같은 라운드에서 이미 배정된 플레이어 제외)
                     let availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
