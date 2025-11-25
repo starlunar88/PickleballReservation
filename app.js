@@ -11505,6 +11505,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                         
                         // 5,6 경기가 아닌 경우 기존 로직 사용
+                        if (teamConfigs.length === 0 && (targetMatchNum === 1 || targetMatchNum === 2)) {
+                            console.warn(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: teamConfigs가 비어있습니다. fallback 사용`);
+                        }
+                        
                         for (const config of teamConfigs) {
                             const teamAKey = config.teamA.join(',');
                             const teamBKey = config.teamB.join(',');
@@ -11670,11 +11674,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 
                                 found = true;
                                 break;
+                            } else {
+                                if (targetMatchNum === 1 || targetMatchNum === 2) {
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 조합 실패 - isUniqueTeam: ${isUniqueTeam}, hasRepeatedTeammate: ${hasRepeatedTeammate}`);
+                                }
                             }
                         }
                         
                         // 고유한 조합을 찾지 못했으면 첫 번째 패턴 사용
                         if (!found) {
+                            if (targetMatchNum === 1 || targetMatchNum === 2) {
+                                console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 모든 조합 실패, fallback 사용`);
+                            }
                             if (!fourPlayers || fourPlayers.length < 4) {
                                 console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: fourPlayers 없음`);
                                 continue;
