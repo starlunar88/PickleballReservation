@@ -10728,18 +10728,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 각 코트별로 경기 번호에 따라 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
-                    // 현재 코트의 경기 번호 결정 (각 코트가 독립적으로 1~8 경기를 순차적으로 생성)
-                    // 각 코트가 독립적으로 경기 번호를 추적하여 순차적으로 생성
-                    // 코트별로 오프셋을 주어 같은 라운드에서도 다른 경기 번호를 가지도록 함
-                    let currentMatchIndex;
-                    if (courtMatchNumbers[c] === -1) {
-                        // 첫 경기: 코트별 오프셋 적용
-                        currentMatchIndex = (c - 1) % matchPriority.length;
-                    } else {
-                        // 다음 경기: 현재 경기 번호의 다음 경기 번호
-                        currentMatchIndex = (matchPriority.indexOf(courtMatchNumbers[c]) + 1) % matchPriority.length;
-                    }
-                    const targetMatchNum = matchPriority[currentMatchIndex];
+                    // 현재 코트의 경기 번호 결정 (같은 라운드에서 모든 코트가 같은 경기 번호를 가짐)
+                    // 각 라운드마다 matchPriority를 순환하여 경기 번호 결정
+                    const matchIndex = (r - 1) % matchPriority.length;
+                    const targetMatchNum = matchPriority[matchIndex];
                     
                     // 경기 번호 업데이트
                     courtMatchNumbers[c] = targetMatchNum;
@@ -10791,30 +10783,66 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 if (matchNum === 1 || matchNum === 2) {
                                     // 1,2 경기: 상위 사람들끼리 vs 상위 사람들끼리, 하위 사람들끼리 vs 하위 사람들끼리
                                     // 코트 번호에 따라 상위/하위 배정 (홀수 코트: 상위, 짝수 코트: 하위)
+                                    // 같은 라운드에서 각 코트가 다른 플레이어를 선택하도록 availablePlayers에서 선택
+                                    console.log(`🔍 1,2 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                    console.log(`  - 전체 사용 가능한 플레이어: ${allAvailablePlayers.length}명`);
+                                    console.log(`  - 같은 라운드 배정된 플레이어: ${assignedPlayersInRound.size}명`);
                                     if (c % 2 === 1) {
                                         // 홀수 코트: 상위 4명 (잘하는 사람들끼리)
-                                        if (availableTopFour.length >= 4) {
-                                            availablePlayers = availableTopFour.slice(0, 4);
+                                        // 같은 라운드에서 아직 배정되지 않은 상위 플레이어 선택
+                                        const availableTopFourInRound = allAvailablePlayers
+                                            .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
+                                            .sort((a, b) => {
+                                                const duprA = b.dupr || 0;
+                                                const duprB = a.dupr || 0;
+                                                return duprA - duprB;
+                                            });
+                                        
+                                        if (availableTopFourInRound.length >= 4) {
+                                            availablePlayers = availableTopFourInRound.slice(0, 4);
+                                            console.log(`  - 홀수 코트: 상위 4명 선택 완료`);
                                         } else {
                                             // 상위 4명이 부족하면 나머지 플레이어로 보충
-                                            const needed = 4 - availableTopFour.length;
-                                            availablePlayers = [...availableTopFour, ...availableRemaining.slice(0, needed)];
+                                            const needed = 4 - availableTopFourInRound.length;
+                                            const availableRemainingInRound = allAvailablePlayers
+                                                .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
+                                                .sort((a, b) => {
+                                                    const duprA = b.dupr || 0;
+                                                    const duprB = a.dupr || 0;
+                                                    return duprA - duprB;
+                                                });
+                                            availablePlayers = [...availableTopFourInRound, ...availableRemainingInRound.slice(0, needed)];
+                                            console.log(`  - 홀수 코트: 상위 ${availableTopFourInRound.length}명 + 나머지 ${needed}명 선택`);
                                         }
+                                        console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                     } else {
                                         // 짝수 코트: 하위 4명 (못하는 사람들끼리)
-                                        const sortedRemaining = [...availableRemaining].sort((a, b) => {
-                                            const duprA = a.dupr || 0;
-                                            const duprB = b.dupr || 0;
-                                            return duprA - duprB; // 낮은 순으로 정렬
-                                        });
+                                        // 같은 라운드에서 아직 배정되지 않은 하위 플레이어 선택
+                                        const availableRemainingInRound = allAvailablePlayers
+                                            .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
+                                            .sort((a, b) => {
+                                                const duprA = a.dupr || 0;
+                                                const duprB = b.dupr || 0;
+                                                return duprA - duprB; // 낮은 순으로 정렬
+                                            });
                                         
-                                        if (sortedRemaining.length >= 4) {
-                                            availablePlayers = sortedRemaining.slice(0, 4); // 하위 4명
+                                        if (availableRemainingInRound.length >= 4) {
+                                            availablePlayers = availableRemainingInRound.slice(0, 4); // 하위 4명
+                                            console.log(`  - 짝수 코트: 하위 4명 선택 완료`);
                                         } else {
                                             // 하위 플레이어가 부족하면 상위 플레이어로 보충
-                                            const needed = 4 - sortedRemaining.length;
-                                            availablePlayers = [...sortedRemaining, ...availableTopFour.slice(-needed)];
+                                            const needed = 4 - availableRemainingInRound.length;
+                                            const availableTopFourInRound = allAvailablePlayers
+                                                .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
+                                                .sort((a, b) => {
+                                                    const duprA = b.dupr || 0;
+                                                    const duprB = a.dupr || 0;
+                                                    return duprA - duprB;
+                                                });
+                                            availablePlayers = [...availableRemainingInRound, ...availableTopFourInRound.slice(-needed)];
+                                            console.log(`  - 짝수 코트: 하위 ${availableRemainingInRound.length}명 + 상위 ${needed}명 선택`);
                                         }
+                                        console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                     }
                                 } else if (matchNum === 3 || matchNum === 4) {
                                     // 3,4 경기: 5,6,1,2,7,8 경기에 참여하지 않은 사람들 우선 선택
