@@ -10884,7 +10884,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 } else if (matchNum === 5 || matchNum === 6) {
                                     // 5,6 경기: 전체 플레이어 중 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
-                                    // 같은 라운드 제외 없이 전체 플레이어에서 선택 (5,6 경기는 최우선이므로)
+                                    // 고정된 4명이므로 같은 라운드 체크 없이 전체 플레이어에서 항상 같은 4명 선택
                                     const allSorted = [...shuffledAllPlayers].sort((a, b) => {
                                         const duprA = b.dupr || 0;
                                         const duprB = a.dupr || 0;
@@ -10895,8 +10895,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         // 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
                                         const topPlayer = allSorted[0]; // 최강 (1등)
                                         const secondPlayer = allSorted[1]; // 차강 (2등)
-                                        const secondLastPlayer = allSorted[allSorted.length - 2]; // 차약 (뒤에서 2등)
-                                        const lastPlayer = allSorted[allSorted.length - 1]; // 최약 (꼴찌)
+                                        const secondLastPlayer = allSorted[allSorted.length - 2]; // 차약 (뒤에서 2등) = 두 번째로 못하는 사람
+                                        const lastPlayer = allSorted[allSorted.length - 1]; // 최약 (꼴찌) = 제일 못하는 사람
                                         
                                         availablePlayers = [topPlayer, secondPlayer, secondLastPlayer, lastPlayer];
                                         
@@ -11458,7 +11458,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                                 
                                 // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
-                                // 5,6 경기는 전체 플레이어에서 최강/최약을 선택하므로 같은 라운드 내 중복 허용
+                                // 5,6 경기는 고정된 4명(최강, 차강, 차약, 최약)이므로 중복이 발생할 수 없음
                                 const allPlayerIds3 = [...teamAIds, ...teamBIds];
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
@@ -11466,13 +11466,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     // 중복이 있으면 이 경기는 건너뛰기 (5,6 경기는 제외)
                                     console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 건너뜀`);
                                     continue;
-                                } else if (hasDuplicate && (targetMatchNum === 5 || targetMatchNum === 6)) {
-                                    // 5,6 경기는 중복 허용 (전체 플레이어에서 최강/최약 선택)
-                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (5,6 경기)`);
                                 }
                                 
-                                // 같은 라운드 내에서 배정된 플레이어로 표시
-                                allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                // 같은 라운드 내에서 배정된 플레이어로 표시 (5,6 경기는 중복 허용)
+                                if (targetMatchNum !== 5 && targetMatchNum !== 6) {
+                                    allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                }
                                 
                                 // 경기 생성
                                 schedule.push({
