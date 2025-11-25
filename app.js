@@ -11832,6 +11832,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 각 코트별로 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
+                    // 랜덤 모드에서 경기 번호 설정 (1-8 사이의 번호, 코트 번호 기반)
+                    const targetMatchNum = ((c - 1) % 8) + 1;
+                    
                     // 현재 경기에서 사용할 수 있는 플레이어 (같은 라운드에서 이미 배정된 플레이어 제외)
                     let availablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
                     
@@ -12104,6 +12107,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         schedule.push({
                             round: r,
                             court: c,
+                            roundNumber: targetMatchNum, // 경기 번호 (1-8)
                             teamA: selectedTeamA.map(player => ({
                                 userId: player.userId,
                                 userName: player.userName,
