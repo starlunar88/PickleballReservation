@@ -11509,6 +11509,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             console.warn(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: teamConfigs가 비어있습니다. fallback 사용`);
                         }
                         
+                        if (targetMatchNum === 1 || targetMatchNum === 2) {
+                            console.log(`🔍 1,2 경기 조합 시도 - 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}:`);
+                            console.log(`  - teamConfigs.length = ${teamConfigs.length}`);
+                            console.log(`  - fourPlayers: ${fourPlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                            console.log(`  - 같은 라운드 배정된 플레이어: ${Array.from(assignedPlayersInRound).join(', ')}`);
+                        }
+                        
                         for (const config of teamConfigs) {
                             const teamAKey = config.teamA.join(',');
                             const teamBKey = config.teamB.join(',');
@@ -11631,13 +11638,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                                 
                                 // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
+                                // 1,2 경기는 코트별로 다른 플레이어 그룹을 사용하므로 중복 허용
                                 const allPlayerIds3 = [...config.teamA, ...config.teamB];
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
-                                if (hasDuplicate) {
-                                    // 중복이 있으면 이 조합은 건너뛰고 다음 조합 시도
+                                if (hasDuplicate && targetMatchNum !== 1 && targetMatchNum !== 2) {
+                                    // 중복이 있으면 이 조합은 건너뛰고 다음 조합 시도 (1,2 경기는 제외)
                                     console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 다음 조합 시도`);
                                     continue; // 다음 teamConfigs 조합으로
+                                } else if (hasDuplicate && (targetMatchNum === 1 || targetMatchNum === 2)) {
+                                    // 1,2 경기는 중복 허용 (코트별로 다른 플레이어 그룹 사용)
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (코트별 다른 그룹)`);
                                 }
                                 
                                 // 같은 라운드 내에서 배정된 플레이어로 표시
