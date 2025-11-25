@@ -11022,11 +11022,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 const filtered = sortedAll.filter(p => !assignedPlayersInRound.has(p.userId));
                                 if (filtered.length >= 4) {
                                     availablePlayers = filtered.slice(0, 4);
+                                    console.log(`  - fallback: 같은 라운드 미배정 플레이어 ${filtered.length}명 중 4명 선택`);
                                 } else {
                                     // 여전히 부족하면 전체 플레이어에서 선택 (중복 허용)
                                     availablePlayers = sortedAll.slice(0, 4);
                                     console.warn(`  - 경고: 같은 라운드 내 중복 플레이어 포함 (${availablePlayers.length}명)`);
+                                    console.log(`  - fallback: 전체 플레이어에서 선택 (중복 허용)`);
                                 }
+                                
+                                // availableThisMatch 업데이트
+                                availableThisMatch.splice(0, availableThisMatch.length, ...availablePlayers);
                             } else {
                                 // 랜덤 모드: 전체 플레이어 풀에서 선택
                                 const filtered = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
@@ -11683,9 +11688,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             const hasDuplicate = allPlayerIds4.some(id => assignedPlayersInRound.has(id));
                             
                             if (hasDuplicate) {
-                                // 중복이 있으면 이 경기는 건너뛰기
-                                console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: 같은 라운드 내 중복 플레이어`);
-                                continue;
+                                // 중복이 있으면 경고만 하고 경기는 생성 (플레이어 부족 상황에서는 중복 허용)
+                                console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 (중복 허용): 같은 라운드 내 중복 플레이어 포함`);
                             }
                             
                             // 같은 라운드 내에서 배정된 플레이어로 표시
