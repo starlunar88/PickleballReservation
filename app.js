@@ -11478,6 +11478,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 schedule.push({
                                     round: r,
                                     court: c,
+                                    roundNumber: targetMatchNum, // 경기 번호 (1-8)
                                     teamA: selectedTeamA.map(player => ({
                                         userId: player.userId,
                                         userName: player.userName,
@@ -11663,6 +11664,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 schedule.push({
                                     round: r,
                                     court: c,
+                                    roundNumber: targetMatchNum, // 경기 번호 (1-8)
                                     teamA: selectedTeamA.map(player => ({
                                         userId: player.userId,
                                         userName: player.userName,
@@ -11747,6 +11749,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             schedule.push({
                                 round: r,
                                 court: c,
+                                roundNumber: targetMatchNum, // 경기 번호 (1-8)
                                 teamA: selectedTeamA.map(player => ({
                                     userId: player.userId,
                                     userName: player.userName,
@@ -11989,24 +11992,25 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             // 같은 라운드 내에서 배정된 플레이어로 표시
                             allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
                             
-                            // 경기 생성
-                            schedule.push({
-                                round: r,
-                                court: c,
-                                teamA: selectedTeamA.map(player => ({
-                                    userId: player.userId,
-                                    userName: player.userName,
-                                    internalRating: player.internalRating || 0,
-                                    score: player.score || 0
-                                })),
-                                teamB: selectedTeamB.map(player => ({
-                                    userId: player.userId,
-                                    userName: player.userName,
-                                    internalRating: player.internalRating || 0,
-                                    score: player.score || 0
-                                })),
-                                teamMode: teamMode
-                            });
+                                // 경기 생성
+                                schedule.push({
+                                    round: r,
+                                    court: c,
+                                    roundNumber: targetMatchNum, // 경기 번호 (1-8)
+                                    teamA: selectedTeamA.map(player => ({
+                                        userId: player.userId,
+                                        userName: player.userName,
+                                        internalRating: player.internalRating || 0,
+                                        score: player.score || 0
+                                    })),
+                                    teamB: selectedTeamB.map(player => ({
+                                        userId: player.userId,
+                                        userName: player.userName,
+                                        internalRating: player.internalRating || 0,
+                                        score: player.score || 0
+                                    })),
+                                    teamMode: teamMode
+                                });
                             
                             console.log(`✅ 코트 ${c}, 라운드 ${r} 생성 완료: ${selectedTeamA.map(p => p.userName).join(',')} vs ${selectedTeamB.map(p => p.userName).join(',')}`);
                             
