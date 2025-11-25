@@ -10885,13 +10885,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 } else if (matchNum === 5 || matchNum === 6) {
                                     // 5,6 경기: 전체 플레이어 중 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
                                     // 고정된 4명이므로 같은 라운드 체크 없이 전체 플레이어에서 항상 같은 4명 선택
-                                    // 단, 5,6 경기는 각 코트마다 한 번씩만 생성되어야 하므로 첫 번째 코트에만 생성
-                                    if (c > 1) {
-                                        // 5,6 경기는 첫 번째 코트에만 생성
-                                        console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}: 5,6 경기는 첫 번째 코트에만 생성`);
-                                        continue;
-                                    }
-                                    
+                                    // 5,6 경기는 각 코트마다 생성되지만, 같은 4명이 모든 코트에 배정됨 (정상)
                                     const allSorted = [...shuffledAllPlayers].sort((a, b) => {
                                         const duprA = b.dupr || 0;
                                         const duprB = a.dupr || 0;
