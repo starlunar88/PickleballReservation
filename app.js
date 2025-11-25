@@ -10721,6 +10721,22 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             // 경기 번호 우선순위: 5,6 → 1,2,7,8 → 3,4
             const matchPriority = [5, 6, 1, 2, 7, 8, 3, 4];
             
+            // 5,6 경기용 고정 플레이어 미리 선택 (전체 플레이어에서 한 번만)
+            const allSortedFor56 = [...shuffledAllPlayers].sort((a, b) => {
+                const duprA = b.dupr || 0;
+                const duprB = a.dupr || 0;
+                return duprA - duprB;
+            });
+            let fixedPlayers56 = null;
+            if (allSortedFor56.length >= 4) {
+                fixedPlayers56 = {
+                    top: allSortedFor56[0],        // 최강 (1등)
+                    second: allSortedFor56[1],     // 차강 (2등)
+                    secondLast: allSortedFor56[allSortedFor56.length - 2], // 차약 (뒤에서 2등)
+                    last: allSortedFor56[allSortedFor56.length - 1]        // 최약 (꼴찌)
+                };
+            }
+            
             // 각 라운드별로 경기 생성
             for (let r = 1; r <= rounds; r++) {
                 // 같은 라운드 내에서 이미 배정된 플레이어 추적
@@ -10734,13 +10750,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                     const matchIndex = (r - 1) % matchPriority.length;
                     let targetMatchNum = matchPriority[matchIndex];
                     
-                    // 5,6 경기는 같은 라운드에서 각 코트마다 한 번씩만 생성
-                    // 라운드 1: 코트 1 → 5경기, 코트 2 → 6경기
-                    // 라운드 2: 코트 1 → 6경기, 코트 2 → 5경기 (다음 라운드에서는 번갈아가며)
+                    // 5,6 경기는 코트별로 번갈아가며 배정 (라운드 1: 코트1→5, 코트2→6 / 라운드 2: 코트1→6, 코트2→5)
                     if (targetMatchNum === 5 || targetMatchNum === 6) {
-                        // 코트별로 5,6 경기를 번갈아가며 배정
-                        // 라운드가 홀수: 코트 1→5, 코트 2→6
-                        // 라운드가 짝수: 코트 1→6, 코트 2→5
                         if (r % 2 === 1) {
                             targetMatchNum = (c % 2 === 1) ? 5 : 6;
                         } else {
@@ -10750,9 +10761,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         // 같은 라운드에서 이미 생성된 5,6 경기인지 확인
                         if (created56Matches.has(targetMatchNum)) {
                             console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
-                            continue; // 이미 생성된 5,6 경기는 건너뛰기
+                            continue;
                         }
-                        created56Matches.add(targetMatchNum); // 생성된 5,6 경기 기록
+                        created56Matches.add(targetMatchNum);
                     }
                     
                     // 경기 번호 업데이트
@@ -10905,33 +10916,22 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         }
                                     }
                                 } else if (matchNum === 5 || matchNum === 6) {
-                                    // 5,6 경기: 전체 플레이어 중 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
-                                    // 고정된 4명이므로 같은 라운드 체크 없이 전체 플레이어에서 항상 같은 4명 선택
-                                    // 5,6 경기는 각 코트마다 생성되지만, 같은 4명이 모든 코트에 배정됨 (정상)
-                                    const allSorted = [...shuffledAllPlayers].sort((a, b) => {
-                                        const duprA = b.dupr || 0;
-                                        const duprB = a.dupr || 0;
-                                        return duprA - duprB;
-                                    });
-                                    
-                                    if (allSorted.length >= 4) {
-                                        // 최강(1등), 차강(2등), 차약(뒤에서 2등), 최약(꼴찌) 선택
-                                        const topPlayer = allSorted[0]; // 최강 (1등)
-                                        const secondPlayer = allSorted[1]; // 차강 (2등)
-                                        const secondLastPlayer = allSorted[allSorted.length - 2]; // 차약 (뒤에서 2등) = 두 번째로 못하는 사람
-                                        const lastPlayer = allSorted[allSorted.length - 1]; // 최약 (꼴찌) = 제일 못하는 사람
-                                        
-                                        availablePlayers = [topPlayer, secondPlayer, secondLastPlayer, lastPlayer];
-                                        
-                                        // 디버깅: 선택된 플레이어 확인
+                                    // 5,6 경기: 미리 선택한 고정 플레이어 사용
+                                    if (fixedPlayers56) {
+                                        availablePlayers = [
+                                            fixedPlayers56.top,
+                                            fixedPlayers56.second,
+                                            fixedPlayers56.secondLast,
+                                            fixedPlayers56.last
+                                        ];
                                         console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
-                                        console.log(`  - 최강(1등): ${topPlayer.userName} (DUPR: ${topPlayer.dupr || 0})`);
-                                        console.log(`  - 차강(2등): ${secondPlayer.userName} (DUPR: ${secondPlayer.dupr || 0})`);
-                                        console.log(`  - 차약(뒤에서 2등): ${secondLastPlayer.userName} (DUPR: ${secondLastPlayer.dupr || 0})`);
-                                        console.log(`  - 최약(꼴찌): ${lastPlayer.userName} (DUPR: ${lastPlayer.dupr || 0})`);
+                                        console.log(`  - 최강(1등): ${fixedPlayers56.top.userName} (DUPR: ${fixedPlayers56.top.dupr || 0})`);
+                                        console.log(`  - 차강(2등): ${fixedPlayers56.second.userName} (DUPR: ${fixedPlayers56.second.dupr || 0})`);
+                                        console.log(`  - 차약(뒤에서 2등): ${fixedPlayers56.secondLast.userName} (DUPR: ${fixedPlayers56.secondLast.dupr || 0})`);
+                                        console.log(`  - 최약(꼴찌): ${fixedPlayers56.last.userName} (DUPR: ${fixedPlayers56.last.dupr || 0})`);
                                     } else {
                                         // 플레이어가 4명 미만이면 전체 사용
-                                        availablePlayers = allSorted;
+                                        availablePlayers = shuffledAllPlayers.slice(0, 4);
                                     }
                                 } else if (matchNum === 7) {
                                     // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 선택)
