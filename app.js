@@ -10763,7 +10763,6 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
                             continue;
                         }
-                        created56Matches.add(targetMatchNum);
                     }
                     
                     // 경기 번호 업데이트
@@ -11495,6 +11494,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
                                 }
                                 
+                                // 5,6 경기는 같은 라운드에서 한 번씩만 생성되도록 최종 확인
+                                if (targetMatchNum === 5 || targetMatchNum === 6) {
+                                    if (created56Matches.has(targetMatchNum)) {
+                                        console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
+                                        continue;
+                                    }
+                                    created56Matches.add(targetMatchNum); // 경기 생성 직전에 추가
+                                }
+                                
                                 // 경기 생성
                                 schedule.push({
                                     round: r,
@@ -11685,6 +11693,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 // 같은 라운드 내에서 배정된 플레이어로 표시 (5,6 경기는 중복 허용)
                                 if (targetMatchNum !== 5 && targetMatchNum !== 6) {
                                     allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                }
+                                
+                                // 5,6 경기는 같은 라운드에서 한 번씩만 생성되도록 최종 확인
+                                if (targetMatchNum === 5 || targetMatchNum === 6) {
+                                    if (created56Matches.has(targetMatchNum)) {
+                                        console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
+                                        continue;
+                                    }
+                                    created56Matches.add(targetMatchNum); // 경기 생성 직전에 추가
                                 }
                                 
                                 // 경기 생성
