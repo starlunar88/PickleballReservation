@@ -746,38 +746,48 @@ function calculateCourtCount(playerCount, maxCourts = 3) {
 
 // 시스템 설정 가져오기
 async function getSystemSettings() {
+    // 기본 설정 (권한 오류 시 사용)
+    const defaultSettings = {
+        courtCount: 3,
+        timeSlots: [
+            { start: "09:00", end: "10:00" },
+            { start: "10:00", end: "11:00" },
+            { start: "11:00", end: "12:00" },
+            { start: "12:00", end: "13:00" },
+            { start: "13:00", end: "14:00" },
+            { start: "14:00", end: "15:00" },
+            { start: "15:00", end: "16:00" },
+            { start: "16:00", end: "17:00" },
+            { start: "17:00", end: "18:00" },
+            { start: "18:00", end: "19:00" },
+            { start: "19:00", end: "20:00" }
+        ],
+        closingTime: 60,
+        playersPerCourt: 4,
+        gamesPerHour: 8
+    };
+    
     try {
         if (!db) {
             console.error('Firestore가 초기화되지 않았습니다');
-            throw new Error('Firestore가 초기화되지 않았습니다');
+            console.warn('기본 설정을 사용합니다');
+            return defaultSettings;
         }
         const settingsDoc = await db.collection('settings').doc('system').get();
         if (settingsDoc.exists) {
             return settingsDoc.data();
         }
-        // 기본 설정 반환
-        return {
-            courtCount: 3,
-            timeSlots: [
-                { start: "09:00", end: "10:00" },
-                { start: "10:00", end: "11:00" },
-                { start: "11:00", end: "12:00" },
-                { start: "12:00", end: "13:00" },
-                { start: "13:00", end: "14:00" },
-                { start: "14:00", end: "15:00" },
-                { start: "15:00", end: "16:00" },
-                { start: "16:00", end: "17:00" },
-                { start: "17:00", end: "18:00" },
-                { start: "18:00", end: "19:00" },
-                { start: "19:00", end: "20:00" }
-            ],
-            closingTime: 60,
-            playersPerCourt: 4,
-            gamesPerHour: 8
-        };
+        // 문서가 존재하지 않으면 기본 설정 반환
+        console.warn('시스템 설정 문서가 존재하지 않습니다. 기본 설정을 사용합니다.');
+        return defaultSettings;
     } catch (error) {
-        console.error('시스템 설정 가져오기 오류:', error);
-        return null;
+        // 권한 오류 또는 기타 오류 발생 시 기본 설정 반환
+        if (error.code === 'permission-denied' || error.message?.includes('permission') || error.message?.includes('Permission')) {
+            console.warn('시스템 설정 읽기 권한이 없습니다. 기본 설정을 사용합니다.');
+        } else {
+            console.error('시스템 설정 가져오기 오류:', error);
+        }
+        return defaultSettings;
     }
 }
 
