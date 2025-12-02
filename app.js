@@ -5335,6 +5335,21 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
         return;
     }
     
+    // 현재 사용자가 관리자인지 확인
+    const user = firebase.auth().currentUser;
+    let isUserAdmin = false;
+    if (user) {
+        try {
+            isUserAdmin = await isAdmin(user);
+        } catch (error) {
+            console.warn('[CSV 내보내기] 관리자 확인 실패:', error);
+        }
+    }
+    
+    if (!isUserAdmin) {
+        showToast('DUPR 정보를 가져오려면 관리자 권한이 필요합니다. 관리자로 로그인해주세요.', 'warning');
+    }
+    
     // 경기 결과가 입력된 경기만 필터링
     const completedMatches = matches.filter(match => 
         match.scoreA !== null && match.scoreA !== undefined && 
@@ -5353,13 +5368,11 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
     // 플레이어의 DUPR Name과 ID를 가져오는 헬퍼 함수
     const getPlayerDuprInfo = async (player) => {
         if (!player) {
-            console.warn('[CSV 내보내기] 플레이어 객체가 없습니다');
             return { duprName: '', duprId: '' };
         }
         
         // 플레이어 객체에 이미 DUPR 정보가 있는지 확인
         if (player.duprName || player.duprId) {
-            console.log(`[CSV 내보내기] 플레이어 객체에서 직접 가져옴: ${player.userName || '이름없음'}, duprName="${player.duprName || ''}", duprId="${player.duprId || ''}"`);
             return {
                 duprName: player.duprName || '',
                 duprId: player.duprId || ''
@@ -5368,7 +5381,11 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
         
         const userId = player.userId || player.id;
         if (!userId) {
-            console.warn('[CSV 내보내기] 플레이어에 userId가 없습니다:', player);
+            return { duprName: '', duprId: '' };
+        }
+        
+        // 관리자가 아닌 경우 빈 값 반환 (권한 오류 방지)
+        if (!isUserAdmin) {
             return { duprName: '', duprId: '' };
         }
         
@@ -5376,19 +5393,16 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
             const userDoc = await db.collection('users').doc(userId).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
-                const duprName = userData.duprName || '';
-                const duprId = userData.duprId || '';
-                console.log(`[CSV 내보내기] users 컬렉션에서 가져옴: userId=${userId}, userName=${player.userName || '이름없음'}, duprName="${duprName}", duprId="${duprId}"`);
-                console.log(`[CSV 내보내기] 전체 userData:`, userData);
                 return {
-                    duprName: duprName,
-                    duprId: duprId
+                    duprName: userData.duprName || '',
+                    duprId: userData.duprId || ''
                 };
-            } else {
-                console.warn(`[CSV 내보내기] 사용자 문서가 존재하지 않습니다: userId=${userId}, userName=${player.userName || '이름없음'}`);
             }
         } catch (error) {
-            console.error(`[CSV 내보내기] 플레이어 ${userId}의 DUPR 정보 조회 실패:`, error);
+            // 권한 오류는 조용히 처리 (이미 관리자 확인했지만 추가 안전장치)
+            if (error.code !== 'permission-denied') {
+                console.warn(`[CSV 내보내기] 플레이어 ${userId}의 DUPR 정보 조회 실패:`, error);
+            }
         }
         
         return { duprName: '', duprId: '' };
@@ -5410,15 +5424,6 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
     for (const match of completedMatches) {
         const teamA = match.teamA || [];
         const teamB = match.teamB || [];
-        
-        // 디버깅: 첫 번째 경기의 플레이어 구조 확인
-        if (completedMatches.indexOf(match) === 0) {
-            console.log('[CSV 내보내기] 첫 번째 경기 플레이어 구조 확인:');
-            console.log('teamA[0]:', teamA[0]);
-            console.log('teamA[1]:', teamA[1]);
-            console.log('teamB[0]:', teamB[0]);
-            console.log('teamB[1]:', teamB[1]);
-        }
         
         // 플레이어 정보 가져오기
         const player1 = teamA[0] || {};
@@ -5478,20 +5483,6 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
         // S: 빈칸
         // T: 점수 1
         // U: 점수 2
-        
-        // 디버깅: 첫 번째 경기의 CSV 행 값 확인
-        if (completedMatches.indexOf(match) === 0) {
-            console.log('[CSV 내보내기] CSV 행 값 확인:');
-            console.log('G열 (player1Info.duprName):', player1Info.duprName);
-            console.log('H열 (player1Info.duprId):', player1Info.duprId);
-            console.log('J열 (player2Info.duprName):', player2Info.duprName);
-            console.log('K열 (player2Info.duprId):', player2Info.duprId);
-            console.log('M열 (player3Info.duprName):', player3Info.duprName);
-            console.log('N열 (player3Info.duprId):', player3Info.duprId);
-            console.log('P열 (player4Info.duprName):', player4Info.duprName);
-            console.log('Q열 (player4Info.duprId):', player4Info.duprId);
-        }
-        
         const row = [
             '', // A
             '', // B
