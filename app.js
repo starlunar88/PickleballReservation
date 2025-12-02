@@ -5352,12 +5352,13 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
     
     // 플레이어의 DUPR Name과 ID를 가져오는 헬퍼 함수
     const getPlayerDuprInfo = async (player) => {
-        if (!player || !player.userId) {
+        const userId = player?.userId || player?.id;
+        if (!player || !userId) {
             return { duprName: '', duprId: '' };
         }
         
         try {
-            const userDoc = await db.collection('users').doc(player.userId).get();
+            const userDoc = await db.collection('users').doc(userId).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
                 return {
@@ -5366,7 +5367,7 @@ async function exportRecordsToCSV(matches, filename = 'records.csv') {
                 };
             }
         } catch (error) {
-            console.warn(`플레이어 ${player.userId}의 DUPR 정보 조회 실패:`, error);
+            console.warn(`플레이어 ${userId}의 DUPR 정보 조회 실패:`, error);
         }
         
         return { duprName: '', duprId: '' };
