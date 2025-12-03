@@ -12377,20 +12377,29 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 continue;
                             }
                             
-                            // 4경기 fallback: 3경기와 다른 조합 사용
+                            // 4,7,8경기 fallback: 이전 경기와 다른 조합 사용
                             let selectedTeamA, selectedTeamB;
-                            if (targetMatchNum === 4) {
+                            if (targetMatchNum === 4 || targetMatchNum === 7 || targetMatchNum === 8) {
                                 const p0 = pairingPatterns[0];
                                 const candidateTeamA = [fourPlayers[p0[0]], fourPlayers[p0[1]]];
                                 const candidateTeamB = [fourPlayers[p0[2]], fourPlayers[p0[3]]];
                                 
-                                // 3경기와 같은 팀원 조합인지 확인
+                                // 이전 경기와 같은 팀원 조합인지 확인
                                 let hasSameTeammateCombo = false;
                                 const candidateTeamAIds = candidateTeamA.map(p => p.userId).sort();
                                 const candidateTeamBIds = candidateTeamB.map(p => p.userId).sort();
                                 
                                 for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 3) {
+                                    let shouldCheck = false;
+                                    if (targetMatchNum === 4 && prev.matchNum === 3) {
+                                        shouldCheck = true;
+                                    } else if (targetMatchNum === 7 && (prev.matchNum === 3 || prev.matchNum === 4)) {
+                                        shouldCheck = true;
+                                    } else if (targetMatchNum === 8 && (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7)) {
+                                        shouldCheck = true;
+                                    }
+                                    
+                                    if (shouldCheck) {
                                         const prevTeamA = prev.teamAIds.split(',').sort();
                                         const prevTeamB = prev.teamBIds.split(',').sort();
                                         
@@ -12408,17 +12417,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             (prevTeamBSet.size === candidateTeamBSet.size &&
                                             [...prevTeamBSet].every(id => candidateTeamBSet.has(id)))) {
                                             hasSameTeammateCombo = true;
+                                            console.log(`⚠️ ${targetMatchNum}경기 fallback: ${prev.matchNum}경기와 같은 팀원 조합 발견`);
                                             break;
                                         }
                                     }
                                 }
                                 
                                 if (hasSameTeammateCombo && pairingPatterns.length > 1) {
-                                    // 3경기와 같은 조합이면 다른 패턴 사용
+                                    // 이전 경기와 같은 조합이면 다른 패턴 사용
                                     const p1 = pairingPatterns[1];
                                     selectedTeamA = [fourPlayers[p1[0]], fourPlayers[p1[1]]];
                                     selectedTeamB = [fourPlayers[p1[2]], fourPlayers[p1[3]]];
-                                    console.log(`⚠️ 4경기 fallback: 3경기와 같은 조합이어서 다른 패턴 사용`);
+                                    console.log(`⚠️ ${targetMatchNum}경기 fallback: 이전 경기와 같은 조합이어서 다른 패턴 사용`);
                                 } else {
                                     selectedTeamA = candidateTeamA;
                                     selectedTeamB = candidateTeamB;
