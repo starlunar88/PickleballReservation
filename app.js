@@ -10923,7 +10923,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         }
                                     }
                                 } else if (matchNum === 5 || matchNum === 6) {
-                                    // 5,6 경기: 전체 풀에서 사람 선택하기
+                                    // 5,6 경기: 전체 풀에서 최강, 차강, 차약, 최약 선택
                                     // 전체 플레이어를 DUPR 점수 순으로 정렬
                                     const allSortedFor56 = [...shuffledAllPlayers].sort((a, b) => {
                                         const duprA = b.dupr || 0;
@@ -10931,29 +10931,16 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         return duprA - duprB;
                                     });
                                     
-                                    // 코트 수에 따라 선택할 플레이어 수 결정
-                                    const playersNeeded = courtCount * 4; // 코트당 4명
-                                    
-                                    if (allSortedFor56.length >= playersNeeded) {
-                                        // 코트별로 다른 플레이어 선택
-                                        // 코트 1: 상위 4명 (최강, 차강, 차차강, 차차차강)
-                                        // 코트 2: 다음 4명 (차차차약, 차차약, 차약, 최약)
-                                        // 코트 3: 다음 4명...
-                                        const startIndex = (c - 1) * 4;
-                                        availablePlayers = allSortedFor56.slice(startIndex, startIndex + 4);
-                                        
-                                        console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
-                                        console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
-                                    } else if (allSortedFor56.length >= 4) {
-                                        // 플레이어가 부족하면 전체에서 선택 (코트 1개일 때)
+                                    // 각 코트마다 전체 풀에서 최강, 차강, 차약, 최약 선택
+                                    if (allSortedFor56.length >= 4) {
                                         availablePlayers = [
                                             allSortedFor56[0],        // 최강
                                             allSortedFor56[1],         // 차강
                                             allSortedFor56[allSortedFor56.length - 2], // 차약
                                             allSortedFor56[allSortedFor56.length - 1]  // 최약
                                         ];
-                                        console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum} (플레이어 부족):`);
-                                        console.log(`  - 최강: ${availablePlayers[0].userName}, 차강: ${availablePlayers[1].userName}, 차약: ${availablePlayers[2].userName}, 최약: ${availablePlayers[3].userName}`);
+                                        console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                        console.log(`  - 최강: ${availablePlayers[0].userName}(${availablePlayers[0].dupr || 0}), 차강: ${availablePlayers[1].userName}(${availablePlayers[1].dupr || 0}), 차약: ${availablePlayers[2].userName}(${availablePlayers[2].dupr || 0}), 최약: ${availablePlayers[3].userName}(${availablePlayers[3].dupr || 0})`);
                                     } else {
                                         // 플레이어가 4명 미만이면 전체 사용
                                         availablePlayers = allSortedFor56;
@@ -11418,30 +11405,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                                 
-                                // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
-                                // 5,6 경기는 고정된 4명(최강, 차강, 차약, 최약)이므로 중복이 발생할 수 없음
-                                const allPlayerIds3 = [...teamAIds, ...teamBIds];
-                                const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
-                                
-                                if (hasDuplicate && targetMatchNum !== 5 && targetMatchNum !== 6) {
-                                    // 중복이 있으면 이 경기는 건너뛰기 (5,6 경기는 제외)
-                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 건너뜀`);
+                                // 5,6 경기는 고정 조합이므로 중복 체크 불필요, 바로 경기 생성
+                                // 같은 라운드에서 한 번씩만 생성되도록 확인
+                                if (created56Matches.has(targetMatchNum)) {
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
                                     continue;
                                 }
-                                
-                                // 같은 라운드 내에서 배정된 플레이어로 표시 (5,6 경기는 중복 허용)
-                                if (targetMatchNum !== 5 && targetMatchNum !== 6) {
-                                    allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
-                                }
-                                
-                                // 5,6 경기는 같은 라운드에서 한 번씩만 생성되도록 최종 확인
-                                if (targetMatchNum === 5 || targetMatchNum === 6) {
-                                    if (created56Matches.has(targetMatchNum)) {
-                                        console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
-                                        continue;
-                                    }
-                                    created56Matches.add(targetMatchNum); // 경기 생성 직전에 추가
-                                }
+                                created56Matches.add(targetMatchNum); // 경기 생성 직전에 추가
                                 
                                 // 경기 생성
                                 schedule.push({
