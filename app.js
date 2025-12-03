@@ -10752,10 +10752,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
         // 각 코트별로 8경기씩 생성
         console.log(`🎯 총 ${totalMatches}경기 생성 시작 (코트 ${courtCount}개, 코트당 ${rounds}경기, 플레이어 ${shuffledAllPlayers.length}명)`);
         
-        // 밸런스 모드: 경기 번호 우선순위에 따라 생성 (5,6 → 1,2,7,8 → 3,4)
+        // 밸런스 모드: 경기 번호 순서대로 생성 (1,2,3,4,5,6,7,8)
         if (teamMode === 'balanced') {
-            // 경기 번호 우선순위: 5,6 → 1,2,7,8 → 3,4
-            const matchPriority = [5, 6, 1, 2, 7, 8, 3, 4];
+            // 경기 번호 순서: 1,2,3,4,5,6,7,8
+            const matchPriority = [1, 2, 3, 4, 5, 6, 7, 8];
             
             // 5,6 경기용 플레이어는 코트별로 선택 (코트 수에 따라 4명씩 선택)
             // 코트 1개: 최강, 차강, 차약, 최약 (4명)
@@ -10829,11 +10829,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 const allAvailablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
                                 
                                 // 전체 플레이어를 DUPR 점수 순으로 정확하게 정렬 (제한 없음)
+                                // 동률인 경우 userId로 일관된 정렬 보장 (1경기와 2경기에서 같은 순서 유지)
                                 const allSorted = [...allAvailablePlayers].sort((a, b) => {
                                     const duprA = b.dupr || 0;
                                     const duprB = a.dupr || 0;
+                                    const diff = duprA - duprB;
                                     // DUPR 점수 제한 해제: 정확한 점수 순서로 정렬
-                                    return duprA - duprB;
+                                    // 동률인 경우 userId로 일관된 정렬 보장
+                                    if (Math.abs(diff) < 0.0001) { // 부동소수점 오차 고려
+                                        return a.userId.localeCompare(b.userId);
+                                    }
+                                    return diff;
                                 });
                                 
                                 // 현재 코트에서 사용 가능한 상위 4명 (DUPR 점수 순)
@@ -10925,10 +10931,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 } else if (matchNum === 5 || matchNum === 6) {
                                     // 5,6 경기: 전체 풀에서 최강, 차강, 차약, 최약 선택
                                     // 전체 플레이어를 DUPR 점수 순으로 정렬
+                                    // 동률인 경우 userId로 일관된 정렬 보장
                                     const allSortedFor56 = [...shuffledAllPlayers].sort((a, b) => {
                                         const duprA = b.dupr || 0;
                                         const duprB = a.dupr || 0;
-                                        return duprA - duprB;
+                                        const diff = duprA - duprB;
+                                        if (diff === 0) {
+                                            return a.userId.localeCompare(b.userId);
+                                        }
+                                        return diff;
                                     });
                                     
                                     // 각 코트마다 전체 풀에서 최강, 차강, 차약, 최약 선택
@@ -11169,30 +11180,33 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             
                             if (matchNum === 1 || matchNum === 2) {
                                 // 1,2 경기: 상위/하위 나눠서 경기 (고정 조합이므로 반복 체크 불필요)
-                                // sorted[0] = 최강/최약, sorted[1] = 차강/차약, sorted[2] = 차차강/차차약, sorted[3] = 차차차강/차차차약
-                                
-                                let teamAIds, teamBIds;
                                 const isUpperCourt = c % 2 === 1; // 홀수 코트 = 상위 코트
                                 
-                                if (matchNum === 1) {
-                                    if (isUpperCourt) {
+                                let teamAIds, teamBIds;
+                                
+                                if (isUpperCourt) {
+                                    // 상위 코트: sorted는 상위 4명이므로 sorted[0]=최강, sorted[1]=차강, sorted[2]=차차강, sorted[3]=차차차강
+                                    if (matchNum === 1) {
                                         // 상위 코트 1경기: 최강, 차차차강 vs 차강, 차차강
                                         teamAIds = [sorted[0], sorted[3]].map(p => p.userId); // 최강, 차차차강
                                         teamBIds = [sorted[1], sorted[2]].map(p => p.userId); // 차강, 차차강
-                                    } else {
-                                        // 하위 코트 1경기: 최약, 차차차약 vs 차약, 차차약
-                                        teamAIds = [sorted[0], sorted[3]].map(p => p.userId); // 최약, 차차차약
-                                        teamBIds = [sorted[1], sorted[2]].map(p => p.userId); // 차약, 차차약
-                                    }
-                                } else { // matchNum === 2
-                                    if (isUpperCourt) {
+                                    } else { // matchNum === 2
                                         // 상위 코트 2경기: 최강, 차차강 vs 차강, 차차차강
                                         teamAIds = [sorted[0], sorted[2]].map(p => p.userId); // 최강, 차차강
                                         teamBIds = [sorted[1], sorted[3]].map(p => p.userId); // 차강, 차차차강
-                                    } else {
+                                    }
+                                } else {
+                                    // 하위 코트: sorted는 하위 4명이므로 sorted[0]=차차차약, sorted[1]=차차약, sorted[2]=차약, sorted[3]=최약
+                                    // 하지만 우리가 원하는 것은: 최약, 차차차약 vs 차약, 차차약
+                                    // 따라서: sorted[3]=최약, sorted[0]=차차차약, sorted[2]=차약, sorted[1]=차차약
+                                    if (matchNum === 1) {
+                                        // 하위 코트 1경기: 최약, 차차차약 vs 차약, 차차약
+                                        teamAIds = [sorted[3], sorted[0]].map(p => p.userId); // 최약, 차차차약
+                                        teamBIds = [sorted[2], sorted[1]].map(p => p.userId); // 차약, 차차약
+                                    } else { // matchNum === 2
                                         // 하위 코트 2경기: 최약, 차차약 vs 차약, 차차차약
-                                        teamAIds = [sorted[0], sorted[2]].map(p => p.userId); // 최약, 차차약
-                                        teamBIds = [sorted[1], sorted[3]].map(p => p.userId); // 차약, 차차차약
+                                        teamAIds = [sorted[3], sorted[1]].map(p => p.userId); // 최약, 차차약
+                                        teamBIds = [sorted[2], sorted[0]].map(p => p.userId); // 차약, 차차차약
                                     }
                                 }
                                 
