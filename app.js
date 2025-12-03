@@ -10827,6 +10827,24 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     return duprA - duprB;
                                 });
                                 
+                                // 현재 코트에서 사용 가능한 상위 4명 (DUPR 점수 순)
+                                const availableTopFour = allSorted
+                                    .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
+                                    .sort((a, b) => {
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        return duprA - duprB;
+                                    });
+                                
+                                // 현재 코트에서 사용 가능한 나머지 플레이어
+                                const availableRemaining = allSorted
+                                    .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
+                                    .sort((a, b) => {
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        return duprA - duprB;
+                                    });
+                                
                                 if (matchNum === 1 || matchNum === 2) {
                                     // 1,2 경기: 상위 사람들끼리 vs 상위 사람들끼리, 하위 사람들끼리 vs 하위 사람들끼리
                                     // 코트 번호에 따라 상위/하위 배정 (홀수 코트: 상위, 짝수 코트: 하위)
