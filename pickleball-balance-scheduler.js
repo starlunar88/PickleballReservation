@@ -63,9 +63,12 @@ class PickleballBalanceScheduler {
 
     /**
      * 비용 함수 계산
-     * Cost = (Weight_A * Partner_Duplicate_Count) + (Weight_B * DUPR_Team_Diff)
+     * Cost = (Weight_A * Partner_Duplicate_Count) + (Weight_B * DUPR_Team_Diff) + (Weight_C * Balance_Penalty)
+     * @param {Array} teamA - 팀 A 플레이어 배열
+     * @param {Array} teamB - 팀 B 플레이어 배열
+     * @param {Array} sortedPlayers - DUPR 순으로 정렬된 전체 플레이어 배열 (밸런스 페널티 계산용)
      */
-    calculateCost(teamA, teamB) {
+    calculateCost(teamA, teamB, sortedPlayers = null) {
         // 파트너 중복 횟수 계산
         let partnerDuplicateCount = 0;
         const allPlayers = [...teamA, ...teamB];
@@ -85,7 +88,21 @@ class PickleballBalanceScheduler {
         const teamBDupr = (teamB[0].dupr + teamB[1].dupr) / 2;
         const duprTeamDiff = Math.abs(teamADupr - teamBDupr);
 
-        const cost = (this.weightA * partnerDuplicateCount) + (this.weightB * duprTeamDiff);
+        // 밸런스 페널티 계산 (최강+차강 같은 편에 있으면 페널티)
+        let balancePenalty = 0;
+        if (sortedPlayers && sortedPlayers.length >= 4) {
+            // sortedPlayers[0] = 최강, [1] = 차강, [2] = 차약, [3] = 최약
+            const topTwoInSameTeam = 
+                (teamA.includes(sortedPlayers[0]) && teamA.includes(sortedPlayers[1])) ||
+                (teamB.includes(sortedPlayers[0]) && teamB.includes(sortedPlayers[1]));
+            
+            if (topTwoInSameTeam) {
+                // 최강과 차강이 같은 편에 있으면 큰 페널티 부여
+                balancePenalty = 1000; // 매우 큰 페널티로 밸런스 조합 우선
+            }
+        }
+
+        const cost = (this.weightA * partnerDuplicateCount) + (this.weightB * duprTeamDiff) + balancePenalty;
         return cost;
     }
 
@@ -99,15 +116,21 @@ class PickleballBalanceScheduler {
             throw new Error('최소 4명의 플레이어가 필요합니다.');
         }
 
+        // DUPR 순으로 정렬 (밸런스 페널티 계산용)
+        const sortedPlayers = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+
         let bestPairing = null;
         let bestCost = Infinity;
 
         // 4명 중 2명씩 선택하는 모든 조합 (중복 제거)
-        // 총 3가지 조합만 고려: (0,1) vs (2,3), (0,2) vs (1,3), (0,3) vs (1,2)
+        // 밸런스 조합 우선순위:
+        // 1. (0,3) vs (1,2) - 최강+최약 vs 차강+차약 (완벽 밸런스) - 우선순위 1
+        // 2. (0,2) vs (1,3) - 최강+차약 vs 차강+최약 (밸런스) - 우선순위 2
+        // 3. (0,1) vs (2,3) - 최강+차강 vs 차약+최약 (밸런스 깨짐) - 우선순위 3 (페널티)
         const combinations = [
-            [[0, 1], [2, 3]],
-            [[0, 2], [1, 3]],
-            [[0, 3], [1, 2]]
+            { combo: [[0, 3], [1, 2]], priority: 1, name: '최강+최약 vs 차강+차약' }, // 완벽 밸런스
+            { combo: [[0, 2], [1, 3]], priority: 2, name: '최강+차약 vs 차강+최약' }, // 밸런스
+            { combo: [[0, 1], [2, 3]], priority: 3, name: '최강+차강 vs 차약+최약' }  // 밸런스 깨짐
         ];
 
         // 이전 경기 조합을 문자열로 변환하여 비교
@@ -119,7 +142,10 @@ class PickleballBalanceScheduler {
             previousCombinations.add(`${teamBIds}|${teamAIds}`); // 역순도 추가
         }
 
-        for (const combo of combinations) {
+        // 우선순위 순으로 정렬 (밸런스 조합 우선)
+        combinations.sort((a, b) => a.priority - b.priority);
+
+        for (const { combo, name } of combinations) {
             const teamA = [selectedPlayers[combo[0][0]], selectedPlayers[combo[0][1]]];
             const teamB = [selectedPlayers[combo[1][0]], selectedPlayers[combo[1][1]]];
 
@@ -130,10 +156,14 @@ class PickleballBalanceScheduler {
 
             // 완전히 동일한 조합이면 스킵 (중복 방지)
             if (previousCombinations.has(currentCombination)) {
+                console.log(`    ⚠️ 조합 "${name}" 스킵: 이전 경기와 중복`);
                 continue;
             }
 
-            const cost = this.calculateCost(teamA, teamB);
+            // 비용 계산 (밸런스 페널티 포함)
+            const cost = this.calculateCost(teamA, teamB, sortedPlayers);
+
+            console.log(`    💰 조합 "${name}": 비용=${cost.toFixed(2)}`);
 
             if (cost < bestCost) {
                 bestCost = cost;
@@ -141,16 +171,33 @@ class PickleballBalanceScheduler {
             }
         }
 
-        // 모든 조합이 중복이면 비용이 가장 낮은 것 선택
+        // 모든 조합이 중복이면 비용이 가장 낮은 것 선택 (밸런스 페널티 고려)
         if (!bestPairing) {
-            for (const combo of combinations) {
+            console.log(`    ⚠️ 모든 조합이 중복이므로 비용이 가장 낮은 조합 선택`);
+            for (const { combo, name } of combinations) {
                 const teamA = [selectedPlayers[combo[0][0]], selectedPlayers[combo[0][1]]];
                 const teamB = [selectedPlayers[combo[1][0]], selectedPlayers[combo[1][1]]];
-                const cost = this.calculateCost(teamA, teamB);
+                const cost = this.calculateCost(teamA, teamB, sortedPlayers);
+                console.log(`    💰 조합 "${name}": 비용=${cost.toFixed(2)}`);
                 if (cost < bestCost) {
                     bestCost = cost;
                     bestPairing = { teamA, teamB };
                 }
+            }
+        }
+
+        if (bestPairing) {
+            const bestTeamAIds = [bestPairing.teamA[0].userId, bestPairing.teamA[1].userId];
+            const isTopTwoTogether = 
+                (bestTeamAIds.includes(sortedPlayers[0].userId) && bestTeamAIds.includes(sortedPlayers[1].userId)) ||
+                (!bestTeamAIds.includes(sortedPlayers[0].userId) && !bestTeamAIds.includes(sortedPlayers[1].userId) && 
+                 bestPairing.teamB.some(p => p.userId === sortedPlayers[0].userId) && 
+                 bestPairing.teamB.some(p => p.userId === sortedPlayers[1].userId));
+            
+            if (isTopTwoTogether) {
+                console.warn(`    ⚠️ 경고: 최강(${sortedPlayers[0].userName})과 차강(${sortedPlayers[1].userName})이 같은 편에 배정됨!`);
+            } else {
+                console.log(`    ✅ 밸런스 조합 선택됨`);
             }
         }
 
@@ -169,6 +216,12 @@ class PickleballBalanceScheduler {
         const topPlayersCount = 4 * courtCount;
         const selectedPlayers = sortedPlayers.slice(0, topPlayersCount);
         const sittingOut = sortedPlayers.slice(topPlayersCount);
+
+        console.log(`  📋 라운드 ${roundNum}: 상위 ${topPlayersCount}명 선택 (DUPR 순)`);
+        console.log(`  📋 선택된 플레이어: ${selectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
+        if (sittingOut.length > 0) {
+            console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
+        }
 
         // 각 코트별로 플레이어 할당
         for (let court = 1; court <= courtCount; court++) {
@@ -189,6 +242,8 @@ class PickleballBalanceScheduler {
                 teamA = [courtPlayers[0], courtPlayers[2]];
                 teamB = [courtPlayers[1], courtPlayers[3]];
             }
+
+            console.log(`  🏓 코트 ${court}: ${teamA.map(p => p.userName).join(' & ')} vs ${teamB.map(p => p.userName).join(' & ')}`);
 
             const match = {
                 round: roundNum,
@@ -239,6 +294,12 @@ class PickleballBalanceScheduler {
         const selectedPlayers = candidates.slice(0, neededCount);
         const sittingOut = this.players.filter(p => !selectedPlayers.includes(p));
 
+        console.log(`  📋 라운드 ${roundNum}: 최소 플레이 횟수 우선 선택 (${neededCount}명)`);
+        console.log(`  📋 선택된 플레이어: ${selectedPlayers.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
+        if (sittingOut.length > 0) {
+            console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
+        }
+
         // 각 코트별로 플레이어 할당
         for (let court = 1; court <= courtCount; court++) {
             const startIdx = (court - 1) * 4;
@@ -261,6 +322,8 @@ class PickleballBalanceScheduler {
                 teamA = [courtPlayersSorted[0], courtPlayersSorted[2]];
                 teamB = [courtPlayersSorted[1], courtPlayersSorted[3]];
             }
+
+            console.log(`  🏓 코트 ${court}: ${teamA.map(p => p.userName).join(' & ')} vs ${teamB.map(p => p.userName).join(' & ')}`);
 
             const match = {
                 round: roundNum,
@@ -311,6 +374,12 @@ class PickleballBalanceScheduler {
         const selectedPlayers = candidates.slice(0, neededCount);
         const sittingOut = this.players.filter(p => !selectedPlayers.includes(p));
 
+        console.log(`  📋 라운드 ${roundNum}: 최소 플레이 횟수 우선 선택 후 비용 함수 최적화 (${neededCount}명)`);
+        console.log(`  📋 선택된 플레이어: ${selectedPlayers.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
+        if (sittingOut.length > 0) {
+            console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
+        }
+
         // 이전 모든 경기 조합 추적 (중복 방지)
         const previousMatches = [...this.matches];
 
@@ -325,6 +394,12 @@ class PickleballBalanceScheduler {
 
             // 최적 페어링 찾기 (이전 모든 경기 조합 고려)
             const bestPairing = this.findBestPairing(courtPlayers, previousMatches);
+
+            console.log(`  🏓 코트 ${court}: ${bestPairing.teamA.map(p => p.userName).join(' & ')} vs ${bestPairing.teamB.map(p => p.userName).join(' & ')}`);
+            console.log(`     파트너 중복: ${bestPairing.teamA.map(p => {
+                const partner = bestPairing.teamA[0] === p ? bestPairing.teamA[1] : bestPairing.teamA[0];
+                return p.partnerHistory.has(partner.userId) ? '✓' : '✗';
+            }).join(', ')}`);
 
             const match = {
                 round: roundNum,
@@ -359,19 +434,23 @@ class PickleballBalanceScheduler {
             let matches;
             if (roundNum === 1 || roundNum === 2) {
                 // Phase 1: 경쟁 모드
+                console.log(`🎯 라운드 ${roundNum}: 경쟁 모드 (Phase 1)`);
                 matches = this.generateRound1_2(roundNum);
             } else if (roundNum === 5 || roundNum === 6) {
                 // Phase 2: High-Low 스플릿 모드
+                console.log(`🎯 라운드 ${roundNum}: High-Low 스플릿 모드 (Phase 2)`);
                 matches = this.generateRound5_6(roundNum);
             } else {
                 // Phase 3: 균형 및 공정 모드
-                // 이전 모든 경기를 고려하여 중복 방지
+                console.log(`🎯 라운드 ${roundNum}: 균형 및 공정 모드 (Phase 3)`);
                 matches = this.generateRoundBalanced(roundNum);
             }
 
+            console.log(`✅ 라운드 ${roundNum} 생성 완료: ${matches.length}경기`);
             this.matches.push(...matches);
         }
 
+        console.log(`📊 전체 일정 생성 완료: 총 ${this.matches.length}경기`);
         return this.matches;
     }
 
