@@ -11219,7 +11219,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             const sorted = [...fourPlayers].sort((a, b) => {
                                 const duprA = b.dupr || 0;
                                 const duprB = a.dupr || 0;
-                                return duprA - duprB;
+                                const diff = duprA - duprB;
+                                // 동률인 경우 userId로 일관된 정렬 보장
+                                if (Math.abs(diff) < 0.0001) {
+                                    return a.userId.localeCompare(b.userId);
+                                }
+                                return diff;
                             });
                             
                             // 5,6 경기 디버깅: 정렬 후 순서 확인
