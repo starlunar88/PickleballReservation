@@ -10732,11 +10732,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
             const sortedByDupr = [...shuffledAllPlayers].sort((a, b) => {
                 const duprA = b.dupr || 0;
                 const duprB = a.dupr || 0;
-                const diff = duprA - duprB;
-                if (Math.abs(diff) < 0.15) {
-                    return Math.random() - 0.5;
-                }
-                return diff;
+                // DUPR 점수 제한 해제: 정확한 점수 순서로 정렬
+                return duprA - duprB;
             });
             
             topFourPlayers = sortedByDupr.slice(0, 4);
@@ -10822,23 +10819,13 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 // 같은 라운드 내 중복 방지는 하되, 각 코트마다 상위 4명을 독립적으로 선택
                                 const allAvailablePlayers = shuffledAllPlayers.filter(p => !assignedPlayersInRound.has(p.userId));
                                 
-                                // 현재 코트에서 사용 가능한 상위 4명 (DUPR 점수 순)
-                                const availableTopFour = allAvailablePlayers
-                                    .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
-                                    .sort((a, b) => {
-                                        const duprA = b.dupr || 0;
-                                        const duprB = a.dupr || 0;
-                                        return duprA - duprB;
-                                    });
-                                
-                                // 현재 코트에서 사용 가능한 나머지 플레이어
-                                const availableRemaining = allAvailablePlayers
-                                    .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
-                                    .sort((a, b) => {
-                                        const duprA = b.dupr || 0;
-                                        const duprB = a.dupr || 0;
-                                        return duprA - duprB;
-                                    });
+                                // 전체 플레이어를 DUPR 점수 순으로 정확하게 정렬 (제한 없음)
+                                const allSorted = [...allAvailablePlayers].sort((a, b) => {
+                                    const duprA = b.dupr || 0;
+                                    const duprB = a.dupr || 0;
+                                    // DUPR 점수 제한 해제: 정확한 점수 순서로 정렬
+                                    return duprA - duprB;
+                                });
                                 
                                 if (matchNum === 1 || matchNum === 2) {
                                     // 1,2 경기: 상위 사람들끼리 vs 상위 사람들끼리, 하위 사람들끼리 vs 하위 사람들끼리
@@ -10849,58 +10836,24 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     console.log(`  - 같은 라운드 배정된 플레이어: ${assignedPlayersInRound.size}명`);
                                     if (c % 2 === 1) {
                                         // 홀수 코트: 상위 4명 (잘하는 사람들끼리)
-                                        // 같은 라운드에서 아직 배정되지 않은 상위 플레이어 선택
-                                        const availableTopFourInRound = allAvailablePlayers
-                                            .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
-                                            .sort((a, b) => {
-                                                const duprA = b.dupr || 0;
-                                                const duprB = a.dupr || 0;
-                                                return duprA - duprB;
-                                            });
-                                        
-                                        if (availableTopFourInRound.length >= 4) {
-                                            availablePlayers = availableTopFourInRound.slice(0, 4);
-                                            console.log(`  - 홀수 코트: 상위 4명 선택 완료`);
+                                        // 전체 플레이어 중 상위 4명 선택 (DUPR 점수 순, 제한 없음)
+                                        if (allSorted.length >= 4) {
+                                            availablePlayers = allSorted.slice(0, 4);
+                                            console.log(`  - 홀수 코트: 상위 4명 선택 완료 (DUPR 점수 순, 제한 없음)`);
                                         } else {
-                                            // 상위 4명이 부족하면 나머지 플레이어로 보충
-                                            const needed = 4 - availableTopFourInRound.length;
-                                            const availableRemainingInRound = allAvailablePlayers
-                                                .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
-                                                .sort((a, b) => {
-                                                    const duprA = b.dupr || 0;
-                                                    const duprB = a.dupr || 0;
-                                                    return duprA - duprB;
-                                                });
-                                            availablePlayers = [...availableTopFourInRound, ...availableRemainingInRound.slice(0, needed)];
-                                            console.log(`  - 홀수 코트: 상위 ${availableTopFourInRound.length}명 + 나머지 ${needed}명 선택`);
+                                            availablePlayers = allSorted;
+                                            console.log(`  - 홀수 코트: 전체 플레이어 선택 (${allSorted.length}명)`);
                                         }
                                         console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                     } else {
                                         // 짝수 코트: 하위 4명 (못하는 사람들끼리)
-                                        // 같은 라운드에서 아직 배정되지 않은 하위 플레이어 선택
-                                        const availableRemainingInRound = allAvailablePlayers
-                                            .filter(p => !topFourPlayers.some(tf => tf.userId === p.userId))
-                                            .sort((a, b) => {
-                                                const duprA = a.dupr || 0;
-                                                const duprB = b.dupr || 0;
-                                                return duprA - duprB; // 낮은 순으로 정렬
-                                            });
-                                        
-                                        if (availableRemainingInRound.length >= 4) {
-                                            availablePlayers = availableRemainingInRound.slice(0, 4); // 하위 4명
-                                            console.log(`  - 짝수 코트: 하위 4명 선택 완료`);
+                                        // 전체 플레이어 중 하위 4명 선택 (DUPR 점수 낮은 순, 제한 없음)
+                                        if (allSorted.length >= 4) {
+                                            availablePlayers = allSorted.slice(-4); // 하위 4명
+                                            console.log(`  - 짝수 코트: 하위 4명 선택 완료 (DUPR 점수 순, 제한 없음)`);
                                         } else {
-                                            // 하위 플레이어가 부족하면 상위 플레이어로 보충
-                                            const needed = 4 - availableRemainingInRound.length;
-                                            const availableTopFourInRound = allAvailablePlayers
-                                                .filter(p => topFourPlayers.some(tf => tf.userId === p.userId))
-                                                .sort((a, b) => {
-                                                    const duprA = b.dupr || 0;
-                                                    const duprB = a.dupr || 0;
-                                                    return duprA - duprB;
-                                                });
-                                            availablePlayers = [...availableRemainingInRound, ...availableTopFourInRound.slice(-needed)];
-                                            console.log(`  - 짝수 코트: 하위 ${availableRemainingInRound.length}명 + 상위 ${needed}명 선택`);
+                                            availablePlayers = allSorted;
+                                            console.log(`  - 짝수 코트: 전체 플레이어 선택 (${allSorted.length}명)`);
                                         }
                                         console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                     }
