@@ -10774,41 +10774,23 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                 
                 // 각 코트별로 경기 번호에 따라 경기 생성
                 for (let c = 1; c <= courtCount; c++) {
-                    // 현재 코트의 경기 번호 결정 (코트별로 독립적으로 추적)
-                    let targetMatchNum;
-                    if (courtMatchNumbers[c] === -1) {
-                        // 첫 경기: 우선순위 첫 번째부터 시작
-                        targetMatchNum = matchPriority[0];
-                    } else {
-                        // 이전 경기 번호의 다음 우선순위 찾기
-                        const currentIndex = matchPriority.indexOf(courtMatchNumbers[c]);
-                        const nextIndex = (currentIndex + 1) % matchPriority.length;
-                        targetMatchNum = matchPriority[nextIndex];
-                    }
+                    // 현재 코트의 경기 번호 결정
+                    const matchIndex = (r - 1) % matchPriority.length;
+                    let targetMatchNum = matchPriority[matchIndex];
                     
                     // 5,6 경기는 코트별로 번갈아가며 배정 (라운드 1: 코트1→5, 코트2→6 / 라운드 2: 코트1→6, 코트2→5)
-                    // 코트 3개 이상일 때도 처리: 코트 번호에 따라 순환 배정
                     if (targetMatchNum === 5 || targetMatchNum === 6) {
+                        if (r % 2 === 1) {
+                            targetMatchNum = (c % 2 === 1) ? 5 : 6;
+                        } else {
+                            targetMatchNum = (c % 2 === 1) ? 6 : 5;
+                        }
+                        
                         // 같은 라운드에서 이미 생성된 5,6 경기인지 확인
                         if (created56Matches.has(targetMatchNum)) {
                             console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
                             continue;
                         }
-                        
-                        // 코트별로 번갈아가며 배정 (라운드와 코트 번호 조합)
-                        const courtOffset = (c - 1) % 2; // 코트 번호를 0 또는 1로 변환
-                        const roundOffset = (r - 1) % 2; // 라운드를 0 또는 1로 변환
-                        const combinedOffset = (courtOffset + roundOffset) % 2;
-                        targetMatchNum = combinedOffset === 0 ? 5 : 6;
-                        
-                        // 다시 한 번 중복 체크 (배정 변경 후)
-                        if (created56Matches.has(targetMatchNum)) {
-                            console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기 (재확인), 건너뜀`);
-                            continue;
-                        }
-                        
-                        // 5,6 경기 생성 표시 (즉시 추가하여 중복 방지)
-                        created56Matches.add(targetMatchNum);
                     }
                     
                     // 경기 번호 업데이트
@@ -11543,20 +11525,29 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                                 
                                 // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
+                                // 5,6 경기는 고정된 4명(최강, 차강, 차약, 최약)이므로 중복이 발생할 수 없음
                                 const allPlayerIds3 = [...teamAIds, ...teamBIds];
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
-                                // 5,6 경기는 전체에서 선정하므로 같은 라운드에서 중복될 수 있지만, 
-                                // 코트별로 다른 플레이어를 선택하므로 의도된 중복은 허용
                                 if (hasDuplicate && targetMatchNum !== 5 && targetMatchNum !== 6) {
                                     // 중복이 있으면 이 경기는 건너뛰기 (5,6 경기는 제외)
                                     console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 발견, 건너뜀`);
                                     continue;
                                 }
                                 
-                                // 같은 라운드 내에서 배정된 플레이어로 표시
-                                // 5,6 경기도 추가하되, 코트별로 다른 플레이어를 선택하므로 의도된 중복은 허용
-                                allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                // 같은 라운드 내에서 배정된 플레이어로 표시 (5,6 경기는 중복 허용)
+                                if (targetMatchNum !== 5 && targetMatchNum !== 6) {
+                                    allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                }
+                                
+                                // 5,6 경기는 같은 라운드에서 한 번씩만 생성되도록 최종 확인
+                                if (targetMatchNum === 5 || targetMatchNum === 6) {
+                                    if (created56Matches.has(targetMatchNum)) {
+                                        console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
+                                        continue;
+                                    }
+                                    created56Matches.add(targetMatchNum); // 경기 생성 직전에 추가
+                                }
                                 
                                 // 경기 생성
                                 schedule.push({
@@ -11729,7 +11720,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 
                                 // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
                                 // 1,2 경기는 코트별로 다른 플레이어 그룹을 사용하므로 중복 허용
-                                // 5,6 경기는 전체에서 선정하므로 코트별로 다른 플레이어를 선택하므로 의도된 중복은 허용
+                                // 5,6 경기는 고정된 4명(최강, 차강, 차약, 최약)이므로 중복이 발생할 수 없음
                                 const allPlayerIds3 = [...config.teamA, ...config.teamB];
                                 const hasDuplicate = allPlayerIds3.some(id => assignedPlayersInRound.has(id));
                                 
@@ -11741,19 +11732,22 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     // 1,2 경기는 중복 허용 (코트별로 다른 플레이어 그룹 사용)
                                     console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (코트별 다른 그룹)`);
                                 } else if (hasDuplicate && (targetMatchNum === 5 || targetMatchNum === 6)) {
-                                    // 5,6 경기는 중복 허용 (코트별로 다른 플레이어 선택)
-                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (5,6 경기 - 코트별 다른 플레이어)`);
+                                    // 5,6 경기는 중복 허용 (고정된 4명이므로 중복이 발생할 수 없음)
+                                    console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드 내 중복 플레이어 있지만 허용 (5,6 경기)`);
                                 }
                                 
-                                // 같은 라운드 내에서 배정된 플레이어로 표시
-                                // 5,6 경기도 추가하되, 코트별로 다른 플레이어를 선택하므로 의도된 중복은 허용
-                                allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                // 같은 라운드 내에서 배정된 플레이어로 표시 (5,6 경기는 중복 허용)
+                                if (targetMatchNum !== 5 && targetMatchNum !== 6) {
+                                    allPlayerIds3.forEach(id => assignedPlayersInRound.add(id));
+                                }
                                 
-                                // 5,6 경기는 이미 위에서 created56Matches에 추가되었으므로 여기서는 체크만
+                                // 5,6 경기는 같은 라운드에서 한 번씩만 생성되도록 최종 확인
                                 if (targetMatchNum === 5 || targetMatchNum === 6) {
                                     if (created56Matches.has(targetMatchNum)) {
-                                        // 이미 추가되어 있으므로 정상 (다른 코트에서 이미 생성된 경우는 위에서 continue됨)
+                                        console.log(`⚠️ 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum}: 같은 라운드에서 이미 생성된 5,6 경기, 건너뜀`);
+                                        continue;
                                     }
+                                    created56Matches.add(targetMatchNum); // 경기 생성 직전에 추가
                                 }
                                 
                                 // 경기 생성
