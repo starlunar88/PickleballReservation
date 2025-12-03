@@ -205,7 +205,7 @@ class PickleballBalanceScheduler {
         // 우선순위 순으로 정렬 (밸런스 조합 우선)
         combinations.sort((a, b) => a.priority - b.priority);
 
-        for (const { combo, name } of combinations) {
+        for (const { combo, name, priority } of combinations) {
             // sortedPlayers 기준으로 조합 생성 (코트별 4명의 순위 기준)
             const teamA = [sortedPlayers[combo[0][0]], sortedPlayers[combo[0][1]]];
             const teamB = [sortedPlayers[combo[1][0]], sortedPlayers[combo[1][1]]];
@@ -224,26 +224,30 @@ class PickleballBalanceScheduler {
             // 비용 계산 (밸런스 페널티 포함, 전체 플레이어 풀의 최강/차강 기준)
             const cost = this.calculateCost(teamA, teamB, globalSorted);
 
-            console.log(`    💰 조합 "${name}": 비용=${cost.toFixed(2)} (TeamA: ${teamA.map(p => p.userName).join('&')}, TeamB: ${teamB.map(p => p.userName).join('&')})`);
+            console.log(`    💰 조합 "${name}" (우선순위 ${priority}): 비용=${cost.toFixed(2)} (TeamA: ${teamA.map(p => p.userName).join('&')}, TeamB: ${teamB.map(p => p.userName).join('&')})`);
 
-            if (cost < bestCost) {
+            // 우선순위가 더 높거나, 우선순위가 같고 비용이 더 낮으면 선택
+            if (bestPairing === null || 
+                priority < bestPairing.priority || 
+                (priority === bestPairing.priority && cost < bestCost)) {
                 bestCost = cost;
-                bestPairing = { teamA, teamB };
+                bestPairing = { teamA, teamB, priority };
             }
         }
 
         // 모든 조합이 중복이면 비용이 가장 낮은 것 선택 (밸런스 페널티 고려)
         if (!bestPairing) {
             console.log(`    ⚠️ 모든 조합이 중복이므로 비용이 가장 낮은 조합 선택`);
-            for (const { combo, name } of combinations) {
+            for (const { combo, name, priority } of combinations) {
                 // sortedPlayers 기준으로 조합 생성 (코트별 4명의 순위 기준)
                 const teamA = [sortedPlayers[combo[0][0]], sortedPlayers[combo[0][1]]];
                 const teamB = [sortedPlayers[combo[1][0]], sortedPlayers[combo[1][1]]];
                 const cost = this.calculateCost(teamA, teamB, globalSorted);
-                console.log(`    💰 조합 "${name}": 비용=${cost.toFixed(2)} (TeamA: ${teamA.map(p => p.userName).join('&')}, TeamB: ${teamB.map(p => p.userName).join('&')})`);
-                if (cost < bestCost) {
+                console.log(`    💰 조합 "${name}" (우선순위 ${priority}): 비용=${cost.toFixed(2)} (TeamA: ${teamA.map(p => p.userName).join('&')}, TeamB: ${teamB.map(p => p.userName).join('&')})`);
+                // 중복이므로 우선순위보다 비용만 고려
+                if (bestPairing === null || cost < bestCost) {
                     bestCost = cost;
-                    bestPairing = { teamA, teamB };
+                    bestPairing = { teamA, teamB, priority };
                 }
             }
         }
@@ -262,10 +266,16 @@ class PickleballBalanceScheduler {
             if (topTwoInTeamA || topTwoInTeamB) {
                 console.warn(`    ⚠️ 경고: 최강(${topPlayer.userName}, DUPR:${topPlayer.dupr})과 차강(${secondPlayer.userName}, DUPR:${secondPlayer.dupr})이 같은 편에 배정됨!`);
             } else {
-                console.log(`    ✅ 밸런스 조합 선택됨`);
+                const priorityName = bestPairing.priority === 1 ? '최강+중간 vs 차강+중간' : '최강+최약 vs 차강+차약';
+                console.log(`    ✅ 밸런스 조합 선택됨 (${priorityName}, 우선순위 ${bestPairing.priority})`);
             }
         }
 
+        // bestPairing에서 priority 제거 (반환 형식 유지)
+        if (bestPairing) {
+            return { teamA: bestPairing.teamA, teamB: bestPairing.teamB };
+        }
+        
         return bestPairing;
     }
 
