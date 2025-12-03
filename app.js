@@ -11969,14 +11969,14 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                             }
                             
-                            // 8경기일 때: 7경기에서 같은 팀이었던 조합 방지
-                            if (targetMatchNum === 8) {
+                            // 7경기일 때: 3,4경기에서 같은 팀이었던 조합 방지
+                            if (targetMatchNum === 7) {
                                 for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 7) {
+                                    if (prev.matchNum === 3 || prev.matchNum === 4) {
                                         const prevTeamA = prev.teamAIds.split(',');
                                         const prevTeamB = prev.teamBIds.split(',');
                                         
-                                        // 7경기의 Team A와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                        // 3,4경기의 Team A와 7경기의 Team A가 같은 팀원 조합인지 확인
                                         const prevTeamASet = new Set(prevTeamA);
                                         const currentTeamASet = new Set(teamAIds);
                                         if (prevTeamASet.size === currentTeamASet.size && 
@@ -11985,7 +11985,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             break;
                                         }
                                         
-                                        // 7경기의 Team A와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                        // 3,4경기의 Team A와 7경기의 Team B가 같은 팀원 조합인지 확인
                                         const currentTeamBSet = new Set(teamBIds);
                                         if (prevTeamASet.size === currentTeamBSet.size && 
                                             [...prevTeamASet].every(id => currentTeamBSet.has(id))) {
@@ -11993,7 +11993,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             break;
                                         }
                                         
-                                        // 7경기의 Team B와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                        // 3,4경기의 Team B와 7경기의 Team A가 같은 팀원 조합인지 확인
                                         const prevTeamBSet = new Set(prevTeamB);
                                         if (prevTeamBSet.size === currentTeamASet.size && 
                                             [...prevTeamBSet].every(id => currentTeamASet.has(id))) {
@@ -12001,7 +12001,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             break;
                                         }
                                         
-                                        // 7경기의 Team B와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                        // 3,4경기의 Team B와 7경기의 Team B가 같은 팀원 조합인지 확인
                                         if (prevTeamBSet.size === currentTeamBSet.size && 
                                             [...prevTeamBSet].every(id => currentTeamBSet.has(id))) {
                                             hasRepeatedTeammate = true;
@@ -12011,8 +12011,50 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                             }
                             
-                            // 전체 이력에서 같은 팀원 반복 체크 (4경기, 8경기가 아닌 경우에만)
-                            if (!hasRepeatedTeammate && targetMatchNum !== 4 && targetMatchNum !== 8) {
+                            // 8경기일 때: 3,4,7경기에서 같은 팀이었던 조합 방지
+                            if (targetMatchNum === 8) {
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                        const prevTeamA = prev.teamAIds.split(',');
+                                        const prevTeamB = prev.teamBIds.split(',');
+                                        
+                                        // 3,4,7경기의 Team A와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                        const prevTeamASet = new Set(prevTeamA);
+                                        const currentTeamASet = new Set(teamAIds);
+                                        if (prevTeamASet.size === currentTeamASet.size && 
+                                            [...prevTeamASet].every(id => currentTeamASet.has(id))) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                        
+                                        // 3,4,7경기의 Team A와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                        const currentTeamBSet = new Set(teamBIds);
+                                        if (prevTeamASet.size === currentTeamBSet.size && 
+                                            [...prevTeamASet].every(id => currentTeamBSet.has(id))) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                        
+                                        // 3,4,7경기의 Team B와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                        const prevTeamBSet = new Set(prevTeamB);
+                                        if (prevTeamBSet.size === currentTeamASet.size && 
+                                            [...prevTeamBSet].every(id => currentTeamASet.has(id))) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                        
+                                        // 3,4,7경기의 Team B와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                        if (prevTeamBSet.size === currentTeamBSet.size && 
+                                            [...prevTeamBSet].every(id => currentTeamBSet.has(id))) {
+                                            hasRepeatedTeammate = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 전체 이력에서 같은 팀원 반복 체크 (4경기, 7경기, 8경기가 아닌 경우에만)
+                            if (!hasRepeatedTeammate && targetMatchNum !== 4 && targetMatchNum !== 7 && targetMatchNum !== 8) {
                                 // Team A 내에서 같은 팀원 반복 체크
                                 for (const playerId of teamAIds) {
                                     const history = teammateHistory.get(playerId);
@@ -13281,17 +13323,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                                 
-                                // 8경기일 때: 7경기에서 같은 팀이었던 조합 방지 (완전 제외)
-                                if (matchNum === 8) {
+                                // 7경기일 때: 3,4경기에서 같은 팀이었던 조합 방지 (완전 제외)
+                                if (matchNum === 7) {
                                     let hasSameTeammateCombo = false;
                                     for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 7) {
+                                        if (prev.matchNum === 3 || prev.matchNum === 4) {
                                             const prevTeamA = prev.teamAIds.split(',');
                                             const prevTeamB = prev.teamBIds.split(',');
                                             const currentTeamA = config.teamA;
                                             const currentTeamB = config.teamB;
                                             
-                                            // 7경기의 Team A와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                            // 3,4경기의 Team A와 7경기의 Team A가 같은 팀원 조합인지 확인
                                             const prevTeamASet = new Set(prevTeamA);
                                             const currentTeamASet = new Set(currentTeamA);
                                             if (prevTeamASet.size === currentTeamASet.size && 
@@ -13300,7 +13342,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                                 break;
                                             }
                                             
-                                            // 7경기의 Team A와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                            // 3,4경기의 Team A와 7경기의 Team B가 같은 팀원 조합인지 확인
                                             const currentTeamBSet = new Set(currentTeamB);
                                             if (prevTeamASet.size === currentTeamBSet.size && 
                                                 [...prevTeamASet].every(id => currentTeamBSet.has(id))) {
@@ -13308,7 +13350,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                                 break;
                                             }
                                             
-                                            // 7경기의 Team B와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                            // 3,4경기의 Team B와 7경기의 Team A가 같은 팀원 조합인지 확인
                                             const prevTeamBSet = new Set(prevTeamB);
                                             if (prevTeamBSet.size === currentTeamASet.size && 
                                                 [...prevTeamBSet].every(id => currentTeamASet.has(id))) {
@@ -13316,7 +13358,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                                 break;
                                             }
                                             
-                                            // 7경기의 Team B와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                            // 3,4경기의 Team B와 7경기의 Team B가 같은 팀원 조합인지 확인
                                             if (prevTeamBSet.size === currentTeamBSet.size && 
                                                 [...prevTeamBSet].every(id => currentTeamBSet.has(id))) {
                                                 hasSameTeammateCombo = true;
@@ -13330,8 +13372,57 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                                 
-                                // 전체 이력에서 같은 팀원 반복 체크 (4경기, 8경기가 아닌 경우에만)
-                                if (matchNum !== 4 && matchNum !== 8) {
+                                // 8경기일 때: 3,4,7경기에서 같은 팀이었던 조합 방지 (완전 제외)
+                                if (matchNum === 8) {
+                                    let hasSameTeammateCombo = false;
+                                    for (const prev of previousMatchConfigs) {
+                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                            const prevTeamA = prev.teamAIds.split(',');
+                                            const prevTeamB = prev.teamBIds.split(',');
+                                            const currentTeamA = config.teamA;
+                                            const currentTeamB = config.teamB;
+                                            
+                                            // 3,4,7경기의 Team A와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                            const prevTeamASet = new Set(prevTeamA);
+                                            const currentTeamASet = new Set(currentTeamA);
+                                            if (prevTeamASet.size === currentTeamASet.size && 
+                                                [...prevTeamASet].every(id => currentTeamASet.has(id))) {
+                                                hasSameTeammateCombo = true;
+                                                break;
+                                            }
+                                            
+                                            // 3,4,7경기의 Team A와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                            const currentTeamBSet = new Set(currentTeamB);
+                                            if (prevTeamASet.size === currentTeamBSet.size && 
+                                                [...prevTeamASet].every(id => currentTeamBSet.has(id))) {
+                                                hasSameTeammateCombo = true;
+                                                break;
+                                            }
+                                            
+                                            // 3,4,7경기의 Team B와 8경기의 Team A가 같은 팀원 조합인지 확인
+                                            const prevTeamBSet = new Set(prevTeamB);
+                                            if (prevTeamBSet.size === currentTeamASet.size && 
+                                                [...prevTeamBSet].every(id => currentTeamASet.has(id))) {
+                                                hasSameTeammateCombo = true;
+                                                break;
+                                            }
+                                            
+                                            // 3,4,7경기의 Team B와 8경기의 Team B가 같은 팀원 조합인지 확인
+                                            if (prevTeamBSet.size === currentTeamBSet.size && 
+                                                [...prevTeamBSet].every(id => currentTeamBSet.has(id))) {
+                                                hasSameTeammateCombo = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    // 같은 팀원 조합이 있으면 완전히 제외 (매우 큰 패널티)
+                                    if (hasSameTeammateCombo) {
+                                        duplicateCount += 1000; // 완전 제외를 위한 매우 큰 패널티
+                                    }
+                                }
+                                
+                                // 전체 이력에서 같은 팀원 반복 체크 (4경기, 7경기, 8경기가 아닌 경우에만)
+                                if (matchNum !== 4 && matchNum !== 7 && matchNum !== 8) {
                                     for (const playerId of config.teamA) {
                                         const history = teammateHistory.get(playerId);
                                         if (history) {
@@ -13573,12 +13664,83 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                             } else if (matchNum === 7) {
                                 // 7경기: 잘하는 사람끼리 vs 잘하는 사람끼리 (상위 4명 중에서)
+                                // 3,4경기와 같은 팀원 조합 방지
+                                let hasSameTeammateCombo = false;
+                                
                                 if (courtCount >= 2) {
-                                    selectedTeamA = [sorted[0], sorted[1]]; // 잘하는 사람들 (최강+차강)
-                                    selectedTeamB = [sorted[2], sorted[3]]; // 잘하는 사람들 (차약+최약)
+                                    const candidateTeamA = [sorted[0], sorted[1]].map(p => p.userId).sort();
+                                    const candidateTeamB = [sorted[2], sorted[3]].map(p => p.userId).sort();
+                                    
+                                    // 3,4경기와 같은 팀원 조합인지 확인
+                                    for (const prev of previousMatchConfigs) {
+                                        if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                            const prevTeamA = prev.teamAIds.split(',').sort();
+                                            const prevTeamB = prev.teamBIds.split(',').sort();
+                                            
+                                            const prevTeamASet = new Set(prevTeamA);
+                                            const prevTeamBSet = new Set(prevTeamB);
+                                            const candidateTeamASet = new Set(candidateTeamA);
+                                            const candidateTeamBSet = new Set(candidateTeamB);
+                                            
+                                            if ((prevTeamASet.size === candidateTeamASet.size && 
+                                                [...prevTeamASet].every(id => candidateTeamASet.has(id))) ||
+                                                (prevTeamASet.size === candidateTeamBSet.size && 
+                                                [...prevTeamASet].every(id => candidateTeamBSet.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamASet.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamASet.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamBSet.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamBSet.has(id)))) {
+                                                hasSameTeammateCombo = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (hasSameTeammateCombo) {
+                                        // 3,4경기와 같은 조합이면 다른 조합 사용
+                                        selectedTeamA = [sorted[0], sorted[2]]; // 최강+차약
+                                        selectedTeamB = [sorted[1], sorted[3]]; // 차강+최약
+                                    } else {
+                                        selectedTeamA = [sorted[0], sorted[1]]; // 잘하는 사람들 (최강+차강)
+                                        selectedTeamB = [sorted[2], sorted[3]]; // 잘하는 사람들 (차약+최약)
+                                    }
                                 } else {
-                                    selectedTeamA = [sorted[0], sorted[3]]; // 최강+최약
-                                    selectedTeamB = [sorted[1], sorted[2]]; // 차강+차약
+                                    const candidateTeamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
+                                    const candidateTeamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
+                                    
+                                    // 3,4경기와 같은 팀원 조합인지 확인
+                                    for (const prev of previousMatchConfigs) {
+                                        if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                            const prevTeamA = prev.teamAIds.split(',').sort();
+                                            const prevTeamB = prev.teamBIds.split(',').sort();
+                                            
+                                            const prevTeamASet = new Set(prevTeamA);
+                                            const prevTeamBSet = new Set(prevTeamB);
+                                            const candidateTeamASet = new Set(candidateTeamA);
+                                            const candidateTeamBSet = new Set(candidateTeamB);
+                                            
+                                            if ((prevTeamASet.size === candidateTeamASet.size && 
+                                                [...prevTeamASet].every(id => candidateTeamASet.has(id))) ||
+                                                (prevTeamASet.size === candidateTeamBSet.size && 
+                                                [...prevTeamASet].every(id => candidateTeamBSet.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamASet.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamASet.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamBSet.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamBSet.has(id)))) {
+                                                hasSameTeammateCombo = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (hasSameTeammateCombo) {
+                                        // 3,4경기와 같은 조합이면 다른 조합 사용
+                                        selectedTeamA = [sorted[0], sorted[2]]; // 최강+차약
+                                        selectedTeamB = [sorted[1], sorted[3]]; // 차강+최약
+                                    } else {
+                                        selectedTeamA = [sorted[0], sorted[3]]; // 최강+최약
+                                        selectedTeamB = [sorted[1], sorted[2]]; // 차강+차약
+                                    }
                                 }
                                 
                                 // 7경기 정보를 previousMatchConfigs에 저장
@@ -13590,56 +13752,45 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     matchNum: 7 
                                 });
                             } else if (matchNum === 8) {
-                                // 8경기: 7경기에서 같은 팀이었던 조합 방지
-                                // 7경기에서 같은 팀원 조합 확인
+                                // 8경기: 3,4,7경기에서 같은 팀이었던 조합 방지
+                                // 3,4,7경기에서 같은 팀원 조합 확인
                                 let hasSameTeammateCombo = false;
                                 const currentTeamAIds = [];
                                 const currentTeamBIds = [];
                                 
                                 if (courtCount >= 2) {
                                     // 하위 4명 기준: sorted[0], sorted[1] = 하위 1,2위, sorted[2], sorted[3] = 하위 3,4위
-                                    // 7경기와 같은 팀원 조합이 나오지 않도록 체크
+                                    // 3,4,7경기와 같은 팀원 조합이 나오지 않도록 체크
+                                    const candidateTeamA1 = [sorted[2], sorted[3]].map(p => p.userId).sort();
+                                    const candidateTeamB1 = [sorted[0], sorted[1]].map(p => p.userId).sort();
+                                    
                                     for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 7) {
-                                            const prevTeamA = prev.teamAIds.split(',');
-                                            const prevTeamB = prev.teamBIds.split(',');
-                                            
-                                            // 7경기의 Team A와 8경기 후보 Team A가 같은 팀원 조합인지 확인
-                                            const candidateTeamA1 = [sorted[2], sorted[3]].map(p => p.userId).sort();
-                                            const candidateTeamB1 = [sorted[0], sorted[1]].map(p => p.userId).sort();
+                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                            const prevTeamA = prev.teamAIds.split(',').sort();
+                                            const prevTeamB = prev.teamBIds.split(',').sort();
                                             
                                             const prevTeamASet = new Set(prevTeamA);
                                             const prevTeamBSet = new Set(prevTeamB);
                                             const candidateTeamASet1 = new Set(candidateTeamA1);
                                             const candidateTeamBSet1 = new Set(candidateTeamB1);
                                             
-                                            // 7경기 Team A와 8경기 후보 Team A가 같은지 확인
-                                            if (prevTeamASet.size === candidateTeamASet1.size && 
-                                                [...prevTeamASet].every(id => candidateTeamASet1.has(id))) {
+                                            // 3,4,7경기 Team A/B와 8경기 후보 Team A/B가 같은지 확인
+                                            if ((prevTeamASet.size === candidateTeamASet1.size && 
+                                                [...prevTeamASet].every(id => candidateTeamASet1.has(id))) ||
+                                                (prevTeamASet.size === candidateTeamBSet1.size && 
+                                                [...prevTeamASet].every(id => candidateTeamBSet1.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamASet1.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamASet1.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamBSet1.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamBSet1.has(id)))) {
                                                 hasSameTeammateCombo = true;
+                                                break;
                                             }
-                                            // 7경기 Team A와 8경기 후보 Team B가 같은지 확인
-                                            if (!hasSameTeammateCombo && prevTeamASet.size === candidateTeamBSet1.size && 
-                                                [...prevTeamASet].every(id => candidateTeamBSet1.has(id))) {
-                                                hasSameTeammateCombo = true;
-                                            }
-                                            // 7경기 Team B와 8경기 후보 Team A가 같은지 확인
-                                            if (!hasSameTeammateCombo && prevTeamBSet.size === candidateTeamASet1.size && 
-                                                [...prevTeamBSet].every(id => candidateTeamASet1.has(id))) {
-                                                hasSameTeammateCombo = true;
-                                            }
-                                            // 7경기 Team B와 8경기 후보 Team B가 같은지 확인
-                                            if (!hasSameTeammateCombo && prevTeamBSet.size === candidateTeamBSet1.size && 
-                                                [...prevTeamBSet].every(id => candidateTeamBSet1.has(id))) {
-                                                hasSameTeammateCombo = true;
-                                            }
-                                            
-                                            if (hasSameTeammateCombo) break;
                                         }
                                     }
                                     
                                     if (hasSameTeammateCombo) {
-                                        // 7경기와 같은 팀원 조합이면 다른 조합 사용
+                                        // 3,4,7경기와 같은 팀원 조합이면 다른 조합 사용
                                         selectedTeamA = [sorted[0], sorted[2]]; // 하위 1위+하위 3위
                                         selectedTeamB = [sorted[1], sorted[3]]; // 하위 2위+하위 4위
                                     } else {
@@ -13647,43 +13798,32 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         selectedTeamB = [sorted[0], sorted[1]]; // 못하는 사람들 (하위 1위+하위 2위)
                                     }
                                 } else {
-                                    // 코트 1개일 때: 7경기와 같은 팀원 조합 방지
+                                    // 코트 1개일 때: 3,4,7경기와 같은 팀원 조합 방지
+                                    const candidateTeamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
+                                    const candidateTeamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
+                                    
                                     for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 7) {
-                                            const prevTeamA = prev.teamAIds.split(',');
-                                            const prevTeamB = prev.teamBIds.split(',');
-                                            
-                                            // 기본 조합: 최강+최약 vs 차강+차약
-                                            const candidateTeamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
-                                            const candidateTeamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
+                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                            const prevTeamA = prev.teamAIds.split(',').sort();
+                                            const prevTeamB = prev.teamBIds.split(',').sort();
                                             
                                             const prevTeamASet = new Set(prevTeamA);
                                             const prevTeamBSet = new Set(prevTeamB);
                                             const candidateTeamASet = new Set(candidateTeamA);
                                             const candidateTeamBSet = new Set(candidateTeamB);
                                             
-                                            // 7경기 Team A와 8경기 후보 Team A가 같은지 확인
-                                            if (prevTeamASet.size === candidateTeamASet.size && 
-                                                [...prevTeamASet].every(id => candidateTeamASet.has(id))) {
+                                            // 3,4,7경기 Team A/B와 8경기 후보 Team A/B가 같은지 확인
+                                            if ((prevTeamASet.size === candidateTeamASet.size && 
+                                                [...prevTeamASet].every(id => candidateTeamASet.has(id))) ||
+                                                (prevTeamASet.size === candidateTeamBSet.size && 
+                                                [...prevTeamASet].every(id => candidateTeamBSet.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamASet.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamASet.has(id))) ||
+                                                (prevTeamBSet.size === candidateTeamBSet.size && 
+                                                [...prevTeamBSet].every(id => candidateTeamBSet.has(id)))) {
                                                 hasSameTeammateCombo = true;
+                                                break;
                                             }
-                                            // 7경기 Team A와 8경기 후보 Team B가 같은지 확인
-                                            if (!hasSameTeammateCombo && prevTeamASet.size === candidateTeamBSet.size && 
-                                                [...prevTeamASet].every(id => candidateTeamBSet.has(id))) {
-                                                hasSameTeammateCombo = true;
-                                            }
-                                            // 7경기 Team B와 8경기 후보 Team A가 같은지 확인
-                                            if (!hasSameTeammateCombo && prevTeamBSet.size === candidateTeamASet.size && 
-                                                [...prevTeamBSet].every(id => candidateTeamASet.has(id))) {
-                                                hasSameTeammateCombo = true;
-                                            }
-                                            // 7경기 Team B와 8경기 후보 Team B가 같은지 확인
-                                            if (!hasSameTeammateCombo && prevTeamBSet.size === candidateTeamBSet.size && 
-                                                [...prevTeamBSet].every(id => candidateTeamBSet.has(id))) {
-                                                hasSameTeammateCombo = true;
-                                            }
-                                            
-                                            if (hasSameTeammateCombo) break;
                                         }
                                     }
                                     
