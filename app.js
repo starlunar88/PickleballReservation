@@ -10790,6 +10790,15 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         }
                     }
                     
+                    // 1,2 경기도 코트별로 번갈아가며 배정 (라운드 1: 코트1→1, 코트2→2 / 라운드 2: 코트1→2, 코트2→1)
+                    if (targetMatchNum === 1 || targetMatchNum === 2) {
+                        if (r % 2 === 1) {
+                            targetMatchNum = (c % 2 === 1) ? 1 : 2;
+                        } else {
+                            targetMatchNum = (c % 2 === 1) ? 2 : 1;
+                        }
+                    }
+                    
                     // 경기 번호 업데이트
                     courtMatchNumbers[c] = targetMatchNum;
                     console.log(`🎯 라운드 ${r}, 코트 ${c}, 경기 ${targetMatchNum} 생성 중...`);
