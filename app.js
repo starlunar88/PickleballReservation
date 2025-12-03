@@ -11188,41 +11188,44 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 // 1,2 경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
                                 // 홀수 코트: 상위 2명 vs 상위 2명 (잘하는 사람들끼리)
                                 // 짝수 코트: 하위 2명 vs 하위 2명 (못하는 사람들끼리)
-                                // 같은 팀원 안만나도록 설정
-                                // 가능한 조합들 생성 (같은 팀원 체크 포함)
-                                let possibleCombos;
-                                if (c % 2 === 1) {
-                                    // 홀수 코트: 상위 2명 vs 상위 2명 (잘하는 사람들끼리)
-                                    // sorted[0], sorted[1] vs sorted[2], sorted[3]
-                                    possibleCombos = [
-                                        [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 최강+차강 vs 차차강+차차차강
-                                        [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차차강 vs 차강+차차차강
-                                        [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+차차차강 vs 차강+차차강
-                                    ];
-                                } else {
-                                    // 짝수 코트: 하위 2명 vs 하위 2명 (못하는 사람들끼리)
-                                    // sorted[0], sorted[1] vs sorted[2], sorted[3] (하위 4명 중에서)
-                                    possibleCombos = [
-                                        [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 하위1+하위2 vs 하위3+하위4
-                                        [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 하위1+하위3 vs 하위2+하위4
-                                        [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 하위1+하위4 vs 하위2+하위3
-                                    ];
+                                // sorted[0] = 최강, sorted[1] = 차강, sorted[2] = 차차강, sorted[3] = 차차차강
+                                
+                                let teamAIds, teamBIds;
+                                if (matchNum === 1) {
+                                    // 1경기: 최강, 차차차강 vs 차강, 차차강
+                                    teamAIds = [sorted[0], sorted[3]].map(p => p.userId); // 최강, 차차차강
+                                    teamBIds = [sorted[1], sorted[2]].map(p => p.userId); // 차강, 차차강
+                                } else { // matchNum === 2
+                                    // 2경기: 최강, 차차강 vs 차강, 차차차강
+                                    teamAIds = [sorted[0], sorted[2]].map(p => p.userId); // 최강, 차차강
+                                    teamBIds = [sorted[1], sorted[3]].map(p => p.userId); // 차강, 차차차강
                                 }
                                 
-                                console.log(`🔍 1,2 경기 팀 구성 시도 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                console.log(`🔍 ${matchNum}경기 팀 구성 - 라운드 ${r}, 코트 ${c}:`);
                                 console.log(`  - 코트 타입: ${c % 2 === 1 ? '홀수(상위)' : '짝수(하위)'}`);
                                 console.log(`  - sorted: ${sorted.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                console.log(`  - Team A: ${teamAIds.map(id => sorted.find(s => s.userId === id)?.userName).join(', ')}`);
+                                console.log(`  - Team B: ${teamBIds.map(id => sorted.find(s => s.userId === id)?.userName).join(', ')}`);
                                 
-                                for (const combo of possibleCombos) {
-                                    const teamAIds = combo[0].map(p => p.userId);
-                                    const teamBIds = combo[1].map(p => p.userId);
-                                    
-                                    // 같은 팀원 체크: 1,2 경기에서 같은 팀원이었던 사람끼리 다시 같은 팀이 되지 않도록
-                                    let hasRepeatedTeammate = false;
-                                    for (const playerId of teamAIds) {
+                                // 같은 팀원 체크: 1,2 경기에서 같은 팀원이었던 사람끼리 다시 같은 팀이 되지 않도록
+                                let hasRepeatedTeammate = false;
+                                for (const playerId of teamAIds) {
+                                    const history = teammateHistory.get(playerId);
+                                    if (history) {
+                                        for (const teammateId of teamAIds) {
+                                            if (teammateId !== playerId && history.has(teammateId)) {
+                                                hasRepeatedTeammate = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasRepeatedTeammate) break;
+                                    }
+                                }
+                                if (!hasRepeatedTeammate) {
+                                    for (const playerId of teamBIds) {
                                         const history = teammateHistory.get(playerId);
                                         if (history) {
-                                            for (const teammateId of teamAIds) {
+                                            for (const teammateId of teamBIds) {
                                                 if (teammateId !== playerId && history.has(teammateId)) {
                                                     hasRepeatedTeammate = true;
                                                     break;
@@ -11231,40 +11234,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             if (hasRepeatedTeammate) break;
                                         }
                                     }
-                                    if (!hasRepeatedTeammate) {
-                                        for (const playerId of teamBIds) {
-                                            const history = teammateHistory.get(playerId);
-                                            if (history) {
-                                                for (const teammateId of teamBIds) {
-                                                    if (teammateId !== playerId && history.has(teammateId)) {
-                                                        hasRepeatedTeammate = true;
-                                                        break;
-                                                    }
-                                                }
-                                                if (hasRepeatedTeammate) break;
-                                            }
-                                        }
-                                    }
-                                    
-                                    if (!hasRepeatedTeammate) {
-                                        teamConfigs.push({ 
-                                            teamA: teamAIds, 
-                                            teamB: teamBIds 
-                                        });
-                                        console.log(`  - 유효한 조합 찾음: ${combo[0].map(p => sorted.find(s => s.userId === p)?.userName).join(',')} vs ${combo[1].map(p => sorted.find(s => s.userId === p)?.userName).join(',')}`);
-                                        break; // 첫 번째 유효한 조합 사용
-                                    } else {
-                                        console.log(`  - 같은 팀원 반복으로 건너뜀: ${combo[0].map(p => sorted.find(s => s.userId === p)?.userName).join(',')} vs ${combo[1].map(p => sorted.find(s => s.userId === p)?.userName).join(',')}`);
-                                    }
                                 }
                                 
-                                // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
-                                if (teamConfigs.length === 0) {
-                                    console.log(`  - 유효한 조합 없음, fallback 사용`);
-                                    // 홀수 코트: 상위 2명 vs 상위 2명, 짝수 코트: 하위 2명 vs 하위 2명
+                                if (!hasRepeatedTeammate) {
                                     teamConfigs.push({ 
-                                        teamA: [sorted[0], sorted[1]].map(p => p.userId), 
-                                        teamB: [sorted[2], sorted[3]].map(p => p.userId) 
+                                        teamA: teamAIds, 
+                                        teamB: teamBIds 
+                                    });
+                                    console.log(`  - 유효한 조합: Team A vs Team B`);
+                                } else {
+                                    console.log(`  - 같은 팀원 반복으로 건너뜀: Team A vs Team B`);
+                                    // 같은 팀원 반복이 있어도 조합은 추가 (다음 단계에서 다른 조합 시도)
+                                    // 하지만 우선순위는 낮게 설정하기 위해 빈 배열로 두고 fallback에서 처리
+                                }
+                                
+                                // 유효한 조합을 찾지 못했으면 지정된 조합 사용 (fallback)
+                                if (teamConfigs.length === 0) {
+                                    console.log(`  - 같은 팀원 반복이지만 지정된 조합 사용 (fallback)`);
+                                    teamConfigs.push({ 
+                                        teamA: teamAIds, 
+                                        teamB: teamBIds 
                                     });
                                 }
                             } else if (matchNum === 3 || matchNum === 4) {
