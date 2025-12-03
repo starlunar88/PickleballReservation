@@ -11189,9 +11189,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 // 같은 팀원 안만나도록 설정
                                 // 가능한 조합들 생성 (같은 팀원 체크 포함)
                                 const possibleCombos = [
-                                    [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 최강+차강 vs 차약+최약
-                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
-                                    [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+최약 vs 차강+차약
+                                    [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
+                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]]  // 최강+차약 vs 차강+최약
                                 ];
                                 
                                 console.log(`🔍 1,2 경기 팀 구성 시도 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
