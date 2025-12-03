@@ -10901,28 +10901,54 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                     console.log(`  - 선택된 플레이어: ${availablePlayers.map((p, idx) => `${idx+1}번:${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 } else if (matchNum === 3 || matchNum === 4) {
-                                    // 3,4 경기: 5,6,1,2,7,8 경기에 참여하지 않은 사람들 우선 선택
-                                    // 참여 횟수가 적은 사람들을 우선 선택 (참여 안한 사람 우선)
-                                    const allAvailable = [...availableTopFour, ...availableRemaining];
+                                    // 3,4 경기: 전체 풀에서 조화롭게 선택 (참여 횟수 고려 + DUPR 밸런스)
+                                    // 전체 플레이어를 참여 횟수와 DUPR 점수를 고려하여 선택
+                                    const allAvailable = [...allAvailablePlayers].filter(p => 
+                                        !assignedPlayersInRound.has(p.userId)
+                                    );
                                     
-                                    // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤)
-                                    const sortedByCount = allAvailable.sort((a, b) => {
+                                    // 참여 횟수 기준으로 정렬 (적은 순)
+                                    const sortedByCount = [...allAvailable].sort((a, b) => {
                                         const countA = playerPlayCount[a.userId] || 0;
                                         const countB = playerPlayCount[b.userId] || 0;
                                         if (countA !== countB) {
                                             return countA - countB; // 참여 횟수가 적은 순
                                         }
-                                        // 같은 횟수면 랜덤하게 섞기
-                                        return Math.random() - 0.5;
+                                        // 같은 횟수면 DUPR 점수 순으로 정렬
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        const diff = duprA - duprB;
+                                        if (Math.abs(diff) < 0.0001) {
+                                            return a.userId.localeCompare(b.userId);
+                                        }
+                                        return diff;
                                     });
                                     
-                                    // 참여 횟수가 가장 적은 사람들 우선 선택 (최소 4명)
+                                    // 참여 횟수가 가장 적은 사람들 중에서 전체 풀의 밸런스를 고려하여 선택
                                     const minCount = Math.min(...sortedByCount.map(p => playerPlayCount[p.userId] || 0));
                                     const candidatesWithMinCount = sortedByCount.filter(p => (playerPlayCount[p.userId] || 0) === minCount);
                                     
                                     if (candidatesWithMinCount.length >= 4) {
-                                        // 참여 횟수가 가장 적은 사람이 4명 이상이면 그 중에서 선택
-                                        availablePlayers = candidatesWithMinCount.slice(0, 4);
+                                        // 참여 횟수가 가장 적은 사람이 4명 이상이면, 전체 풀의 밸런스를 고려하여 선택
+                                        // 최강, 차강, 차약, 최약 조화롭게 선택
+                                        if (candidatesWithMinCount.length >= 8) {
+                                            // 8명 이상이면 상위 2명, 중위 2명 선택
+                                            availablePlayers = [
+                                                candidatesWithMinCount[0], // 최강
+                                                candidatesWithMinCount[Math.floor(candidatesWithMinCount.length / 2) - 1], // 중위 상
+                                                candidatesWithMinCount[Math.floor(candidatesWithMinCount.length / 2)], // 중위 하
+                                                candidatesWithMinCount[candidatesWithMinCount.length - 1] // 최약
+                                            ];
+                                        } else {
+                                            // 4-7명이면 균등하게 분산하여 선택
+                                            const step = Math.floor(candidatesWithMinCount.length / 4);
+                                            availablePlayers = [
+                                                candidatesWithMinCount[0], // 최강
+                                                candidatesWithMinCount[step], // 상위 중
+                                                candidatesWithMinCount[candidatesWithMinCount.length - step - 1], // 하위 중
+                                                candidatesWithMinCount[candidatesWithMinCount.length - 1] // 최약
+                                            ];
+                                        }
                                     } else {
                                         // 참여 횟수가 가장 적은 사람이 4명 미만이면 추가로 선택
                                         const needed = 4 - candidatesWithMinCount.length;
@@ -10932,12 +10958,26 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             const candidatesWithNextMinCount = sortedByCount.filter(p => 
                                                 (playerPlayCount[p.userId] || 0) === nextMinCountValue
                                             );
-                                            availablePlayers = [...candidatesWithMinCount, ...candidatesWithNextMinCount.slice(0, needed)].slice(0, 4);
+                                            const combined = [...candidatesWithMinCount, ...candidatesWithNextMinCount];
+                                            // 전체 풀의 밸런스를 고려하여 선택
+                                            if (combined.length >= 4) {
+                                                availablePlayers = [
+                                                    combined[0], // 최강
+                                                    combined[Math.floor(combined.length / 2) - 1], // 중위 상
+                                                    combined[Math.floor(combined.length / 2)], // 중위 하
+                                                    combined[combined.length - 1] // 최약
+                                                ].slice(0, 4);
+                                            } else {
+                                                availablePlayers = combined.slice(0, 4);
+                                            }
                                         } else {
                                             // 그래도 부족하면 전체에서 선택
                                             availablePlayers = sortedByCount.slice(0, 4);
                                         }
                                     }
+                                    
+                                    console.log(`🎯 ${matchNum}경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}: 전체 풀에서 조화롭게 선택`);
+                                    console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 } else if (matchNum === 5 || matchNum === 6) {
                                     // 5,6 경기: 전체 풀에서 플레이어 선택 (간단한 인덱스 조합)
                                     // 전체 플레이어를 DUPR 점수 순으로 정렬 (1번=최강, 2번=차강, ..., N번=최약)
@@ -11012,28 +11052,65 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     
                                     console.log(`  - 선택된 플레이어: ${availablePlayers.map((p, idx) => `${idx+1}번:${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 } else if (matchNum === 7 || matchNum === 8) {
-                                    // 7,8 경기: 안뛴 사람 위주로 섞어서 밸런스 모드로 경기
-                                    // 참여 횟수가 적은 사람들을 우선 선택 (참여 안한 사람 우선)
-                                    const allAvailable = [...availableTopFour, ...availableRemaining];
+                                    // 7,8 경기: 전체 풀에서 조화롭게 선택 (참여 횟수 고려 + DUPR 밸런스)
+                                    // 전체 플레이어를 참여 횟수와 DUPR 점수를 고려하여 선택
+                                    const allAvailable = [...allAvailablePlayers].filter(p => 
+                                        !assignedPlayersInRound.has(p.userId)
+                                    );
                                     
-                                    // 참여 횟수 기준으로 정렬 (적은 순 → 같은 횟수면 랜덤)
-                                    const sortedByCount = allAvailable.sort((a, b) => {
+                                    // 전체 플레이어를 DUPR 점수 순으로 정렬
+                                    const allSortedFor78 = [...allAvailable].sort((a, b) => {
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        const diff = duprA - duprB;
+                                        if (Math.abs(diff) < 0.0001) {
+                                            return a.userId.localeCompare(b.userId);
+                                        }
+                                        return diff;
+                                    });
+                                    
+                                    // 참여 횟수 기준으로 정렬 (적은 순)
+                                    const sortedByCount = [...allAvailable].sort((a, b) => {
                                         const countA = playerPlayCount[a.userId] || 0;
                                         const countB = playerPlayCount[b.userId] || 0;
                                         if (countA !== countB) {
                                             return countA - countB; // 참여 횟수가 적은 순
                                         }
-                                        // 같은 횟수면 랜덤하게 섞기
-                                        return Math.random() - 0.5;
+                                        // 같은 횟수면 DUPR 점수 순으로 정렬
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        const diff = duprA - duprB;
+                                        if (Math.abs(diff) < 0.0001) {
+                                            return a.userId.localeCompare(b.userId);
+                                        }
+                                        return diff;
                                     });
                                     
-                                    // 참여 횟수가 가장 적은 사람들 우선 선택 (최소 4명)
+                                    // 참여 횟수가 가장 적은 사람들 중에서 전체 풀의 밸런스를 고려하여 선택
                                     const minCount = Math.min(...sortedByCount.map(p => playerPlayCount[p.userId] || 0));
                                     const candidatesWithMinCount = sortedByCount.filter(p => (playerPlayCount[p.userId] || 0) === minCount);
                                     
                                     if (candidatesWithMinCount.length >= 4) {
-                                        // 참여 횟수가 가장 적은 사람이 4명 이상이면 그 중에서 선택
-                                        availablePlayers = candidatesWithMinCount.slice(0, 4);
+                                        // 참여 횟수가 가장 적은 사람이 4명 이상이면, 전체 풀의 밸런스를 고려하여 선택
+                                        // 최강, 차강, 차약, 최약 조화롭게 선택
+                                        if (candidatesWithMinCount.length >= 8) {
+                                            // 8명 이상이면 상위 2명, 중위 2명 선택
+                                            availablePlayers = [
+                                                candidatesWithMinCount[0], // 최강
+                                                candidatesWithMinCount[Math.floor(candidatesWithMinCount.length / 2) - 1], // 중위 상
+                                                candidatesWithMinCount[Math.floor(candidatesWithMinCount.length / 2)], // 중위 하
+                                                candidatesWithMinCount[candidatesWithMinCount.length - 1] // 최약
+                                            ];
+                                        } else {
+                                            // 4-7명이면 균등하게 분산하여 선택
+                                            const step = Math.floor(candidatesWithMinCount.length / 4);
+                                            availablePlayers = [
+                                                candidatesWithMinCount[0], // 최강
+                                                candidatesWithMinCount[step], // 상위 중
+                                                candidatesWithMinCount[candidatesWithMinCount.length - step - 1], // 하위 중
+                                                candidatesWithMinCount[candidatesWithMinCount.length - 1] // 최약
+                                            ];
+                                        }
                                     } else {
                                         // 참여 횟수가 가장 적은 사람이 4명 미만이면 추가로 선택
                                         const needed = 4 - candidatesWithMinCount.length;
@@ -11043,14 +11120,25 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             const candidatesWithNextMinCount = sortedByCount.filter(p => 
                                                 (playerPlayCount[p.userId] || 0) === nextMinCountValue
                                             );
-                                            availablePlayers = [...candidatesWithMinCount, ...candidatesWithNextMinCount.slice(0, needed)].slice(0, 4);
+                                            const combined = [...candidatesWithMinCount, ...candidatesWithNextMinCount];
+                                            // 전체 풀의 밸런스를 고려하여 선택
+                                            if (combined.length >= 4) {
+                                                availablePlayers = [
+                                                    combined[0], // 최강
+                                                    combined[Math.floor(combined.length / 2) - 1], // 중위 상
+                                                    combined[Math.floor(combined.length / 2)], // 중위 하
+                                                    combined[combined.length - 1] // 최약
+                                                ].slice(0, 4);
+                                            } else {
+                                                availablePlayers = combined.slice(0, 4);
+                                            }
                                         } else {
                                             // 그래도 부족하면 전체에서 선택
                                             availablePlayers = sortedByCount.slice(0, 4);
                                         }
                                     }
                                     
-                                    console.log(`🎯 ${matchNum}경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}: 안뛴 사람 위주로 선택`);
+                                    console.log(`🎯 ${matchNum}경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}: 전체 풀에서 조화롭게 선택`);
                                     console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 } else {
                                     // 기타 경기: 참여 안한 사람 우선 포함 (fallback)
@@ -11282,9 +11370,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 });
                             } else if (matchNum === 3 || matchNum === 4) {
                                 // 3,4 경기: 밸런스 조합 (가능한 조합들 생성, 중복 방지)
+                                // 1,2 경기 조합 피하기
                                 const forbiddenCombinations = new Set();
                                 for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                    // 3,4 경기 이전 조합과 1,2 경기 조합 모두 피하기
+                                    if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 1 || prev.matchNum === 2) {
                                         const prevTeamA = prev.teamAIds;
                                         const prevTeamB = prev.teamBIds;
                                         forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
@@ -11292,11 +11382,21 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                                 
-                                // 가능한 조합들 시도
+                                // 전체 풀에서 조화롭게 선택된 4명을 DUPR 점수 순으로 정렬
+                                const sorted = [...fourPlayers].sort((a, b) => {
+                                    const duprA = b.dupr || 0;
+                                    const duprB = a.dupr || 0;
+                                    const diff = duprA - duprB;
+                                    if (Math.abs(diff) < 0.0001) {
+                                        return a.userId.localeCompare(b.userId);
+                                    }
+                                    return diff;
+                                });
+                                
+                                // 가능한 조합들 시도 (최강+차강 vs 차약+최약 제외)
                                 const possibleCombos = [
                                     [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
-                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
-                                    [[sorted[0], sorted[1]], [sorted[2], sorted[3]]]  // 최강+차강 vs 차약+최약
+                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]]  // 최강+차약 vs 차강+최약
                                 ];
                                 
                                 for (const combo of possibleCombos) {
@@ -11336,9 +11436,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             } else if (matchNum === 7 || matchNum === 8) {
                                 // 7,8 경기: 안뛴 사람 위주로 섞어서 밸런스 모드로 경기
                                 // 밸런스 조합 (가능한 조합들 생성, 중복 방지)
+                                // 5,6 경기 조합 피하기
                                 const forbiddenCombinations = new Set();
                                 for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 7 || prev.matchNum === 8) {
+                                    // 7,8 경기 이전 조합과 5,6 경기 조합 모두 피하기
+                                    if (prev.matchNum === 7 || prev.matchNum === 8 || prev.matchNum === 5 || prev.matchNum === 6) {
                                         const prevTeamA = prev.teamAIds;
                                         const prevTeamB = prev.teamBIds;
                                         forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
@@ -11346,11 +11448,21 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                                 
-                                // 가능한 조합들 시도
+                                // 전체 풀에서 조화롭게 선택된 4명을 DUPR 점수 순으로 정렬
+                                const sorted = [...fourPlayers].sort((a, b) => {
+                                    const duprA = b.dupr || 0;
+                                    const duprB = a.dupr || 0;
+                                    const diff = duprA - duprB;
+                                    if (Math.abs(diff) < 0.0001) {
+                                        return a.userId.localeCompare(b.userId);
+                                    }
+                                    return diff;
+                                });
+                                
+                                // 가능한 조합들 시도 (최강+차강 vs 차약+최약 제외)
                                 const possibleCombos = [
                                     [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
-                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차약 vs 차강+최약
-                                    [[sorted[0], sorted[1]], [sorted[2], sorted[3]]]  // 최강+차강 vs 차약+최약
+                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]]  // 최강+차약 vs 차강+최약
                                 ];
                                 
                                 for (const combo of possibleCombos) {
