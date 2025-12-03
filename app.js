@@ -9672,18 +9672,22 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
         // teamMode에 따라 대진표 생성
         let schedule, unassignedPlayers;
         
-        if (teamMode === 'balanced' && typeof PickleballBalanceScheduler !== 'undefined') {
+        // 새로운 밸런스 스케줄러 사용 여부 확인
+        const useNewScheduler = teamMode === 'balanced' && typeof window !== 'undefined' && typeof window.PickleballBalanceScheduler !== 'undefined';
+        
+        if (useNewScheduler) {
             // 새로운 밸런스 모드 스케줄러 사용
             console.log('🎯 새로운 밸런스 모드 스케줄러 사용');
             try {
-                const scheduler = new PickleballBalanceScheduler(playersToUse, 10.0, 1.0);
-                const result = scheduler.generateSchedule();
+                const scheduler = new window.PickleballBalanceScheduler(playersToUse, 10.0, 1.0);
+                scheduler.generateSchedule();
                 const webFormat = scheduler.toWebFormat();
                 schedule = webFormat.schedule;
                 unassignedPlayers = webFormat.unassignedPlayers;
                 console.log(`✅ 새로운 밸런스 모드 스케줄러로 생성 완료: ${schedule.length}경기`);
             } catch (error) {
                 console.error('❌ 새로운 밸런스 모드 스케줄러 오류:', error);
+                console.error('오류 스택:', error.stack);
                 console.log('⚠️ 기존 buildMatchSchedule로 폴백');
                 // 오류 발생 시 기존 방식으로 폴백
                 const result = buildMatchSchedule(playersToUse, courtCount, rounds, {}, teamMode);
@@ -9692,6 +9696,10 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             }
         } else {
             // 기존 방식 사용 (랜덤, 그룹 모드 또는 스케줄러가 없는 경우)
+            if (teamMode === 'balanced') {
+                console.log('⚠️ 새로운 밸런스 스케줄러를 사용할 수 없습니다. 기존 방식 사용');
+                console.log('PickleballBalanceScheduler 존재 여부:', typeof window !== 'undefined' ? typeof window.PickleballBalanceScheduler : 'window 없음');
+            }
             const result = buildMatchSchedule(playersToUse, courtCount, rounds, {}, teamMode);
             schedule = result.schedule;
             unassignedPlayers = result.unassignedPlayers;

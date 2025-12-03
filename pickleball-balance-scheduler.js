@@ -6,14 +6,17 @@
 class PickleballBalanceScheduler {
     constructor(players, weightA = 10.0, weightB = 1.0) {
         /**
-         * @param {Array} players - 플레이어 배열 [{userId, userName, dupr}, ...]
+         * @param {Array} players - 플레이어 배열 [{userId, userName, dupr, internalRating?, score?}, ...]
          * @param {number} weightA - 파트너 중복 비용 가중치 (기본값: 10.0)
          * @param {number} weightB - DUPR 팀 차이 비용 가중치 (기본값: 1.0)
          */
         this.players = players.map(p => ({
             ...p,
             playCount: 0,
-            partnerHistory: new Set()
+            partnerHistory: new Set(),
+            dupr: p.dupr || 0,
+            internalRating: p.internalRating || 0,
+            score: p.score || 0
         }));
         this.weightA = weightA;
         this.weightB = weightB;
@@ -88,8 +91,10 @@ class PickleballBalanceScheduler {
 
     /**
      * 선택된 플레이어들 중 최적의 페어링 찾기 (비용 함수 최소화)
+     * @param {Array} selectedPlayers - 선택된 플레이어 배열
+     * @param {Array} previousMatches - 이전 경기 배열 (중복 방지용)
      */
-    findBestPairing(selectedPlayers) {
+    findBestPairing(selectedPlayers, previousMatches = []) {
         if (selectedPlayers.length < 4) {
             throw new Error('최소 4명의 플레이어가 필요합니다.');
         }
@@ -105,15 +110,47 @@ class PickleballBalanceScheduler {
             [[0, 3], [1, 2]]
         ];
 
+        // 이전 경기 조합을 문자열로 변환하여 비교
+        const previousCombinations = new Set();
+        for (const prevMatch of previousMatches) {
+            const teamAIds = [prevMatch.teamA[0].userId, prevMatch.teamA[1].userId].sort().join(',');
+            const teamBIds = [prevMatch.teamB[0].userId, prevMatch.teamB[1].userId].sort().join(',');
+            previousCombinations.add(`${teamAIds}|${teamBIds}`);
+            previousCombinations.add(`${teamBIds}|${teamAIds}`); // 역순도 추가
+        }
+
         for (const combo of combinations) {
             const teamA = [selectedPlayers[combo[0][0]], selectedPlayers[combo[0][1]]];
             const teamB = [selectedPlayers[combo[1][0]], selectedPlayers[combo[1][1]]];
+
+            // 이전 경기와 중복 확인
+            const teamAIds = [teamA[0].userId, teamA[1].userId].sort().join(',');
+            const teamBIds = [teamB[0].userId, teamB[1].userId].sort().join(',');
+            const currentCombination = `${teamAIds}|${teamBIds}`;
+
+            // 완전히 동일한 조합이면 스킵 (중복 방지)
+            if (previousCombinations.has(currentCombination)) {
+                continue;
+            }
 
             const cost = this.calculateCost(teamA, teamB);
 
             if (cost < bestCost) {
                 bestCost = cost;
                 bestPairing = { teamA, teamB };
+            }
+        }
+
+        // 모든 조합이 중복이면 비용이 가장 낮은 것 선택
+        if (!bestPairing) {
+            for (const combo of combinations) {
+                const teamA = [selectedPlayers[combo[0][0]], selectedPlayers[combo[0][1]]];
+                const teamB = [selectedPlayers[combo[1][0]], selectedPlayers[combo[1][1]]];
+                const cost = this.calculateCost(teamA, teamB);
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestPairing = { teamA, teamB };
+                }
             }
         }
 
@@ -274,6 +311,9 @@ class PickleballBalanceScheduler {
         const selectedPlayers = candidates.slice(0, neededCount);
         const sittingOut = this.players.filter(p => !selectedPlayers.includes(p));
 
+        // 이전 모든 경기 조합 추적 (중복 방지)
+        const previousMatches = [...this.matches];
+
         // 각 코트별로 최적 페어링 찾기
         for (let court = 1; court <= courtCount; court++) {
             const startIdx = (court - 1) * 4;
@@ -283,8 +323,8 @@ class PickleballBalanceScheduler {
                 continue;
             }
 
-            // 최적 페어링 찾기
-            const bestPairing = this.findBestPairing(courtPlayers);
+            // 최적 페어링 찾기 (이전 모든 경기 조합 고려)
+            const bestPairing = this.findBestPairing(courtPlayers, previousMatches);
 
             const match = {
                 round: roundNum,
@@ -294,6 +334,7 @@ class PickleballBalanceScheduler {
                 sittingOut: court === 1 ? sittingOut : []
             };
             matches.push(match);
+            previousMatches.push(match); // 같은 라운드 내 다른 코트에서도 중복 방지
 
             // 플레이어 통계 업데이트
             for (const player of courtPlayers) {
@@ -324,6 +365,7 @@ class PickleballBalanceScheduler {
                 matches = this.generateRound5_6(roundNum);
             } else {
                 // Phase 3: 균형 및 공정 모드
+                // 이전 모든 경기를 고려하여 중복 방지
                 matches = this.generateRoundBalanced(roundNum);
             }
 
@@ -348,16 +390,21 @@ class PickleballBalanceScheduler {
 
             schedule.push({
                 round: match.round,
+                roundNumber: match.round, // 기존 시스템 호환성
                 court: match.court,
                 teamA: match.teamA.map(p => ({
                     userId: p.userId,
                     userName: p.userName,
-                    dupr: p.dupr
+                    dupr: p.dupr || 0,
+                    internalRating: p.internalRating || 0,
+                    score: p.score || 0
                 })),
                 teamB: match.teamB.map(p => ({
                     userId: p.userId,
                     userName: p.userName,
-                    dupr: p.dupr
+                    dupr: p.dupr || 0,
+                    internalRating: p.internalRating || 0,
+                    score: p.score || 0
                 }))
             });
         }
@@ -371,7 +418,9 @@ class PickleballBalanceScheduler {
                 uniqueUnassigned.push({
                     userId: player.userId,
                     userName: player.userName,
-                    dupr: player.dupr
+                    dupr: player.dupr || 0,
+                    internalRating: player.internalRating || 0,
+                    score: player.score || 0
                 });
             }
         }
