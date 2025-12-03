@@ -11186,14 +11186,31 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             
                             if (matchNum === 1 || matchNum === 2) {
                                 // 1,2 경기: 잘하는 사람들끼리 vs 못하는 사람들끼리
+                                // 홀수 코트: 상위 2명 vs 상위 2명 (잘하는 사람들끼리)
+                                // 짝수 코트: 하위 2명 vs 하위 2명 (못하는 사람들끼리)
                                 // 같은 팀원 안만나도록 설정
                                 // 가능한 조합들 생성 (같은 팀원 체크 포함)
-                                const possibleCombos = [
-                                    [[sorted[0], sorted[3]], [sorted[1], sorted[2]]], // 최강+최약 vs 차강+차약
-                                    [[sorted[0], sorted[2]], [sorted[1], sorted[3]]]  // 최강+차약 vs 차강+최약
-                                ];
+                                let possibleCombos;
+                                if (c % 2 === 1) {
+                                    // 홀수 코트: 상위 2명 vs 상위 2명 (잘하는 사람들끼리)
+                                    // sorted[0], sorted[1] vs sorted[2], sorted[3]
+                                    possibleCombos = [
+                                        [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 최강+차강 vs 차차강+차차차강
+                                        [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 최강+차차강 vs 차강+차차차강
+                                        [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 최강+차차차강 vs 차강+차차강
+                                    ];
+                                } else {
+                                    // 짝수 코트: 하위 2명 vs 하위 2명 (못하는 사람들끼리)
+                                    // sorted[0], sorted[1] vs sorted[2], sorted[3] (하위 4명 중에서)
+                                    possibleCombos = [
+                                        [[sorted[0], sorted[1]], [sorted[2], sorted[3]]], // 하위1+하위2 vs 하위3+하위4
+                                        [[sorted[0], sorted[2]], [sorted[1], sorted[3]]], // 하위1+하위3 vs 하위2+하위4
+                                        [[sorted[0], sorted[3]], [sorted[1], sorted[2]]]  // 하위1+하위4 vs 하위2+하위3
+                                    ];
+                                }
                                 
                                 console.log(`🔍 1,2 경기 팀 구성 시도 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                console.log(`  - 코트 타입: ${c % 2 === 1 ? '홀수(상위)' : '짝수(하위)'}`);
                                 console.log(`  - sorted: ${sorted.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 
                                 for (const combo of possibleCombos) {
@@ -11244,6 +11261,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 // 유효한 조합을 찾지 못했으면 첫 번째 조합 사용 (fallback)
                                 if (teamConfigs.length === 0) {
                                     console.log(`  - 유효한 조합 없음, fallback 사용`);
+                                    // 홀수 코트: 상위 2명 vs 상위 2명, 짝수 코트: 하위 2명 vs 하위 2명
                                     teamConfigs.push({ 
                                         teamA: [sorted[0], sorted[1]].map(p => p.userId), 
                                         teamB: [sorted[2], sorted[3]].map(p => p.userId) 
