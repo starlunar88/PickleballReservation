@@ -12051,7 +12051,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             const teamBIds = config.teamB;
                             
                             // 4경기일 때: 3경기에서 같은 팀이었던 조합 방지 (코트 무관, 전체 체크)
+                            // 각 config마다 개별적으로 체크해야 함
                             if (targetMatchNum === 4) {
+                                hasRepeatedTeammate = false; // 각 config마다 초기화
+                                
                                 console.log(`🔍 4경기 팀원 조합 체크 - 라운드 ${r}, 코트 ${c}:`);
                                 console.log(`  - 현재 후보: TeamA=[${teamAIds.join(',')}], TeamB=[${teamBIds.join(',')}]`);
                                 console.log(`  - 이전 경기 조합 수: ${previousMatchConfigs.length}`);
@@ -12373,9 +12376,58 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 console.warn(`⚠️ 라운드 ${r}, 코트 ${c} 경기 생성 실패: fourPlayers 없음`);
                                 continue;
                             }
-                            const p = pairingPatterns[0];
-                            const selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
-                            const selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
+                            
+                            // 4경기 fallback: 3경기와 다른 조합 사용
+                            let selectedTeamA, selectedTeamB;
+                            if (targetMatchNum === 4) {
+                                const p0 = pairingPatterns[0];
+                                const candidateTeamA = [fourPlayers[p0[0]], fourPlayers[p0[1]]];
+                                const candidateTeamB = [fourPlayers[p0[2]], fourPlayers[p0[3]]];
+                                
+                                // 3경기와 같은 팀원 조합인지 확인
+                                let hasSameTeammateCombo = false;
+                                const candidateTeamAIds = candidateTeamA.map(p => p.userId).sort();
+                                const candidateTeamBIds = candidateTeamB.map(p => p.userId).sort();
+                                
+                                for (const prev of previousMatchConfigs) {
+                                    if (prev.matchNum === 3) {
+                                        const prevTeamA = prev.teamAIds.split(',').sort();
+                                        const prevTeamB = prev.teamBIds.split(',').sort();
+                                        
+                                        const prevTeamASet = new Set(prevTeamA);
+                                        const prevTeamBSet = new Set(prevTeamB);
+                                        const candidateTeamASet = new Set(candidateTeamAIds);
+                                        const candidateTeamBSet = new Set(candidateTeamBIds);
+                                        
+                                        if ((prevTeamASet.size === candidateTeamASet.size &&
+                                            [...prevTeamASet].every(id => candidateTeamASet.has(id))) ||
+                                            (prevTeamASet.size === candidateTeamBSet.size &&
+                                            [...prevTeamASet].every(id => candidateTeamBSet.has(id))) ||
+                                            (prevTeamBSet.size === candidateTeamASet.size &&
+                                            [...prevTeamBSet].every(id => candidateTeamASet.has(id))) ||
+                                            (prevTeamBSet.size === candidateTeamBSet.size &&
+                                            [...prevTeamBSet].every(id => candidateTeamBSet.has(id)))) {
+                                            hasSameTeammateCombo = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (hasSameTeammateCombo && pairingPatterns.length > 1) {
+                                    // 3경기와 같은 조합이면 다른 패턴 사용
+                                    const p1 = pairingPatterns[1];
+                                    selectedTeamA = [fourPlayers[p1[0]], fourPlayers[p1[1]]];
+                                    selectedTeamB = [fourPlayers[p1[2]], fourPlayers[p1[3]]];
+                                    console.log(`⚠️ 4경기 fallback: 3경기와 같은 조합이어서 다른 패턴 사용`);
+                                } else {
+                                    selectedTeamA = candidateTeamA;
+                                    selectedTeamB = candidateTeamB;
+                                }
+                            } else {
+                                const p = pairingPatterns[0];
+                                selectedTeamA = [fourPlayers[p[0]], fourPlayers[p[1]]];
+                                selectedTeamB = [fourPlayers[p[2]], fourPlayers[p[3]]];
+                            }
                             
                             // 같은 라운드 내에서 이미 배정된 플레이어인지 최종 확인
                             const allPlayerIds4 = [...selectedTeamA.map(p => p.userId), ...selectedTeamB.map(p => p.userId)];
@@ -12408,7 +12460,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             previousMatchConfigs.push({ 
                                 teamAIds, 
                                 teamBIds,
-                                matchNum: targetMatchNum 
+                                matchNum: targetMatchNum,
+                                court: c
                             });
                             
                             schedule.push({
