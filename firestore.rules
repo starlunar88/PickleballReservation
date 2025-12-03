@@ -88,33 +88,38 @@ service cloud.firestore {
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // 게임 결과
+    // 게임 결과 - 누구나 읽기 가능 (대진표와 함께 공개 표시), 관리자만 쓰기 가능
     match /gameResults/{resultId} {
-      allow read: if request.auth != null;
+      allow read: if true;  // 로그인 없이도 읽기 가능 (대진표 공개용)
       allow write: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // 팀 정보
+    // 팀 정보 - 누구나 읽기 가능 (대진표와 함께 공개 표시), 관리자만 쓰기 가능
     match /teams/{teamId} {
-      allow read: if request.auth != null;
+      allow read: if true;  // 로그인 없이도 읽기 가능 (대진표 공개용)
       allow write: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // 사용자 평점
+    // 사용자 평점 - 모든 인증된 사용자가 읽기/쓰기 가능
     match /userRatings/{ratingId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow read: if request.auth != null;  // 모든 인증된 사용자가 읽기 가능
+      allow write: if request.auth != null;  // 모든 인증된 사용자가 쓰기 가능
     }
     
-    // 알림 관련
+    // 알림 관련 - 자신의 알림만 읽기 가능, 인증된 사용자가 생성 가능
     match /notifications/{notificationId} {
+      // 자신의 알림만 읽기 가능
       allow read: if request.auth != null && 
         request.auth.uid == resource.data.userId;
-      allow write: if request.auth != null;
+      // 인증된 사용자가 알림 생성 가능 (시스템 알림 등)
+      allow create: if request.auth != null;
+      // 자신의 알림만 수정/삭제 가능
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
     }
     
     match /adminNotifications/{notificationId} {
@@ -131,9 +136,9 @@ service cloud.firestore {
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // 미할당 플레이어
+    // 미할당 플레이어 - 인증된 사용자가 읽기 가능, 관리자만 쓰기 가능
     match /unassigned_players/{playerId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null;  // 인증된 사용자가 읽기 가능
       allow write: if request.auth != null && 
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
