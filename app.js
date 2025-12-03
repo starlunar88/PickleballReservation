@@ -10861,35 +10861,45 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     });
                                 
                                 if (matchNum === 1 || matchNum === 2) {
-                                    // 1,2 경기: 상위/하위 나눠서 경기
-                                    // 홀수 코트: 상위 4명, 짝수 코트: 하위 4명
-                                    console.log(`🔍 ${matchNum}경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}:`);
-                                    console.log(`  - 전체 사용 가능한 플레이어: ${allAvailablePlayers.length}명`);
-                                    console.log(`  - 같은 라운드 배정된 플레이어: ${assignedPlayersInRound.size}명`);
+                                    // 1,2 경기: 전체 플레이어를 DUPR 점수 순으로 정렬 후 고정 인덱스 조합 사용
+                                    // 전체 플레이어를 DUPR 점수 순으로 정렬 (1번=최강, 2번=차강, ..., N번=최약)
+                                    const allSortedFor12 = [...allAvailablePlayers].sort((a, b) => {
+                                        const duprA = b.dupr || 0;
+                                        const duprB = a.dupr || 0;
+                                        const diff = duprA - duprB;
+                                        if (Math.abs(diff) < 0.0001) {
+                                            return a.userId.localeCompare(b.userId);
+                                        }
+                                        return diff;
+                                    });
                                     
+                                    console.log(`🔍 ${matchNum}경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}:`);
+                                    console.log(`  - 전체 플레이어: ${allSortedFor12.length}명`);
+                                    
+                                    // 코트별로 다른 플레이어 선택
+                                    // 1경기: 코트1(홀수) = 1,2,3,4번, 코트2(짝수) = 5,6,7,8번
+                                    // 2경기: 코트1(홀수) = 1,2,3,4번, 코트2(짝수) = 5,6,7,8번
                                     if (c % 2 === 1) {
-                                        // 홀수 코트: 상위 4명 (잘하는 사람들끼리)
-                                        // 전체 플레이어 중 상위 4명 선택 (DUPR 점수 순, 제한 없음)
-                                        if (allSorted.length >= 4) {
-                                            availablePlayers = allSorted.slice(0, 4);
-                                            console.log(`  - 홀수 코트(상위): 상위 4명 선택 완료`);
+                                        // 홀수 코트: 상위 4명 (1,2,3,4번)
+                                        if (allSortedFor12.length >= 4) {
+                                            availablePlayers = allSortedFor12.slice(0, 4);
                                         } else {
-                                            availablePlayers = allSorted;
-                                            console.log(`  - 홀수 코트(상위): 전체 플레이어 선택 (${allSorted.length}명)`);
+                                            availablePlayers = allSortedFor12;
                                         }
-                                        console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                        console.log(`  - 홀수 코트(상위): 1-4번 선택`);
                                     } else {
-                                        // 짝수 코트: 하위 4명 (못하는 사람들끼리)
-                                        // 전체 플레이어 중 하위 4명 선택 (DUPR 점수 낮은 순, 제한 없음)
-                                        if (allSorted.length >= 4) {
-                                            availablePlayers = allSorted.slice(-4); // 하위 4명
-                                            console.log(`  - 짝수 코트(하위): 하위 4명 선택 완료`);
+                                        // 짝수 코트: 다음 4명 (5,6,7,8번)
+                                        if (allSortedFor12.length >= 8) {
+                                            availablePlayers = allSortedFor12.slice(4, 8);
+                                        } else if (allSortedFor12.length >= 4) {
+                                            // 8명 미만이면 하위 4명 선택
+                                            availablePlayers = allSortedFor12.slice(-4);
                                         } else {
-                                            availablePlayers = allSorted;
-                                            console.log(`  - 짝수 코트(하위): 전체 플레이어 선택 (${allSorted.length}명)`);
+                                            availablePlayers = allSortedFor12;
                                         }
-                                        console.log(`  - 선택된 플레이어: ${availablePlayers.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                        console.log(`  - 짝수 코트(하위): ${allSortedFor12.length >= 8 ? '5-8번' : '하위 4명'} 선택`);
                                     }
+                                    console.log(`  - 선택된 플레이어: ${availablePlayers.map((p, idx) => `${idx+1}번:${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 } else if (matchNum === 3 || matchNum === 4) {
                                     // 3,4 경기: 5,6,1,2,7,8 경기에 참여하지 않은 사람들 우선 선택
                                     // 참여 횟수가 적은 사람들을 우선 선택 (참여 안한 사람 우선)
@@ -10929,33 +10939,78 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         }
                                     }
                                 } else if (matchNum === 5 || matchNum === 6) {
-                                    // 5,6 경기: 전체 풀에서 최강, 차강, 차약, 최약 선택
-                                    // 전체 플레이어를 DUPR 점수 순으로 정렬
-                                    // 동률인 경우 userId로 일관된 정렬 보장
+                                    // 5,6 경기: 전체 풀에서 플레이어 선택 (간단한 인덱스 조합)
+                                    // 전체 플레이어를 DUPR 점수 순으로 정렬 (1번=최강, 2번=차강, ..., N번=최약)
                                     const allSortedFor56 = [...shuffledAllPlayers].sort((a, b) => {
                                         const duprA = b.dupr || 0;
                                         const duprB = a.dupr || 0;
                                         const diff = duprA - duprB;
-                                        if (diff === 0) {
+                                        if (Math.abs(diff) < 0.0001) {
                                             return a.userId.localeCompare(b.userId);
                                         }
                                         return diff;
                                     });
                                     
-                                    // 각 코트마다 전체 풀에서 최강, 차강, 차약, 최약 선택
-                                    if (allSortedFor56.length >= 4) {
+                                    console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
+                                    console.log(`  - 전체 플레이어: ${allSortedFor56.length}명`);
+                                    
+                                    // 코트별로 다른 플레이어 선택 (인원수에 관계없이 작동)
+                                    // 5경기: 코트1 = 1,8,2,7, 코트2 = 3,6,4,5
+                                    // 6경기: 코트1 = 1,7,2,8, 코트2 = 3,5,4,6
+                                    if (allSortedFor56.length >= 8) {
+                                        // 8명 이상: 고정 인덱스 사용
+                                        if (matchNum === 5) {
+                                            if (c % 2 === 1) {
+                                                // 코트1: 1,8,2,7
+                                                availablePlayers = [
+                                                    allSortedFor56[0],        // 1번
+                                                    allSortedFor56[7],         // 8번
+                                                    allSortedFor56[1],         // 2번
+                                                    allSortedFor56[6]          // 7번
+                                                ];
+                                            } else {
+                                                // 코트2: 3,6,4,5
+                                                availablePlayers = [
+                                                    allSortedFor56[2],        // 3번
+                                                    allSortedFor56[5],         // 6번
+                                                    allSortedFor56[3],         // 4번
+                                                    allSortedFor56[4]          // 5번
+                                                ];
+                                            }
+                                        } else { // matchNum === 6
+                                            if (c % 2 === 1) {
+                                                // 코트1: 1,7,2,8
+                                                availablePlayers = [
+                                                    allSortedFor56[0],        // 1번
+                                                    allSortedFor56[6],         // 7번
+                                                    allSortedFor56[1],         // 2번
+                                                    allSortedFor56[7]          // 8번
+                                                ];
+                                            } else {
+                                                // 코트2: 3,5,4,6
+                                                availablePlayers = [
+                                                    allSortedFor56[2],        // 3번
+                                                    allSortedFor56[4],         // 5번
+                                                    allSortedFor56[3],         // 4번
+                                                    allSortedFor56[5]          // 6번
+                                                ];
+                                            }
+                                        }
+                                    } else if (allSortedFor56.length >= 4) {
+                                        // 4명 이상 8명 미만: 최강, 차강, 차약, 최약 선택
+                                        // 코트별로 동일한 4명 사용
                                         availablePlayers = [
                                             allSortedFor56[0],        // 최강
                                             allSortedFor56[1],         // 차강
                                             allSortedFor56[allSortedFor56.length - 2], // 차약
                                             allSortedFor56[allSortedFor56.length - 1]  // 최약
                                         ];
-                                        console.log(`🎯 5,6 경기 플레이어 선택 - 라운드 ${r}, 코트 ${c}, 경기 ${matchNum}:`);
-                                        console.log(`  - 최강: ${availablePlayers[0].userName}(${availablePlayers[0].dupr || 0}), 차강: ${availablePlayers[1].userName}(${availablePlayers[1].dupr || 0}), 차약: ${availablePlayers[2].userName}(${availablePlayers[2].dupr || 0}), 최약: ${availablePlayers[3].userName}(${availablePlayers[3].dupr || 0})`);
                                     } else {
                                         // 플레이어가 4명 미만이면 전체 사용
                                         availablePlayers = allSortedFor56;
                                     }
+                                    
+                                    console.log(`  - 선택된 플레이어: ${availablePlayers.map((p, idx) => `${idx+1}번:${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 } else if (matchNum === 7 || matchNum === 8) {
                                     // 7,8 경기: 안뛴 사람 위주로 섞어서 밸런스 모드로 경기
                                     // 참여 횟수가 적은 사람들을 우선 선택 (참여 안한 사람 우선)
@@ -11179,48 +11234,47 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                             }
                             
                             if (matchNum === 1 || matchNum === 2) {
-                                // 1,2 경기: 상위/하위 나눠서 경기 (고정 조합이므로 반복 체크 불필요)
-                                const isUpperCourt = c % 2 === 1; // 홀수 코트 = 상위 코트
+                                // 1,2 경기: 간단한 고정 인덱스 조합
+                                // 플레이어를 DUPR 점수 순으로 정렬 (sorted[0]=1번, sorted[1]=2번, ..., sorted[3]=4번)
+                                // 코트별로 4명 선택 후 인덱스로 팀 구성
                                 
                                 let teamAIds, teamBIds;
                                 
-                                if (isUpperCourt) {
-                                    // 상위 코트: sorted는 상위 4명이므로 sorted[0]=최강, sorted[1]=차강, sorted[2]=차차강, sorted[3]=차차차강
-                                    if (matchNum === 1) {
-                                        // 상위 코트 1경기: 최강, 차차차강 vs 차강, 차차강
-                                        teamAIds = [sorted[0], sorted[3]].map(p => p.userId); // 최강, 차차차강
-                                        teamBIds = [sorted[1], sorted[2]].map(p => p.userId); // 차강, 차차강
-                                    } else { // matchNum === 2
-                                        // 상위 코트 2경기: 최강, 차차강 vs 차강, 차차차강
-                                        teamAIds = [sorted[0], sorted[2]].map(p => p.userId); // 최강, 차차강
-                                        teamBIds = [sorted[1], sorted[3]].map(p => p.userId); // 차강, 차차차강
+                                if (matchNum === 1) {
+                                    // 1경기: 코트1(홀수) = 1,4 vs 2,3, 코트2(짝수) = 5,8 vs 6,7
+                                    if (c % 2 === 1) {
+                                        // 코트1: 상위 4명 → 1,4 vs 2,3
+                                        teamAIds = [sorted[0], sorted[3]].map(p => p.userId); // 1번, 4번
+                                        teamBIds = [sorted[1], sorted[2]].map(p => p.userId); // 2번, 3번
+                                    } else {
+                                        // 코트2: 하위 4명 → 5,8 vs 6,7 (sorted는 하위 4명이므로 인덱스 0,1,2,3 = 전체의 5,6,7,8번)
+                                        // sorted[0]=5번, sorted[1]=6번, sorted[2]=7번, sorted[3]=8번
+                                        teamAIds = [sorted[0], sorted[3]].map(p => p.userId); // 5번, 8번
+                                        teamBIds = [sorted[1], sorted[2]].map(p => p.userId); // 6번, 7번
                                     }
-                                } else {
-                                    // 하위 코트: sorted는 하위 4명이므로 sorted[0]=차차차약, sorted[1]=차차약, sorted[2]=차약, sorted[3]=최약
-                                    // 하지만 우리가 원하는 것은: 최약, 차차차약 vs 차약, 차차약
-                                    // 따라서: sorted[3]=최약, sorted[0]=차차차약, sorted[2]=차약, sorted[1]=차차약
-                                    if (matchNum === 1) {
-                                        // 하위 코트 1경기: 최약, 차차차약 vs 차약, 차차약
-                                        teamAIds = [sorted[3], sorted[0]].map(p => p.userId); // 최약, 차차차약
-                                        teamBIds = [sorted[2], sorted[1]].map(p => p.userId); // 차약, 차차약
-                                    } else { // matchNum === 2
-                                        // 하위 코트 2경기: 최약, 차차약 vs 차약, 차차차약
-                                        teamAIds = [sorted[3], sorted[1]].map(p => p.userId); // 최약, 차차약
-                                        teamBIds = [sorted[2], sorted[0]].map(p => p.userId); // 차약, 차차차약
+                                } else { // matchNum === 2
+                                    // 2경기: 코트1(홀수) = 1,3 vs 2,4, 코트2(짝수) = 5,7 vs 6,8
+                                    if (c % 2 === 1) {
+                                        // 코트1: 상위 4명 → 1,3 vs 2,4
+                                        teamAIds = [sorted[0], sorted[2]].map(p => p.userId); // 1번, 3번
+                                        teamBIds = [sorted[1], sorted[3]].map(p => p.userId); // 2번, 4번
+                                    } else {
+                                        // 코트2: 하위 4명 → 5,7 vs 6,8
+                                        teamAIds = [sorted[0], sorted[2]].map(p => p.userId); // 5번, 7번
+                                        teamBIds = [sorted[1], sorted[3]].map(p => p.userId); // 6번, 8번
                                     }
                                 }
                                 
-                                console.log(`🔍 ${matchNum}경기 팀 구성 - 라운드 ${r}, 코트 ${c} (${isUpperCourt ? '상위' : '하위'}):`);
-                                console.log(`  - sorted: ${sorted.map(p => `${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                console.log(`🔍 ${matchNum}경기 팀 구성 - 라운드 ${r}, 코트 ${c}:`);
+                                console.log(`  - sorted: ${sorted.map((p, idx) => `${idx+1}번:${p.userName}(${p.dupr || 0})`).join(', ')}`);
                                 console.log(`  - Team A: ${teamAIds.map(id => sorted.find(s => s.userId === id)?.userName).join(', ')}`);
                                 console.log(`  - Team B: ${teamBIds.map(id => sorted.find(s => s.userId === id)?.userName).join(', ')}`);
                                 
-                                // 1,2 경기는 고정 조합이므로 바로 추가 (반복 체크 불필요)
+                                // 1,2 경기는 고정 조합이므로 바로 추가
                                 teamConfigs.push({ 
                                     teamA: teamAIds, 
                                     teamB: teamBIds 
                                 });
-                                console.log(`  - 고정 조합 추가 완료: Team A vs Team B`);
                             } else if (matchNum === 3 || matchNum === 4) {
                                 // 3,4 경기: 밸런스 조합 (가능한 조합들 생성, 중복 방지)
                                 const forbiddenCombinations = new Set();
@@ -11333,23 +11387,35 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                         if (teamMode === 'balanced' && (targetMatchNum === 5 || targetMatchNum === 6)) {
                             if (fourPlayers && fourPlayers.length === 4) {
                                 // sorted는 fourPlayers를 DUPR 점수 순으로 정렬
+                                // fourPlayers는 이미 코트별로 선택된 플레이어
                                 const sorted = [...fourPlayers].sort((a, b) => {
                                     const duprA = b.dupr || 0;
                                     const duprB = a.dupr || 0;
-                                    return duprA - duprB;
+                                    const diff = duprA - duprB;
+                                    if (Math.abs(diff) < 0.0001) {
+                                        return a.userId.localeCompare(b.userId);
+                                    }
+                                    return diff;
                                 });
                                 
-                                // 5경기: 최강(1등)+최약(꼴찌) vs 차강(2등)+차약(뒤에서 2등)
-                                // 6경기: 최강(1등)+차약(뒤에서 2등) vs 차강(2등)+최약(꼴찌)
-                                // sorted[0] = 최강(1등), sorted[1] = 차강(2등), sorted[2] = 차약(뒤에서 2등), sorted[3] = 최약(꼴찌)
+                                // sorted[0]=1번, sorted[1]=2번, sorted[2]=3번, sorted[3]=4번 (선택된 4명 기준)
                                 let selectedTeamA, selectedTeamB;
                                 if (targetMatchNum === 5) {
-                                    selectedTeamA = [sorted[0], sorted[3]]; // 최강(1등) + 최약(꼴찌)
-                                    selectedTeamB = [sorted[1], sorted[2]]; // 차강(2등) + 차약(뒤에서 2등)
+                                    // 5경기: 코트1 = 1,8 vs 2,7, 코트2 = 3,6 vs 4,5
+                                    // fourPlayers가 이미 코트별로 선택되었으므로, 각 코트에서 1,4 vs 2,3 조합 사용
+                                    selectedTeamA = [sorted[0], sorted[3]]; // 1번, 4번
+                                    selectedTeamB = [sorted[1], sorted[2]]; // 2번, 3번
                                 } else { // targetMatchNum === 6
-                                    selectedTeamA = [sorted[0], sorted[2]]; // 최강(1등) + 차약(뒤에서 2등)
-                                    selectedTeamB = [sorted[1], sorted[3]]; // 차강(2등) + 최약(꼴찌)
+                                    // 6경기: 코트1 = 1,7 vs 2,8, 코트2 = 3,5 vs 4,6
+                                    // fourPlayers가 이미 코트별로 선택되었으므로, 각 코트에서 1,3 vs 2,4 조합 사용
+                                    selectedTeamA = [sorted[0], sorted[2]]; // 1번, 3번
+                                    selectedTeamB = [sorted[1], sorted[3]]; // 2번, 4번
                                 }
+                                
+                                console.log(`🔍 ${targetMatchNum}경기 팀 구성 - 라운드 ${r}, 코트 ${c}:`);
+                                console.log(`  - sorted: ${sorted.map((p, idx) => `${idx+1}번:${p.userName}(${p.dupr || 0})`).join(', ')}`);
+                                console.log(`  - Team A: ${selectedTeamA.map(p => p.userName).join(', ')}`);
+                                console.log(`  - Team B: ${selectedTeamB.map(p => p.userName).join(', ')}`);
                                 
                                 // userId 배열로 변환
                                 const teamAIds = selectedTeamA.map(p => p.userId);
@@ -11490,12 +11556,17 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     playerPlayCount[player.userId] = (playerPlayCount[player.userId] || 0) + 1;
                                 });
                                 
-                                // 이전 경기 조합에 추가 (경기 번호 포함)
+                                // 이전 경기 조합에 추가 (경기 번호 및 코트 타입 포함)
+                                const courtType = c % 2 === 1 ? 'upper' : 'lower';
+                                const teamAKeySorted = teamAKey.split(',').sort().join(',');
+                                const teamBKeySorted = teamBKey.split(',').sort().join(',');
                                 previousMatchConfigs.push({ 
-                                    teamAIds: teamAKey, 
-                                    teamBIds: teamBKey,
-                                    matchNum: targetMatchNum 
+                                    teamAIds: teamAKeySorted, 
+                                    teamBIds: teamBKeySorted,
+                                    matchNum: targetMatchNum,
+                                    courtType: courtType
                                 });
+                                console.log(`  📝 previousMatchConfigs에 추가: 경기 ${targetMatchNum}, 코트 ${c} (${courtType}), Team A [${teamAKeySorted}], Team B [${teamBKeySorted}]`);
                                 
                                 // 같은 팀원 이력과 상대팀원 이력 업데이트
                                 const teamAIds2 = config.teamA;
