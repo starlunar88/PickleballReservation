@@ -11552,19 +11552,18 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 // 7경기에서 같은 팀이 나오면 8경기에서 중복 방지
                                 const forbiddenCombinations = new Set();
                                 for (const prev of previousMatchConfigs) {
-                                    // 7,8 경기 이전 조합과 5,6 경기 조합 모두 피하기
-                                    if (prev.matchNum === 7 || prev.matchNum === 8 || prev.matchNum === 5 || prev.matchNum === 6) {
-                                        const prevTeamA = prev.teamAIds;
-                                        const prevTeamB = prev.teamBIds;
-                                        forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
-                                        forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                                    // 7경기일 때: 3,4 경기 조합 피하기
+                                    if (matchNum === 7) {
+                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7 || prev.matchNum === 8) {
+                                            const prevTeamA = prev.teamAIds;
+                                            const prevTeamB = prev.teamBIds;
+                                            forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
+                                            forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
+                                        }
                                     }
-                                }
-                                
-                                // 8경기일 때: 7경기와 같은 팀 조합 방지
-                                if (matchNum === 8) {
-                                    for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 7) {
+                                    // 8경기일 때: 3,4,7 경기 조합 피하기
+                                    if (matchNum === 8) {
+                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7 || prev.matchNum === 8) {
                                             const prevTeamA = prev.teamAIds;
                                             const prevTeamB = prev.teamBIds;
                                             forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
@@ -11595,7 +11594,71 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     const teamB = combo[1].map(p => p.userId).sort().join(',');
                                     const comboKey = `${teamA}|${teamB}`;
                                     
-                                    if (!forbiddenCombinations.has(comboKey)) {
+                                    // 팀 조합 전체가 금지된 조합인지 확인
+                                    if (forbiddenCombinations.has(comboKey)) {
+                                        continue;
+                                    }
+                                    
+                                    // 7경기일 때: 3,4경기와 같은 팀원 조합인지 확인
+                                    let hasSameTeammateCombo = false;
+                                    if (matchNum === 7) {
+                                        for (const prev of previousMatchConfigs) {
+                                            if (prev.matchNum === 3 || prev.matchNum === 4) {
+                                                const prevTeamA = prev.teamAIds.split(',').sort();
+                                                const prevTeamB = prev.teamBIds.split(',').sort();
+                                                const currentTeamA = teamA.split(',').sort();
+                                                const currentTeamB = teamB.split(',').sort();
+                                                
+                                                const prevTeamASet = new Set(prevTeamA);
+                                                const prevTeamBSet = new Set(prevTeamB);
+                                                const currentTeamASet = new Set(currentTeamA);
+                                                const currentTeamBSet = new Set(currentTeamB);
+                                                
+                                                if ((prevTeamASet.size === currentTeamASet.size && 
+                                                    [...prevTeamASet].every(id => currentTeamASet.has(id))) ||
+                                                    (prevTeamASet.size === currentTeamBSet.size && 
+                                                    [...prevTeamASet].every(id => currentTeamBSet.has(id))) ||
+                                                    (prevTeamBSet.size === currentTeamASet.size && 
+                                                    [...prevTeamBSet].every(id => currentTeamASet.has(id))) ||
+                                                    (prevTeamBSet.size === currentTeamBSet.size && 
+                                                    [...prevTeamBSet].every(id => currentTeamBSet.has(id)))) {
+                                                    hasSameTeammateCombo = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // 8경기일 때: 3,4,7경기와 같은 팀원 조합인지 확인
+                                    if (matchNum === 8) {
+                                        for (const prev of previousMatchConfigs) {
+                                            if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                                const prevTeamA = prev.teamAIds.split(',').sort();
+                                                const prevTeamB = prev.teamBIds.split(',').sort();
+                                                const currentTeamA = teamA.split(',').sort();
+                                                const currentTeamB = teamB.split(',').sort();
+                                                
+                                                const prevTeamASet = new Set(prevTeamA);
+                                                const prevTeamBSet = new Set(prevTeamB);
+                                                const currentTeamASet = new Set(currentTeamA);
+                                                const currentTeamBSet = new Set(currentTeamB);
+                                                
+                                                if ((prevTeamASet.size === currentTeamASet.size && 
+                                                    [...prevTeamASet].every(id => currentTeamASet.has(id))) ||
+                                                    (prevTeamASet.size === currentTeamBSet.size && 
+                                                    [...prevTeamASet].every(id => currentTeamBSet.has(id))) ||
+                                                    (prevTeamBSet.size === currentTeamASet.size && 
+                                                    [...prevTeamBSet].every(id => currentTeamASet.has(id))) ||
+                                                    (prevTeamBSet.size === currentTeamBSet.size && 
+                                                    [...prevTeamBSet].every(id => currentTeamBSet.has(id)))) {
+                                                    hasSameTeammateCombo = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (!hasSameTeammateCombo) {
                                         teamConfigs.push({ 
                                             teamA: combo[0].map(p => p.userId), 
                                             teamB: combo[1].map(p => p.userId) 
