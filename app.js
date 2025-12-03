@@ -395,16 +395,21 @@ async function handleSignup() {
             // 에러 무시 (이메일이 없을 수도 있음)
         }
         
-        // 이미 승인 대기 중인 요청이 있는지 확인
-        const existingRequest = await db.collection('signupRequests')
-            .where('email', '==', email)
-            .where('status', '==', 'pending')
-            .get();
-        
-        if (!existingRequest.empty) {
-            showToast('이미 승인 요청이 접수되어 있습니다. 관리자가 관리자 설정에서 승인/거부를 처리 중입니다. 승인되면 회원가입 메일이 발송됩니다.', 'warning');
-            hideLoading();
-            return;
+        // 이미 승인 대기 중인 요청이 있는지 확인 (권한 오류 시 무시하고 계속 진행)
+        try {
+            const existingRequest = await db.collection('signupRequests')
+                .where('email', '==', email)
+                .where('status', '==', 'pending')
+                .get();
+            
+            if (!existingRequest.empty) {
+                showToast('이미 승인 요청이 접수되어 있습니다. 관리자가 관리자 설정에서 승인/거부를 처리 중입니다. 승인되면 회원가입 메일이 발송됩니다.', 'warning');
+                hideLoading();
+                return;
+            }
+        } catch (error) {
+            // 권한 오류 등으로 확인 실패 시 무시하고 계속 진행 (중복 요청은 서버에서 처리)
+            console.warn('중복 요청 확인 중 오류 (무시하고 계속 진행):', error);
         }
         
         // 회원가입 요청 저장
