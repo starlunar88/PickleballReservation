@@ -66,9 +66,9 @@ class PickleballBalanceScheduler {
      * Cost = (Weight_A * Partner_Duplicate_Count) + (Weight_B * DUPR_Team_Diff) + (Weight_C * Balance_Penalty)
      * @param {Array} teamA - 팀 A 플레이어 배열
      * @param {Array} teamB - 팀 B 플레이어 배열
-     * @param {Array} sortedPlayers - DUPR 순으로 정렬된 전체 플레이어 배열 (밸런스 페널티 계산용)
+     * @param {Array} allSortedPlayers - DUPR 순으로 정렬된 전체 플레이어 풀 배열 (밸런스 페널티 계산용)
      */
-    calculateCost(teamA, teamB, sortedPlayers = null) {
+    calculateCost(teamA, teamB, allSortedPlayers = null) {
         // 파트너 중복 횟수 계산
         let partnerDuplicateCount = 0;
         const allPlayers = [...teamA, ...teamB];
@@ -88,15 +88,20 @@ class PickleballBalanceScheduler {
         const teamBDupr = (teamB[0].dupr + teamB[1].dupr) / 2;
         const duprTeamDiff = Math.abs(teamADupr - teamBDupr);
 
-        // 밸런스 페널티 계산 (최강+차강 같은 편에 있으면 페널티)
+        // 밸런스 페널티 계산 (전체 플레이어 풀의 최강+차강 같은 편에 있으면 페널티)
         let balancePenalty = 0;
-        if (sortedPlayers && sortedPlayers.length >= 4) {
-            // sortedPlayers[0] = 최강, [1] = 차강, [2] = 차약, [3] = 최약
-            const topTwoInSameTeam = 
-                (teamA.includes(sortedPlayers[0]) && teamA.includes(sortedPlayers[1])) ||
-                (teamB.includes(sortedPlayers[0]) && teamB.includes(sortedPlayers[1]));
+        if (allSortedPlayers && allSortedPlayers.length >= 2) {
+            // 전체 플레이어 풀에서 최강과 차강 찾기
+            const topPlayer = allSortedPlayers[0];
+            const secondPlayer = allSortedPlayers[1];
             
-            if (topTwoInSameTeam) {
+            // 최강과 차강이 같은 팀에 있는지 확인
+            const topTwoInTeamA = teamA.some(p => p.userId === topPlayer.userId) && 
+                                  teamA.some(p => p.userId === secondPlayer.userId);
+            const topTwoInTeamB = teamB.some(p => p.userId === topPlayer.userId) && 
+                                  teamB.some(p => p.userId === secondPlayer.userId);
+            
+            if (topTwoInTeamA || topTwoInTeamB) {
                 // 최강과 차강이 같은 편에 있으면 큰 페널티 부여
                 balancePenalty = 1000; // 매우 큰 페널티로 밸런스 조합 우선
             }
@@ -108,29 +113,33 @@ class PickleballBalanceScheduler {
 
     /**
      * 선택된 플레이어들 중 최적의 페어링 찾기 (비용 함수 최소화)
-     * @param {Array} selectedPlayers - 선택된 플레이어 배열
+     * @param {Array} selectedPlayers - 선택된 플레이어 배열 (코트별 4명)
      * @param {Array} previousMatches - 이전 경기 배열 (중복 방지용)
+     * @param {Array} allSortedPlayers - 전체 플레이어 풀의 DUPR 순 정렬 배열 (밸런스 페널티 계산용)
      */
-    findBestPairing(selectedPlayers, previousMatches = []) {
+    findBestPairing(selectedPlayers, previousMatches = [], allSortedPlayers = null) {
         if (selectedPlayers.length < 4) {
             throw new Error('최소 4명의 플레이어가 필요합니다.');
         }
 
-        // DUPR 순으로 정렬 (밸런스 페널티 계산용)
+        // 코트별 플레이어를 DUPR 순으로 정렬 (로컬 정렬)
         const sortedPlayers = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+        
+        // 전체 플레이어 풀의 최강/차강 찾기 (allSortedPlayers가 제공된 경우)
+        // allSortedPlayers가 없으면 코트별 정렬된 플레이어 사용
+        const globalSorted = allSortedPlayers || sortedPlayers;
 
         let bestPairing = null;
         let bestCost = Infinity;
 
-        // 4명 중 2명씩 선택하는 모든 조합 (중복 제거)
+        // 4명 중 2명씩 선택하는 밸런스 조합만 고려
         // 밸런스 조합 우선순위:
         // 1. (0,3) vs (1,2) - 최강+최약 vs 차강+차약 (완벽 밸런스) - 우선순위 1
         // 2. (0,2) vs (1,3) - 최강+차약 vs 차강+최약 (밸런스) - 우선순위 2
-        // 3. (0,1) vs (2,3) - 최강+차강 vs 차약+최약 (밸런스 깨짐) - 우선순위 3 (페널티)
+        // (0,1) vs (2,3) - 최강+차강 vs 차약+최약 조합은 밸런스가 깨지므로 제외
         const combinations = [
             { combo: [[0, 3], [1, 2]], priority: 1, name: '최강+최약 vs 차강+차약' }, // 완벽 밸런스
-            { combo: [[0, 2], [1, 3]], priority: 2, name: '최강+차약 vs 차강+최약' }, // 밸런스
-            { combo: [[0, 1], [2, 3]], priority: 3, name: '최강+차강 vs 차약+최약' }  // 밸런스 깨짐
+            { combo: [[0, 2], [1, 3]], priority: 2, name: '최강+차약 vs 차강+최약' }  // 밸런스
         ];
 
         // 이전 경기 조합을 문자열로 변환하여 비교
@@ -160,8 +169,8 @@ class PickleballBalanceScheduler {
                 continue;
             }
 
-            // 비용 계산 (밸런스 페널티 포함)
-            const cost = this.calculateCost(teamA, teamB, sortedPlayers);
+            // 비용 계산 (밸런스 페널티 포함, 전체 플레이어 풀의 최강/차강 기준)
+            const cost = this.calculateCost(teamA, teamB, globalSorted);
 
             console.log(`    💰 조합 "${name}": 비용=${cost.toFixed(2)}`);
 
@@ -177,7 +186,7 @@ class PickleballBalanceScheduler {
             for (const { combo, name } of combinations) {
                 const teamA = [selectedPlayers[combo[0][0]], selectedPlayers[combo[0][1]]];
                 const teamB = [selectedPlayers[combo[1][0]], selectedPlayers[combo[1][1]]];
-                const cost = this.calculateCost(teamA, teamB, sortedPlayers);
+                const cost = this.calculateCost(teamA, teamB, globalSorted);
                 console.log(`    💰 조합 "${name}": 비용=${cost.toFixed(2)}`);
                 if (cost < bestCost) {
                     bestCost = cost;
@@ -186,16 +195,19 @@ class PickleballBalanceScheduler {
             }
         }
 
-        if (bestPairing) {
-            const bestTeamAIds = [bestPairing.teamA[0].userId, bestPairing.teamA[1].userId];
-            const isTopTwoTogether = 
-                (bestTeamAIds.includes(sortedPlayers[0].userId) && bestTeamAIds.includes(sortedPlayers[1].userId)) ||
-                (!bestTeamAIds.includes(sortedPlayers[0].userId) && !bestTeamAIds.includes(sortedPlayers[1].userId) && 
-                 bestPairing.teamB.some(p => p.userId === sortedPlayers[0].userId) && 
-                 bestPairing.teamB.some(p => p.userId === sortedPlayers[1].userId));
+        if (bestPairing && globalSorted.length >= 2) {
+            // 전체 플레이어 풀의 최강과 차강 확인
+            const topPlayer = globalSorted[0];
+            const secondPlayer = globalSorted[1];
             
-            if (isTopTwoTogether) {
-                console.warn(`    ⚠️ 경고: 최강(${sortedPlayers[0].userName})과 차강(${sortedPlayers[1].userName})이 같은 편에 배정됨!`);
+            const bestTeamAIds = [bestPairing.teamA[0].userId, bestPairing.teamA[1].userId];
+            const bestTeamBIds = [bestPairing.teamB[0].userId, bestPairing.teamB[1].userId];
+            
+            const topTwoInTeamA = bestTeamAIds.includes(topPlayer.userId) && bestTeamAIds.includes(secondPlayer.userId);
+            const topTwoInTeamB = bestTeamBIds.includes(topPlayer.userId) && bestTeamBIds.includes(secondPlayer.userId);
+            
+            if (topTwoInTeamA || topTwoInTeamB) {
+                console.warn(`    ⚠️ 경고: 최강(${topPlayer.userName}, DUPR:${topPlayer.dupr})과 차강(${secondPlayer.userName}, DUPR:${secondPlayer.dupr})이 같은 편에 배정됨!`);
             } else {
                 console.log(`    ✅ 밸런스 조합 선택됨`);
             }
@@ -383,6 +395,9 @@ class PickleballBalanceScheduler {
         // 이전 모든 경기 조합 추적 (중복 방지)
         const previousMatches = [...this.matches];
 
+        // 전체 선택된 플레이어를 DUPR 순으로 정렬 (밸런스 페널티 계산용)
+        const allSortedPlayers = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+
         // 각 코트별로 최적 페어링 찾기
         for (let court = 1; court <= courtCount; court++) {
             const startIdx = (court - 1) * 4;
@@ -392,8 +407,8 @@ class PickleballBalanceScheduler {
                 continue;
             }
 
-            // 최적 페어링 찾기 (이전 모든 경기 조합 고려)
-            const bestPairing = this.findBestPairing(courtPlayers, previousMatches);
+            // 최적 페어링 찾기 (이전 모든 경기 조합 고려, 전체 정렬된 플레이어 전달)
+            const bestPairing = this.findBestPairing(courtPlayers, previousMatches, allSortedPlayers);
 
             console.log(`  🏓 코트 ${court}: ${bestPairing.teamA.map(p => p.userName).join(' & ')} vs ${bestPairing.teamB.map(p => p.userName).join(' & ')}`);
             console.log(`     파트너 중복: ${bestPairing.teamA.map(p => {
