@@ -6470,8 +6470,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 weekday: 'long'
             });
             currentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
-            currentDateDisplay.style.color = '#000'; // 검은색으로 설정
-            currentDateDisplay.style.fontWeight = '700'; // 굵게
+            currentDateDisplay.style.setProperty('color', '#000', 'important'); // 검은색으로 설정
+            currentDateDisplay.style.setProperty('font-weight', '700', 'important'); // 굵게
             
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = currentDateDisplay.closest('.section-header');
@@ -6692,8 +6692,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 weekday: 'long'
             });
             matchesCurrentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
-            matchesCurrentDateDisplay.style.color = '#000'; // 검은색으로 설정
-            matchesCurrentDateDisplay.style.fontWeight = '700'; // 굵게
+            matchesCurrentDateDisplay.style.setProperty('color', '#000', 'important'); // 검은색으로 설정
+            matchesCurrentDateDisplay.style.setProperty('font-weight', '700', 'important'); // 굵게
             
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');

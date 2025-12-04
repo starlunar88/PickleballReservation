@@ -3977,7 +3977,11 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 날짜 표시 텍스트 강제 검은색 */
 #current-date-display,
-#matches-current-date-display {
+#matches-current-date-display,
+.date-navigation #current-date-display,
+.date-navigation #matches-current-date-display,
+.date-navigation span#current-date-display,
+.date-navigation span#matches-current-date-display {
     color: #000000 !important;
 }
 
