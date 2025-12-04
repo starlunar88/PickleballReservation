@@ -93,7 +93,7 @@ body {
 }
 
 .ci-logo {
-    height: 40px; /* CI2 크기 40px */
+    height: 20px; /* CI2 크기 원래보다 조금 더 작게 (원래 24px -> 20px) */
     width: auto;
     object-fit: contain;
     flex-shrink: 0; /* 이미지 축소 방지 */
