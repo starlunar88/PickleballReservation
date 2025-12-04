@@ -93,7 +93,7 @@ body {
 }
 
 .ci-logo {
-    height: 20px; /* CI2 크기 원래보다 조금 더 작게 (원래 24px -> 20px) */
+    height: 48px; /* CI2 크기 더 증가 (40px -> 48px) */
     width: auto;
     object-fit: contain;
     flex-shrink: 0; /* 이미지 축소 방지 */
@@ -118,8 +118,6 @@ body {
     margin: 0 0 10px 0;
     box-sizing: border-box;
     border-bottom: none; /* 하단 구분선 제거 */
-    position: relative; /* 겹침 방지 */
-    z-index: 1; /* 다른 요소 위에 표시 */
 }
 
 .reservations-board .ci-banner,
@@ -129,9 +127,6 @@ body {
 .records-container .ci-banner {
     padding: 10px 15px;
     margin-bottom: 10px;
-    position: relative;
-    z-index: 10;
-    overflow: visible !important; /* 이미지가 잘리지 않도록 */
 }
 
 .ci-banner-img {
@@ -184,17 +179,12 @@ body {
     .stats-container .ci-banner,
     .records-container .ci-banner {
         padding: 8px 12px;
-        position: relative !important;
-        z-index: 10 !important; /* 모바일에서 겹침 방지 */
-        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
         max-width: 60%; /* 모바일에서 적절한 크기 (70% -> 60%) */
         width: 60%;
         height: auto;
-        display: block !important;
-        position: relative !important;
     }
 }
 
@@ -206,17 +196,12 @@ body {
     .stats-container .ci-banner,
     .records-container .ci-banner {
         padding: 6px 10px;
-        position: relative !important;
-        z-index: 10 !important; /* 작은 모바일에서 겹침 방지 */
-        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
         max-width: 65%; /* 작은 모바일에서 조금 더 크게 (75% -> 65%) */
         width: 65%;
         height: auto;
-        display: block !important;
-        position: relative !important;
     }
 }
 
@@ -2541,7 +2526,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 0 4px 140px 4px; /* 상단 여백 제거 (8px -> 0) */
+    padding: 8px 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     margin-top: 0;
     width: 100%;
     box-sizing: border-box;
@@ -2551,7 +2536,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .tab-contents {
     max-width: 100%;
     margin: 0;
-    padding: 0 4px 140px 4px; /* 상단 여백 제거 (8px -> 0) */
+    padding: 8px 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
     width: 100%;
     box-sizing: border-box;
 }
@@ -4406,7 +4391,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 0 15px 120px 15px !important; /* 상단 여백 제거 (20px -> 0) */
+        padding: 20px 15px 120px 15px !important; /* 하단 탭바를 위한 여백 확보 */
         max-width: 1200px !important;
         margin: 0 auto !important;
         box-sizing: border-box !important;
@@ -4856,7 +4841,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 0 4px 140px 4px !important; /* 상단 여백 제거 */
+        padding: 8px 4px 140px 4px !important; /* 모바일과 동일한 여백 */
     }
     
     .reservations-container,
