@@ -1833,7 +1833,7 @@ function closeAllModals() {
 
 // 탭 전환 기능
 async function switchMainTab(tabName) {
-    console.log('메인 탭 전환:', tabName);
+    // 메인 탭 전환
     
     // 관리자 상태 확인 (탭 전환 시)
     const user = firebase.auth().currentUser;
@@ -1925,7 +1925,7 @@ async function loadTabData(tabName) {
 // 대진표 데이터 로드
 async function loadMatchesData() {
     try {
-        console.log('📋 loadMatchesData 호출됨');
+        // loadMatchesData 호출됨
         // 현재 날짜로 대진표 로드 (로컬 시간대 기준)
         let currentDate = window.currentDate;
         if (!currentDate) {
@@ -1936,7 +1936,7 @@ async function loadMatchesData() {
             currentDate = `${year}-${month}-${day}`;
             window.currentDate = currentDate;
         }
-        console.log('📅 현재 날짜:', currentDate);
+        // 현재 날짜: currentDate
         
         // 대진표 탭 날짜 표시 업데이트
         if (window.updateMatchesDateDisplay) {
@@ -1963,17 +1963,17 @@ async function loadMatchesForDate(date) {
             window.adminStatus = false;
         }
         
-        console.log('📋 loadMatchesForDate 호출됨, 날짜:', date);
+        // loadMatchesForDate 호출됨
         
         // 중복 호출 방지: 이미 같은 날짜를 로딩 중이면 스킵
         if (isLoadingMatches && lastLoadedDate === date) {
-            console.log('⚠️ 이미 로딩 중인 날짜입니다. 중복 호출 스킵:', date);
+            // 이미 로딩 중인 날짜입니다. 중복 호출 스킵
             return;
         }
         
         // 중복 호출 방지: 다른 날짜를 로딩 중이면 대기
         if (isLoadingMatches) {
-            console.log('⚠️ 다른 날짜를 로딩 중입니다. 완료 후 재시도:', date);
+            // 다른 날짜를 로딩 중입니다. 완료 후 재시도
             // 최대 2초 대기
             let waitCount = 0;
             while (isLoadingMatches && waitCount < 20) {
@@ -1981,7 +1981,7 @@ async function loadMatchesForDate(date) {
                 waitCount++;
             }
             if (isLoadingMatches) {
-                console.log('⚠️ 로딩 대기 시간 초과. 중복 호출 스킵:', date);
+                // 로딩 대기 시간 초과. 중복 호출 스킵
                 return;
             }
         }
@@ -1989,7 +1989,7 @@ async function loadMatchesForDate(date) {
         // 로딩 시작
         isLoadingMatches = true;
         lastLoadedDate = date;
-        console.log('✅ 로딩 시작:', date);
+        // 로딩 시작
         
         const settings = await getSystemSettings();
         if (!settings || !settings.timeSlots) {
@@ -2003,7 +2003,7 @@ async function loadMatchesForDate(date) {
             return;
         }
         
-        console.log('✅ match-schedule 컨테이너 찾음');
+        // match-schedule 컨테이너 찾음
         
         // Firebase 초기화 확인
         if (!window.db) {
@@ -2019,7 +2019,7 @@ async function loadMatchesForDate(date) {
             return;
         }
         
-        console.log('✅ db 객체 확인됨');
+        // db 객체 확인됨
         
         // 모든 시간대의 대진표를 표시
         let matchesHTML = '';
@@ -2030,7 +2030,7 @@ async function loadMatchesForDate(date) {
             .where('date', '==', date)
             .get();
         
-        console.log(`📊 ${date} 날짜의 전체 매치 수: ${allMatchesSnapshot.size}개`);
+        // 전체 매치 수 조회 완료
         
         // timeSlot별로 그룹화
         const matchesByTimeSlot = {};
@@ -2045,7 +2045,7 @@ async function loadMatchesForDate(date) {
             matchesByTimeSlot[timeSlot].push({ id: doc.id, ...matchData });
         });
         
-        console.log('🕐 발견된 시간대:', Object.keys(matchesByTimeSlot));
+        // 발견된 시간대 확인 완료
         
         // 시스템 설정의 timeSlots와 실제 matches에 있는 timeSlot을 모두 포함
         const allTimeSlots = new Set();
@@ -2062,18 +2062,13 @@ async function loadMatchesForDate(date) {
         for (const slotKey of sortedTimeSlots) {
             const existingMatches = matchesByTimeSlot[slotKey] || [];
             
-            console.log(`🔍 시간대 확인: ${slotKey}, 날짜: ${date}`);
-            console.log(`📊 ${slotKey} 시간대 매치 수: ${existingMatches.length}개`);
+            // 시간대 확인 완료
             
             if (existingMatches.length > 0) {
                 hasMatches = true;
                 const matches = existingMatches; // 이미 배열 형태
-                console.log(`✅ ${slotKey} 시간대 매치 발견:`, matches.length);
                 
-                // 각 매치의 상태 로그
-                matches.forEach(match => {
-                    console.log(`📋 매치 ${match.id}: status=${match.status}, scoreA=${match.scoreA}, scoreB=${match.scoreB}`);
-                });
+                // 각 매치의 상태 확인 완료
                 
                 // 라운드별로 그룹화
                 const rounds = {};
@@ -2263,22 +2258,18 @@ async function loadMatchesForDate(date) {
             }
         }
         
-        console.log('📝 생성된 대진표 HTML 길이:', matchesHTML.length);
-        console.log('📝 대진표 HTML 미리보기:', matchesHTML.substring(0, 500));
-        console.log('🔍 hasMatches:', hasMatches);
+        // 대진표 HTML 생성 완료
         
         if (hasMatches && matchesHTML.length > 0) {
-            console.log('✅ 대진표가 있음, HTML 삽입');
-            console.log('📦 컨테이너:', matchesContainer);
             matchesContainer.innerHTML = matchesHTML;
-            console.log('✅ HTML 삽입 완료');
+            // HTML 삽입 완료
             
             // 컴팩트 스타일 강제 적용
             setTimeout(() => {
                 // 모바일 감지 (더 정확한 감지)
                 const screenWidth = window.innerWidth || document.documentElement.clientWidth;
                 const isMobile = screenWidth <= 480 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                console.log('📱 모바일 감지:', isMobile, '화면 너비:', screenWidth);
+                // 모바일 감지 완료
                 
                 const timeSlotSections = matchesContainer.querySelectorAll('.time-slot-section');
                 timeSlotSections.forEach(el => {
@@ -2631,12 +2622,12 @@ async function loadMatchesForDate(date) {
                     }
                 });
                 
-                console.log('✅ 컴팩트 스타일 적용 완료');
+                // 컴팩트 스타일 적용 완료
             }, 100);
             
             // 저장 버튼 이벤트 리스너 추가 (모든 버튼에 추가 - 상태에 따라 다르게 동작)
             const saveButtons = matchesContainer.querySelectorAll('.save-score-btn-compact');
-            console.log('💾 저장 버튼 수:', saveButtons.length);
+            // 저장 버튼 수 확인 완료
             saveButtons.forEach(btn => {
                 // 기존 이벤트 리스너 제거를 위해 클론
                 const newBtn = btn.cloneNode(true);
@@ -2832,7 +2823,7 @@ async function loadMatchesForDate(date) {
     } finally {
         // 로딩 완료
         isLoadingMatches = false;
-        console.log('✅ 로딩 완료:', date);
+        // 로딩 완료
     }
 }
 
@@ -5621,7 +5612,7 @@ async function loadReservationsTimeline() {
             timeline.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>데이터베이스 연결 실패</p></div>';
             return;
         }
-        console.log('✅ db 객체 확인됨');
+        // db 객체 확인됨
         
         // 전역 currentDate 변수 사용 (날짜 네비게이션에서 설정됨, 로컬 시간대 기준)
         let targetDate = window.currentDate;
@@ -5633,7 +5624,7 @@ async function loadReservationsTimeline() {
             targetDate = `${year}-${month}-${day}`;
             window.currentDate = targetDate;
         }
-        console.log('📅 대상 날짜:', targetDate);
+        // 대상 날짜: targetDate
         
         // 시스템 설정 로드 (재시도 포함)
         let settings = null;
@@ -5644,7 +5635,7 @@ async function loadReservationsTimeline() {
             try {
                 settings = await getSystemSettings();
                 if (settings) {
-                    console.log('✅ 시스템 설정 로드 성공 (시도 ' + (settingsAttempts + 1) + ')');
+                    // 시스템 설정 로드 성공
                 } else {
                     console.log('⚠️ 시스템 설정이 null (시도 ' + (settingsAttempts + 1) + ')');
                 }
@@ -5669,18 +5660,18 @@ async function loadReservationsTimeline() {
             return;
         }
         
-        console.log('📋 시간 슬롯 수:', settings.timeSlots.length);
+        // 시간 슬롯 수: settings.timeSlots.length
         let timelineHTML = '';
         
         for (const timeSlot of settings.timeSlots) {
             const slotKey = `${timeSlot.start}-${timeSlot.end}`;
             
             // 예약 수 확인
-            console.log(`🔍 예약 조회 중: ${targetDate}, ${slotKey}`);
+            // 예약 조회 중
             let reservations = [];
             
             try {
-                console.log('📡 Firestore 쿼리 시작...');
+                // Firestore 쿼리 시작
                 // 모든 상태의 예약자를 가져오되, cancelled는 제외
                 // 마감 여부와 관계없이 pending과 confirmed 상태의 모든 예약자를 표시
                 const reservationsSnapshot = await db.collection('reservations')
@@ -5696,8 +5687,7 @@ async function loadReservationsTimeline() {
                     .where('status', '==', 'cancelled')
                     .get();
                 
-                console.log('📡 Firestore 쿼리 완료, 문서 수:', reservationsSnapshot.size);
-                console.log(`📊 [상태별 예약자 수] pending+confirmed: ${reservationsSnapshot.size}명, cancelled: ${cancelledSnapshot.size}명`);
+                // Firestore 쿼리 완료
                 
                 if (cancelledSnapshot.size > 0) {
                     console.log(`⚠️ [취소된 예약자] ${cancelledSnapshot.size}명:`, 
@@ -5709,7 +5699,6 @@ async function loadReservationsTimeline() {
                 
                 reservationsSnapshot.forEach(doc => {
                     const data = doc.data();
-                    console.log(`👤 예약 발견: ${data.userName} (${data.status}), userId: ${data.userId || '없음'}`);
                     reservations.push({ id: doc.id, ...data });
                 });
                 
@@ -5958,8 +5947,7 @@ async function loadReservationsTimeline() {
         timeline.innerHTML = timelineHTML || '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>예약 현황이 없습니다</p></div>';
         
         // 타임라인 DOM 업데이트 완료
-        console.log('🔘 예약 버튼 수:', timeline.querySelectorAll('.timeline-reserve-btn').length);
-        console.log('🔘 취소 버튼 수:', timeline.querySelectorAll('.timeline-cancel-btn').length);
+        // 예약/취소 버튼 수 확인 완료
         
         // 타임라인 예약 버튼 이벤트 리스너 추가
         timeline.querySelectorAll('.timeline-reserve-btn').forEach(btn => {
@@ -6378,12 +6366,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 대진표 탭으로 전환 시 대진표 로드
             if (tabName === 'matches') {
-                console.log('🎯 대진표 탭으로 전환, loadMatchesData 호출');
+                // 대진표 탭으로 전환
                 setTimeout(async () => {
                     try {
-                        console.log('⏰ 대진표 탭 전환 후 로드 시작');
                         await loadMatchesData();
-                        console.log('✅ 대진표 탭 전환 후 로드 완료');
+                        // 대진표 탭 전환 후 로드 완료
                     } catch (error) {
                         console.error('❌ 탭 전환 시 대진표 로드 오류:', error);
                         showToast('대진표 로드에 실패했습니다.', 'error');
@@ -9137,19 +9124,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await generateMatchSchedule(date, timeSlot, selectedMode);
                 
                 // 타임라인 새로고침
-                console.log('🔄 타임라인 새로고침 시작...');
+                // 타임라인 새로고침 시작
                 await loadReservationsTimeline();
-                console.log('✅ 타임라인 새로고침 완료');
+                // 타임라인 새로고침 완료
                 
                 // 현재 대진표 탭이 활성화되어 있으면 새로고침
                 const matchesTab = document.getElementById('matches-tab');
                 if (matchesTab && matchesTab.classList.contains('active')) {
                     const currentDate = window.currentDate || new Date().toISOString().slice(0, 10);
-                    console.log(`🔄 대진표 탭 새로고침: ${currentDate}`);
                     await loadMatchesForDate(currentDate);
-                    console.log('✅ 대진표 탭 새로고침 완료');
-                } else {
-                    console.log('ℹ️ 대진표 탭이 비활성화되어 있어 새로고침하지 않음');
+                    // 대진표 탭 새로고침 완료
                 }
             } catch (error) {
                 console.error('❌ 대진표 생성 오류:', error);
