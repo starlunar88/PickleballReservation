@@ -4593,6 +4593,14 @@ async function loadRecordsData() {
         document.getElementById('record-start-date').value = today;
         document.getElementById('record-end-date').value = today;
         
+        // "오늘" 버튼 활성화
+        document.querySelectorAll('.records-container .stats-period-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-period') === 'today') {
+                btn.classList.add('active');
+            }
+        });
+        
         // 기본적으로 오늘 기록 로드
         await loadRecordsForPeriod('today');
         
