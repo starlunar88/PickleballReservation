@@ -87,7 +87,8 @@ body {
 }
 
 .nav-logo i {
-    margin-right: 6px; /* 더 작게 축소 */
+    margin-left: 6px; /* 텍스트 뒤에 배치 */
+    margin-right: 0; /* 오른쪽 여백 제거 */
     font-size: 1.2rem; /* 더 작게 축소 */
 }
 
@@ -113,14 +114,70 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px 0;
+    padding: 20px 25px;
     margin: 0;
+    box-sizing: border-box;
 }
 
 .ci-banner-img {
     max-width: 100%;
+    width: 100%;
     height: auto;
     object-fit: contain;
+    display: block;
+    transform: scale(1.15); /* 크기 15% 증가 */
+}
+
+/* PC (데스크톱) - 큰 화면 */
+@media (min-width: 1201px) {
+    .ci-banner {
+        padding: 25px 50px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .ci-banner-img {
+        max-width: 100%;
+        height: auto;
+        transform: scale(1.2); /* PC에서 더 크게 */
+    }
+}
+
+/* 태블릿 */
+@media (min-width: 769px) and (max-width: 1200px) {
+    .ci-banner {
+        padding: 18px 35px;
+    }
+    
+    .ci-banner-img {
+        max-width: 100%;
+        height: auto;
+        transform: scale(1.15); /* 태블릿에서도 크게 */
+    }
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+    .ci-banner {
+        padding: 10px 15px;
+    }
+    
+    .ci-banner-img {
+        max-width: 100%;
+        height: auto;
+    }
+}
+
+/* 작은 모바일 */
+@media (max-width: 480px) {
+    .ci-banner {
+        padding: 8px 10px;
+    }
+    
+    .ci-banner-img {
+        max-width: 100%;
+        height: auto;
+    }
 }
 
 .version-badge {
@@ -4249,6 +4306,18 @@ span#matches-current-date-display,
     
 /* 태블릿 사이즈 (768px ~ 2000px) - Lenovo P11 등 대형 태블릿 지원 */
 @media (min-width: 769px) and (max-width: 2000px) {
+    /* CI 배너 태블릿 스타일 */
+    .ci-banner {
+        padding: 18px 35px !important;
+        max-width: 100% !important;
+    }
+    
+    .ci-banner-img {
+        max-width: 100% !important;
+        height: auto !important;
+        transform: scale(1.15) !important; /* 태블릿에서도 크게 */
+    }
+    
     /* 네비게이션 바 전체 스타일 */
     .navbar {
         position: fixed;
