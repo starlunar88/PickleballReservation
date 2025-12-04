@@ -117,7 +117,9 @@ body {
     padding: 10px 15px;
     margin: 0 0 10px 0;
     box-sizing: border-box;
-    border-bottom: 1px solid #e5e7eb; /* 하단 구분선 */
+    border-bottom: none; /* 하단 구분선 제거 */
+    position: relative; /* 겹침 방지 */
+    z-index: 1; /* 다른 요소 위에 표시 */
 }
 
 .reservations-board .ci-banner,
@@ -127,14 +129,19 @@ body {
 .records-container .ci-banner {
     padding: 10px 15px;
     margin-bottom: 10px;
+    position: relative;
+    z-index: 10;
+    overflow: visible !important; /* 이미지가 잘리지 않도록 */
 }
 
 .ci-banner-img {
-    max-width: 70%; /* 크기 축소 (100% -> 70%) */
-    width: 70%;
+    max-width: 60%; /* 크기 축소 (70% -> 60%) */
+    width: 60%;
     height: auto;
     object-fit: contain;
     display: block;
+    position: relative;
+    z-index: 10;
 }
 
 /* PC (데스크톱) - 큰 화면 */
@@ -145,12 +152,17 @@ body {
     .stats-container .ci-banner,
     .records-container .ci-banner {
         padding: 12px 30px;
+        position: relative !important;
+        z-index: 10 !important; /* PC에서 겹침 방지 */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
-        max-width: 60%; /* PC에서 더 작게 */
-        width: 60%;
+        max-width: 50%; /* PC에서 더 작게 (60% -> 50%) */
+        width: 50%;
         height: auto;
+        display: block !important;
+        position: relative !important;
     }
 }
 
@@ -162,12 +174,17 @@ body {
     .stats-container .ci-banner,
     .records-container .ci-banner {
         padding: 10px 20px;
+        position: relative !important;
+        z-index: 10 !important; /* 태블릿에서 겹침 방지 */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
-        max-width: 65%; /* 태블릿에서 적절한 크기 */
-        width: 65%;
+        max-width: 55%; /* 태블릿에서 적절한 크기 (65% -> 55%) */
+        width: 55%;
         height: auto;
+        display: block !important;
+        position: relative !important;
     }
 }
 
@@ -179,12 +196,17 @@ body {
     .stats-container .ci-banner,
     .records-container .ci-banner {
         padding: 8px 12px;
+        position: relative !important;
+        z-index: 10 !important; /* 모바일에서 겹침 방지 */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
-        max-width: 70%; /* 모바일에서 적절한 크기 */
-        width: 70%;
+        max-width: 60%; /* 모바일에서 적절한 크기 (70% -> 60%) */
+        width: 60%;
         height: auto;
+        display: block !important;
+        position: relative !important;
     }
 }
 
@@ -196,12 +218,17 @@ body {
     .stats-container .ci-banner,
     .records-container .ci-banner {
         padding: 6px 10px;
+        position: relative !important;
+        z-index: 10 !important; /* 작은 모바일에서 겹침 방지 */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
-        max-width: 75%; /* 작은 모바일에서 조금 더 크게 */
-        width: 75%;
+        max-width: 65%; /* 작은 모바일에서 조금 더 크게 (75% -> 65%) */
+        width: 65%;
         height: auto;
+        display: block !important;
+        position: relative !important;
     }
 }
 
