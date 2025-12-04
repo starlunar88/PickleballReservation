@@ -93,7 +93,7 @@ body {
 }
 
 .ci-logo {
-    height: 40px; /* CI2 크기 더 증가 (32px -> 40px) */
+    height: 48px; /* CI2 크기 더 증가 (40px -> 48px) */
     width: auto;
     object-fit: contain;
     flex-shrink: 0; /* 이미지 축소 방지 */
@@ -117,7 +117,7 @@ body {
     padding: 10px 15px;
     margin: 0 0 10px 0;
     box-sizing: border-box;
-    border-bottom: 1px solid #e5e7eb; /* 하단 구분선 */
+    border-bottom: none; /* 하단 구분선 제거 */
 }
 
 .reservations-board .ci-banner,
