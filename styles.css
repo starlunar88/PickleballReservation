@@ -106,6 +106,23 @@ body {
     margin-left: 8px; /* 왼쪽 여백 */
 }
 
+/* CI 배너 (메뉴바와 예약현황 사이) */
+.ci-banner {
+    width: 100%;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+    margin: 0;
+}
+
+.ci-banner-img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
 .version-badge {
     margin-left: 8px;
     font-size: 0.75rem;
