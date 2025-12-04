@@ -375,30 +375,70 @@ class PickleballBalanceScheduler {
             console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
         }
 
-        // 각 코트별로 플레이어 할당
+        // 전체 선택된 플레이어를 DUPR 순으로 정렬 (전체 풀 기준)
+        const allSortedPlayers = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+        console.log(`  📋 전체 풀 DUPR 순: ${allSortedPlayers.map((p, idx) => `${idx+1}등:${p.userName}(${p.dupr})`).join(', ')}`);
+
+        // 각 코트별로 전체 풀 기준으로 플레이어 할당
+        // 코트 1: 1등, 4등, 5등, 8등
+        // 코트 2: 2등, 3등, 6등, 7등
+        // 코트 3: (있다면) 9등, 12등, 13등, 16등 등
         for (let court = 1; court <= courtCount; court++) {
-            const startIdx = (court - 1) * 4;
-            const courtPlayers = selectedPlayers.slice(startIdx, startIdx + 4);
+            // 전체 풀 기준으로 코트별 플레이어 선택
+            // 코트 1: 인덱스 0, 3, 4, 7 (1등, 4등, 5등, 8등)
+            // 코트 2: 인덱스 1, 2, 5, 6 (2등, 3등, 6등, 7등)
+            // 코트 3: 인덱스 8, 11, 12, 15 (9등, 12등, 13등, 16등)
+            const courtIndices = [];
+            if (court === 1) {
+                // 코트 1: 1등, 4등, 5등, 8등
+                courtIndices.push(0, 3, 4, 7);
+            } else if (court === 2) {
+                // 코트 2: 2등, 3등, 6등, 7등
+                courtIndices.push(1, 2, 5, 6);
+            } else if (court === 3) {
+                // 코트 3: 9등, 12등, 13등, 16등
+                courtIndices.push(8, 11, 12, 15);
+            }
+            
+            // 인덱스가 범위를 벗어나지 않도록 필터링
+            const validIndices = courtIndices.filter(idx => idx < allSortedPlayers.length);
+            if (validIndices.length < 4) {
+                // 부족하면 순차적으로 채우기
+                let currentIdx = (court - 1) * 4;
+                while (validIndices.length < 4 && currentIdx < allSortedPlayers.length) {
+                    if (!validIndices.includes(currentIdx)) {
+                        validIndices.push(currentIdx);
+                    }
+                    currentIdx++;
+                }
+            }
+            
+            const courtPlayers = validIndices.slice(0, 4).map(idx => allSortedPlayers[idx]);
 
             if (courtPlayers.length < 4) {
                 continue;
             }
 
-            // DUPR 순으로 정렬
+            // 코트별 플레이어를 DUPR 순으로 정렬 (로컬 정렬)
             const courtPlayersSorted = [...courtPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
 
             let teamA, teamB;
             if (roundNum === 5) {
-                // 라운드 5: (Best + Worst) vs (2nd Best + 2nd Worst)
+                // 라운드 5: 전체 풀 기준 (Best + Worst) vs (2nd Best + 2nd Worst)
+                // 코트별 4명 내에서: 최강(1등) + 최약(4등) vs 차강(2등) + 차약(3등)
                 teamA = [courtPlayersSorted[0], courtPlayersSorted[3]];
                 teamB = [courtPlayersSorted[1], courtPlayersSorted[2]];
+                console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿`);
             } else {
                 // 라운드 6: 약간 다른 조합 (중복 방지)
+                // 코트별 4명 내에서: 최강(1등) + 차약(3등) vs 차강(2등) + 최약(4등)
                 teamA = [courtPlayersSorted[0], courtPlayersSorted[2]];
                 teamB = [courtPlayersSorted[1], courtPlayersSorted[3]];
+                console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿 (변형)`);
             }
 
             console.log(`  🏓 코트 ${court}: ${teamA.map(p => p.userName).join(' & ')} vs ${teamB.map(p => p.userName).join(' & ')}`);
+            console.log(`     전체 풀 순위: 코트 ${court} = ${validIndices.slice(0, 4).map(idx => `${idx+1}등:${allSortedPlayers[idx].userName}`).join(', ')}`);
 
             const match = {
                 round: roundNum,
