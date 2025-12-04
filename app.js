@@ -8,7 +8,7 @@ function initializeFirebase() {
         if (!window.db) {
             window.db = firebase.firestore();
         }
-        console.log('✅ Firebase 전역 변수 설정 완료');
+        // Firebase 전역 변수 설정 완료
         return true;
     } else {
         console.error('❌ Firebase가 초기화되지 않았습니다');
@@ -5585,11 +5585,7 @@ async function loadAdminData() {
 
 // 예약 현황 타임라인 로드
 async function loadReservationsTimeline() {
-    console.log('=== 예약 현황 로드 시작 ===');
-    console.log('현재 시간:', new Date().toLocaleString());
-    console.log('User Agent:', navigator.userAgent);
-    console.log('화면 크기:', window.innerWidth + 'x' + window.innerHeight);
-    console.log('디바이스 픽셀 비율:', window.devicePixelRatio);
+    // 예약 현황 로드 시작
     
     // 관리자 상태 확인 (버튼 표시를 위해)
     const user = firebase.auth().currentUser;
@@ -5605,7 +5601,7 @@ async function loadReservationsTimeline() {
         console.log('사용 가능한 요소들:', document.querySelectorAll('[id*="reservation"]'));
         return;
     }
-    console.log('✅ 타임라인 요소 찾음');
+    // 타임라인 요소 찾음
     
     // 로딩 상태 표시
     timeline.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>예약 현황을 불러오는 중...</p></div>';
@@ -5785,7 +5781,7 @@ async function loadReservationsTimeline() {
                 // 모든 사용자 이름 조회 완료 대기
                 reservations = await Promise.all(userNamePromises);
                 
-                console.log(`✅ ${slotKey} 시간대 예약 수: ${reservations.length}`);
+                // 시간대 예약 수 확인 완료
             } catch (error) {
                 console.error(`❌ ${slotKey} 시간대 예약 조회 오류:`, error);
                 console.error('에러 상세:', error.message);
@@ -5827,7 +5823,7 @@ async function loadReservationsTimeline() {
             const basePlayerCount = actualCourtCount * 4;
             
             // 디버깅: 실제 계산값 확인
-            console.log(`[타임라인 표시] ${slotKey}: 예약 ${currentCount}명, 최대코트 ${maxCourts}, 실제코트 ${actualCourtCount}, 기준 ${basePlayerCount}명`);
+            // 타임라인 표시 정보 계산 완료
             
             let statusClass, statusText;
             if (isClosed) {
@@ -5876,7 +5872,7 @@ async function loadReservationsTimeline() {
                             // 마감 여부와 관계없이 모든 예약자를 표시
                             // basePlayerCount는 코트 계산용이지 표시 제한용이 아님
                             const allReservations = reservations;
-                            console.log(`[표시 예정] ${slotKey} (마감: ${isClosed}): ${allReservations.length}명의 예약자 표시`);
+                            // 예약자 표시 준비 완료
                             return allReservations.map(res => `
                                 <div class="player-item">
                                     <span class="player-name">${res.userName || '익명'}</span>
@@ -5957,12 +5953,11 @@ async function loadReservationsTimeline() {
             `;
         }
         
-        console.log('🎨 타임라인 HTML 생성 완료, 길이:', timelineHTML.length);
-        console.log('📝 생성된 HTML 미리보기:', timelineHTML.substring(0, 200) + '...');
+        // 타임라인 HTML 생성 완료
         
         timeline.innerHTML = timelineHTML || '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>예약 현황이 없습니다</p></div>';
         
-        console.log('✅ 타임라인 DOM 업데이트 완료');
+        // 타임라인 DOM 업데이트 완료
         console.log('🔘 예약 버튼 수:', timeline.querySelectorAll('.timeline-reserve-btn').length);
         console.log('🔘 취소 버튼 수:', timeline.querySelectorAll('.timeline-cancel-btn').length);
         
@@ -5986,13 +5981,15 @@ async function loadReservationsTimeline() {
         
         // 대진표 생성 버튼 이벤트 리스너 추가
         timeline.querySelectorAll('.force-generate-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+            // 기존 이벤트 리스너 제거 (중복 방지)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', async (e) => {
                 e.stopPropagation(); // 타임라인 아이템 클릭 이벤트 방지
                 try {
-                    const timeSlot = btn.getAttribute('data-time-slot');
-                    const date = btn.getAttribute('data-date');
-                    
-                    console.log(`📅 대진표 생성 버튼 클릭: ${date}, ${timeSlot}`);
+                    const timeSlot = newBtn.getAttribute('data-time-slot');
+                    const date = newBtn.getAttribute('data-date');
                     
                     if (!timeSlot || !date) {
                         console.error('시간대 또는 날짜 정보가 없습니다');
@@ -6010,7 +6007,6 @@ async function loadReservationsTimeline() {
                         // 기존 대진표가 있으면 확인 팝업
                         const confirmMessage = '이미 대진표가 존재합니다. 기존 대진표를 삭제하고 새로 생성하시겠습니까?';
                         if (!confirm(confirmMessage)) {
-                            console.log('대진표 생성 취소됨');
                             return;
                         }
                     }
@@ -9439,13 +9435,12 @@ function addTestButtonEventListeners() {
 
 // 대진표 생성 옵션 모달 열기
 function openMatchScheduleOptionsModal(date, timeSlot) {
-    console.log(`📅 대진표 생성 모달 열기: date=${date}, timeSlot=${timeSlot}`);
+    // 모달 열기 (기존 대진표 확인은 버튼 클릭 시 이미 처리됨)
     window.matchScheduleModalDate = date;
     window.matchScheduleModalTimeSlot = timeSlot;
     const modal = document.getElementById('match-schedule-options-modal');
     if (modal) {
         modal.style.display = 'flex';
-        console.log('✅ 모달 표시 완료');
     } else {
         console.error('❌ 모달 요소를 찾을 수 없습니다!');
     }

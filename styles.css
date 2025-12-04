@@ -3975,6 +3975,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     font-size: 0.95rem; /* 약간 더 크게 */
 }
 
+/* 날짜 표시 텍스트 강제 검은색 */
+#current-date-display,
+#matches-current-date-display {
+    color: #000000 !important;
+}
+
 .today-badge {
     display: flex;
     align-items: center;
@@ -5234,6 +5240,12 @@ label.team-mode-option:has(input[type="radio"]:checked) {
         padding: 4px 10px !important; /* 패딩 추가 */
         color: #000 !important; /* 검은색으로 변경 */
         background: rgba(153, 27, 27, 0.1) !important; /* 배경색 유지 */
+    }
+    
+    /* 날짜 표시 텍스트 강제 검은색 (모바일) */
+    #current-date-display,
+    #matches-current-date-display {
+        color: #000000 !important;
         border-radius: 6px !important; /* 둥근 모서리 */
         font-weight: 700 !important; /* 굵게 */
     }
