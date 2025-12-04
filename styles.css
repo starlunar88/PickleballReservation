@@ -111,15 +111,31 @@ body {
 .ci-banner {
     width: 100%;
     background-color: transparent;
-    display: flex;
+    display: flex !important;
     justify-content: center;
     align-items: center;
     padding: 10px 15px;
     margin: 0 0 10px 0;
+    margin-top: 70px !important; /* 네비게이션 바 아래에 표시되도록 여백 추가 */
     box-sizing: border-box;
     border-bottom: none; /* 하단 구분선 제거 */
     position: relative; /* 겹침 방지 */
-    z-index: 1; /* 다른 요소 위에 표시 */
+    z-index: 100 !important; /* 다른 요소들 위에 표시되도록 높은 z-index */
+    overflow: visible !important; /* 이미지가 잘리지 않도록 */
+}
+
+/* 컨테이너 안에 직접 있는 CI 배너 */
+.reservations-container > .ci-banner,
+.matches-container > .ci-banner,
+.rankings-container > .ci-banner,
+.stats-container > .ci-banner,
+.records-container > .ci-banner {
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    margin-top: 0;
+    position: relative;
+    z-index: 100 !important; /* 다른 요소들 위에 표시되도록 높은 z-index */
+    overflow: visible !important; /* 이미지가 잘리지 않도록 */
 }
 
 .reservations-board .ci-banner,
@@ -146,6 +162,11 @@ body {
 
 /* PC (데스크톱) - 큰 화면 */
 @media (min-width: 1201px) {
+    .reservations-container > .ci-banner,
+    .matches-container > .ci-banner,
+    .rankings-container > .ci-banner,
+    .stats-container > .ci-banner,
+    .records-container > .ci-banner,
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
@@ -169,6 +190,11 @@ body {
 
 /* 태블릿 */
 @media (min-width: 769px) and (max-width: 1200px) {
+    .reservations-container > .ci-banner,
+    .matches-container > .ci-banner,
+    .rankings-container > .ci-banner,
+    .stats-container > .ci-banner,
+    .records-container > .ci-banner,
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
@@ -192,6 +218,11 @@ body {
 
 /* 모바일 */
 @media (max-width: 768px) {
+    .reservations-container > .ci-banner,
+    .matches-container > .ci-banner,
+    .rankings-container > .ci-banner,
+    .stats-container > .ci-banner,
+    .records-container > .ci-banner,
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
@@ -215,6 +246,11 @@ body {
 
 /* 작은 모바일 */
 @media (max-width: 480px) {
+    .reservations-container > .ci-banner,
+    .matches-container > .ci-banner,
+    .rankings-container > .ci-banner,
+    .stats-container > .ci-banner,
+    .records-container > .ci-banner,
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
@@ -4365,6 +4401,11 @@ span#matches-current-date-display,
 /* 태블릿 사이즈 (768px ~ 2000px) - Lenovo P11 등 대형 태블릿 지원 */
 @media (min-width: 769px) and (max-width: 2000px) {
     /* CI 배너 태블릿 스타일 */
+    .reservations-container > .ci-banner,
+    .matches-container > .ci-banner,
+    .rankings-container > .ci-banner,
+    .stats-container > .ci-banner,
+    .records-container > .ci-banner,
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
