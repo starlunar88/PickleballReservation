@@ -6470,6 +6470,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 weekday: 'long'
             });
             currentDateDisplay.textContent = `${datePart} (${weekdayPart})`;
+            currentDateDisplay.style.color = '#000'; // 검은색으로 설정
+            currentDateDisplay.style.fontWeight = '700'; // 굵게
             
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = currentDateDisplay.closest('.section-header');
