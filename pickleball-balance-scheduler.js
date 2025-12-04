@@ -419,26 +419,50 @@ class PickleballBalanceScheduler {
                 continue;
             }
 
-            // 코트별 플레이어를 DUPR 순으로 정렬 (로컬 정렬)
-            const courtPlayersSorted = [...courtPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
-
+            // 전체 풀 기준으로 직접 매칭 (코트별 정렬 없이)
             let teamA, teamB;
             if (roundNum === 5) {
                 // 라운드 5: 전체 풀 기준 (Best + Worst) vs (2nd Best + 2nd Worst)
-                // 코트별 4명 내에서: 최강(1등) + 최약(4등) vs 차강(2등) + 차약(3등)
-                teamA = [courtPlayersSorted[0], courtPlayersSorted[3]];
-                teamB = [courtPlayersSorted[1], courtPlayersSorted[2]];
-                console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿`);
+                // 코트 1: 1등(최강) + 8등(최약) vs 4등 + 5등
+                // 코트 2: 2등(차강) + 7등(차약) vs 3등 + 6등
+                if (court === 1) {
+                    // 코트 1: 인덱스 0(1등), 3(4등), 4(5등), 7(8등)
+                    teamA = [allSortedPlayers[0], allSortedPlayers[7]]; // 최강 + 최약
+                    teamB = [allSortedPlayers[3], allSortedPlayers[4]]; // 4등 + 5등
+                } else if (court === 2) {
+                    // 코트 2: 인덱스 1(2등), 2(3등), 5(6등), 6(7등)
+                    teamA = [allSortedPlayers[1], allSortedPlayers[6]]; // 차강 + 차약
+                    teamB = [allSortedPlayers[2], allSortedPlayers[5]]; // 3등 + 6등
+                } else {
+                    // 코트 3 이상: 동일한 패턴
+                    const baseIdx = (court - 1) * 8;
+                    teamA = [allSortedPlayers[baseIdx], allSortedPlayers[baseIdx + 7]];
+                    teamB = [allSortedPlayers[baseIdx + 3], allSortedPlayers[baseIdx + 4]];
+                }
+                console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿 (최강+최약 vs 중간)`);
             } else {
                 // 라운드 6: 약간 다른 조합 (중복 방지)
-                // 코트별 4명 내에서: 최강(1등) + 차약(3등) vs 차강(2등) + 최약(4등)
-                teamA = [courtPlayersSorted[0], courtPlayersSorted[2]];
-                teamB = [courtPlayersSorted[1], courtPlayersSorted[3]];
+                // 코트 1: 1등(최강) + 5등 vs 4등 + 8등(최약)
+                // 코트 2: 2등(차강) + 6등 vs 3등 + 7등(차약)
+                if (court === 1) {
+                    // 코트 1: 인덱스 0(1등), 3(4등), 4(5등), 7(8등)
+                    teamA = [allSortedPlayers[0], allSortedPlayers[4]]; // 최강 + 5등
+                    teamB = [allSortedPlayers[3], allSortedPlayers[7]]; // 4등 + 최약
+                } else if (court === 2) {
+                    // 코트 2: 인덱스 1(2등), 2(3등), 5(6등), 6(7등)
+                    teamA = [allSortedPlayers[1], allSortedPlayers[5]]; // 차강 + 6등
+                    teamB = [allSortedPlayers[2], allSortedPlayers[6]]; // 3등 + 차약
+                } else {
+                    // 코트 3 이상: 동일한 패턴
+                    const baseIdx = (court - 1) * 8;
+                    teamA = [allSortedPlayers[baseIdx], allSortedPlayers[baseIdx + 4]];
+                    teamB = [allSortedPlayers[baseIdx + 3], allSortedPlayers[baseIdx + 7]];
+                }
                 console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿 (변형)`);
             }
 
             console.log(`  🏓 코트 ${court}: ${teamA.map(p => p.userName).join(' & ')} vs ${teamB.map(p => p.userName).join(' & ')}`);
-            console.log(`     전체 풀 순위: 코트 ${court} = ${validIndices.slice(0, 4).map(idx => `${idx+1}등:${allSortedPlayers[idx].userName}`).join(', ')}`);
+            console.log(`     전체 풀 순위: 코트 ${court} = ${validIndices.slice(0, 4).map(idx => `${idx+1}등:${allSortedPlayers[idx].userName}(${allSortedPlayers[idx].dupr})`).join(', ')}`);
 
             const match = {
                 round: roundNum,
