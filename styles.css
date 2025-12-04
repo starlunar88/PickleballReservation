@@ -3978,12 +3978,15 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 /* 날짜 표시 텍스트 강제 검은색 */
 #current-date-display,
 #matches-current-date-display,
+#match-date-time,
 .date-navigation #current-date-display,
 .date-navigation #matches-current-date-display,
 .date-navigation span#current-date-display,
 .date-navigation span#matches-current-date-display,
 span#current-date-display,
-span#matches-current-date-display {
+span#matches-current-date-display,
+.match-info,
+.match-info span {
     color: #000000 !important;
     color: black !important;
 }
@@ -6444,7 +6447,7 @@ span#matches-current-date-display {
 }
 
 .match-info {
-    color: #ef4444;
+    color: #000000 !important;
     font-weight: 700;
     font-size: 1.1rem;
     margin-bottom: 18px;

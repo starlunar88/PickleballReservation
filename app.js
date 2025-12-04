@@ -2805,6 +2805,9 @@ async function loadMatchesForDate(date) {
             
             const formattedDate = `${year}년 ${month}월 ${day}일 (${weekdayName})`;
             dateTimeDisplay.textContent = formattedDate;
+            // 색상을 강제로 검은색으로 설정
+            dateTimeDisplay.style.setProperty('color', '#000', 'important');
+            dateTimeDisplay.style.setProperty('color', 'black', 'important');
         }
         
         // 관리자 버튼 표시/숨김
