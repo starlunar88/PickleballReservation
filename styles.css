@@ -93,7 +93,7 @@ body {
 }
 
 .ci-logo {
-    height: 32px; /* CI2 크기 증가 (24px -> 32px) */
+    height: 40px; /* CI2 크기 더 증가 (32px -> 40px) */
     width: auto;
     object-fit: contain;
     flex-shrink: 0; /* 이미지 축소 방지 */
@@ -2423,7 +2423,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .main-container {
     min-height: 100vh;
     background: #fff;
-    padding-top: 60px; /* 네비게이션 바 아래 여백 최소화 (80px -> 60px) */
+    padding-top: 60px; /* 네비게이션 바 높이만큼만 (여백 제거) */
     width: 100%;
     max-width: 100%; /* 전체 너비 사용 */
     margin: 0; /* 여백 제거 */
@@ -2432,7 +2432,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 @media (max-width: 480px) {
     .main-container {
-        padding-top: 80px !important; /* 메뉴바와 예약현황 사이 여백 충분히 확보 (글자 잘림 방지) */
+        padding-top: 60px !important; /* 메뉴바 높이만큼만 (여백 제거) */
     }
     
     /* 네비게이션 바 높이 확인 및 여백 확보 */
@@ -4378,7 +4378,7 @@ span#matches-current-date-display,
         margin: 0 auto;
         padding-left: 20px;
         padding-right: 20px;
-        padding-top: 70px !important; /* 메뉴바 높이(60px) + 여백(10px) */
+        padding-top: 60px !important; /* 메뉴바 높이만큼만 (여백 제거) */
         margin-top: 0 !important; /* 상단 마진 제거 */
         box-sizing: border-box;
     }
@@ -4884,7 +4884,7 @@ span#matches-current-date-display,
     
     /* PC에서 메뉴바 상단 여백은 padding-top으로 처리 */
     .main-container {
-        padding-top: 80px !important; /* 메뉴바 높이(60px) + 여백(20px) */
+        padding-top: 60px !important; /* 메뉴바 높이만큼만 (여백 제거) */
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
