@@ -4,12 +4,11 @@
  */
 
 class PickleballBalanceScheduler {
-    constructor(players, weightA = 10.0, weightB = 1.0, maxCourts = null) {
+    constructor(players, weightA = 10.0, weightB = 1.0) {
         /**
          * @param {Array} players - 플레이어 배열 [{userId, userName, dupr, internalRating?, score?}, ...]
          * @param {number} weightA - 파트너 중복 비용 가중치 (기본값: 10.0)
          * @param {number} weightB - DUPR 팀 차이 비용 가중치 (기본값: 1.0)
-         * @param {number} maxCourts - 최대 코트 수 제한 (null이면 제한 없음)
          */
         this.players = players.map(p => ({
             ...p,
@@ -21,20 +20,15 @@ class PickleballBalanceScheduler {
         }));
         this.weightA = weightA;
         this.weightB = weightB;
-        this.maxCourts = maxCourts;
         this.totalRounds = 8;
         this.matches = [];
     }
 
     /**
-     * 코트 수 계산: floor(총 플레이어 수 / 4), 최대 코트 수 제한 적용
+     * 코트 수 계산: floor(총 플레이어 수 / 4)
      */
     getCourtCount() {
-        const calculatedCourts = Math.floor(this.players.length / 4);
-        if (this.maxCourts !== null && this.maxCourts !== undefined) {
-            return Math.min(calculatedCourts, this.maxCourts);
-        }
-        return calculatedCourts;
+        return Math.floor(this.players.length / 4);
     }
 
     /**
@@ -562,7 +556,15 @@ class PickleballBalanceScheduler {
             candidates = [...candidates, ...remainingPlayers.slice(0, neededCount - candidates.length)];
         }
 
-        const selectedPlayers = candidates.slice(0, neededCount);
+        // 선택된 플레이어를 플레이 횟수 순으로 정렬 (같은 횟수면 DUPR 높은 순)
+        // 최소 플레이 횟수 우선 선택이 제대로 적용되도록 보장
+        const selectedPlayers = candidates.slice(0, neededCount).sort((a, b) => {
+            if (a.playCount !== b.playCount) {
+                return a.playCount - b.playCount;
+            }
+            // 같은 플레이 횟수일 때는 DUPR 높은 순으로 선택
+            return (b.dupr || 0) - (a.dupr || 0);
+        });
         const sittingOut = this.players.filter(p => !selectedPlayers.includes(p));
 
         console.log(`  📋 라운드 ${roundNum}: 최소 플레이 횟수 우선 선택 후 비용 함수 최적화 (${neededCount}명)`);
