@@ -130,8 +130,8 @@ body {
 }
 
 .ci-banner-img {
-    max-width: 60%; /* 크기 축소 (70% -> 60%) */
-    width: 60%;
+    max-width: 70%; /* 크기 축소 (100% -> 70%) */
+    width: 70%;
     height: auto;
     object-fit: contain;
     display: block;
@@ -148,8 +148,8 @@ body {
     }
     
     .ci-banner-img {
-        max-width: 50%; /* PC에서 더 작게 (60% -> 50%) */
-        width: 50%;
+        max-width: 60%; /* PC에서 더 작게 */
+        width: 60%;
         height: auto;
     }
 }
@@ -165,8 +165,8 @@ body {
     }
     
     .ci-banner-img {
-        max-width: 55%; /* 태블릿에서 적절한 크기 (65% -> 55%) */
-        width: 55%;
+        max-width: 65%; /* 태블릿에서 적절한 크기 */
+        width: 65%;
         height: auto;
     }
 }
@@ -182,8 +182,8 @@ body {
     }
     
     .ci-banner-img {
-        max-width: 60%; /* 모바일에서 적절한 크기 (70% -> 60%) */
-        width: 60%;
+        max-width: 70%; /* 모바일에서 적절한 크기 */
+        width: 70%;
         height: auto;
     }
 }
@@ -199,8 +199,8 @@ body {
     }
     
     .ci-banner-img {
-        max-width: 65%; /* 작은 모바일에서 조금 더 크게 (75% -> 65%) */
-        width: 65%;
+        max-width: 75%; /* 작은 모바일에서 조금 더 크게 */
+        width: 75%;
         height: auto;
     }
 }
@@ -4342,8 +4342,8 @@ span#matches-current-date-display,
     }
     
     .ci-banner-img {
-        max-width: 55% !important;
-        width: 55% !important;
+        max-width: 65% !important;
+        width: 65% !important;
         height: auto !important;
     }
     
