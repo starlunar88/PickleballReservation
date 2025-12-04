@@ -114,20 +114,24 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15px 20px;
+    padding: 10px 15px;
     margin: 0 0 10px 0;
     box-sizing: border-box;
     border-bottom: 1px solid #e5e7eb; /* 하단 구분선 */
 }
 
-.reservations-board .ci-banner {
-    padding: 15px 20px;
-    margin-bottom: 15px;
+.reservations-board .ci-banner,
+.matches-container .ci-banner,
+.rankings-container .ci-banner,
+.stats-container .ci-banner,
+.records-container .ci-banner {
+    padding: 10px 15px;
+    margin-bottom: 10px;
 }
 
 .ci-banner-img {
-    max-width: 100%;
-    width: 100%;
+    max-width: 70%; /* 크기 축소 (100% -> 70%) */
+    width: 70%;
     height: auto;
     object-fit: contain;
     display: block;
@@ -135,48 +139,68 @@ body {
 
 /* PC (데스크톱) - 큰 화면 */
 @media (min-width: 1201px) {
-    .reservations-board .ci-banner {
-        padding: 20px 40px;
+    .reservations-board .ci-banner,
+    .matches-container .ci-banner,
+    .rankings-container .ci-banner,
+    .stats-container .ci-banner,
+    .records-container .ci-banner {
+        padding: 12px 30px;
     }
     
     .ci-banner-img {
-        max-width: 100%;
+        max-width: 60%; /* PC에서 더 작게 */
+        width: 60%;
         height: auto;
     }
 }
 
 /* 태블릿 */
 @media (min-width: 769px) and (max-width: 1200px) {
-    .reservations-board .ci-banner {
-        padding: 18px 30px;
+    .reservations-board .ci-banner,
+    .matches-container .ci-banner,
+    .rankings-container .ci-banner,
+    .stats-container .ci-banner,
+    .records-container .ci-banner {
+        padding: 10px 20px;
     }
     
     .ci-banner-img {
-        max-width: 100%;
+        max-width: 65%; /* 태블릿에서 적절한 크기 */
+        width: 65%;
         height: auto;
     }
 }
 
 /* 모바일 */
 @media (max-width: 768px) {
-    .reservations-board .ci-banner {
-        padding: 12px 15px;
+    .reservations-board .ci-banner,
+    .matches-container .ci-banner,
+    .rankings-container .ci-banner,
+    .stats-container .ci-banner,
+    .records-container .ci-banner {
+        padding: 8px 12px;
     }
     
     .ci-banner-img {
-        max-width: 100%;
+        max-width: 70%; /* 모바일에서 적절한 크기 */
+        width: 70%;
         height: auto;
     }
 }
 
 /* 작은 모바일 */
 @media (max-width: 480px) {
-    .reservations-board .ci-banner {
-        padding: 10px 12px;
+    .reservations-board .ci-banner,
+    .matches-container .ci-banner,
+    .rankings-container .ci-banner,
+    .stats-container .ci-banner,
+    .records-container .ci-banner {
+        padding: 6px 10px;
     }
     
     .ci-banner-img {
-        max-width: 100%;
+        max-width: 75%; /* 작은 모바일에서 조금 더 크게 */
+        width: 75%;
         height: auto;
     }
 }
@@ -2399,7 +2423,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .main-container {
     min-height: 100vh;
     background: #fff;
-    padding-top: 80px; /* 네비게이션 바 아래 여백 최소화 */
+    padding-top: 60px; /* 네비게이션 바 아래 여백 최소화 (80px -> 60px) */
     width: 100%;
     max-width: 100%; /* 전체 너비 사용 */
     margin: 0; /* 여백 제거 */
@@ -4308,13 +4332,18 @@ span#matches-current-date-display,
 /* 태블릿 사이즈 (768px ~ 2000px) - Lenovo P11 등 대형 태블릿 지원 */
 @media (min-width: 769px) and (max-width: 2000px) {
     /* CI 배너 태블릿 스타일 */
-    .reservations-board .ci-banner {
-        padding: 18px 30px !important;
+    .reservations-board .ci-banner,
+    .matches-container .ci-banner,
+    .rankings-container .ci-banner,
+    .stats-container .ci-banner,
+    .records-container .ci-banner {
+        padding: 10px 20px !important;
         max-width: 100% !important;
     }
     
     .ci-banner-img {
-        max-width: 100% !important;
+        max-width: 65% !important;
+        width: 65% !important;
         height: auto !important;
     }
     
