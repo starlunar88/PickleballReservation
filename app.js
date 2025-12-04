@@ -4588,8 +4588,15 @@ async function loadRecordsData() {
             return;
         }
         
-        // 오늘 날짜로 기본 설정
-        const today = new Date().toISOString().slice(0, 10);
+        // 오늘 날짜로 기본 설정 (로컬 시간대 사용)
+        const todayDate = new Date();
+        const formatLocalDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const today = formatLocalDate(todayDate);
         document.getElementById('record-start-date').value = today;
         document.getElementById('record-end-date').value = today;
         
@@ -4657,8 +4664,16 @@ async function loadRecordsForPeriod(period) {
                 break;
         }
         
-        const startDateStr = startDate.toISOString().slice(0, 10);
-        const endDateStr = endDate.toISOString().slice(0, 10);
+        // 로컬 시간대를 사용하여 날짜 문자열 생성 (YYYY-MM-DD 형식)
+        const formatLocalDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        const startDateStr = formatLocalDate(startDate);
+        const endDateStr = formatLocalDate(endDate);
         
         // 날짜 입력 필드 업데이트
         const startDateInput = document.getElementById('record-start-date');
