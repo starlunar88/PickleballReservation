@@ -130,7 +130,7 @@ body {
     padding: 10px 15px;
     margin-bottom: 10px;
     position: relative;
-    z-index: 10;
+    z-index: 100 !important; /* 다른 요소들 위에 표시되도록 높은 z-index */
     overflow: visible !important; /* 이미지가 잘리지 않도록 */
 }
 
@@ -141,7 +141,7 @@ body {
     object-fit: contain;
     display: block;
     position: relative;
-    z-index: 10;
+    z-index: 100 !important; /* 다른 요소들 위에 표시되도록 높은 z-index */
 }
 
 /* PC (데스크톱) - 큰 화면 */
@@ -153,7 +153,7 @@ body {
     .records-container .ci-banner {
         padding: 12px 30px;
         position: relative !important;
-        z-index: 10 !important; /* PC에서 겹침 방지 */
+        z-index: 100 !important; /* PC에서 겹침 방지 - 높은 z-index */
         overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
@@ -163,6 +163,7 @@ body {
         height: auto;
         display: block !important;
         position: relative !important;
+        z-index: 100 !important; /* 다른 요소들 위에 표시 */
     }
 }
 
@@ -175,7 +176,7 @@ body {
     .records-container .ci-banner {
         padding: 10px 20px;
         position: relative !important;
-        z-index: 10 !important; /* 태블릿에서 겹침 방지 */
+        z-index: 100 !important; /* 태블릿에서 겹침 방지 - 높은 z-index */
         overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
@@ -185,6 +186,7 @@ body {
         height: auto;
         display: block !important;
         position: relative !important;
+        z-index: 100 !important; /* 다른 요소들 위에 표시 */
     }
 }
 
@@ -197,7 +199,7 @@ body {
     .records-container .ci-banner {
         padding: 8px 12px;
         position: relative !important;
-        z-index: 10 !important; /* 모바일에서 겹침 방지 */
+        z-index: 100 !important; /* 모바일에서 겹침 방지 - 높은 z-index */
         overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
@@ -207,6 +209,7 @@ body {
         height: auto;
         display: block !important;
         position: relative !important;
+        z-index: 100 !important; /* 다른 요소들 위에 표시 */
     }
 }
 
@@ -219,7 +222,7 @@ body {
     .records-container .ci-banner {
         padding: 6px 10px;
         position: relative !important;
-        z-index: 10 !important; /* 작은 모바일에서 겹침 방지 */
+        z-index: 100 !important; /* 작은 모바일에서 겹침 방지 - 높은 z-index */
         overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
@@ -229,6 +232,7 @@ body {
         height: auto;
         display: block !important;
         position: relative !important;
+        z-index: 100 !important; /* 다른 요소들 위에 표시 */
     }
 }
 
@@ -4035,6 +4039,8 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     border-radius: 15px;
     border: 1px solid #333;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1; /* CI1 배너보다 낮은 z-index */
 }
 
 .section-header h2 {
@@ -4366,12 +4372,17 @@ span#matches-current-date-display,
     .records-container .ci-banner {
         padding: 10px 20px !important;
         max-width: 100% !important;
+        position: relative !important;
+        z-index: 100 !important; /* 태블릿에서 겹침 방지 - 높은 z-index */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
     }
     
     .ci-banner-img {
         max-width: 65% !important;
         width: 65% !important;
         height: auto !important;
+        position: relative !important;
+        z-index: 100 !important; /* 다른 요소들 위에 표시 */
     }
     
     /* 네비게이션 바 전체 스타일 */
