@@ -132,7 +132,7 @@ body {
 .records-container > .ci-banner {
     padding: 10px 15px;
     margin-bottom: 10px;
-    margin-top: 0;
+    margin-top: 70px !important; /* 네비게이션 바 아래에 표시되도록 여백 추가 */
     position: relative;
     z-index: 100 !important; /* 다른 요소들 위에 표시되도록 높은 z-index */
     overflow: visible !important; /* 이미지가 잘리지 않도록 */
@@ -222,7 +222,16 @@ body {
     .matches-container > .ci-banner,
     .rankings-container > .ci-banner,
     .stats-container > .ci-banner,
-    .records-container > .ci-banner,
+    .records-container > .ci-banner {
+        padding: 8px 12px !important;
+        margin-top: 70px !important; /* 네비게이션 바 아래에 표시되도록 여백 추가 */
+        margin-bottom: 10px !important;
+        position: relative !important;
+        z-index: 100 !important; /* 모바일에서 겹침 방지 - 높은 z-index */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
+        display: flex !important; /* 표시되도록 강제 */
+    }
+    
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
@@ -235,9 +244,9 @@ body {
     }
     
     .ci-banner-img {
-        max-width: 60%; /* 모바일에서 적절한 크기 (70% -> 60%) */
-        width: 60%;
-        height: auto;
+        max-width: 60% !important; /* 모바일에서 적절한 크기 (70% -> 60%) */
+        width: 60% !important;
+        height: auto !important;
         display: block !important;
         position: relative !important;
         z-index: 100 !important; /* 다른 요소들 위에 표시 */
@@ -250,7 +259,16 @@ body {
     .matches-container > .ci-banner,
     .rankings-container > .ci-banner,
     .stats-container > .ci-banner,
-    .records-container > .ci-banner,
+    .records-container > .ci-banner {
+        padding: 6px 10px !important;
+        margin-top: 70px !important; /* 네비게이션 바 아래에 표시되도록 여백 추가 */
+        margin-bottom: 10px !important;
+        position: relative !important;
+        z-index: 100 !important; /* 작은 모바일에서 겹침 방지 - 높은 z-index */
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
+        display: flex !important; /* 표시되도록 강제 */
+    }
+    
     .reservations-board .ci-banner,
     .matches-container .ci-banner,
     .rankings-container .ci-banner,
@@ -263,9 +281,9 @@ body {
     }
     
     .ci-banner-img {
-        max-width: 65%; /* 작은 모바일에서 조금 더 크게 (75% -> 65%) */
-        width: 65%;
-        height: auto;
+        max-width: 65% !important; /* 작은 모바일에서 조금 더 크게 (75% -> 65%) */
+        width: 65% !important;
+        height: auto !important;
         display: block !important;
         position: relative !important;
         z-index: 100 !important; /* 다른 요소들 위에 표시 */
