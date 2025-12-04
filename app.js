@@ -6496,7 +6496,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 타임라인 새로고침
             loadReservationsTimeline();
+            
+            // 색상을 강제로 검은색으로 유지
+            setTimeout(() => {
+                if (currentDateDisplay) {
+                    currentDateDisplay.style.setProperty('color', '#000', 'important');
+                    currentDateDisplay.style.setProperty('color', 'black', 'important');
+                }
+            }, 100);
         };
+    }
+    
+    // 날짜 표시 요소의 색상을 지속적으로 검은색으로 유지하는 Observer
+    if (currentDateDisplay) {
+        const observer = new MutationObserver(() => {
+            if (currentDateDisplay.style.color !== 'rgb(0, 0, 0)' && currentDateDisplay.style.color !== 'black') {
+                currentDateDisplay.style.setProperty('color', '#000', 'important');
+                currentDateDisplay.style.setProperty('color', 'black', 'important');
+            }
+        });
+        observer.observe(currentDateDisplay, {
+            attributes: true,
+            attributeFilter: ['style', 'class'],
+            childList: false,
+            subtree: false
+        });
     }
     
     // 이전 날짜 버튼 - 중복 등록 방지
@@ -6695,6 +6719,14 @@ document.addEventListener('DOMContentLoaded', function() {
             matchesCurrentDateDisplay.style.setProperty('color', '#000', 'important'); // 검은색으로 설정
             matchesCurrentDateDisplay.style.setProperty('font-weight', '700', 'important'); // 굵게
             
+            // 색상을 강제로 검은색으로 유지
+            setTimeout(() => {
+                if (matchesCurrentDateDisplay) {
+                    matchesCurrentDateDisplay.style.setProperty('color', '#000', 'important');
+                    matchesCurrentDateDisplay.style.setProperty('color', 'black', 'important');
+                }
+            }, 100);
+            
             // Today 배지 표시/숨김 (section-header의 왼쪽 위에 배치)
             const sectionHeader = matchesCurrentDateDisplay.closest('.section-header');
             if (sectionHeader) {
@@ -6719,6 +6751,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // 대진표 새로고침
             loadMatchesForDate(window.currentDate);
         };
+    }
+    
+    // 대진표 탭 날짜 표시 요소의 색상을 지속적으로 검은색으로 유지하는 Observer
+    if (matchesCurrentDateDisplay) {
+        const matchesObserver = new MutationObserver(() => {
+            if (matchesCurrentDateDisplay.style.color !== 'rgb(0, 0, 0)' && matchesCurrentDateDisplay.style.color !== 'black') {
+                matchesCurrentDateDisplay.style.setProperty('color', '#000', 'important');
+                matchesCurrentDateDisplay.style.setProperty('color', 'black', 'important');
+            }
+        });
+        matchesObserver.observe(matchesCurrentDateDisplay, {
+            attributes: true,
+            attributeFilter: ['style', 'class'],
+            childList: false,
+            subtree: false
+        });
     }
     
     // 대진표 탭 이전 날짜 버튼 - 중복 등록 방지
