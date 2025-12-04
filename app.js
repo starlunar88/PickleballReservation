@@ -2328,7 +2328,7 @@ async function loadMatchesForDate(date) {
                     el.style.fontWeight = '700';
                     el.style.color = 'white'; /* 흰색 글씨로 변경 (모바일/PC 모두) */
                     el.style.marginBottom = '2px'; /* 여백 줄임 */
-                    el.style.background = 'linear-gradient(135deg, #06b6d4 0%, #059669 100%)'; /* 배경 유지 */
+                    el.style.background = 'linear-gradient(135deg, #fb923c 0%, #c2410c 100%)'; /* 배경 유지 */
                     el.style.borderRadius = '4px';
                     el.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.3)'; /* 가독성 향상 */
                 });
@@ -2382,8 +2382,8 @@ async function loadMatchesForDate(date) {
                     
                     // 코트별로 다른 색상 적용 (박스 없이 색상만)
                     if (courtNum % 3 === 1) {
-                        // 코트 1, 4, 7... - 파란색 계열
-                        el.style.color = '#2dd4bf';
+                        // 코트 1, 4, 7... - 주황색 계열
+                        el.style.color = '#f97316';
                     } else if (courtNum % 3 === 2) {
                         // 코트 2, 5, 8... - 빨간색 계열
                         el.style.color = '#ff6b6b';
@@ -2617,7 +2617,7 @@ async function loadMatchesForDate(date) {
                             scoreBInput.style.cursor = 'not-allowed';
                         }
                     } else {
-                        el.style.background = '#2dd4bf';
+                        el.style.background = '#f97316';
                         el.style.color = 'white';
                     }
                     
@@ -3684,7 +3684,7 @@ function drawWinRateChart(data, groupBy = 'all') {
     ctx.restore();
     
     // 데이터 라인 그리기
-    ctx.strokeStyle = '#2dd4bf';
+    ctx.strokeStyle = '#f97316';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     
@@ -3703,7 +3703,7 @@ function drawWinRateChart(data, groupBy = 'all') {
     ctx.stroke();
     
     // 데이터 포인트 그리기
-    ctx.fillStyle = '#2dd4bf';
+    ctx.fillStyle = '#f97316';
     data.forEach((point, index) => {
         // 항상 왼쪽부터 시작
         const x = padding.left + index * xScale;
@@ -3928,7 +3928,7 @@ function drawWinRateDonutChart(data) {
     const radius = maxRadius;
     const innerRadius = radius * 0.6;
     
-    const colors = ['#2dd4bf', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
+    const colors = ['#f97316', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
     
     let currentAngle = -Math.PI / 2;
     const total = data.reduce((sum, d) => sum + d.winRate, 0);
@@ -4070,7 +4070,7 @@ function drawParticipationBarChart(data) {
         const y = padding.top + chartHeight - barHeight;
         const actualBarWidth = barWidth - barSpacing * 2;
         
-        ctx.fillStyle = '#2dd4bf';
+        ctx.fillStyle = '#f97316';
         ctx.fillRect(x, y, actualBarWidth, barHeight);
         
         // 막대 위 값 레이블 제거 (이미지와 동일하게)
@@ -8012,7 +8012,7 @@ async function loadTopPerformers() {
             const score = ranking.score || 0;
             
             if (score >= 2000) {
-                tierIcon = '<i class="fas fa-trophy" style="color: #10b981;"></i>'; // GOAT
+                tierIcon = '<i class="fas fa-trophy" style="color: #ea580c;"></i>'; // GOAT
             } else if (score >= 1500) {
                 tierIcon = '<i class="fas fa-medal" style="color: #ffd700;"></i>'; // 레전드
             } else if (score >= 1000) {
@@ -9679,12 +9679,13 @@ async function generateMatchSchedule(date, timeSlot, teamMode = 'random') {
             // 새로운 밸런스 모드 스케줄러 사용
             console.log('🎯 새로운 밸런스 모드 스케줄러 사용');
             try {
-                const scheduler = new window.PickleballBalanceScheduler(playersToUse, 10.0, 1.0);
+                // 최대 코트 수 제한을 스케줄러에 전달
+                const scheduler = new window.PickleballBalanceScheduler(playersToUse, 10.0, 1.0, maxCourts);
                 scheduler.generateSchedule();
                 const webFormat = scheduler.toWebFormat();
                 schedule = webFormat.schedule;
                 unassignedPlayers = webFormat.unassignedPlayers;
-                console.log(`✅ 새로운 밸런스 모드 스케줄러로 생성 완료: ${schedule.length}경기`);
+                console.log(`✅ 새로운 밸런스 모드 스케줄러로 생성 완료: ${schedule.length}경기 (최대 코트: ${maxCourts})`);
             } catch (error) {
                 console.error('❌ 새로운 밸런스 모드 스케줄러 오류:', error);
                 console.error('오류 스택:', error.stack);
@@ -15969,10 +15970,10 @@ async function loadTeamsDashboard() {
 window.addEventListener('scroll', function() {
     const navbar = document.querySelector('.navbar');
     if (window.scrollY > 50) {
-        navbar.style.background = 'rgba(45, 212, 191, 0.95)';
+        navbar.style.background = 'rgba(249, 115, 22, 0.95)';
         navbar.style.backdropFilter = 'blur(10px)';
     } else {
-        navbar.style.background = 'linear-gradient(135deg, #2dd4bf 0%, #10b981 100%)';
+        navbar.style.background = 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)';
         navbar.style.backdropFilter = 'none';
     }
     

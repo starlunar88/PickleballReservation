@@ -4,11 +4,12 @@
  */
 
 class PickleballBalanceScheduler {
-    constructor(players, weightA = 10.0, weightB = 1.0) {
+    constructor(players, weightA = 10.0, weightB = 1.0, maxCourts = null) {
         /**
          * @param {Array} players - 플레이어 배열 [{userId, userName, dupr, internalRating?, score?}, ...]
          * @param {number} weightA - 파트너 중복 비용 가중치 (기본값: 10.0)
          * @param {number} weightB - DUPR 팀 차이 비용 가중치 (기본값: 1.0)
+         * @param {number} maxCourts - 최대 코트 수 제한 (null이면 제한 없음)
          */
         this.players = players.map(p => ({
             ...p,
@@ -20,15 +21,20 @@ class PickleballBalanceScheduler {
         }));
         this.weightA = weightA;
         this.weightB = weightB;
+        this.maxCourts = maxCourts;
         this.totalRounds = 8;
         this.matches = [];
     }
 
     /**
-     * 코트 수 계산: floor(총 플레이어 수 / 4)
+     * 코트 수 계산: floor(총 플레이어 수 / 4), 최대 코트 수 제한 적용
      */
     getCourtCount() {
-        return Math.floor(this.players.length / 4);
+        const calculatedCourts = Math.floor(this.players.length / 4);
+        if (this.maxCourts !== null && this.maxCourts !== undefined) {
+            return Math.min(calculatedCourts, this.maxCourts);
+        }
+        return calculatedCourts;
     }
 
     /**
@@ -400,17 +406,19 @@ class PickleballBalanceScheduler {
                 // 코트 3: 9등, 10등, 11등, 12등 (3코트일 때 12명 기준)
                 courtIndices.push(8, 9, 10, 11);
             } else {
-                // 코트 4 이상: 동일한 패턴 반복
-                // 코트 4: 13등, 16등, 17등, 20등
-                // 코트 5: 14등, 15등, 18등, 19등
-                // 패턴: baseIdx = (court - 1) * 4
-                const baseIdx = (court - 1) * 4;
-                if (court % 2 === 1) {
-                    // 홀수 코트: baseIdx, baseIdx+3, baseIdx+4, baseIdx+7
-                    courtIndices.push(baseIdx, baseIdx + 3, baseIdx + 4, baseIdx + 7);
+                // 코트 4 이상: 8명 단위 패턴 반복
+                // 코트 4: 13등, 16등, 17등, 20등 (baseIdx=12, 8명 단위)
+                // 코트 5: 14등, 15등, 18등, 19등 (baseIdx=16, 8명 단위)
+                // 패턴: 8명 단위로 나누어서 코트 1,2 패턴 반복
+                const groupBaseIdx = Math.floor((court - 1) / 2) * 8; // 8명 단위 그룹의 시작 인덱스
+                const groupCourt = ((court - 1) % 2) + 1; // 그룹 내 코트 번호 (1 또는 2)
+                
+                if (groupCourt === 1) {
+                    // 그룹 내 코트 1: baseIdx, baseIdx+3, baseIdx+4, baseIdx+7
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 7);
                 } else {
-                    // 짝수 코트: baseIdx+1, baseIdx+2, baseIdx+5, baseIdx+6
-                    courtIndices.push(baseIdx + 1, baseIdx + 2, baseIdx + 5, baseIdx + 6);
+                    // 그룹 내 코트 2: baseIdx+1, baseIdx+2, baseIdx+5, baseIdx+6
+                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 2, groupBaseIdx + 5, groupBaseIdx + 6);
                 }
             }
             
@@ -452,18 +460,20 @@ class PickleballBalanceScheduler {
                     teamA = [allSortedPlayers[8], allSortedPlayers[11]]; // 9등 + 12등
                     teamB = [allSortedPlayers[9], allSortedPlayers[10]]; // 10등 + 11등
                 } else {
-                    // 코트 4 이상: 동일한 패턴
-                    // 코트 4: 13등 + 20등 vs 16등 + 17등
-                    // 코트 5: 14등 + 19등 vs 15등 + 18등
-                    const baseIdx = (court - 1) * 4;
-                    if (court % 2 === 1) {
-                        // 홀수 코트: baseIdx(최강) + baseIdx+3(최약) vs baseIdx+1 + baseIdx+2
-                        teamA = [allSortedPlayers[baseIdx], allSortedPlayers[baseIdx + 3]];
-                        teamB = [allSortedPlayers[baseIdx + 1], allSortedPlayers[baseIdx + 2]];
+                    // 코트 4 이상: 8명 단위 패턴 반복
+                    // 코트 4: 13등 + 20등 vs 16등 + 17등 (groupBaseIdx=12, groupCourt=1)
+                    // 코트 5: 14등 + 19등 vs 15등 + 18등 (groupBaseIdx=16, groupCourt=2)
+                    const groupBaseIdx = Math.floor((court - 1) / 2) * 8; // 8명 단위 그룹의 시작 인덱스
+                    const groupCourt = ((court - 1) % 2) + 1; // 그룹 내 코트 번호 (1 또는 2)
+                    
+                    if (groupCourt === 1) {
+                        // 그룹 내 코트 1: groupBaseIdx(최강) + groupBaseIdx+7(최약) vs groupBaseIdx+3 + groupBaseIdx+4
+                        teamA = [allSortedPlayers[groupBaseIdx], allSortedPlayers[groupBaseIdx + 7]];
+                        teamB = [allSortedPlayers[groupBaseIdx + 3], allSortedPlayers[groupBaseIdx + 4]];
                     } else {
-                        // 짝수 코트: baseIdx+1(차강) + baseIdx+2(차약) vs baseIdx + baseIdx+3
-                        teamA = [allSortedPlayers[baseIdx + 1], allSortedPlayers[baseIdx + 2]];
-                        teamB = [allSortedPlayers[baseIdx], allSortedPlayers[baseIdx + 3]];
+                        // 그룹 내 코트 2: groupBaseIdx+1(차강) + groupBaseIdx+6(차약) vs groupBaseIdx+2 + groupBaseIdx+5
+                        teamA = [allSortedPlayers[groupBaseIdx + 1], allSortedPlayers[groupBaseIdx + 6]];
+                        teamB = [allSortedPlayers[groupBaseIdx + 2], allSortedPlayers[groupBaseIdx + 5]];
                     }
                 }
                 console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿 (최강+최약 vs 중간)`);
@@ -484,16 +494,20 @@ class PickleballBalanceScheduler {
                     teamA = [allSortedPlayers[8], allSortedPlayers[10]]; // 9등 + 11등
                     teamB = [allSortedPlayers[9], allSortedPlayers[11]]; // 10등 + 12등
                 } else {
-                    // 코트 4 이상: 동일한 패턴
-                    const baseIdx = (court - 1) * 4;
-                    if (court % 2 === 1) {
-                        // 홀수 코트: baseIdx(최강) + baseIdx+2 vs baseIdx+1 + baseIdx+3(최약)
-                        teamA = [allSortedPlayers[baseIdx], allSortedPlayers[baseIdx + 2]];
-                        teamB = [allSortedPlayers[baseIdx + 1], allSortedPlayers[baseIdx + 3]];
+                    // 코트 4 이상: 8명 단위 패턴 반복
+                    // 코트 4: 13등 + 17등 vs 16등 + 20등 (groupBaseIdx=12, groupCourt=1)
+                    // 코트 5: 14등 + 18등 vs 15등 + 19등 (groupBaseIdx=16, groupCourt=2)
+                    const groupBaseIdx = Math.floor((court - 1) / 2) * 8; // 8명 단위 그룹의 시작 인덱스
+                    const groupCourt = ((court - 1) % 2) + 1; // 그룹 내 코트 번호 (1 또는 2)
+                    
+                    if (groupCourt === 1) {
+                        // 그룹 내 코트 1: groupBaseIdx(최강) + groupBaseIdx+4 vs groupBaseIdx+3 + groupBaseIdx+7(최약)
+                        teamA = [allSortedPlayers[groupBaseIdx], allSortedPlayers[groupBaseIdx + 4]];
+                        teamB = [allSortedPlayers[groupBaseIdx + 3], allSortedPlayers[groupBaseIdx + 7]];
                     } else {
-                        // 짝수 코트: baseIdx+1(차강) + baseIdx+3 vs baseIdx + baseIdx+2
-                        teamA = [allSortedPlayers[baseIdx + 1], allSortedPlayers[baseIdx + 3]];
-                        teamB = [allSortedPlayers[baseIdx], allSortedPlayers[baseIdx + 2]];
+                        // 그룹 내 코트 2: groupBaseIdx+1(차강) + groupBaseIdx+5 vs groupBaseIdx+2 + groupBaseIdx+6(차약)
+                        teamA = [allSortedPlayers[groupBaseIdx + 1], allSortedPlayers[groupBaseIdx + 5]];
+                        teamB = [allSortedPlayers[groupBaseIdx + 2], allSortedPlayers[groupBaseIdx + 6]];
                     }
                 }
                 console.log(`  🏓 코트 ${court}: 전체 풀 기준 High-Low 스플릿 (변형)`);
