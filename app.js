@@ -5726,8 +5726,7 @@ async function loadReservationsTimeline() {
                 const isClosed = now > closingTime;
                 
                 if (isClosed) {
-                    console.log(`🔍 [마감된 시간대] ${slotKey}: 조회된 예약자 수 = ${reservations.length}명`);
-                    console.log(`🔍 [마감된 시간대] 예약자 목록:`, reservations.map(r => `${r.userName} (${r.status})`).join(', '));
+                    // 마감된 시간대 예약자 조회 완료
                 }
                 
                 // 예약에 userName이 없거나 "익명"인 경우, users 컬렉션에서 이름 가져오기
@@ -5777,7 +5776,7 @@ async function loadReservationsTimeline() {
                             console.warn(`⚠️ 예약에 userId가 없음: 예약 ID ${res.id}`);
                         }
                     } else {
-                        console.log(`✅ 이름 정상: ${res.userName}`);
+                        // 이름 검증 완료
                     }
                     
                     return res;
