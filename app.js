@@ -4652,6 +4652,12 @@ async function loadRecordsForPeriod(period) {
         const startDateStr = startDate.toISOString().slice(0, 10);
         const endDateStr = endDate.toISOString().slice(0, 10);
         
+        // 날짜 입력 필드 업데이트
+        const startDateInput = document.getElementById('record-start-date');
+        const endDateInput = document.getElementById('record-end-date');
+        if (startDateInput) startDateInput.value = startDateStr;
+        if (endDateInput) endDateInput.value = endDateStr;
+        
         // Firestore에서 완료된 매치 조회 (인덱스 없이 조회 후 클라이언트에서 필터링)
         let matchesSnapshot;
         if (period === 'all') {
