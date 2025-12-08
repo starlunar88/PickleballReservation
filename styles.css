@@ -4981,7 +4981,7 @@ span#matches-current-date-display,
     
     /* PC에서 메뉴바 상단 여백은 padding-top으로 처리 */
     .main-container {
-        padding-top: 10px !important; /* 여백 10px */
+        padding-top: 0px !important; /* PC에서 여백 제거 */
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
