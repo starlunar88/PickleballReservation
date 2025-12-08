@@ -5528,9 +5528,9 @@ span#matches-current-date-display,
         width: 100% !important;
     }
     
-    /* 작은 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트 크기와 동일하게 */
+    /* 작은 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트보다 작게 */
     .player-name .medal-icon {
-        font-size: 1em !important; /* 이름 텍스트와 같은 크기 */
+        font-size: 0.6em !important; /* 이름 텍스트보다 작게 */
     }
         line-height: 1.2 !important; /* 줄 간격 조정 */
         display: flex !important;
@@ -6379,15 +6379,16 @@ span#matches-current-date-display,
     align-items: center;
     justify-content: center;
     gap: 4px;
+    font-size: inherit; /* player-item의 font-size 상속 */
 }
 
-/* 메달 아이콘 스타일 - 이름 텍스트 크기와 동일하게 */
+/* 메달 아이콘 스타일 - 이름 텍스트보다 작게 (이모지는 시각적으로 크게 보이므로) */
 .medal-icon {
     display: inline-block;
-    font-size: 1em; /* 이름 텍스트와 같은 크기 */
+    font-size: 0.6em; /* 이름 텍스트보다 작게 */
     line-height: 1;
     vertical-align: middle;
-    margin-right: 3px;
+    margin-right: 2px;
 }
 
 .medal-gold {
@@ -7304,9 +7305,9 @@ span#matches-current-date-display,
         width: 100% !important;
     }
     
-    /* 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트 크기와 동일하게 */
+    /* 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트보다 작게 */
     .player-name .medal-icon {
-        font-size: 1em !important; /* 이름 텍스트와 같은 크기 */
+        font-size: 0.6em !important; /* 이름 텍스트보다 작게 */
     }
     
     /* 대진표 반응형 */
