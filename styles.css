@@ -5526,6 +5526,12 @@ span#matches-current-date-display,
         min-height: 18px !important; /* Height 더 줄이기 */
         height: 18px !important; /* Height 고정 */
         width: 100% !important;
+    }
+    
+    /* 작은 모바일에서 메달 아이콘 크기 조정 */
+    .player-name .medal-icon {
+        font-size: 0.85em !important;
+    }
         line-height: 1.2 !important; /* 줄 간격 조정 */
         display: flex !important;
         align-items: center !important;
@@ -6369,6 +6375,30 @@ span#matches-current-date-display,
     font-weight: 600;
     color: #333;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+/* 메달 아이콘 스타일 */
+.medal-icon {
+    display: inline-block;
+    font-size: 1.1em;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.medal-gold {
+    filter: drop-shadow(0 1px 2px rgba(255, 215, 0, 0.5));
+}
+
+.medal-silver {
+    filter: drop-shadow(0 1px 2px rgba(192, 192, 192, 0.5));
+}
+
+.medal-bronze {
+    filter: drop-shadow(0 1px 2px rgba(205, 127, 50, 0.5));
 }
 
 .player-dupr {
@@ -7271,6 +7301,11 @@ span#matches-current-date-display,
         font-size: 0.68rem !important;
         min-height: 36px !important;
         width: 100% !important;
+    }
+    
+    /* 모바일에서 메달 아이콘 크기 조정 */
+    .player-name .medal-icon {
+        font-size: 0.9em !important;
     }
     
     /* 대진표 반응형 */

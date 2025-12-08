@@ -5695,6 +5695,19 @@ async function loadReservationsTimeline() {
         // 시간 슬롯 수: settings.timeSlots.length
         let timelineHTML = '';
         
+        // 랭킹 정보 가져오기 (메달 표시를 위해)
+        const rankings = await getRankings(100); // 상위 100명 가져오기
+        const rankingMap = {}; // userId -> rank 매핑
+        const rankingByUserName = {}; // userName -> rank 매핑 (백업용)
+        rankings.forEach((ranking, index) => {
+            if (ranking.userId) {
+                rankingMap[ranking.userId] = index + 1; // 1-based rank
+            }
+            if (ranking.userName) {
+                rankingByUserName[ranking.userName] = index + 1;
+            }
+        });
+        
         for (const timeSlot of settings.timeSlots) {
             const slotKey = `${timeSlot.start}-${timeSlot.end}`;
             
@@ -5893,12 +5906,44 @@ async function loadReservationsTimeline() {
                             // 마감 여부와 관계없이 모든 예약자를 표시
                             // basePlayerCount는 코트 계산용이지 표시 제한용이 아님
                             const allReservations = reservations;
-                            // 예약자 표시 준비 완료
-                            return allReservations.map(res => `
+                            
+                            // 예약자의 랭킹을 계산하는 헬퍼 함수
+                            const getRank = (res) => {
+                                if (res.userId && rankingMap[res.userId]) {
+                                    return rankingMap[res.userId];
+                                }
+                                if (res.userName && rankingByUserName[res.userName]) {
+                                    return rankingByUserName[res.userName];
+                                }
+                                return 9999; // 랭킹 정보가 없으면 맨 뒤로
+                            };
+                            
+                            // 예약자를 랭킹 순서로 정렬 (랭킹이 낮을수록 앞에)
+                            const sortedReservations = [...allReservations].sort((a, b) => {
+                                return getRank(a) - getRank(b);
+                            });
+                            
+                            // 상위 3명에게 메달 표시
+                            return sortedReservations.map((res, index) => {
+                                // 랭킹 확인
+                                const rank = getRank(res);
+                                
+                                // 메달 아이콘 (1, 2, 3등만)
+                                let medalIcon = '';
+                                if (rank === 1) {
+                                    medalIcon = '<span class="medal-icon medal-gold">🥇</span>';
+                                } else if (rank === 2) {
+                                    medalIcon = '<span class="medal-icon medal-silver">🥈</span>';
+                                } else if (rank === 3) {
+                                    medalIcon = '<span class="medal-icon medal-bronze">🥉</span>';
+                                }
+                                
+                                return `
                                 <div class="player-item">
-                                    <span class="player-name">${res.userName || '익명'}</span>
+                                    <span class="player-name">${medalIcon}${res.userName || '익명'}</span>
                                 </div>
-                            `).join('');
+                            `;
+                            }).join('');
                         })()}
                     </div>
                     <div class="timeline-actions">
