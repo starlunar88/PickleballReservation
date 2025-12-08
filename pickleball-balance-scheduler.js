@@ -283,10 +283,16 @@ class PickleballBalanceScheduler {
             };
             bestCost = nonDuplicateCombinations[0].cost;
         }
-        // 2순위: 파트너 중복 있지만 완전 중복은 아닌 조합
+        // 2순위: 파트너 중복 있지만 완전 중복은 아닌 조합 (가능하면 피하도록 시도)
         else if (duplicateCombinations.length > 0) {
+            // 파트너 중복이 있는 조합 중에서도 중복이 가장 적은 것을 선택
             duplicateCombinations.sort((a, b) => {
+                // 우선순위가 같으면 비용이 낮은 것 선택
                 if (a.priority !== b.priority) return a.priority - b.priority;
+                // 비용이 같으면 원래 비용(파트너 중복 페널티 제외)이 낮은 것 선택
+                if (Math.abs(a.cost - b.cost) < 0.01) {
+                    return a.originalCost - b.originalCost;
+                }
                 return a.cost - b.cost;
             });
             bestPairing = {
@@ -295,7 +301,7 @@ class PickleballBalanceScheduler {
                 priority: duplicateCombinations[0].priority
             };
             bestCost = duplicateCombinations[0].cost;
-            console.log(`    ⚠️ 파트너 중복이 있지만 최선의 조합 선택`);
+            console.log(`    ⚠️ 파트너 중복이 있지만 최선의 조합 선택 (비용: ${bestCost.toFixed(2)})`);
         }
         // 3순위: 모든 조합이 완전 중복인 경우 (최후의 수단)
         else if (exactDuplicateCombinations.length > 0) {
@@ -746,26 +752,7 @@ class PickleballBalanceScheduler {
                 }
             }
         } else if (roundNum === 4) {
-            // 라운드 4: 최강+차약 vs 차강+최약 패턴 (라운드 6와 유사하지만 비용 함수로 최적화)
-            // 코트 1: 1등, 4등, 5등, 8등 (라운드 3과 동일하지만 비용 함수로 다른 조합 선택)
-            // 코트 2: 2등, 3등, 6등, 7등
-            if (court === 1) {
-                courtIndices.push(0, 3, 4, 7);
-            } else if (court === 2) {
-                courtIndices.push(1, 2, 5, 6);
-            } else if (court === 3) {
-                courtIndices.push(8, 9, 10, 11);
-            } else {
-                const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
-                const groupCourt = ((court - 1) % 2) + 1;
-                if (groupCourt === 1) {
-                    courtIndices.push(groupBaseIdx, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 7);
-                } else {
-                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 2, groupBaseIdx + 5, groupBaseIdx + 6);
-                }
-            }
-        } else if (roundNum === 7) {
-            // 라운드 7: 최강+5등 vs 4등+최약 패턴 (다양성 증가)
+            // 라운드 4: 최강+차약 vs 차강+최약 패턴 (다양성 증가)
             // 코트 1: 1등, 3등, 6등, 8등
             // 코트 2: 2등, 4등, 5등, 7등
             if (court === 1) {
@@ -773,7 +760,7 @@ class PickleballBalanceScheduler {
             } else if (court === 2) {
                 courtIndices.push(1, 3, 4, 6);
             } else if (court === 3) {
-                courtIndices.push(8, 10, 11, 9);
+                courtIndices.push(8, 9, 10, 11);
             } else {
                 const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
                 const groupCourt = ((court - 1) % 2) + 1;
@@ -783,23 +770,42 @@ class PickleballBalanceScheduler {
                     courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 6);
                 }
             }
-        } else if (roundNum === 8) {
-            // 라운드 8: 최강+6등 vs 3등+최약 패턴 (다양성 증가)
-            // 코트 1: 1등, 2등, 7등, 8등
-            // 코트 2: 3등, 4등, 5등, 6등
+        } else if (roundNum === 7) {
+            // 라운드 7: 최강+차약 vs 차강+최약 패턴 (다양성 증가)
+            // 코트 1: 1등, 4등, 6등, 7등
+            // 코트 2: 2등, 3등, 5등, 8등
             if (court === 1) {
-                courtIndices.push(0, 1, 6, 7);
+                courtIndices.push(0, 3, 5, 6);
             } else if (court === 2) {
-                courtIndices.push(2, 3, 4, 5);
+                courtIndices.push(1, 2, 4, 7);
             } else if (court === 3) {
                 courtIndices.push(8, 9, 10, 11);
             } else {
                 const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
                 const groupCourt = ((court - 1) % 2) + 1;
                 if (groupCourt === 1) {
-                    courtIndices.push(groupBaseIdx, groupBaseIdx + 1, groupBaseIdx + 6, groupBaseIdx + 7);
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 3, groupBaseIdx + 5, groupBaseIdx + 6);
                 } else {
-                    courtIndices.push(groupBaseIdx + 2, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 5);
+                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 2, groupBaseIdx + 4, groupBaseIdx + 7);
+                }
+            }
+        } else if (roundNum === 8) {
+            // 라운드 8: 최강과 차강을 분리하여 밸런스 유지 (다양성 증가)
+            // 코트 1: 1등, 4등, 6등, 7등 (최강 + 중간 + 하위)
+            // 코트 2: 2등, 3등, 5등, 8등 (차강 + 중간 + 하위)
+            if (court === 1) {
+                courtIndices.push(0, 3, 5, 6);
+            } else if (court === 2) {
+                courtIndices.push(1, 2, 4, 7);
+            } else if (court === 3) {
+                courtIndices.push(8, 9, 10, 11);
+            } else {
+                const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
+                const groupCourt = ((court - 1) % 2) + 1;
+                if (groupCourt === 1) {
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 3, groupBaseIdx + 5, groupBaseIdx + 6);
+                } else {
+                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 2, groupBaseIdx + 4, groupBaseIdx + 7);
                 }
             }
         }
