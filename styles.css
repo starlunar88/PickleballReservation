@@ -5528,19 +5528,27 @@ span#matches-current-date-display,
         width: 100% !important;
     }
     
-    /* 작은 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
-    .timeline-players .player-name .medal-icon {
-        font-size: 1em !important; /* 이름 텍스트와 정확히 같은 크기 */
-        display: inline-block !important;
-        width: auto !important;
-        height: auto !important;
-        position: static !important;
-        margin-bottom: 0 !important;
-    }
-        line-height: 1.2 !important; /* 줄 간격 조정 */
+    /* 작은 모바일에서 player-name 정렬 */
+    .timeline-players .player-name {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        gap: 3px !important;
+        line-height: 1.2 !important;
+        font-size: inherit !important;
+    }
+    
+    /* 작은 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
+    .timeline-players .player-name .medal-icon {
+        font-size: 1em !important; /* 이름 텍스트와 정확히 같은 크기 */
+        display: inline-flex !important;
+        align-items: center !important;
+        width: auto !important;
+        height: auto !important;
+        position: static !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+        vertical-align: baseline !important;
     }
     
     .timeline-actions {
@@ -6390,15 +6398,16 @@ span#matches-current-date-display,
 /* 메달 아이콘 스타일 - 이름 텍스트와 동일한 크기 (이모지) */
 /* 다른 곳의 큰 메달 스타일을 덮어쓰기 위해 .player-name 내부로 제한 */
 .timeline-players .player-name .medal-icon {
-    display: inline-block !important;
+    display: inline-flex !important;
+    align-items: center !important;
     font-size: 1em !important; /* 이름 텍스트와 정확히 같은 크기 */
     line-height: 1 !important;
-    vertical-align: middle !important;
+    margin: 0 !important;
     margin-right: 3px !important;
     width: auto !important;
     height: auto !important;
     position: static !important;
-    margin-bottom: 0 !important;
+    vertical-align: baseline !important;
 }
 
 .medal-gold {
@@ -7315,14 +7324,26 @@ span#matches-current-date-display,
         width: 100% !important;
     }
     
+    /* 모바일에서 player-name 정렬 */
+    .timeline-players .player-name {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 3px !important;
+        font-size: inherit !important;
+    }
+    
     /* 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
     .timeline-players .player-name .medal-icon {
         font-size: 1em !important; /* 이름 텍스트와 정확히 같은 크기 */
-        display: inline-block !important;
+        display: inline-flex !important;
+        align-items: center !important;
         width: auto !important;
         height: auto !important;
         position: static !important;
-        margin-bottom: 0 !important;
+        margin: 0 !important;
+        line-height: 1 !important;
+        vertical-align: baseline !important;
     }
     
     /* 대진표 반응형 */
