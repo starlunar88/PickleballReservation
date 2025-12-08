@@ -5526,6 +5526,7 @@ span#matches-current-date-display,
         min-height: 18px !important; /* Height 더 줄이기 */
         height: 18px !important; /* Height 고정 */
         width: 100% !important;
+        line-height: normal !important;
     }
     
     /* 작은 모바일에서 player-name 정렬 */
@@ -5537,6 +5538,8 @@ span#matches-current-date-display,
         line-height: 1.2 !important;
         font-size: inherit !important;
         height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     /* 작은 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
@@ -6379,6 +6382,7 @@ span#matches-current-date-display,
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: normal;
 }
 
 .player-item:hover { 
@@ -6397,6 +6401,10 @@ span#matches-current-date-display,
     justify-content: center;
     gap: 4px;
     font-size: inherit; /* player-item의 font-size 상속 */
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    height: 100%;
 }
 
 /* 메달 아이콘 스타일 - 이름 텍스트와 동일한 크기 (이모지) */
@@ -7326,6 +7334,7 @@ span#matches-current-date-display,
         font-size: 0.68rem !important;
         min-height: 36px !important;
         width: 100% !important;
+        line-height: normal !important;
     }
     
     /* 모바일에서 player-name 정렬 */
@@ -7337,6 +7346,8 @@ span#matches-current-date-display,
         font-size: inherit !important;
         height: 100% !important;
         line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
     /* 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
