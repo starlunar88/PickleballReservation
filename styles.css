@@ -5536,19 +5536,23 @@ span#matches-current-date-display,
         gap: 3px !important;
         line-height: 1.2 !important;
         font-size: inherit !important;
+        height: 100% !important;
     }
     
     /* 작은 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
     .timeline-players .player-name .medal-icon {
-        font-size: 1em !important; /* 이름 텍스트와 정확히 같은 크기 */
+        font-size: 0.65rem !important; /* player-item의 font-size와 동일 (0.65rem) */
         display: inline-flex !important;
         align-items: center !important;
+        justify-content: center !important;
         width: auto !important;
         height: auto !important;
-        position: static !important;
+        position: relative !important;
+        top: 0 !important;
         margin: 0 !important;
-        line-height: 1 !important;
-        vertical-align: baseline !important;
+        margin-right: 2px !important;
+        line-height: 1.2 !important; /* player-name의 line-height와 동일 */
+        vertical-align: middle !important;
     }
     
     .timeline-actions {
@@ -7331,19 +7335,24 @@ span#matches-current-date-display,
         justify-content: center !important;
         gap: 3px !important;
         font-size: inherit !important;
+        height: 100% !important;
+        line-height: 1.2 !important;
     }
     
     /* 모바일에서 메달 아이콘 크기 조정 - 이름 텍스트와 동일하게 */
     .timeline-players .player-name .medal-icon {
-        font-size: 1em !important; /* 이름 텍스트와 정확히 같은 크기 */
+        font-size: 0.68rem !important; /* player-item의 font-size와 동일 (0.68rem) */
         display: inline-flex !important;
         align-items: center !important;
+        justify-content: center !important;
         width: auto !important;
         height: auto !important;
-        position: static !important;
+        position: relative !important;
+        top: 0 !important;
         margin: 0 !important;
-        line-height: 1 !important;
-        vertical-align: baseline !important;
+        margin-right: 3px !important;
+        line-height: 1.2 !important;
+        vertical-align: middle !important;
     }
     
     /* 대진표 반응형 */
