@@ -488,6 +488,13 @@ class PickleballBalanceScheduler {
                 const partner = teamA.includes(player)
                     ? (teamA[0] === player ? teamA[1] : teamA[0])
                     : (teamB[0] === player ? teamB[1] : teamB[0]);
+                
+                // 파트너 중복 횟수 추적
+                if (player.partnerHistory.has(partner.userId)) {
+                    const currentCount = this.partnerDuplicateCountMap.get(player.userId) || 0;
+                    this.partnerDuplicateCountMap.set(player.userId, currentCount + 1);
+                }
+                
                 player.partnerHistory.add(partner.userId);
             }
         }
@@ -695,6 +702,13 @@ class PickleballBalanceScheduler {
                 const partner = teamA.includes(player)
                     ? (teamA[0] === player ? teamA[1] : teamA[0])
                     : (teamB[0] === player ? teamB[1] : teamB[0]);
+                
+                // 파트너 중복 횟수 추적
+                if (player.partnerHistory.has(partner.userId)) {
+                    const currentCount = this.partnerDuplicateCountMap.get(player.userId) || 0;
+                    this.partnerDuplicateCountMap.set(player.userId, currentCount + 1);
+                }
+                
                 player.partnerHistory.add(partner.userId);
             }
         }

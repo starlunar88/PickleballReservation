@@ -8955,8 +8955,8 @@ async function processTimeSlotReservations(date, timeSlot) {
                 // 에러가 있어도 팀 배정은 완료되었으므로 계속 진행
             }
             
-            // 알림 전송
-            await sendTeamAssignmentNotifications(reservations, teams, date, timeSlot);
+            // 알림 전송 (비활성화)
+            // await sendTeamAssignmentNotifications(reservations, teams, date, timeSlot);
             
             console.log(`팀 배정 완료: ${date} ${timeSlot} - ${teams.length}개 팀`);
         } finally {
