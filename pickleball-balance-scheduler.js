@@ -619,6 +619,7 @@ class PickleballBalanceScheduler {
 
     /**
      * Phase 3: 균형 및 공정 모드 (라운드 3, 4, 7, 8)
+     * 전체 풀 기준으로 매칭하여 더 다양한 조합 생성
      */
     generateRoundBalanced(roundNum) {
         const matches = [];
@@ -641,18 +642,10 @@ class PickleballBalanceScheduler {
             candidates = [...candidates, ...remainingPlayers.slice(0, neededCount - candidates.length)];
         }
 
-        // 선택된 플레이어를 플레이 횟수 순으로 정렬 (같은 횟수면 DUPR 높은 순)
-        // 최소 플레이 횟수 우선 선택이 제대로 적용되도록 보장
-        const selectedPlayers = candidates.slice(0, neededCount).sort((a, b) => {
-            if (a.playCount !== b.playCount) {
-                return a.playCount - b.playCount;
-            }
-            // 같은 플레이 횟수일 때는 DUPR 높은 순으로 선택
-            return (b.dupr || 0) - (a.dupr || 0);
-        });
+        const selectedPlayers = candidates.slice(0, neededCount);
         const sittingOut = this.players.filter(p => !selectedPlayers.includes(p));
 
-        console.log(`  📋 라운드 ${roundNum}: 최소 플레이 횟수 우선 선택 후 비용 함수 최적화 (${neededCount}명)`);
+        console.log(`  📋 라운드 ${roundNum}: 최소 플레이 횟수 우선 선택 후 전체 풀 기준 비용 함수 최적화 (${neededCount}명)`);
         console.log(`  📋 선택된 플레이어: ${selectedPlayers.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
         if (sittingOut.length > 0) {
             console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr}, ${p.playCount}회)`).join(', ')}`);
@@ -661,13 +654,29 @@ class PickleballBalanceScheduler {
         // 이전 모든 경기 조합 추적 (중복 방지)
         const previousMatches = [...this.matches];
 
-        // 전체 선택된 플레이어를 DUPR 순으로 정렬 (밸런스 페널티 계산용)
+        // 전체 선택된 플레이어를 DUPR 순으로 정렬 (전체 풀 기준)
         const allSortedPlayers = [...selectedPlayers].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+        console.log(`  📋 전체 풀 DUPR 순: ${allSortedPlayers.map((p, idx) => `${idx+1}등:${p.userName}(${p.dupr})`).join(', ')}`);
 
-        // 각 코트별로 최적 페어링 찾기
+        // 각 코트별로 전체 풀 기준으로 플레이어 할당 후 최적 페어링 찾기
         for (let court = 1; court <= courtCount; court++) {
-            const startIdx = (court - 1) * 4;
-            const courtPlayers = selectedPlayers.slice(startIdx, startIdx + 4);
+            // 전체 풀 기준으로 코트별 플레이어 선택 (라운드별로 다른 패턴)
+            const courtIndices = this.getCourtIndicesForBalancedRound(court, courtCount, roundNum, allSortedPlayers.length);
+            
+            // 인덱스가 범위를 벗어나지 않도록 필터링
+            const validIndices = courtIndices.filter(idx => idx < allSortedPlayers.length);
+            if (validIndices.length < 4) {
+                // 부족하면 순차적으로 채우기
+                let currentIdx = (court - 1) * 4;
+                while (validIndices.length < 4 && currentIdx < allSortedPlayers.length) {
+                    if (!validIndices.includes(currentIdx)) {
+                        validIndices.push(currentIdx);
+                    }
+                    currentIdx++;
+                }
+            }
+            
+            const courtPlayers = validIndices.slice(0, 4).map(idx => allSortedPlayers[idx]);
 
             if (courtPlayers.length < 4) {
                 continue;
@@ -677,6 +686,7 @@ class PickleballBalanceScheduler {
             const bestPairing = this.findBestPairing(courtPlayers, previousMatches, allSortedPlayers);
 
             console.log(`  🏓 코트 ${court}: ${bestPairing.teamA.map(p => p.userName).join(' & ')} vs ${bestPairing.teamB.map(p => p.userName).join(' & ')}`);
+            console.log(`     전체 풀 순위: 코트 ${court} = ${validIndices.slice(0, 4).map(idx => `${idx+1}등:${allSortedPlayers[idx].userName}(${allSortedPlayers[idx].dupr})`).join(', ')}`);
             console.log(`     파트너 중복: ${bestPairing.teamA.map(p => {
                 const partner = bestPairing.teamA[0] === p ? bestPairing.teamA[1] : bestPairing.teamA[0];
                 return p.partnerHistory.has(partner.userId) ? '✓' : '✗';
@@ -703,6 +713,98 @@ class PickleballBalanceScheduler {
         }
 
         return matches;
+    }
+
+    /**
+     * 균형 모드 라운드별 코트 인덱스 계산 (라운드별로 다른 패턴 적용)
+     * @param {number} court - 코트 번호 (1부터 시작)
+     * @param {number} courtCount - 전체 코트 수
+     * @param {number} roundNum - 라운드 번호 (3, 4, 7, 8)
+     * @param {number} totalPlayers - 전체 플레이어 수
+     * @returns {Array<number>} 코트별 플레이어 인덱스 배열
+     */
+    getCourtIndicesForBalancedRound(court, courtCount, roundNum, totalPlayers) {
+        const courtIndices = [];
+        
+        if (roundNum === 3) {
+            // 라운드 3: 최강+최약 vs 차강+차약 패턴 (라운드 5와 유사하지만 비용 함수로 최적화)
+            // 코트 1: 1등, 4등, 5등, 8등
+            // 코트 2: 2등, 3등, 6등, 7등
+            if (court === 1) {
+                courtIndices.push(0, 3, 4, 7);
+            } else if (court === 2) {
+                courtIndices.push(1, 2, 5, 6);
+            } else if (court === 3) {
+                courtIndices.push(8, 9, 10, 11);
+            } else {
+                const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
+                const groupCourt = ((court - 1) % 2) + 1;
+                if (groupCourt === 1) {
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 7);
+                } else {
+                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 2, groupBaseIdx + 5, groupBaseIdx + 6);
+                }
+            }
+        } else if (roundNum === 4) {
+            // 라운드 4: 최강+차약 vs 차강+최약 패턴 (라운드 6와 유사하지만 비용 함수로 최적화)
+            // 코트 1: 1등, 4등, 5등, 8등 (라운드 3과 동일하지만 비용 함수로 다른 조합 선택)
+            // 코트 2: 2등, 3등, 6등, 7등
+            if (court === 1) {
+                courtIndices.push(0, 3, 4, 7);
+            } else if (court === 2) {
+                courtIndices.push(1, 2, 5, 6);
+            } else if (court === 3) {
+                courtIndices.push(8, 9, 10, 11);
+            } else {
+                const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
+                const groupCourt = ((court - 1) % 2) + 1;
+                if (groupCourt === 1) {
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 7);
+                } else {
+                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 2, groupBaseIdx + 5, groupBaseIdx + 6);
+                }
+            }
+        } else if (roundNum === 7) {
+            // 라운드 7: 최강+5등 vs 4등+최약 패턴 (다양성 증가)
+            // 코트 1: 1등, 3등, 6등, 8등
+            // 코트 2: 2등, 4등, 5등, 7등
+            if (court === 1) {
+                courtIndices.push(0, 2, 5, 7);
+            } else if (court === 2) {
+                courtIndices.push(1, 3, 4, 6);
+            } else if (court === 3) {
+                courtIndices.push(8, 10, 11, 9);
+            } else {
+                const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
+                const groupCourt = ((court - 1) % 2) + 1;
+                if (groupCourt === 1) {
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 2, groupBaseIdx + 5, groupBaseIdx + 7);
+                } else {
+                    courtIndices.push(groupBaseIdx + 1, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 6);
+                }
+            }
+        } else if (roundNum === 8) {
+            // 라운드 8: 최강+6등 vs 3등+최약 패턴 (다양성 증가)
+            // 코트 1: 1등, 2등, 7등, 8등
+            // 코트 2: 3등, 4등, 5등, 6등
+            if (court === 1) {
+                courtIndices.push(0, 1, 6, 7);
+            } else if (court === 2) {
+                courtIndices.push(2, 3, 4, 5);
+            } else if (court === 3) {
+                courtIndices.push(8, 9, 10, 11);
+            } else {
+                const groupBaseIdx = Math.floor((court - 1) / 2) * 8;
+                const groupCourt = ((court - 1) % 2) + 1;
+                if (groupCourt === 1) {
+                    courtIndices.push(groupBaseIdx, groupBaseIdx + 1, groupBaseIdx + 6, groupBaseIdx + 7);
+                } else {
+                    courtIndices.push(groupBaseIdx + 2, groupBaseIdx + 3, groupBaseIdx + 4, groupBaseIdx + 5);
+                }
+            }
+        }
+        
+        return courtIndices;
     }
 
     /**
