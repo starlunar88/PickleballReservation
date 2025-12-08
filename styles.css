@@ -4984,6 +4984,16 @@ span#matches-current-date-display,
         padding-top: 0px !important; /* PC에서 여백 제거 */
     }
     
+    /* PC에서 CI 배너 상단 여백 줄이기 */
+    .ci-banner,
+    .reservations-container > .ci-banner,
+    .matches-container > .ci-banner,
+    .rankings-container > .ci-banner,
+    .stats-container > .ci-banner,
+    .records-container > .ci-banner {
+        margin-top: 10px !important; /* PC에서 70px -> 10px로 줄임 */
+    }
+    
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
     .podium-wrapper {
         gap: 8px !important; /* 13px에서 더 줄임 */
