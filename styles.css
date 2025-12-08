@@ -5530,7 +5530,7 @@ span#matches-current-date-display,
     
     /* 작은 모바일에서 메달 아이콘 크기 조정 */
     .player-name .medal-icon {
-        font-size: 0.85em !important;
+        font-size: 0.6em !important;
     }
         line-height: 1.2 !important; /* 줄 간격 조정 */
         display: flex !important;
@@ -6384,7 +6384,7 @@ span#matches-current-date-display,
 /* 메달 아이콘 스타일 */
 .medal-icon {
     display: inline-block;
-    font-size: 1.1em;
+    font-size: 0.7em;
     line-height: 1;
     vertical-align: middle;
 }
@@ -7305,7 +7305,7 @@ span#matches-current-date-display,
     
     /* 모바일에서 메달 아이콘 크기 조정 */
     .player-name .medal-icon {
-        font-size: 0.9em !important;
+        font-size: 0.65em !important;
     }
     
     /* 대진표 반응형 */
