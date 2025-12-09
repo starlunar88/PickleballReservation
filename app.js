@@ -18557,21 +18557,18 @@ async function generateTournamentBracket(tournamentId) {
         
         const tournament = tournamentDoc.data();
         
-        // 토너먼트에 예약한 사용자들 가져오기
-        const registeredUsers = tournament.registeredUsers || [];
-        
-        if (registeredUsers.length < 4) {
-            showToast('토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다.', 'warning');
-            return;
-        }
-        
-        // 토너먼트에 예약한 사용자들 가져오기
+        // 토너먼트에 예약한 사용자들 가져오기 (tournamentRegistrations 컬렉션에서)
         const registrationsSnapshot = await db.collection('tournamentRegistrations')
             .where('tournamentId', '==', tournamentId)
             .get();
         
         if (registrationsSnapshot.empty) {
             showToast('토너먼트에 예약한 플레이어가 없습니다.', 'warning');
+            return;
+        }
+        
+        if (registrationsSnapshot.size < 4) {
+            showToast(`토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다. (현재: ${registrationsSnapshot.size}명)`, 'warning');
             return;
         }
         
@@ -18597,11 +18594,18 @@ async function generateTournamentBracket(tournamentId) {
                 });
             } catch (error) {
                 console.error(`사용자 ${userId} 정보 가져오기 오류:`, error);
+                // 에러가 발생해도 기본 정보로 추가
+                players.push({
+                    userId: userId,
+                    userName: registration.userName || '알 수 없음',
+                    dupr: null
+                });
             }
         }
         
+        // 플레이어 수 재확인 (사용자 정보 가져오기 실패 시를 대비)
         if (players.length < 4) {
-            showToast('토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다.', 'warning');
+            showToast(`토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다. (현재: ${players.length}명)`, 'warning');
             return;
         }
         
