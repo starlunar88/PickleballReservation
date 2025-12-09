@@ -19158,6 +19158,356 @@ function showWinnerModal(winner) {
     }
 }
 
+// 토너먼트 삭제 (관리자만)
+async function deleteTournament(tournamentId) {
+    if (!confirm('토너먼트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 확인
+        const isUserAdmin = await isAdmin(user);
+        if (!isUserAdmin) {
+            showToast('토너먼트 삭제는 관리자만 가능합니다.', 'error');
+            return;
+        }
+        
+        // 토너먼트 예약도 함께 삭제
+        const registrationsSnapshot = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
+            .get();
+        
+        const batch = db.batch();
+        registrationsSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        
+        // 토너먼트 삭제
+        await db.collection('tournaments').doc(tournamentId).delete();
+        
+        // 예약 삭제 커밋
+        if (!registrationsSnapshot.empty) {
+            await batch.commit();
+        }
+        
+        showToast('토너먼트가 삭제되었습니다.', 'success');
+        
+        // 토너먼트 목록 새로고침
+        await loadActiveTournaments();
+        await loadTournamentHistory();
+        
+    } catch (error) {
+        console.error('토너먼트 삭제 오류:', error);
+        showToast('토너먼트 삭제 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 토너먼트 예약자 확인 (관리자만)
+async function viewTournamentRegistrations(tournamentId) {
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 확인
+        const isUserAdmin = await isAdmin(user);
+        if (!isUserAdmin) {
+            showToast('예약자 확인은 관리자만 가능합니다.', 'error');
+            return;
+        }
+        
+        // 토너먼트 정보 가져오기
+        const tournamentDoc = await db.collection('tournaments').doc(tournamentId).get();
+        if (!tournamentDoc.exists) {
+            showToast('토너먼트를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const tournament = tournamentDoc.data();
+        
+        // 예약자 목록 가져오기
+        const registrationsSnapshot = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
+            .get();
+        
+        if (registrationsSnapshot.empty) {
+            showToast('예약자가 없습니다.', 'info');
+            return;
+        }
+        
+        // 예약자 정보 수집
+        const registrations = [];
+        for (const doc of registrationsSnapshot.docs) {
+            const registration = doc.data();
+            const userId = registration.userId;
+            
+            try {
+                // 사용자 정보 가져오기
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userData = userDoc.exists ? userDoc.data() : {};
+                
+                registrations.push({
+                    userId: userId,
+                    userName: registration.userName || userData.displayName || userData.name || '알 수 없음',
+                    dupr: userData.dupr || null,
+                    registeredAt: registration.registeredAt
+                });
+            } catch (error) {
+                console.error(`사용자 ${userId} 정보 가져오기 오류:`, error);
+                registrations.push({
+                    userId: userId,
+                    userName: registration.userName || '알 수 없음',
+                    dupr: null,
+                    registeredAt: registration.registeredAt
+                });
+            }
+        }
+        
+        // 예약자 목록 모달 표시
+        showRegistrationsModal(tournament.name || '토너먼트', registrations, tournamentId);
+        
+    } catch (error) {
+        console.error('예약자 확인 오류:', error);
+        showToast('예약자 확인 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 예약자 목록 모달 표시
+function showRegistrationsModal(tournamentName, registrations, tournamentId) {
+    const modalHTML = `
+        <div id="registrations-modal" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3>예약자 목록 - ${tournamentName}</h3>
+                    <span class="close" onclick="closeRegistrationsModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 15px;">
+                        <strong>총 ${registrations.length}명</strong>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                                    <th style="padding: 10px; text-align: left;">이름</th>
+                                    <th style="padding: 10px; text-align: left;">DUPR</th>
+                                    <th style="padding: 10px; text-align: left;">예약 시간</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${registrations.map((reg, index) => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 10px;">${reg.userName}</td>
+                                        <td style="padding: 10px;">${reg.dupr || '-'}</td>
+                                        <td style="padding: 10px;">
+                                            ${reg.registeredAt && reg.registeredAt.toDate ? 
+                                                reg.registeredAt.toDate().toLocaleString('ko-KR') : 
+                                                '알 수 없음'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="closeRegistrationsModal()">닫기</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 기존 모달 제거
+    const existingModal = document.getElementById('registrations-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 새 모달 추가
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 모달 외부 클릭 시 닫기
+    const modal = document.getElementById('registrations-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeRegistrationsModal();
+            }
+        });
+    }
+}
+
+// 예약자 목록 모달 닫기
+function closeRegistrationsModal() {
+    const modal = document.getElementById('registrations-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 테스트용 임시 사람 추가 (관리자만)
+async function addTestPersonToTournament(tournamentId) {
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 확인
+        const isUserAdmin = await isAdmin(user);
+        if (!isUserAdmin) {
+            showToast('테스트 기능은 관리자만 사용할 수 있습니다.', 'error');
+            return;
+        }
+        
+        // 테스트 사용자 목록 가져오기
+        const usersSnapshot = await db.collection('users').limit(50).get();
+        
+        if (usersSnapshot.empty) {
+            showToast('사용자가 없습니다.', 'warning');
+            return;
+        }
+        
+        const users = [];
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            users.push({
+                userId: doc.id,
+                userName: userData.displayName || userData.name || '알 수 없음',
+                email: userData.email || ''
+            });
+        });
+        
+        // 사용자 선택 모달 표시
+        showTestPersonModal(tournamentId, users);
+        
+    } catch (error) {
+        console.error('테스트 사용자 추가 오류:', error);
+        showToast('테스트 사용자 추가 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 테스트 사용자 선택 모달
+function showTestPersonModal(tournamentId, users) {
+    const modalHTML = `
+        <div id="test-person-modal" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3>테스트용 사용자 추가</h3>
+                    <span class="close" onclick="closeTestPersonModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        ${users.map(user => `
+                            <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" 
+                                 onclick="addTestPersonToTournamentConfirm('${tournamentId}', '${user.userId}', '${user.userName.replace(/'/g, "\\'")}')">
+                                <div>
+                                    <strong>${user.userName}</strong>
+                                    ${user.email ? `<div style="font-size: 0.9em; color: #666;">${user.email}</div>` : ''}
+                                </div>
+                                <i class="fas fa-plus-circle" style="color: #2196F3;"></i>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline" onclick="closeTestPersonModal()">취소</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 기존 모달 제거
+    const existingModal = document.getElementById('test-person-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 새 모달 추가
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 모달 외부 클릭 시 닫기
+    const modal = document.getElementById('test-person-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeTestPersonModal();
+            }
+        });
+    }
+}
+
+// 테스트 사용자 추가 확인
+async function addTestPersonToTournamentConfirm(tournamentId, userId, userName) {
+    try {
+        showLoading();
+        
+        // 이미 예약했는지 확인
+        const existingRegistration = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
+            .where('userId', '==', userId)
+            .get();
+        
+        if (!existingRegistration.empty) {
+            showToast('이미 예약된 사용자입니다.', 'warning');
+            return;
+        }
+        
+        // 예약 생성
+        await db.collection('tournamentRegistrations').add({
+            tournamentId: tournamentId,
+            userId: userId,
+            userName: userName,
+            registeredAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showToast(`${userName}님이 추가되었습니다.`, 'success');
+        
+        // 모달 닫기
+        closeTestPersonModal();
+        
+        // 토너먼트 목록 새로고침
+        await loadActiveTournaments();
+        
+    } catch (error) {
+        console.error('테스트 사용자 추가 오류:', error);
+        showToast('테스트 사용자 추가 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 테스트 사용자 모달 닫기
+function closeTestPersonModal() {
+    const modal = document.getElementById('test-person-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
 // 토너먼트 상세 보기
 async function viewTournamentDetails(tournamentId) {
     await openTournamentBracket(tournamentId);
