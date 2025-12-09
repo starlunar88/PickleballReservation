@@ -19787,8 +19787,8 @@ async function addTestPersonToTournamentConfirm(tournamentId, userId, userName) 
         
         showToast(`${userName}님이 추가되었습니다.`, 'success');
         
-        // 모달 닫기
-        closeTestPersonModal();
+        // 모달은 열어둠 (여러 사용자를 연속으로 추가할 수 있도록)
+        // closeTestPersonModal(); // 주석 처리하여 모달이 닫히지 않도록 함
         
         // 토너먼트 목록 새로고침
         await loadActiveTournaments();
