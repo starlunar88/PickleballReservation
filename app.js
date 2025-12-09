@@ -18095,27 +18095,9 @@ async function loadTournamentData() {
 
 // 토너먼트 시간 슬롯 로드
 async function loadTournamentTimeSlots() {
-    try {
-        const settings = await getSystemSettings();
-        if (!settings) return;
-        
-        const timeSelect = document.getElementById('tournament-time');
-        if (!timeSelect) return;
-        
-        // 기존 옵션 제거 (첫 번째 옵션 제외)
-        timeSelect.innerHTML = '<option value="">시간을 선택하세요</option>';
-        
-        // 시간 슬롯 추가
-        settings.timeSlots.forEach(slot => {
-            const option = document.createElement('option');
-            option.value = `${slot.start}-${slot.end}`;
-            option.textContent = `${slot.start} - ${slot.end}`;
-            timeSelect.appendChild(option);
-        });
-        
-    } catch (error) {
-        console.error('토너먼트 시간 슬롯 로드 오류:', error);
-    }
+    // time input을 사용하므로 별도 옵션 로드 불필요
+    // 이 함수는 호환성을 위해 유지하되 실제 작업은 하지 않음
+    return;
 }
 
 // 진행 중인 토너먼트 로드
@@ -18276,11 +18258,13 @@ function createTournamentCard(tournament, isActive) {
         }
     }
     
-    // 시간 표시 (timeSlot 형식: "09:00-10:00")
+    // 시간 표시 (timeSlot 형식: "09:00-10:00" 또는 "09:00" 형식)
     let timeDisplay = '시간 미정';
     if (tournament.time) {
         if (tournament.time.includes('-')) {
-            timeDisplay = tournament.time;
+            // "09:00-10:00" 형식인 경우 시작 시간만 표시
+            const startTime = tournament.time.split('-')[0];
+            timeDisplay = startTime;
         } else {
             timeDisplay = tournament.time;
         }
@@ -18381,13 +18365,20 @@ async function handleTournamentCreate() {
         }
         
         const date = document.getElementById('tournament-date').value;
-        const timeSlot = document.getElementById('tournament-time').value; // "09:00-10:00" 형식
+        const timeInput = document.getElementById('tournament-time').value; // "HH:MM" 형식 (예: "12:00")
         const name = document.getElementById('tournament-name').value || `토너먼트 ${new Date().toLocaleDateString('ko-KR')}`;
         
-        if (!date || !timeSlot) {
+        if (!date || !timeInput) {
             showToast('날짜와 시간을 선택해주세요.', 'error');
             return;
         }
+        
+        // 시간 입력값을 "HH:MM" 형식으로 변환 (time input은 이미 "HH:MM" 형식)
+        // 저장 시에는 "HH:MM" 형식으로 저장하거나, 기존 형식과 호환을 위해 "HH:MM-HH:MM" 형식으로 변환
+        // 1시간 단위로 저장 (예: 12:00 -> 12:00-13:00)
+        const [hour, minute] = timeInput.split(':').map(Number);
+        const endHour = hour + 1;
+        const timeSlot = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}-${String(endHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
         
         // 중복 생성 방지: 같은 날짜와 시간에 이미 토너먼트가 있는지 확인
         const existingTournaments = await db.collection('tournaments')
@@ -18401,8 +18392,8 @@ async function handleTournamentCreate() {
             return;
         }
         
-        // 시간 슬롯에서 시작 시간 추출
-        const [startTime] = timeSlot.split('-');
+        // 시작 시간은 timeInput 그대로 사용
+        const startTime = timeInput;
         
         // 토너먼트 생성 (날짜는 문자열로 저장하여 예약과 일치시킴)
         const tournamentData = {
@@ -18877,10 +18868,10 @@ function renderTournamentBracket(bracket, tournamentId) {
         return;
     }
     
-    // 대진표 HTML 생성 (가로형)
-    let bracketHTML = '<div class="tournament-bracket-horizontal">';
+    // 대진표 HTML 생성 (양쪽 분산형)
+    let bracketHTML = '<div class="tournament-bracket-split">';
     
-    // 라운드 수에 따라 라운드 라벨 생성 (첫 라운드가 가장 많은 팀 수)
+    // 라운드 수에 따라 라운드 라벨 생성
     const totalRounds = bracket.rounds.length;
     const roundLabels = [];
     
@@ -18889,85 +18880,105 @@ function renderTournamentBracket(bracket, tournamentId) {
     let firstRoundTeamCount = 0;
     
     if (firstRound) {
-        // 실제 팀 수 계산 (부전승 제외)
         firstRound.matches.forEach(match => {
             if (match.team1) firstRoundTeamCount++;
             if (match.team2) firstRoundTeamCount++;
         });
     }
     
-    // 각 라운드의 라벨 생성 (첫 라운드부터 순서대로)
-    // 실제 첫 라운드의 팀 수를 기반으로 라벨 생성
+    // 각 라운드의 라벨 생성
     for (let i = 0; i < totalRounds; i++) {
         if (i === totalRounds - 1) {
-            // 마지막 라운드 = 결승
             roundLabels.push('결승');
         } else if (i === totalRounds - 2) {
-            // 마지막에서 두 번째 = 준결승
             roundLabels.push('준결승');
         } else {
-            // 첫 라운드의 실제 팀 수를 기준으로 각 라운드의 팀 수 계산
-            // 첫 라운드가 8팀이면: 8강 → 준결승(4강) → 결승(2강)
-            // 첫 라운드가 16팀이면: 16강 → 8강 → 준결승(4강) → 결승(2강)
             const teamsInRound = firstRoundTeamCount / Math.pow(2, i);
             roundLabels.push(`${teamsInRound}강`);
         }
     }
     
-    // 각 라운드를 가로로 배치 (왼쪽에서 오른쪽으로: 8강 → 준결승 → 결승)
-    bracket.rounds.forEach((round, roundIndex) => {
-        const roundLabel = roundLabels[roundIndex] || `${roundIndex + 1}라운드`;
-        bracketHTML += `<div class="bracket-round-horizontal round-${roundIndex}">`;
-        bracketHTML += `<div class="round-header-horizontal"><h3>${roundLabel}</h3></div>`;
-        bracketHTML += '<div class="round-matches-horizontal">';
+    // 첫 라운드를 양쪽으로 분할
+    const firstRoundMatches = bracket.rounds[0].matches;
+    const halfPoint = Math.ceil(firstRoundMatches.length / 2);
+    const leftMatches = firstRoundMatches.slice(0, halfPoint);
+    const rightMatches = firstRoundMatches.slice(halfPoint);
+    
+    // 왼쪽 브래킷 (첫 라운드부터 준결승까지)
+    bracketHTML += '<div class="bracket-side bracket-left">';
+    bracketHTML += `<div class="bracket-round-split round-0">`;
+    bracketHTML += `<div class="round-header-split"><h3>${roundLabels[0]}</h3></div>`;
+    bracketHTML += '<div class="round-matches-split">';
+    
+    leftMatches.forEach((match, matchIndex) => {
+        const team1Name = match.team1 ? match.team1.teamName : '대기 중';
+        const team2Name = match.team2 ? match.team2.teamName : '대기 중';
+        const team1Players = match.team1 ? match.team1.players.map(p => p.userName).join(', ') : '';
+        const team2Players = match.team2 ? match.team2.players.map(p => p.userName).join(', ') : '';
+        const isCompleted = match.winner !== null;
+        const isBye = match.isBye;
+        const winnerTeam = match.winner;
         
-        round.matches.forEach((match, matchIndex) => {
+        bracketHTML += createMatchHTML(match, 0, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+    });
+    
+    bracketHTML += '</div></div>';
+    
+    // 왼쪽 중간 라운드들 (준결승 전까지)
+    for (let i = 1; i < totalRounds - 1; i++) {
+        const round = bracket.rounds[i];
+        const roundMatches = round.matches.slice(0, Math.ceil(round.matches.length / 2));
+        
+        bracketHTML += `<div class="bracket-round-split round-${i}">`;
+        bracketHTML += `<div class="round-header-split"><h3>${roundLabels[i]}</h3></div>`;
+        bracketHTML += '<div class="round-matches-split">';
+        
+        roundMatches.forEach((match, matchIndex) => {
             const team1Name = match.team1 ? match.team1.teamName : '대기 중';
             const team2Name = match.team2 ? match.team2.teamName : '대기 중';
             const team1Players = match.team1 ? match.team1.players.map(p => p.userName).join(', ') : '';
             const team2Players = match.team2 ? match.team2.players.map(p => p.userName).join(', ') : '';
-            
             const isCompleted = match.winner !== null;
             const isBye = match.isBye;
             const winnerTeam = match.winner;
             
-            bracketHTML += `
-                <div class="bracket-match-horizontal ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
-                    <div class="match-team-horizontal team1 ${winnerTeam && winnerTeam.teamName === team1Name ? 'winner' : ''}">
-                        <div class="team-name-horizontal">${team1Name}</div>
-                        <div class="team-players-horizontal">${team1Players}</div>
-                        ${isCompleted && !isBye ? `<div class="team-score-horizontal">${match.score1 || 0}</div>` : ''}
-                    </div>
-                    ${!isBye ? `
-                        <div class="match-vs-horizontal">VS</div>
-                    ` : '<div class="match-bye-horizontal">부전승</div>'}
-                    <div class="match-team-horizontal team2 ${winnerTeam && winnerTeam.teamName === team2Name ? 'winner' : ''}">
-                        <div class="team-name-horizontal">${team2Name}</div>
-                        <div class="team-players-horizontal">${team2Players}</div>
-                        ${isCompleted && !isBye ? `<div class="team-score-horizontal">${match.score2 || 0}</div>` : ''}
-                    </div>
-                    ${!isCompleted && !isBye && match.team1 && match.team2 ? `
-                        <div class="match-actions-horizontal">
-                            <button class="btn btn-primary btn-small" onclick="openScoreInputModal('${tournamentId}', '${match.matchId}', ${roundIndex})">
-                                <i class="fas fa-edit"></i> 점수 입력
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
+            bracketHTML += createMatchHTML(match, i, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
         });
         
         bracketHTML += '</div></div>';
-    });
+    }
     
-    // 우승/준우승 영역 추가
-    const finalMatch = bracket.rounds[bracket.rounds.length - 1]?.matches[0];
+    bracketHTML += '</div>'; // 왼쪽 브래킷 끝
+    
+    // 가운데 (결승 + 우승/준우승)
+    bracketHTML += '<div class="bracket-center">';
+    const finalRound = bracket.rounds[totalRounds - 1];
+    const finalMatch = finalRound.matches[0];
+    
+    bracketHTML += `<div class="bracket-round-split round-final">`;
+    bracketHTML += `<div class="round-header-split"><h3>${roundLabels[totalRounds - 1]}</h3></div>`;
+    bracketHTML += '<div class="round-matches-split">';
+    
+    if (finalMatch) {
+        const team1Name = finalMatch.team1 ? finalMatch.team1.teamName : '대기 중';
+        const team2Name = finalMatch.team2 ? finalMatch.team2.teamName : '대기 중';
+        const team1Players = finalMatch.team1 ? finalMatch.team1.players.map(p => p.userName).join(', ') : '';
+        const team2Players = finalMatch.team2 ? finalMatch.team2.players.map(p => p.userName).join(', ') : '';
+        const isCompleted = finalMatch.winner !== null;
+        const isBye = finalMatch.isBye;
+        const winnerTeam = finalMatch.winner;
+        
+        bracketHTML += createMatchHTML(finalMatch, totalRounds - 1, 0, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+    }
+    
+    bracketHTML += '</div></div>';
+    
+    // 우승/준우승 영역
     let winnerName = '';
     let runnerupName = '';
     
     if (finalMatch && finalMatch.winner) {
         winnerName = finalMatch.winner.teamName || '';
-        // 준우승자는 승자가 아닌 팀
         if (finalMatch.team1 && finalMatch.team1.teamName === winnerName) {
             runnerupName = finalMatch.team2?.teamName || '';
         } else if (finalMatch.team2 && finalMatch.team2.teamName === winnerName) {
@@ -18976,21 +18987,97 @@ function renderTournamentBracket(bracket, tournamentId) {
     }
     
     bracketHTML += `
-        <div class="bracket-final-horizontal">
-            <div class="final-winner">
-                <div class="final-label">우승 (Winner)</div>
-                <div class="final-team">${winnerName || ''}</div>
+        <div class="bracket-final-split">
+            <div class="final-winner-split">
+                <div class="final-label-split">우승 (Winner)</div>
+                <div class="final-team-split">${winnerName || ''}</div>
             </div>
-            <div class="final-runnerup">
-                <div class="final-label">준우승 (Runner-up)</div>
-                <div class="final-team">${runnerupName || ''}</div>
+            <div class="final-runnerup-split">
+                <div class="final-label-split">준우승 (Runner-up)</div>
+                <div class="final-team-split">${runnerupName || ''}</div>
             </div>
         </div>
     `;
     
-    bracketHTML += '</div>';
+    bracketHTML += '</div>'; // 가운데 끝
+    
+    // 오른쪽 브래킷 (첫 라운드부터 준결승까지)
+    bracketHTML += '<div class="bracket-side bracket-right">';
+    bracketHTML += `<div class="bracket-round-split round-0">`;
+    bracketHTML += `<div class="round-header-split"><h3>${roundLabels[0]}</h3></div>`;
+    bracketHTML += '<div class="round-matches-split">';
+    
+    rightMatches.forEach((match, matchIndex) => {
+        const team1Name = match.team1 ? match.team1.teamName : '대기 중';
+        const team2Name = match.team2 ? match.team2.teamName : '대기 중';
+        const team1Players = match.team1 ? match.team1.players.map(p => p.userName).join(', ') : '';
+        const team2Players = match.team2 ? match.team2.players.map(p => p.userName).join(', ') : '';
+        const isCompleted = match.winner !== null;
+        const isBye = match.isBye;
+        const winnerTeam = match.winner;
+        
+        bracketHTML += createMatchHTML(match, 0, matchIndex + halfPoint, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+    });
+    
+    bracketHTML += '</div></div>';
+    
+    // 오른쪽 중간 라운드들
+    for (let i = 1; i < totalRounds - 1; i++) {
+        const round = bracket.rounds[i];
+        const roundMatches = round.matches.slice(Math.ceil(round.matches.length / 2));
+        
+        bracketHTML += `<div class="bracket-round-split round-${i}">`;
+        bracketHTML += `<div class="round-header-split"><h3>${roundLabels[i]}</h3></div>`;
+        bracketHTML += '<div class="round-matches-split">';
+        
+        roundMatches.forEach((match, matchIndex) => {
+            const team1Name = match.team1 ? match.team1.teamName : '대기 중';
+            const team2Name = match.team2 ? match.team2.teamName : '대기 중';
+            const team1Players = match.team1 ? match.team1.players.map(p => p.userName).join(', ') : '';
+            const team2Players = match.team2 ? match.team2.players.map(p => p.userName).join(', ') : '';
+            const isCompleted = match.winner !== null;
+            const isBye = match.isBye;
+            const winnerTeam = match.winner;
+            
+            bracketHTML += createMatchHTML(match, i, matchIndex + Math.ceil(round.matches.length / 2), team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+        });
+        
+        bracketHTML += '</div></div>';
+    }
+    
+    bracketHTML += '</div>'; // 오른쪽 브래킷 끝
+    
+    bracketHTML += '</div>'; // 전체 브래킷 끝
     
     container.innerHTML = bracketHTML;
+}
+
+// 매치 HTML 생성 헬퍼 함수
+function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId) {
+    return `
+        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+            <div class="match-team-split team1 ${winnerTeam && winnerTeam.teamName === team1Name ? 'winner' : ''}">
+                <div class="team-name-split">${team1Name}</div>
+                <div class="team-players-split">${team1Players}</div>
+                ${isCompleted && !isBye ? `<div class="team-score-split">${match.score1 || 0}</div>` : ''}
+            </div>
+            ${!isBye ? `
+                <div class="match-vs-split">VS</div>
+            ` : '<div class="match-bye-split">부전승</div>'}
+            <div class="match-team-split team2 ${winnerTeam && winnerTeam.teamName === team2Name ? 'winner' : ''}">
+                <div class="team-name-split">${team2Name}</div>
+                <div class="team-players-split">${team2Players}</div>
+                ${isCompleted && !isBye ? `<div class="team-score-split">${match.score2 || 0}</div>` : ''}
+            </div>
+            ${!isCompleted && !isBye && match.team1 && match.team2 ? `
+                <div class="match-actions-split">
+                    <button class="btn btn-primary btn-small" onclick="openScoreInputModal('${tournamentId}', '${match.matchId}', ${roundIndex})">
+                        <i class="fas fa-edit"></i> 점수 입력
+                    </button>
+                </div>
+            ` : ''}
+        </div>
+    `;
 }
 
 // 점수 입력 모달 열기

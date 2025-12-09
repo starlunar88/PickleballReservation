@@ -8560,7 +8560,41 @@ span#matches-current-date-display,
     padding: 20px;
 }
 
-/* 가로형 대진표 */
+/* 양쪽 분산형 대진표 */
+.tournament-bracket-split {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    position: relative;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.bracket-side {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
+    min-width: 0;
+}
+
+.bracket-center {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    flex-shrink: 0;
+    min-width: 200px;
+    margin: 0 10px;
+}
+
+/* 가로형 대진표 (기존 호환성 유지) */
 .tournament-bracket-horizontal {
     display: flex;
     flex-direction: row;
@@ -8573,6 +8607,18 @@ span#matches-current-date-display,
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     position: relative;
     overflow-x: auto;
+}
+
+.bracket-round-split {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.bracket-round-split.round-final {
+    align-items: center;
 }
 
 .bracket-round-horizontal {
@@ -8613,6 +8659,30 @@ span#matches-current-date-display,
     z-index: 2;
 }
 
+.round-header-split {
+    text-align: center;
+    margin-bottom: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: transparent;
+    padding: 3px 0;
+}
+
+.round-header-split h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1em;
+    font-weight: 700;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.3px;
+}
+
 .round-header-horizontal {
     text-align: center;
     margin-bottom: 15px;
@@ -8637,6 +8707,15 @@ span#matches-current-date-display,
     letter-spacing: 0.5px;
 }
 
+.round-matches-split {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 5px 0;
+}
+
 .round-matches-horizontal {
     display: flex;
     flex-direction: column;
@@ -8645,6 +8724,20 @@ span#matches-current-date-display,
     justify-content: center;
     min-height: 100%;
     padding: 20px 0;
+}
+
+.bracket-match-split {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    min-width: 140px;
+    max-width: 160px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .bracket-match-horizontal {
@@ -8676,6 +8769,96 @@ span#matches-current-date-display,
     border-color: #ff9800;
     background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
     box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+}
+
+.match-team-split {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: all 0.3s ease;
+    min-height: 50px;
+    justify-content: center;
+    border: 1px solid #e9ecef;
+    position: relative;
+}
+
+.match-team-split:last-child {
+    margin-bottom: 0;
+}
+
+.match-team-split.winner {
+    background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%);
+    border: 2px solid #ffd700;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+    transform: scale(1.02);
+}
+
+.match-team-split.winner::before {
+    content: '🏆';
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    font-size: 0.9em;
+}
+
+.match-team-split .team-name-split {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.85em;
+    margin-bottom: 3px;
+    letter-spacing: 0.2px;
+}
+
+.match-team-split .team-players-split {
+    font-size: 0.7em;
+    color: #6c757d;
+    margin-bottom: 3px;
+    line-height: 1.3;
+}
+
+.match-team-split .team-score-split {
+    font-size: 1.1em;
+    font-weight: 800;
+    color: #2196F3;
+    text-align: center;
+    margin-top: 3px;
+    text-shadow: 0 1px 2px rgba(33, 150, 243, 0.2);
+}
+
+.match-vs-split {
+    text-align: center;
+    font-weight: 700;
+    color: #6c757d;
+    padding: 4px 0;
+    font-size: 0.75em;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.match-bye-split {
+    text-align: center;
+    font-weight: 700;
+    color: #ff9800;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-radius: 6px;
+    font-size: 0.7em;
+    border: 1px solid #ffb74d;
+}
+
+.match-actions-split {
+    margin-top: 6px;
+    text-align: center;
+}
+
+.match-actions-split .btn {
+    padding: 4px 8px;
+    font-size: 0.75em;
 }
 
 .match-team-horizontal {
@@ -8763,7 +8946,82 @@ span#matches-current-date-display,
     text-align: center;
 }
 
-/* 우승/준우승 영역 */
+.bracket-final-split {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 160px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.final-winner-split,
+.final-runnerup-split {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+}
+
+.final-winner-split {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    transform: scale(1.05);
+}
+
+.final-winner-split::before {
+    content: '👑';
+    display: block;
+    font-size: 1.5em;
+    margin-bottom: 6px;
+}
+
+.final-runnerup-split {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+}
+
+.final-runnerup-split::before {
+    content: '🥈';
+    display: block;
+    font-size: 1.5em;
+    margin-bottom: 6px;
+}
+
+.final-label-split {
+    font-weight: 700;
+    color: #495057;
+    font-size: 0.8em;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.final-winner-split .final-label-split {
+    color: #856404;
+}
+
+.final-team-split {
+    font-size: 1em;
+    font-weight: 800;
+    color: #212529;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
+}
+
+.final-winner-split .final-team-split {
+    color: #856404;
+    text-shadow: 0 1px 2px rgba(133, 100, 4, 0.2);
+}
+
+/* 우승/준우승 영역 (기존 호환성 유지) */
 .bracket-final-horizontal {
     display: flex;
     flex-direction: column;
