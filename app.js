@@ -18073,6 +18073,11 @@ async function loadTournamentData() {
             if (createSection) {
                 createSection.style.display = isUserAdmin ? 'block' : 'none';
             }
+            
+            // 관리자인 경우 시간 슬롯 로드
+            if (isUserAdmin) {
+                await loadTournamentTimeSlots();
+            }
         } else {
             const createSection = document.getElementById('tournament-create-section');
             if (createSection) {
@@ -18085,6 +18090,31 @@ async function loadTournamentData() {
     } catch (error) {
         console.error('토너먼트 데이터 로드 오류:', error);
         showToast('토너먼트 데이터를 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 토너먼트 시간 슬롯 로드
+async function loadTournamentTimeSlots() {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return;
+        
+        const timeSelect = document.getElementById('tournament-time');
+        if (!timeSelect) return;
+        
+        // 기존 옵션 제거 (첫 번째 옵션 제외)
+        timeSelect.innerHTML = '<option value="">시간을 선택하세요</option>';
+        
+        // 시간 슬롯 추가
+        settings.timeSlots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = `${slot.start}-${slot.end}`;
+            option.textContent = `${slot.start} - ${slot.end}`;
+            timeSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('토너먼트 시간 슬롯 로드 오류:', error);
     }
 }
 
@@ -18246,7 +18276,15 @@ function createTournamentCard(tournament, isActive) {
         }
     }
     
-    const time = tournament.time || '시간 미정';
+    // 시간 표시 (timeSlot 형식: "09:00-10:00")
+    let timeDisplay = '시간 미정';
+    if (tournament.time) {
+        if (tournament.time.includes('-')) {
+            timeDisplay = tournament.time;
+        } else {
+            timeDisplay = tournament.time;
+        }
+    }
     const name = tournament.name || '토너먼트';
     const status = tournament.status || 'pending';
     const statusText = {
@@ -18272,9 +18310,8 @@ function createTournamentCard(tournament, isActive) {
             <div class="tournament-card-body">
                 <div class="tournament-info">
                     <div><i class="fas fa-calendar"></i> ${dateStr}</div>
-                    <div><i class="fas fa-clock"></i> ${time}</div>
+                    <div><i class="fas fa-clock"></i> ${timeDisplay}</div>
                     ${tournament.registeredCount !== undefined ? `<div><i class="fas fa-users"></i> 예약자: ${tournament.registeredCount}명</div>` : ''}
-                    ${tournament.participants ? `<div><i class="fas fa-users"></i> 참가 팀: ${tournament.participants.length}팀</div>` : ''}
                     ${winnerInfo}
                     ${isRegistered ? '<div class="tournament-registered-badge"><i class="fas fa-check-circle"></i> 예약 완료</div>' : ''}
                 </div>
@@ -18283,6 +18320,20 @@ function createTournamentCard(tournament, isActive) {
                         <button class="btn btn-primary" onclick="openTournamentBracket('${tournament.id}')">
                             <i class="fas fa-sitemap"></i> 대진표 보기
                         </button>
+                        ${status === 'pending' && isAdmin ? `
+                            <button class="btn btn-info" onclick="viewTournamentRegistrations('${tournament.id}')">
+                                <i class="fas fa-list"></i> 예약자 확인
+                            </button>
+                            <button class="btn btn-warning" onclick="addTestPersonToTournament('${tournament.id}')">
+                                <i class="fas fa-user-plus"></i> 테스트 사용자 추가
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteTournament('${tournament.id}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                            <button class="btn btn-success" onclick="generateTournamentBracket('${tournament.id}')">
+                                <i class="fas fa-magic"></i> 대진표 생성
+                            </button>
+                        ` : ''}
                         ${status === 'pending' && !isRegistered && user ? `
                             <button class="btn btn-success" onclick="registerForTournament('${tournament.id}')">
                                 <i class="fas fa-user-plus"></i> 토너먼트 예약
@@ -18291,11 +18342,6 @@ function createTournamentCard(tournament, isActive) {
                         ${status === 'pending' && isRegistered ? `
                             <button class="btn btn-outline" onclick="cancelTournamentRegistration('${tournament.id}')">
                                 <i class="fas fa-times"></i> 예약 취소
-                            </button>
-                        ` : ''}
-                        ${status === 'pending' && isAdmin ? `
-                            <button class="btn btn-success" onclick="generateTournamentBracket('${tournament.id}')">
-                                <i class="fas fa-magic"></i> 대진표 생성
                             </button>
                         ` : ''}
                     </div>
@@ -18330,22 +18376,37 @@ async function handleTournamentCreate() {
         }
         
         const date = document.getElementById('tournament-date').value;
-        const time = document.getElementById('tournament-time').value;
+        const timeSlot = document.getElementById('tournament-time').value; // "09:00-10:00" 형식
         const name = document.getElementById('tournament-name').value || `토너먼트 ${new Date().toLocaleDateString('ko-KR')}`;
         
-        if (!date || !time) {
-            showToast('날짜와 시간을 입력해주세요.', 'error');
+        if (!date || !timeSlot) {
+            showToast('날짜와 시간을 선택해주세요.', 'error');
             return;
         }
+        
+        // 중복 생성 방지: 같은 날짜와 시간에 이미 토너먼트가 있는지 확인
+        const existingTournaments = await db.collection('tournaments')
+            .where('date', '==', date)
+            .where('time', '==', timeSlot)
+            .where('status', 'in', ['pending', 'in_progress'])
+            .get();
+        
+        if (!existingTournaments.empty) {
+            showToast('해당 날짜와 시간에 이미 토너먼트가 존재합니다.', 'error');
+            return;
+        }
+        
+        // 시간 슬롯에서 시작 시간 추출
+        const [startTime] = timeSlot.split('-');
         
         // 토너먼트 생성 (날짜는 문자열로 저장하여 예약과 일치시킴)
         const tournamentData = {
             name: name,
             date: date, // 문자열 형식으로 저장 (예: "2024-01-01")
-            dateTime: firebase.firestore.Timestamp.fromDate(new Date(`${date}T${time}`)), // 날짜 비교용
-            time: time,
+            dateTime: firebase.firestore.Timestamp.fromDate(new Date(`${date}T${startTime}:00`)), // 날짜 비교용
+            time: timeSlot, // "09:00-10:00" 형식으로 저장
             status: 'pending',
-            registeredUsers: [], // 예약한 사용자 목록
+            registeredUsers: [], // 예약한 사용자 목록 (레거시 호환용)
             participants: [],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             createdBy: user.uid,
