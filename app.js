@@ -11016,7 +11016,8 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     // 1,2 경기: 전체 플레이어를 DUPR 점수 순으로 정렬 후 고정 인덱스 조합 사용
                                     // 전체 플레이어를 DUPR 점수 순으로 정렬 (1번=최강, 2번=차강, ..., N번=최약)
                                     // 1,2 경기는 같은 라운드 내 중복을 허용하므로 전체 플레이어 풀에서 선택
-                                    const allSortedFor12 = [...shuffledAllPlayers].sort((a, b) => {
+                                    // allPlayersPool을 직접 사용하여 중복 없이 정확한 정렬 보장
+                                    const allSortedFor12 = [...allPlayersPool].sort((a, b) => {
                                         // DUPR이 null이나 undefined인 경우 -1로 처리하여 하위에 배치
                                         const duprA = (b.dupr != null && b.dupr !== undefined) ? b.dupr : -1;
                                         const duprB = (a.dupr != null && a.dupr !== undefined) ? a.dupr : -1;

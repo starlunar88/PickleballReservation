@@ -948,13 +948,12 @@ class PickleballBalanceScheduler {
      */
     toWebFormat() {
         const schedule = [];
-        const unassignedPlayers = [];
+        const assignedPlayerIds = new Set(); // 실제로 경기에 참여한 플레이어 추적
 
         for (const match of this.matches) {
-            // sittingOut은 첫 번째 코트의 것만 사용
-            if (match.court === 1 && match.sittingOut.length > 0) {
-                unassignedPlayers.push(...match.sittingOut);
-            }
+            // 경기에 참여한 모든 플레이어 추적
+            match.teamA.forEach(p => assignedPlayerIds.add(p.userId));
+            match.teamB.forEach(p => assignedPlayerIds.add(p.userId));
 
             schedule.push({
                 round: match.round,
@@ -977,25 +976,20 @@ class PickleballBalanceScheduler {
             });
         }
 
-        // 중복 제거
-        const uniqueUnassigned = [];
-        const seen = new Set();
-        for (const player of unassignedPlayers) {
-            if (!seen.has(player.userId)) {
-                seen.add(player.userId);
-                uniqueUnassigned.push({
-                    userId: player.userId,
-                    userName: player.userName,
-                    dupr: player.dupr || 0,
-                    internalRating: player.internalRating || 0,
-                    score: player.score || 0
-                });
-            }
-        }
+        // 실제로 경기에 참여하지 않은 플레이어 찾기
+        const unassignedPlayers = this.players
+            .filter(p => !assignedPlayerIds.has(p.userId))
+            .map(p => ({
+                userId: p.userId,
+                userName: p.userName,
+                dupr: p.dupr || 0,
+                internalRating: p.internalRating || 0,
+                score: p.score || 0
+            }));
 
         return {
             schedule: schedule,
-            unassignedPlayers: uniqueUnassigned
+            unassignedPlayers: unassignedPlayers
         };
     }
 }
