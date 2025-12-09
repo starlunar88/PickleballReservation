@@ -19336,19 +19336,25 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
                     // 왼쪽 브래킷 최종 승자 → 결승 team1
                     // 오른쪽 브래킷 최종 승자 → 결승 team2
                     const leftMatchCount = halfPoint;
-                    const rightMatchCount = totalMatchesInRound - halfPoint;
                     
                     if (isLeftSide) {
-                        // 왼쪽 브래킷: 마지막 매치의 승자가 결승 team1
-                        const isLastLeftMatch = currentMatchIndex === leftMatchCount - 1;
-                        if (isLastLeftMatch) {
+                        // 왼쪽 브래킷: 준결승 승자가 결승 team1
+                        // 왼쪽 브래킷의 준결승은 왼쪽 브래킷 내부에서만 진행되므로
+                        // 왼쪽 브래킷의 모든 준결승 매치 중 승자가 나오면 결승 team1에 배정
+                        if (!nextMatch.team1) {
+                            nextMatch.team1 = winner;
+                        } else {
+                            // 이미 team1이 있으면, 마지막 승자로 교체 (최종 승자)
                             nextMatch.team1 = winner;
                         }
                     } else {
-                        // 오른쪽 브래킷: 마지막 매치의 승자가 결승 team2
-                        const rightMatchIndex = currentMatchIndex - halfPoint;
-                        const isLastRightMatch = rightMatchIndex === rightMatchCount - 1;
-                        if (isLastRightMatch) {
+                        // 오른쪽 브래킷: 준결승 승자가 결승 team2
+                        // 오른쪽 브래킷의 준결승은 오른쪽 브래킷 내부에서만 진행되므로
+                        // 오른쪽 브래킷의 모든 준결승 매치 중 승자가 나오면 결승 team2에 배정
+                        if (!nextMatch.team2) {
+                            nextMatch.team2 = winner;
+                        } else {
+                            // 이미 team2가 있으면, 마지막 승자로 교체 (최종 승자)
                             nextMatch.team2 = winner;
                         }
                     }
@@ -19367,24 +19373,34 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
                     }
                 }
             } else {
-                // 중간 라운드: 각 브래킷 내부에서 다음 라운드로 진행
+                        // 중간 라운드: 각 브래킷 내부에서 다음 라운드로 진행
+                // 각 브래킷은 독립적으로 진행되므로, 왼쪽은 왼쪽 내부에서, 오른쪽은 오른쪽 내부에서만 진행
                 let nextMatchIndex;
                 
                 if (isLeftSide) {
-                    // 왼쪽 브래킷: 내부에서 다음 라운드로
-                    nextMatchIndex = Math.floor(currentMatchIndex / 2);
+                    // 왼쪽 브래킷: 내부에서만 다음 라운드로
+                    // 왼쪽 브래킷의 매치 인덱스를 왼쪽 기준으로 계산
+                    const leftMatchIndex = currentMatchIndex; // 왼쪽에서는 그대로
+                    nextMatchIndex = Math.floor(leftMatchIndex / 2);
                 } else {
-                    // 오른쪽 브래킷: 내부에서 다음 라운드로
-                    const rightSideIndex = currentMatchIndex - halfPoint;
-                    const leftNextMatches = Math.ceil(halfPoint / 2);
-                    nextMatchIndex = leftNextMatches + Math.floor(rightSideIndex / 2);
+                    // 오른쪽 브래킷: 내부에서만 다음 라운드로
+                    // 오른쪽 브래킷의 매치 인덱스를 오른쪽 기준으로 계산
+                    const rightMatchIndex = currentMatchIndex - halfPoint; // 오른쪽 기준 인덱스
+                    const leftNextMatchCount = Math.ceil(halfPoint / 2); // 왼쪽 브래킷의 다음 라운드 매치 수
+                    nextMatchIndex = leftNextMatchCount + Math.floor(rightMatchIndex / 2);
                 }
                 
                 const nextMatch = nextRound.matches[nextMatchIndex];
                 
                 if (nextMatch) {
                     // 같은 쌍의 첫 번째 매치는 team1, 두 번째 매치는 team2
-                    const positionInPair = isLeftSide ? (currentMatchIndex % 2) : ((currentMatchIndex - halfPoint) % 2);
+                    let positionInPair;
+                    if (isLeftSide) {
+                        positionInPair = currentMatchIndex % 2;
+                    } else {
+                        const rightMatchIndex = currentMatchIndex - halfPoint;
+                        positionInPair = rightMatchIndex % 2;
+                    }
                     
                     if (positionInPair === 0) {
                         nextMatch.team1 = winner;
