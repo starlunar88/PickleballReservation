@@ -448,13 +448,14 @@ class PickleballBalanceScheduler {
         // 선택된 플레이어를 DUPR 순으로 다시 정렬 (중요: 각 코트에서 올바른 순위 보장)
         const sortedSelectedPlayers = this.getSortedPlayersByDupr(selectedPlayers);
 
-        console.log(`  📋 라운드 ${roundNum}: 상위 ${topPlayersCount}명 선택 (DUPR 순)`);
+        console.log(`  📋 라운드 ${roundNum}: 스킬 레벨별 그룹화 (상위 4명끼리, 다음 4명끼리...)`);
         console.log(`  📋 선택된 플레이어: ${sortedSelectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
         if (sittingOut.length > 0) {
             console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
         }
 
         // 각 코트별로 플레이어 할당
+        // 상위 4명끼리, 다음 4명끼리, 그 다음 4명끼리... 이런 식으로 스킬 레벨별 그룹화
         for (let court = 1; court <= courtCount; court++) {
             const startIdx = (court - 1) * 4;
             const courtPlayers = sortedSelectedPlayers.slice(startIdx, startIdx + 4);
@@ -463,15 +464,22 @@ class PickleballBalanceScheduler {
                 continue;
             }
 
+            // 각 코트의 4명을 DUPR 순으로 정렬 (이미 정렬되어 있지만 확실히)
+            const sortedCourtPlayers = this.getSortedPlayersByDupr(courtPlayers);
+
             let teamA, teamB;
             if (roundNum === 1) {
-                // 라운드 1: (Rank 1 & 4) vs (Rank 2 & 3)
-                teamA = [courtPlayers[0], courtPlayers[3]];
-                teamB = [courtPlayers[1], courtPlayers[2]];
+                // 라운드 1: 같은 스킬 레벨 그룹 내에서 상위 2명 vs 하위 2명
+                // 예: 코트 1 (Rank 1,2,3,4) → (1&2) vs (3&4)
+                // 예: 코트 2 (Rank 5,6,7,8) → (5&6) vs (7&8)
+                teamA = [sortedCourtPlayers[0], sortedCourtPlayers[1]]; // 그룹 내 상위 2명
+                teamB = [sortedCourtPlayers[2], sortedCourtPlayers[3]]; // 그룹 내 하위 2명
             } else {
-                // 라운드 2: (Rank 1 & 3) vs (Rank 2 & 4)
-                teamA = [courtPlayers[0], courtPlayers[2]];
-                teamB = [courtPlayers[1], courtPlayers[3]];
+                // 라운드 2: 같은 스킬 레벨 그룹 내에서 다른 조합
+                // 예: 코트 1 (Rank 1,2,3,4) → (1&3) vs (2&4) - 파트너 교체
+                // 예: 코트 2 (Rank 5,6,7,8) → (5&7) vs (6&8) - 파트너 교체
+                teamA = [sortedCourtPlayers[0], sortedCourtPlayers[2]]; // 최강 + 차약
+                teamB = [sortedCourtPlayers[1], sortedCourtPlayers[3]]; // 차강 + 최약
             }
 
             console.log(`  🏓 코트 ${court}: ${teamA.map(p => p.userName).join(' & ')} vs ${teamB.map(p => p.userName).join(' & ')}`);
