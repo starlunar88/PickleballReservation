@@ -18062,6 +18062,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // 토너먼트 데이터 로드
 async function loadTournamentData() {
     try {
+        // 관리자 상태 확인 및 UI 업데이트
+        const user = auth.currentUser;
+        if (user) {
+            const isUserAdmin = await isAdmin(user);
+            window.adminStatus = isUserAdmin;
+            
+            // 관리자만 토너먼트 생성 섹션 표시
+            const createSection = document.getElementById('tournament-create-section');
+            if (createSection) {
+                createSection.style.display = isUserAdmin ? 'block' : 'none';
+            }
+        } else {
+            const createSection = document.getElementById('tournament-create-section');
+            if (createSection) {
+                createSection.style.display = 'none';
+            }
+        }
+        
         await loadActiveTournaments();
         await loadTournamentHistory();
     } catch (error) {
@@ -18175,6 +18193,11 @@ function createTournamentCard(tournament, isActive) {
     const winnerInfo = tournament.winner ? 
         `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${tournament.winner}</div>` : '';
     
+    // 현재 사용자가 이미 예약했는지 확인 (tournament 객체에서 가져옴)
+    const user = auth.currentUser;
+    const isRegistered = user && tournament.isRegistered;
+    const isAdmin = window.adminStatus || false;
+    
     return `
         <div class="tournament-card ${isActive ? 'active' : ''}">
             <div class="tournament-card-header">
@@ -18185,15 +18208,27 @@ function createTournamentCard(tournament, isActive) {
                 <div class="tournament-info">
                     <div><i class="fas fa-calendar"></i> ${dateStr}</div>
                     <div><i class="fas fa-clock"></i> ${time}</div>
-                    ${tournament.participants ? `<div><i class="fas fa-users"></i> 참가자: ${tournament.participants.length}팀</div>` : ''}
+                    ${tournament.registeredCount !== undefined ? `<div><i class="fas fa-users"></i> 예약자: ${tournament.registeredCount}명</div>` : ''}
+                    ${tournament.participants ? `<div><i class="fas fa-users"></i> 참가 팀: ${tournament.participants.length}팀</div>` : ''}
                     ${winnerInfo}
+                    ${isRegistered ? '<div class="tournament-registered-badge"><i class="fas fa-check-circle"></i> 예약 완료</div>' : ''}
                 </div>
                 ${isActive && status !== 'completed' ? `
                     <div class="tournament-card-actions">
                         <button class="btn btn-primary" onclick="openTournamentBracket('${tournament.id}')">
                             <i class="fas fa-sitemap"></i> 대진표 보기
                         </button>
-                        ${status === 'pending' ? `
+                        ${status === 'pending' && !isRegistered && user ? `
+                            <button class="btn btn-success" onclick="registerForTournament('${tournament.id}')">
+                                <i class="fas fa-user-plus"></i> 토너먼트 예약
+                            </button>
+                        ` : ''}
+                        ${status === 'pending' && isRegistered ? `
+                            <button class="btn btn-outline" onclick="cancelTournamentRegistration('${tournament.id}')">
+                                <i class="fas fa-times"></i> 예약 취소
+                            </button>
+                        ` : ''}
+                        ${status === 'pending' && isAdmin ? `
                             <button class="btn btn-success" onclick="generateTournamentBracket('${tournament.id}')">
                                 <i class="fas fa-magic"></i> 대진표 생성
                             </button>
@@ -18211,14 +18246,21 @@ function createTournamentCard(tournament, isActive) {
     `;
 }
 
-// 토너먼트 예약 처리
-async function handleTournamentReservation() {
+// 토너먼트 생성 처리 (관리자만)
+async function handleTournamentCreate() {
     try {
         showLoading();
         
         const user = auth.currentUser;
         if (!user) {
             showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 확인
+        const isUserAdmin = await isAdmin(user);
+        if (!isUserAdmin) {
+            showToast('토너먼트 생성은 관리자만 가능합니다.', 'error');
             return;
         }
         
@@ -18238,6 +18280,7 @@ async function handleTournamentReservation() {
             dateTime: firebase.firestore.Timestamp.fromDate(new Date(`${date}T${time}`)), // 날짜 비교용
             time: time,
             status: 'pending',
+            registeredUsers: [], // 예약한 사용자 목록
             participants: [],
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             createdBy: user.uid,
@@ -18245,12 +18288,69 @@ async function handleTournamentReservation() {
         };
         
         const docRef = await db.collection('tournaments').add(tournamentData);
-        showToast('토너먼트가 예약되었습니다!', 'success');
+        showToast('토너먼트가 생성되었습니다!', 'success');
         
         // 폼 초기화
         document.getElementById('tournament-date').value = '';
         document.getElementById('tournament-time').value = '';
         document.getElementById('tournament-name').value = '';
+        
+        // 토너먼트 목록 새로고침
+        await loadActiveTournaments();
+        
+    } catch (error) {
+        console.error('토너먼트 생성 오류:', error);
+        showToast('토너먼트 생성 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 토너먼트 예약 처리 (일반 사용자)
+async function registerForTournament(tournamentId) {
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        const tournamentDoc = await db.collection('tournaments').doc(tournamentId).get();
+        if (!tournamentDoc.exists) {
+            showToast('토너먼트를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const tournament = tournamentDoc.data();
+        
+        // 이미 예약했는지 확인
+        const existingRegistration = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
+            .where('userId', '==', user.uid)
+            .get();
+        
+        if (!existingRegistration.empty) {
+            showToast('이미 예약하신 토너먼트입니다.', 'warning');
+            return;
+        }
+        
+        // 토너먼트 상태 확인
+        if (tournament.status !== 'pending') {
+            showToast('예약 가능한 토너먼트가 아닙니다.', 'error');
+            return;
+        }
+        
+        // 예약 생성
+        await db.collection('tournamentRegistrations').add({
+            tournamentId: tournamentId,
+            userId: user.uid,
+            userName: user.displayName || user.email,
+            registeredAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showToast('토너먼트 예약이 완료되었습니다!', 'success');
         
         // 토너먼트 목록 새로고침
         await loadActiveTournaments();
@@ -18263,10 +18363,65 @@ async function handleTournamentReservation() {
     }
 }
 
-// 토너먼트 대진표 생성
+// 토너먼트 예약 취소
+async function cancelTournamentRegistration(tournamentId) {
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 예약 찾기
+        const registrationSnapshot = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
+            .where('userId', '==', user.uid)
+            .get();
+        
+        if (registrationSnapshot.empty) {
+            showToast('예약하지 않은 토너먼트입니다.', 'warning');
+            return;
+        }
+        
+        // 예약 삭제
+        const batch = db.batch();
+        registrationSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        
+        showToast('토너먼트 예약이 취소되었습니다.', 'success');
+        
+        // 토너먼트 목록 새로고침
+        await loadActiveTournaments();
+        
+    } catch (error) {
+        console.error('토너먼트 예약 취소 오류:', error);
+        showToast('토너먼트 예약 취소 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 토너먼트 대진표 생성 (관리자만)
 async function generateTournamentBracket(tournamentId) {
     try {
         showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 확인
+        const isUserAdmin = await isAdmin(user);
+        if (!isUserAdmin) {
+            showToast('대진표 생성은 관리자만 가능합니다.', 'error');
+            return;
+        }
         
         const tournamentDoc = await db.collection('tournaments').doc(tournamentId).get();
         if (!tournamentDoc.exists) {
@@ -18276,53 +18431,46 @@ async function generateTournamentBracket(tournamentId) {
         
         const tournament = tournamentDoc.data();
         
-        // 예약된 플레이어 가져오기
-        // 날짜 형식 처리 (문자열 또는 Timestamp)
-        let dateStr = '';
-        if (typeof tournament.date === 'string') {
-            dateStr = tournament.date;
-        } else if (tournament.date && tournament.date.toDate) {
-            dateStr = tournament.date.toDate().toISOString().split('T')[0];
-        } else if (tournament.dateTime && tournament.dateTime.toDate) {
-            dateStr = tournament.dateTime.toDate().toISOString().split('T')[0];
-        } else {
-            showToast('토너먼트 날짜 정보가 올바르지 않습니다.', 'error');
+        // 토너먼트에 예약한 사용자들 가져오기
+        const registeredUsers = tournament.registeredUsers || [];
+        
+        if (registeredUsers.length < 4) {
+            showToast('토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다.', 'warning');
             return;
         }
         
-        const timeSlot = tournament.time;
-        
-        const reservationsSnapshot = await db.collection('reservations')
-            .where('date', '==', dateStr)
-            .where('timeSlot', '==', timeSlot)
-            .where('status', '==', 'confirmed')
+        // 토너먼트에 예약한 사용자들 가져오기
+        const registrationsSnapshot = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
             .get();
         
-        if (reservationsSnapshot.empty) {
-            showToast('해당 시간대에 예약된 플레이어가 없습니다.', 'warning');
+        if (registrationsSnapshot.empty) {
+            showToast('토너먼트에 예약한 플레이어가 없습니다.', 'warning');
             return;
         }
         
         // 플레이어 정보 수집
         const players = [];
-        const playerMap = new Map();
         
-        for (const doc of reservationsSnapshot.docs) {
-            const reservation = doc.data();
-            const userId = reservation.userId;
+        for (const registrationDoc of registrationsSnapshot.docs) {
+            const registration = registrationDoc.data();
+            const userId = registration.userId;
             
-            if (!playerMap.has(userId)) {
+            try {
                 // 사용자 정보 가져오기
                 const userDoc = await db.collection('users').doc(userId).get();
                 const userData = userDoc.exists ? userDoc.data() : {};
                 
+                // 예약 시 저장된 이름 사용, 없으면 users 컬렉션에서 가져오기
+                let userName = registration.userName || userData.displayName || userData.name || '알 수 없음';
+                
                 players.push({
                     userId: userId,
-                    userName: reservation.userName || userData.displayName || reservation.userEmail || '알 수 없음',
-                    dupr: reservation.userDupr || userData.dupr || null
+                    userName: userName,
+                    dupr: userData.dupr || null
                 });
-                
-                playerMap.set(userId, true);
+            } catch (error) {
+                console.error(`사용자 ${userId} 정보 가져오기 오류:`, error);
             }
         }
         
@@ -18831,7 +18979,11 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
         // Firestore 업데이트
         await db.collection('tournaments').doc(tournamentId).update({
             bracket: bracket,
-            currentRound: Math.max(bracket.currentRound || 0, roundIndex)
+            currentRound: Math.max(bracket.currentRound || 0, roundIndex),
+            participants: teams.map(team => ({
+                players: team.players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr })),
+                teamName: team.teamName
+            }))
         });
         
         // 결승전 완료 시 토너먼트 완료 처리
@@ -18905,10 +19057,10 @@ function closeWinnerModal() {
 
 // 토너먼트 이벤트 리스너 등록
 document.addEventListener('DOMContentLoaded', function() {
-    // 토너먼트 예약 버튼
-    const tournamentReserveBtn = document.getElementById('tournament-reserve-btn');
-    if (tournamentReserveBtn) {
-        tournamentReserveBtn.addEventListener('click', handleTournamentReservation);
+    // 토너먼트 생성 버튼 (관리자만)
+    const tournamentCreateBtn = document.getElementById('tournament-create-btn');
+    if (tournamentCreateBtn) {
+        tournamentCreateBtn.addEventListener('click', handleTournamentCreate);
     }
     
     // 토너먼트 새로고침 버튼

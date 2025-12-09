@@ -8522,6 +8522,19 @@ span#matches-current-date-display,
     margin-top: 8px;
 }
 
+.tournament-registered-badge {
+    color: #4caf50;
+    font-weight: 600;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tournament-registered-badge i {
+    color: #4caf50;
+}
+
 .tournament-card-actions {
     display: flex;
     gap: 10px;

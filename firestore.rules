@@ -143,6 +143,44 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
     }
+    
+    // 토너먼트 컬렉션 - 누구나 읽기 가능, 관리자만 생성/수정/삭제 가능
+    match /tournaments/{tournamentId} {
+      // 누구나 읽기 가능 (토너먼트 목록 표시용)
+      allow read: if true;
+      
+      // 토너먼트 생성 - 관리자만 가능
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+      
+      // 토너먼트 수정 - 관리자만 가능 (대진표 생성, 점수 입력 등)
+      allow update: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+      
+      // 토너먼트 삭제 - 관리자만 가능
+      allow delete: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // 토너먼트 예약 컬렉션 - 자신의 예약만 생성/삭제 가능, 누구나 읽기 가능
+    match /tournamentRegistrations/{registrationId} {
+      // 누구나 읽기 가능
+      allow read: if true;
+      
+      // 예약 생성 - 자신의 userId로만 생성 가능
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      
+      // 예약 삭제 - 자신의 예약만 삭제 가능
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // 예약 수정 불가 (생성/삭제만 가능)
+      allow update: if false;
+    }
   }
 }
 

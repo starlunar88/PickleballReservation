@@ -68,7 +68,7 @@
                 <span>대진표</span>
             </button>
             <button class="mobile-tab-btn" data-tab="rankings">
-                <i class="fas fa-trophy"></i>
+                <i class="fas fa-medal"></i>
                 <span>랭킹</span>
             </button>
             <button class="mobile-tab-btn" data-tab="stats">
@@ -98,7 +98,7 @@
                 <span>대진표</span>
             </button>
             <button class="desktop-tab-btn" data-tab="rankings">
-                <i class="fas fa-trophy"></i>
+                <i class="fas fa-medal"></i>
                 <span>랭킹 시스템</span>
             </button>
             <button class="desktop-tab-btn" data-tab="stats">
@@ -478,10 +478,10 @@
                         <img src="CI1.png" alt="CI Banner" class="ci-banner-img">
                     </div>
                     
-                    <!-- 토너먼트 예약 섹션 -->
-                    <div class="tournament-reservation-section">
+                    <!-- 토너먼트 생성 섹션 (관리자만 표시) -->
+                    <div class="tournament-reservation-section admin-only" id="tournament-create-section" style="display: none;">
                         <div class="section-header">
-                            <h2>토너먼트 예약</h2>
+                            <h2>토너먼트 생성</h2>
                         </div>
                         <div class="tournament-reservation-form">
                             <div class="form-group">
@@ -496,8 +496,8 @@
                                 <label for="tournament-name">토너먼트 이름 (선택사항)</label>
                                 <input type="text" id="tournament-name" class="form-control" placeholder="예: 2024 봄 토너먼트">
                             </div>
-                            <button class="btn btn-primary" id="tournament-reserve-btn">
-                                <i class="fas fa-calendar-plus"></i> 토너먼트 예약하기
+                            <button class="btn btn-primary" id="tournament-create-btn">
+                                <i class="fas fa-plus-circle"></i> 토너먼트 생성
                             </button>
                         </div>
                     </div>
