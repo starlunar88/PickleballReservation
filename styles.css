@@ -8557,8 +8557,190 @@ span#matches-current-date-display,
 .tournament-bracket-container {
     width: 100%;
     overflow-x: auto;
+    padding: 20px;
 }
 
+/* 가로형 대진표 */
+.tournament-bracket-horizontal {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 30px;
+    min-width: fit-content;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 12px;
+}
+
+.bracket-round-horizontal {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 200px;
+    position: relative;
+}
+
+.bracket-round-horizontal:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    width: 30px;
+    height: 2px;
+    background: #2196F3;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.round-header-horizontal {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.round-header-horizontal h3 {
+    margin: 0;
+    color: #2196F3;
+    font-size: 1.2em;
+    font-weight: 600;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+    border-radius: 8px;
+    border: 2px solid #2196F3;
+}
+
+.round-matches-horizontal {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.bracket-match-horizontal {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.3s ease;
+    width: 100%;
+    min-width: 180px;
+    position: relative;
+}
+
+.bracket-match-horizontal:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.bracket-match-horizontal.completed {
+    border-color: #4caf50;
+    background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+}
+
+.bracket-match-horizontal.bye {
+    border-color: #ff9800;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
+}
+
+.match-team-horizontal {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    min-height: 60px;
+    justify-content: center;
+}
+
+.match-team-horizontal.winner {
+    background: linear-gradient(135deg, #fff9c4 0%, #ffffff 100%);
+    border: 2px solid #ffd700;
+    font-weight: 600;
+}
+
+.match-team-horizontal .team-name-horizontal {
+    font-weight: 600;
+    color: #333;
+    font-size: 1em;
+    margin-bottom: 4px;
+}
+
+.match-team-horizontal .team-players-horizontal {
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.match-team-horizontal .team-score-horizontal {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: #2196F3;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.match-vs-horizontal {
+    text-align: center;
+    font-weight: 600;
+    color: #999;
+    padding: 4px 0;
+    font-size: 0.9em;
+}
+
+.match-bye-horizontal {
+    text-align: center;
+    font-weight: 600;
+    color: #ff9800;
+    padding: 4px 0;
+    background: #fff3e0;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+.match-actions-horizontal {
+    margin-top: 8px;
+    text-align: center;
+}
+
+/* 우승/준우승 영역 */
+.bracket-final-horizontal {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 200px;
+    margin-left: 20px;
+}
+
+.final-winner,
+.final-runnerup {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+}
+
+.final-winner {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #fff9c4 0%, #ffffff 100%);
+}
+
+.final-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.final-team {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #333;
+    min-height: 30px;
+}
+
+/* 기존 세로형 대진표 (호환성 유지) */
 .tournament-bracket {
     display: flex;
     gap: 40px;
@@ -8751,6 +8933,25 @@ span#matches-current-date-display,
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+    .tournament-bracket-horizontal {
+        flex-direction: column;
+        gap: 20px;
+        padding: 10px;
+    }
+    
+    .bracket-round-horizontal {
+        min-width: 100%;
+    }
+    
+    .bracket-round-horizontal:not(:last-child)::after {
+        display: none;
+    }
+    
+    .bracket-final-horizontal {
+        margin-left: 0;
+        margin-top: 20px;
+    }
+    
     .tournament-bracket {
         flex-direction: column;
         gap: 30px;

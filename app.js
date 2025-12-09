@@ -18572,6 +18572,12 @@ async function generateTournamentBracket(tournamentId) {
             return;
         }
         
+        // 참여자 수가 짝수인지 확인 (팀을 짝수로 만들기 위해)
+        if (registrationsSnapshot.size % 2 !== 0) {
+            showToast(`토너먼트를 진행하려면 참여자 수가 짝수여야 합니다. (현재: ${registrationsSnapshot.size}명)`, 'warning');
+            return;
+        }
+        
         // 플레이어 정보 수집
         const players = [];
         
@@ -18606,6 +18612,12 @@ async function generateTournamentBracket(tournamentId) {
         // 플레이어 수 재확인 (사용자 정보 가져오기 실패 시를 대비)
         if (players.length < 4) {
             showToast(`토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다. (현재: ${players.length}명)`, 'warning');
+            return;
+        }
+        
+        // 참여자 수가 짝수인지 재확인
+        if (players.length % 2 !== 0) {
+            showToast(`토너먼트를 진행하려면 참여자 수가 짝수여야 합니다. (현재: ${players.length}명)`, 'warning');
             return;
         }
         
@@ -18850,7 +18862,7 @@ async function openTournamentBracket(tournamentId) {
     }
 }
 
-// 토너먼트 대진표 렌더링
+// 토너먼트 대진표 렌더링 (가로형)
 function renderTournamentBracket(bracket, tournamentId) {
     const container = document.getElementById('tournament-bracket-container');
     if (!container) return;
@@ -18860,13 +18872,29 @@ function renderTournamentBracket(bracket, tournamentId) {
         return;
     }
     
-    // 대진표 HTML 생성
-    let bracketHTML = '<div class="tournament-bracket">';
+    // 대진표 HTML 생성 (가로형)
+    let bracketHTML = '<div class="tournament-bracket-horizontal">';
     
+    // 라운드 수에 따라 라운드 라벨 생성
+    const totalRounds = bracket.rounds.length;
+    const roundLabels = [];
+    for (let i = totalRounds - 1; i >= 0; i--) {
+        if (i === totalRounds - 1) {
+            roundLabels.push('결승');
+        } else if (i === totalRounds - 2) {
+            roundLabels.push('준결승');
+        } else {
+            const teamsInRound = Math.pow(2, totalRounds - i);
+            roundLabels.push(`${teamsInRound}강`);
+        }
+    }
+    
+    // 각 라운드를 가로로 배치
     bracket.rounds.forEach((round, roundIndex) => {
-        bracketHTML += `<div class="bracket-round round-${roundIndex}">`;
-        bracketHTML += `<div class="round-header"><h3>${roundIndex === bracket.rounds.length - 1 ? '결승' : roundIndex === bracket.rounds.length - 2 ? '준결승' : `${roundIndex + 1}라운드`}</h3></div>`;
-        bracketHTML += '<div class="round-matches">';
+        const roundLabel = roundLabels[roundIndex] || `${roundIndex + 1}라운드`;
+        bracketHTML += `<div class="bracket-round-horizontal round-${roundIndex}">`;
+        bracketHTML += `<div class="round-header-horizontal"><h3>${roundLabel}</h3></div>`;
+        bracketHTML += '<div class="round-matches-horizontal">';
         
         round.matches.forEach((match, matchIndex) => {
             const team1Name = match.team1 ? match.team1.teamName : '대기 중';
@@ -18879,24 +18907,22 @@ function renderTournamentBracket(bracket, tournamentId) {
             const winnerTeam = match.winner;
             
             bracketHTML += `
-                <div class="bracket-match ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
-                    <div class="match-teams">
-                        <div class="match-team team1 ${winnerTeam && winnerTeam.teamName === team1Name ? 'winner' : ''}">
-                            <div class="team-name">${team1Name}</div>
-                            <div class="team-players">${team1Players}</div>
-                            ${isCompleted && !isBye ? `<div class="team-score">${match.score1 || 0}</div>` : ''}
-                        </div>
-                        ${!isBye ? `
-                            <div class="match-vs">VS</div>
-                        ` : '<div class="match-bye">부전승</div>'}
-                        <div class="match-team team2 ${winnerTeam && winnerTeam.teamName === team2Name ? 'winner' : ''}">
-                            <div class="team-name">${team2Name}</div>
-                            <div class="team-players">${team2Players}</div>
-                            ${isCompleted && !isBye ? `<div class="team-score">${match.score2 || 0}</div>` : ''}
-                        </div>
+                <div class="bracket-match-horizontal ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+                    <div class="match-team-horizontal team1 ${winnerTeam && winnerTeam.teamName === team1Name ? 'winner' : ''}">
+                        <div class="team-name-horizontal">${team1Name}</div>
+                        <div class="team-players-horizontal">${team1Players}</div>
+                        ${isCompleted && !isBye ? `<div class="team-score-horizontal">${match.score1 || 0}</div>` : ''}
+                    </div>
+                    ${!isBye ? `
+                        <div class="match-vs-horizontal">VS</div>
+                    ` : '<div class="match-bye-horizontal">부전승</div>'}
+                    <div class="match-team-horizontal team2 ${winnerTeam && winnerTeam.teamName === team2Name ? 'winner' : ''}">
+                        <div class="team-name-horizontal">${team2Name}</div>
+                        <div class="team-players-horizontal">${team2Players}</div>
+                        ${isCompleted && !isBye ? `<div class="team-score-horizontal">${match.score2 || 0}</div>` : ''}
                     </div>
                     ${!isCompleted && !isBye && match.team1 && match.team2 ? `
-                        <div class="match-actions">
+                        <div class="match-actions-horizontal">
                             <button class="btn btn-primary btn-small" onclick="openScoreInputModal('${tournamentId}', '${match.matchId}', ${roundIndex})">
                                 <i class="fas fa-edit"></i> 점수 입력
                             </button>
@@ -18908,6 +18934,34 @@ function renderTournamentBracket(bracket, tournamentId) {
         
         bracketHTML += '</div></div>';
     });
+    
+    // 우승/준우승 영역 추가
+    const finalMatch = bracket.rounds[bracket.rounds.length - 1]?.matches[0];
+    let winnerName = '';
+    let runnerupName = '';
+    
+    if (finalMatch && finalMatch.winner) {
+        winnerName = finalMatch.winner.teamName || '';
+        // 준우승자는 승자가 아닌 팀
+        if (finalMatch.team1 && finalMatch.team1.teamName === winnerName) {
+            runnerupName = finalMatch.team2?.teamName || '';
+        } else if (finalMatch.team2 && finalMatch.team2.teamName === winnerName) {
+            runnerupName = finalMatch.team1?.teamName || '';
+        }
+    }
+    
+    bracketHTML += `
+        <div class="bracket-final-horizontal">
+            <div class="final-winner">
+                <div class="final-label">우승 (Winner)</div>
+                <div class="final-team">${winnerName || ''}</div>
+            </div>
+            <div class="final-runnerup">
+                <div class="final-label">준우승 (Runner-up)</div>
+                <div class="final-team">${runnerupName || ''}</div>
+            </div>
+        </div>
+    `;
     
     bracketHTML += '</div>';
     
@@ -19106,14 +19160,10 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
             }
         }
         
-        // Firestore 업데이트
+        // Firestore 업데이트 (participants는 대진표 생성 시에만 설정되므로 여기서는 업데이트하지 않음)
         await db.collection('tournaments').doc(tournamentId).update({
             bracket: bracket,
-            currentRound: Math.max(bracket.currentRound || 0, roundIndex),
-            participants: teams.map(team => ({
-                players: team.players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr })),
-                teamName: team.teamName
-            }))
+            currentRound: Math.max(bracket.currentRound || 0, roundIndex)
         });
         
         // 결승전 완료 시 토너먼트 완료 처리
