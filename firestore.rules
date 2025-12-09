@@ -150,19 +150,31 @@ service cloud.firestore {
       allow read: if true;
       
       // 토너먼트 생성 - 관리자만 가능
-      allow create: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+      allow create: if request.auth != null && (
+        // 관리자 문서가 존재하고 isAdmin이 true인 경우
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true) ||
+        // 기본 관리자 이메일 (초기 설정용)
+        request.auth.token.email in ['admin@pickleball.com', 'starlunar88@gmail.com']
+      );
       
       // 토너먼트 수정 - 관리자만 가능 (대진표 생성, 점수 입력 등)
-      allow update: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+      allow update: if request.auth != null && (
+        // 관리자 문서가 존재하고 isAdmin이 true인 경우
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true) ||
+        // 기본 관리자 이메일 (초기 설정용)
+        request.auth.token.email in ['admin@pickleball.com', 'starlunar88@gmail.com']
+      );
       
       // 토너먼트 삭제 - 관리자만 가능
-      allow delete: if request.auth != null && 
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+      allow delete: if request.auth != null && (
+        // 관리자 문서가 존재하고 isAdmin이 true인 경우
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true) ||
+        // 기본 관리자 이메일 (초기 설정용)
+        request.auth.token.email in ['admin@pickleball.com', 'starlunar88@gmail.com']
+      );
     }
     
     // 토너먼트 예약 컬렉션 - 자신의 예약만 생성/삭제 가능, 누구나 읽기 가능

@@ -18102,21 +18102,68 @@ async function loadActiveTournaments() {
             return;
         }
         
-        const tournamentsSnapshot = await db.collection('tournaments')
-            .where('status', 'in', ['pending', 'in_progress'])
-            .orderBy('createdAt', 'desc')
+        // 인덱스 없이 쿼리하기 위해 각 상태별로 별도 쿼리 실행
+        const pendingSnapshot = await db.collection('tournaments')
+            .where('status', '==', 'pending')
             .get();
         
-        if (tournamentsSnapshot.empty) {
+        const inProgressSnapshot = await db.collection('tournaments')
+            .where('status', '==', 'in_progress')
+            .get();
+        
+        // 두 결과를 합치고 클라이언트 측에서 정렬
+        const tournaments = [];
+        pendingSnapshot.forEach(doc => {
+            const data = doc.data();
+            tournaments.push({ 
+                id: doc.id, 
+                ...data,
+                createdAt: data.createdAt || { seconds: 0 }
+            });
+        });
+        inProgressSnapshot.forEach(doc => {
+            const data = doc.data();
+            tournaments.push({ 
+                id: doc.id, 
+                ...data,
+                createdAt: data.createdAt || { seconds: 0 }
+            });
+        });
+        
+        // createdAt 기준으로 정렬 (최신순)
+        tournaments.sort((a, b) => {
+            const aTime = a.createdAt?.seconds || 0;
+            const bTime = b.createdAt?.seconds || 0;
+            return bTime - aTime;
+        });
+        
+        if (tournaments.length === 0) {
             container.innerHTML = '<div class="empty-state"><i class="fas fa-trophy"></i><p>진행 중인 토너먼트가 없습니다.</p></div>';
             return;
         }
         
-        const tournamentsHTML = [];
-        tournamentsSnapshot.forEach(doc => {
-            const tournament = { id: doc.id, ...doc.data() };
-            tournamentsHTML.push(createTournamentCard(tournament, true));
+        // 예약 정보 가져오기
+        const registrationSnapshot = await db.collection('tournamentRegistrations')
+            .where('userId', '==', user.uid)
+            .get();
+        
+        const registeredTournamentIds = new Set();
+        registrationSnapshot.forEach(doc => {
+            registeredTournamentIds.add(doc.data().tournamentId);
         });
+        
+        // 각 토너먼트의 예약자 수 가져오기
+        const tournamentsHTML = [];
+        for (const tournament of tournaments) {
+            // 예약자 수 가져오기
+            const registrationsSnapshot = await db.collection('tournamentRegistrations')
+                .where('tournamentId', '==', tournament.id)
+                .get();
+            tournament.registeredCount = registrationsSnapshot.size;
+            tournament.isRegistered = registeredTournamentIds.has(tournament.id);
+            
+            tournamentsHTML.push(createTournamentCard(tournament, true));
+        }
         
         container.innerHTML = tournamentsHTML.join('');
     } catch (error) {
@@ -18139,10 +18186,9 @@ async function loadTournamentHistory() {
             return;
         }
         
+        // 인덱스 없이 쿼리하기 위해 orderBy 제거하고 클라이언트 측에서 정렬
         const tournamentsSnapshot = await db.collection('tournaments')
             .where('status', '==', 'completed')
-            .orderBy('createdAt', 'desc')
-            .limit(20)
             .get();
         
         if (tournamentsSnapshot.empty) {
@@ -18150,9 +18196,28 @@ async function loadTournamentHistory() {
             return;
         }
         
-        const tournamentsHTML = [];
+        // 클라이언트 측에서 정렬
+        const tournaments = [];
         tournamentsSnapshot.forEach(doc => {
-            const tournament = { id: doc.id, ...doc.data() };
+            const data = doc.data();
+            tournaments.push({ 
+                id: doc.id, 
+                ...data,
+                createdAt: data.createdAt || { seconds: 0 }
+            });
+        });
+        
+        // createdAt 기준으로 정렬 (최신순) 후 상위 20개만 선택
+        tournaments.sort((a, b) => {
+            const aTime = a.createdAt?.seconds || 0;
+            const bTime = b.createdAt?.seconds || 0;
+            return bTime - aTime;
+        });
+        
+        const limitedTournaments = tournaments.slice(0, 20);
+        
+        const tournamentsHTML = [];
+        limitedTournaments.forEach(tournament => {
             tournamentsHTML.push(createTournamentCard(tournament, false));
         });
         
