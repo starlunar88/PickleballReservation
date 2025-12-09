@@ -42,12 +42,22 @@ class PickleballBalanceScheduler {
 
     /**
      * DUPR 순으로 정렬된 플레이어 리스트 반환 (내림차순)
+     * 동일한 DUPR 값일 경우 userId로 일관된 정렬 보장
      */
     getSortedPlayersByDupr(players = null) {
         if (players === null) {
             players = this.players;
         }
-        return [...players].sort((a, b) => (b.dupr || 0) - (a.dupr || 0));
+        return [...players].sort((a, b) => {
+            const duprDiff = (b.dupr || 0) - (a.dupr || 0);
+            if (Math.abs(duprDiff) < 0.0001) {
+                // DUPR이 같으면 userId로 일관된 정렬 (문자열 비교)
+                const userIdA = (a.userId || '').toString();
+                const userIdB = (b.userId || '').toString();
+                return userIdA.localeCompare(userIdB);
+            }
+            return duprDiff;
+        });
     }
 
     /**
@@ -446,7 +456,9 @@ class PickleballBalanceScheduler {
         const sittingOut = sortedPlayers.filter(p => !usedPlayerIds.has(p.userId));
 
         // 선택된 플레이어를 DUPR 순으로 다시 정렬 (중요: 각 코트에서 올바른 순위 보장)
+        console.log(`  🔍 정렬 전: ${selectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
         const sortedSelectedPlayers = this.getSortedPlayersByDupr(selectedPlayers);
+        console.log(`  🔍 정렬 후: ${sortedSelectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
 
         console.log(`  📋 라운드 ${roundNum}: 스킬 레벨별 그룹화 (상위 4명끼리, 다음 4명끼리...)`);
         console.log(`  📋 선택된 플레이어: ${sortedSelectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
