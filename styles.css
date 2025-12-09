@@ -4995,6 +4995,12 @@ span#matches-current-date-display,
         margin-top: 0px !important; /* PC에서 70px -> 10px로 줄임 */
     }
     
+    /* PC에서 CI 배너 이미지 크기 더 작게 */
+    .ci-banner-img {
+        max-width: 40% !important; /* PC에서 더 작게 (60% -> 40%) */
+        width: 40% !important;
+    }
+    
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
     .podium-wrapper {
         gap: 8px !important; /* 13px에서 더 줄임 */
