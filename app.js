@@ -7847,9 +7847,6 @@ async function getRankings(limit = 50) {
         for (const userId of userIds) {
             const userData = userScores[userId];
             
-            // 모든 사용자 포함 (경기 수 제한 없음)
-            console.log(`📈 사용자 ${userId}: ${userData.wins}승 ${userData.losses}패, 총 ${userData.totalGames}경기, 점수: ${userData.score}`);
-            
             // 사용자 이름 찾기 (여러 소스에서 시도)
             let userName = null;
             
@@ -7958,8 +7955,6 @@ async function getRankings(limit = 50) {
                 userName === '알 수 없음') {
                 console.warn(`⚠️ 이름을 찾을 수 없음: ${userId} (최종: ${userName || 'null'})`);
                 userName = '알 수 없음';
-            } else {
-                console.log(`✅ 최종 이름: ${userId} -> ${userName}`);
             }
             
             const winRate = userData.totalGames > 0 ? (userData.wins / userData.totalGames * 100) : 0;
