@@ -18334,6 +18334,11 @@ function createTournamentCard(tournament, isActive) {
                                 <i class="fas fa-magic"></i> 대진표 생성
                             </button>
                         ` : ''}
+                        ${status === 'in_progress' && isAdmin ? `
+                            <button class="btn btn-danger" onclick="deleteTournament('${tournament.id}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        ` : ''}
                         ${status === 'pending' && !isRegistered && user ? `
                             <button class="btn btn-success" onclick="registerForTournament('${tournament.id}')">
                                 <i class="fas fa-user-plus"></i> 토너먼트 예약
