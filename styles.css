@@ -8565,137 +8565,197 @@ span#matches-current-date-display,
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    gap: 30px;
+    gap: 40px;
     min-width: fit-content;
-    padding: 20px;
-    background: #f9f9f9;
-    border-radius: 12px;
+    padding: 30px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow-x: auto;
 }
 
 .bracket-round-horizontal {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    min-width: 200px;
+    gap: 20px;
+    min-width: 220px;
     position: relative;
+    flex-shrink: 0;
 }
 
+/* 라운드 간 연결선 - 세로선 */
 .bracket-round-horizontal:not(:last-child)::after {
     content: '';
     position: absolute;
-    right: -15px;
-    top: 50%;
-    width: 30px;
-    height: 2px;
-    background: #2196F3;
-    transform: translateY(-50%);
+    right: -20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #2196F3 0%, #1976D2 100%);
     z-index: 1;
+}
+
+/* 매치에서 다음 라운드로 가는 연결선 - 가로선 */
+.bracket-match-horizontal {
+    position: relative;
+}
+
+.bracket-round-horizontal:not(:last-child) .bracket-match-horizontal::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, #2196F3 0%, #1976D2 100%);
+    transform: translateY(-50%);
+    z-index: 2;
 }
 
 .round-header-horizontal {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: transparent;
+    padding: 5px 0;
 }
 
 .round-header-horizontal h3 {
     margin: 0;
-    color: #2196F3;
-    font-size: 1.2em;
-    font-weight: 600;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
-    border-radius: 8px;
-    border: 2px solid #2196F3;
+    color: #fff;
+    font-size: 1.3em;
+    font-weight: 700;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.5px;
 }
 
 .round-matches-horizontal {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 40px;
     align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    padding: 20px 0;
 }
 
 .bracket-match-horizontal {
     background: white;
     border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 12px;
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
-    min-width: 180px;
+    min-width: 200px;
     position: relative;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .bracket-match-horizontal:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-3px);
+    border-color: #2196F3;
 }
 
 .bracket-match-horizontal.completed {
     border-color: #4caf50;
     background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
 }
 
 .bracket-match-horizontal.bye {
     border-color: #ff9800;
     background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
 }
 
 .match-team-horizontal {
     display: flex;
     flex-direction: column;
-    padding: 10px;
-    background: #f5f5f5;
-    border-radius: 6px;
-    margin-bottom: 8px;
+    padding: 14px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 10px;
+    margin-bottom: 10px;
     transition: all 0.3s ease;
-    min-height: 60px;
+    min-height: 70px;
     justify-content: center;
+    border: 1px solid #e9ecef;
+    position: relative;
+}
+
+.match-team-horizontal:last-child {
+    margin-bottom: 0;
 }
 
 .match-team-horizontal.winner {
-    background: linear-gradient(135deg, #fff9c4 0%, #ffffff 100%);
+    background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%);
     border: 2px solid #ffd700;
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    transform: scale(1.02);
+}
+
+.match-team-horizontal.winner::before {
+    content: '🏆';
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 1.2em;
 }
 
 .match-team-horizontal .team-name-horizontal {
-    font-weight: 600;
-    color: #333;
-    font-size: 1em;
-    margin-bottom: 4px;
+    font-weight: 700;
+    color: #212529;
+    font-size: 1.1em;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
 }
 
 .match-team-horizontal .team-players-horizontal {
-    font-size: 0.8em;
-    color: #666;
-    margin-bottom: 4px;
+    font-size: 0.85em;
+    color: #6c757d;
+    margin-bottom: 6px;
+    line-height: 1.4;
 }
 
 .match-team-horizontal .team-score-horizontal {
-    font-size: 1.3em;
-    font-weight: 700;
+    font-size: 1.5em;
+    font-weight: 800;
     color: #2196F3;
     text-align: center;
-    margin-top: 4px;
+    margin-top: 6px;
+    text-shadow: 0 1px 2px rgba(33, 150, 243, 0.2);
 }
 
 .match-vs-horizontal {
     text-align: center;
-    font-weight: 600;
-    color: #999;
-    padding: 4px 0;
-    font-size: 0.9em;
+    font-weight: 700;
+    color: #6c757d;
+    padding: 8px 0;
+    font-size: 0.95em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.7;
 }
 
 .match-bye-horizontal {
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     color: #ff9800;
-    padding: 4px 0;
-    background: #fff3e0;
-    border-radius: 6px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-radius: 8px;
     font-size: 0.9em;
+    border: 1px solid #ffb74d;
 }
 
 .match-actions-horizontal {
@@ -8707,37 +8767,76 @@ span#matches-current-date-display,
 .bracket-final-horizontal {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    min-width: 200px;
-    margin-left: 20px;
+    gap: 25px;
+    min-width: 220px;
+    margin-left: 30px;
+    flex-shrink: 0;
 }
 
 .final-winner,
 .final-runnerup {
     background: white;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 15px;
+    border: 3px solid #e0e0e0;
+    border-radius: 16px;
+    padding: 20px;
     text-align: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
 }
 
 .final-winner {
     border-color: #ffd700;
-    background: linear-gradient(135deg, #fff9c4 0%, #ffffff 100%);
+    background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%);
+    box-shadow: 0 6px 24px rgba(255, 215, 0, 0.3);
+    transform: scale(1.05);
 }
 
-.final-label {
-    font-weight: 600;
-    color: #666;
-    font-size: 0.9em;
+.final-winner::before {
+    content: '👑';
+    display: block;
+    font-size: 2em;
     margin-bottom: 10px;
 }
 
-.final-team {
-    font-size: 1.2em;
+.final-runnerup {
+    border-color: #c0c0c0;
+    background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+}
+
+.final-runnerup::before {
+    content: '🥈';
+    display: block;
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.final-label {
     font-weight: 700;
-    color: #333;
-    min-height: 30px;
+    color: #495057;
+    font-size: 1em;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.final-winner .final-label {
+    color: #856404;
+}
+
+.final-team {
+    font-size: 1.4em;
+    font-weight: 800;
+    color: #212529;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.final-winner .final-team {
+    color: #856404;
+    text-shadow: 0 2px 4px rgba(133, 100, 4, 0.2);
 }
 
 /* 기존 세로형 대진표 (호환성 유지) */
@@ -8931,25 +9030,79 @@ span#matches-current-date-display,
     color: #2196F3;
 }
 
-/* 반응형 디자인 */
+/* 태블릿 (768px ~ 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .tournament-bracket-horizontal {
+        gap: 30px;
+        padding: 20px;
+    }
+    
+    .bracket-round-horizontal {
+        min-width: 180px;
+    }
+    
+    .bracket-match-horizontal {
+        min-width: 160px;
+        padding: 12px;
+    }
+    
+    .bracket-final-horizontal {
+        min-width: 180px;
+        margin-left: 20px;
+    }
+}
+
+/* 모바일 (768px 이하) */
 @media (max-width: 768px) {
     .tournament-bracket-horizontal {
         flex-direction: column;
-        gap: 20px;
-        padding: 10px;
+        gap: 30px;
+        padding: 15px;
+        background: linear-gradient(180deg, #f5f7fa 0%, #e8ecf1 100%);
     }
     
     .bracket-round-horizontal {
         min-width: 100%;
+        width: 100%;
     }
     
     .bracket-round-horizontal:not(:last-child)::after {
         display: none;
     }
     
+    .bracket-round-horizontal:not(:last-child) .bracket-match-horizontal::after {
+        display: none;
+    }
+    
+    .round-header-horizontal h3 {
+        font-size: 1.1em;
+        padding: 10px 16px;
+    }
+    
+    .bracket-match-horizontal {
+        min-width: 100%;
+        padding: 14px;
+    }
+    
+    .match-team-horizontal {
+        padding: 12px;
+        min-height: 65px;
+    }
+    
     .bracket-final-horizontal {
         margin-left: 0;
         margin-top: 20px;
+        min-width: 100%;
+        width: 100%;
+    }
+    
+    .final-winner,
+    .final-runnerup {
+        padding: 18px;
+    }
+    
+    .final-team {
+        font-size: 1.2em;
     }
     
     .tournament-bracket {

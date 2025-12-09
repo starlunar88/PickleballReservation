@@ -18875,21 +18875,41 @@ function renderTournamentBracket(bracket, tournamentId) {
     // 대진표 HTML 생성 (가로형)
     let bracketHTML = '<div class="tournament-bracket-horizontal">';
     
-    // 라운드 수에 따라 라운드 라벨 생성
+    // 라운드 수에 따라 라운드 라벨 생성 (첫 라운드가 가장 많은 팀 수)
     const totalRounds = bracket.rounds.length;
     const roundLabels = [];
-    for (let i = totalRounds - 1; i >= 0; i--) {
+    
+    // 첫 라운드의 실제 팀 수 계산
+    const firstRound = bracket.rounds[0];
+    let firstRoundTeamCount = 0;
+    
+    if (firstRound) {
+        // 실제 팀 수 계산 (부전승 제외)
+        firstRound.matches.forEach(match => {
+            if (match.team1) firstRoundTeamCount++;
+            if (match.team2) firstRoundTeamCount++;
+        });
+    }
+    
+    // 각 라운드의 라벨 생성 (첫 라운드부터 순서대로)
+    // 실제 첫 라운드의 팀 수를 기반으로 라벨 생성
+    for (let i = 0; i < totalRounds; i++) {
         if (i === totalRounds - 1) {
+            // 마지막 라운드 = 결승
             roundLabels.push('결승');
         } else if (i === totalRounds - 2) {
+            // 마지막에서 두 번째 = 준결승
             roundLabels.push('준결승');
         } else {
-            const teamsInRound = Math.pow(2, totalRounds - i);
+            // 첫 라운드의 실제 팀 수를 기준으로 각 라운드의 팀 수 계산
+            // 첫 라운드가 8팀이면: 8강 → 준결승(4강) → 결승(2강)
+            // 첫 라운드가 16팀이면: 16강 → 8강 → 준결승(4강) → 결승(2강)
+            const teamsInRound = firstRoundTeamCount / Math.pow(2, i);
             roundLabels.push(`${teamsInRound}강`);
         }
     }
     
-    // 각 라운드를 가로로 배치
+    // 각 라운드를 가로로 배치 (왼쪽에서 오른쪽으로: 8강 → 준결승 → 결승)
     bracket.rounds.forEach((round, roundIndex) => {
         const roundLabel = roundLabels[roundIndex] || `${roundIndex + 1}라운드`;
         bracketHTML += `<div class="bracket-round-horizontal round-${roundIndex}">`;
@@ -19147,11 +19167,13 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
         // 다음 라운드로 승자 진출
         if (roundIndex < bracket.rounds.length - 1) {
             const nextRound = bracket.rounds[roundIndex + 1];
-            const nextMatchIndex = Math.floor(bracket.rounds[roundIndex].matches.indexOf(match) / 2);
+            const currentMatchIndex = bracket.rounds[roundIndex].matches.indexOf(match);
+            const nextMatchIndex = Math.floor(currentMatchIndex / 2);
             const nextMatch = nextRound.matches[nextMatchIndex];
             
             if (nextMatch) {
-                const isTeam1Position = bracket.rounds[roundIndex].matches.indexOf(match) % 2 === 0;
+                // 짝수 인덱스(0, 2, 4...)는 team1, 홀수 인덱스(1, 3, 5...)는 team2
+                const isTeam1Position = currentMatchIndex % 2 === 0;
                 if (isTeam1Position) {
                     nextMatch.team1 = winner;
                 } else {
