@@ -177,18 +177,32 @@ service cloud.firestore {
       );
     }
     
-    // 토너먼트 예약 컬렉션 - 자신의 예약만 생성/삭제 가능, 누구나 읽기 가능
+    // 토너먼트 예약 컬렉션 - 자신의 예약만 생성/삭제 가능, 관리자는 모든 예약 생성/삭제 가능, 누구나 읽기 가능
     match /tournamentRegistrations/{registrationId} {
       // 누구나 읽기 가능
       allow read: if true;
       
-      // 예약 생성 - 자신의 userId로만 생성 가능
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
+      // 예약 생성 - 자신의 userId로만 생성 가능 또는 관리자인 경우
+      allow create: if request.auth != null && (
+        // 자신의 userId로 생성하는 경우
+        request.auth.uid == request.resource.data.userId ||
+        // 관리자인 경우 (다른 사용자를 대신해서 생성 가능)
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true) ||
+        // 기본 관리자 이메일 (초기 설정용)
+        request.auth.token.email in ['admin@pickleball.com', 'starlunar88@gmail.com']
+      );
       
-      // 예약 삭제 - 자신의 예약만 삭제 가능
-      allow delete: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
+      // 예약 삭제 - 자신의 예약만 삭제 가능 또는 관리자인 경우
+      allow delete: if request.auth != null && (
+        // 자신의 예약인 경우
+        request.auth.uid == resource.data.userId ||
+        // 관리자인 경우 (다른 사용자의 예약도 삭제 가능)
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true) ||
+        // 기본 관리자 이메일 (초기 설정용)
+        request.auth.token.email in ['admin@pickleball.com', 'starlunar88@gmail.com']
+      );
       
       // 예약 수정 불가 (생성/삭제만 가능)
       allow update: if false;
