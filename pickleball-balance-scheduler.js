@@ -445,8 +445,11 @@ class PickleballBalanceScheduler {
         
         const sittingOut = sortedPlayers.filter(p => !usedPlayerIds.has(p.userId));
 
+        // 선택된 플레이어를 DUPR 순으로 다시 정렬 (중요: 각 코트에서 올바른 순위 보장)
+        const sortedSelectedPlayers = this.getSortedPlayersByDupr(selectedPlayers);
+
         console.log(`  📋 라운드 ${roundNum}: 상위 ${topPlayersCount}명 선택 (DUPR 순)`);
-        console.log(`  📋 선택된 플레이어: ${selectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
+        console.log(`  📋 선택된 플레이어: ${sortedSelectedPlayers.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
         if (sittingOut.length > 0) {
             console.log(`  📋 대기: ${sittingOut.map(p => `${p.userName}(${p.dupr})`).join(', ')}`);
         }
@@ -454,7 +457,7 @@ class PickleballBalanceScheduler {
         // 각 코트별로 플레이어 할당
         for (let court = 1; court <= courtCount; court++) {
             const startIdx = (court - 1) * 4;
-            const courtPlayers = selectedPlayers.slice(startIdx, startIdx + 4);
+            const courtPlayers = sortedSelectedPlayers.slice(startIdx, startIdx + 4);
 
             if (courtPlayers.length < 4) {
                 continue;

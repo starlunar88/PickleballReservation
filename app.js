@@ -7955,8 +7955,30 @@ async function getRankings(limit = 50) {
             });
         }
         
-        // 점수 기준으로 정렬
-        rankings.sort((a, b) => b.score - a.score);
+        // 점수 기준으로 정렬 (점수가 같으면 승률, 총 게임 수, 이름 순으로 정렬)
+        rankings.sort((a, b) => {
+            // 1. 점수 비교 (내림차순)
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            
+            // 2. 점수가 같으면 승률 비교 (내림차순)
+            if (b.winRate !== a.winRate) {
+                return b.winRate - a.winRate;
+            }
+            
+            // 3. 승률도 같으면 총 게임 수 비교 (내림차순 - 더 많이 경기한 사람이 위)
+            if (b.totalGames !== a.totalGames) {
+                return b.totalGames - a.totalGames;
+            }
+            
+            // 4. 모든 것이 같으면 이름으로 정렬 (오름차순 - 알파벳 순)
+            const nameA = (a.userName || '').toLowerCase();
+            const nameB = (b.userName || '').toLowerCase();
+            if (nameA < nameB) return -1;
+            if (nameA > nameB) return 1;
+            return 0;
+        });
         
         // 순위 추가
         rankings.forEach((ranking, index) => {
