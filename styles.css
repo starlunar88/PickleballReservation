@@ -4991,7 +4991,7 @@ span#matches-current-date-display,
     .rankings-container > .ci-banner,
     .stats-container > .ci-banner,
     .records-container > .ci-banner {
-        margin-top: 0px !important; /* PC에서 70px -> 10px로 줄임 */
+        margin-top: 1px !important; /* PC에서 70px -> 10px로 줄임 */
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
