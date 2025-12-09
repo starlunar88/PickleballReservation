@@ -18946,6 +18946,8 @@ function renderTournamentBracket(bracket, tournamentId) {
     // 왼쪽 브래킷의 모든 라운드 렌더링 (결승 제외)
     for (let roundIndex = 0; roundIndex < totalRounds - 1; roundIndex++) {
         const round = bracket.rounds[roundIndex];
+        if (!round || !round.matches) continue;
+        
         const roundMatches = round.matches;
         
         // 각 라운드를 양쪽으로 분할
@@ -19057,6 +19059,8 @@ function renderTournamentBracket(bracket, tournamentId) {
     // 오른쪽 브래킷의 모든 라운드 렌더링 (결승 제외)
     for (let roundIndex = 0; roundIndex < totalRounds - 1; roundIndex++) {
         const round = bracket.rounds[roundIndex];
+        if (!round || !round.matches) continue;
+        
         const roundMatches = round.matches;
         
         // 각 라운드를 양쪽으로 분할

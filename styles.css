@@ -8580,10 +8580,11 @@ span#matches-current-date-display,
 .bracket-side {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
     flex: 1;
-    min-width: 0;
+    min-width: 140px;
     justify-content: flex-start;
+    align-items: stretch;
 }
 
 .bracket-center {
@@ -8615,9 +8616,11 @@ span#matches-current-date-display,
 .bracket-round-split {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     position: relative;
     flex-shrink: 0;
+    width: 100%;
+    min-width: 140px;
 }
 
 .bracket-round-split.round-final {
