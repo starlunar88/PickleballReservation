@@ -4992,7 +4992,7 @@ span#matches-current-date-display,
     .stats-container > .ci-banner,
     .records-container > .ci-banner {
         display: flex !important; /* PC에서도 표시되도록 명시 */
-        margin-top: 10px !important; /* PC에서 70px -> 10px로 줄임 */
+        margin-top: 0px !important; /* PC에서 70px -> 10px로 줄임 */
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
