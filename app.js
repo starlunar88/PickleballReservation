@@ -11015,9 +11015,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 if (matchNum === 1 || matchNum === 2) {
                                     // 1,2 경기: 전체 플레이어를 DUPR 점수 순으로 정렬 후 고정 인덱스 조합 사용
                                     // 전체 플레이어를 DUPR 점수 순으로 정렬 (1번=최강, 2번=차강, ..., N번=최약)
-                                    const allSortedFor12 = [...allAvailablePlayers].sort((a, b) => {
-                                        const duprA = b.dupr || 0;
-                                        const duprB = a.dupr || 0;
+                                    // 1,2 경기는 같은 라운드 내 중복을 허용하므로 전체 플레이어 풀에서 선택
+                                    const allSortedFor12 = [...shuffledAllPlayers].sort((a, b) => {
+                                        // DUPR이 null이나 undefined인 경우 -1로 처리하여 하위에 배치
+                                        const duprA = (b.dupr != null && b.dupr !== undefined) ? b.dupr : -1;
+                                        const duprB = (a.dupr != null && a.dupr !== undefined) ? a.dupr : -1;
                                         const diff = duprA - duprB;
                                         if (Math.abs(diff) < 0.0001) {
                                             return a.userId.localeCompare(b.userId);
@@ -11759,9 +11761,9 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                             forbiddenCombinations.add(`${prevTeamB}|${prevTeamA}`);
                                         }
                                     }
-                                    // 8경기일 때: 3,4,7 경기 조합 피하기
+                                    // 8경기일 때: 1,2,3,4,5,6,7 경기 조합 피하기
                                     if (matchNum === 8) {
-                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7 || prev.matchNum === 8) {
+                                        if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7 || prev.matchNum === 8) {
                                             const prevTeamA = prev.teamAIds;
                                             const prevTeamB = prev.teamBIds;
                                             forbiddenCombinations.add(`${prevTeamA}|${prevTeamB}`);
@@ -11827,10 +11829,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         }
                                     }
                                     
-                                    // 8경기일 때: 3,4,7경기와 같은 팀원 조합인지 확인
+                                    // 8경기일 때: 1,2,3,4,5,6,7경기와 같은 팀원 조합인지 확인
                                     if (matchNum === 8) {
                                         for (const prev of previousMatchConfigs) {
-                                            if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                            if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7) {
                                                 const prevTeamA = prev.teamAIds.split(',').sort();
                                                 const prevTeamB = prev.teamBIds.split(',').sort();
                                                 const currentTeamA = teamA.split(',').sort();
@@ -12292,10 +12294,10 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                 }
                             }
                             
-                            // 8경기일 때: 3,4,7경기에서 같은 팀이었던 조합 방지
+                            // 8경기일 때: 1,2,3,4,5,6,7경기에서 같은 팀이었던 조합 방지
                             if (targetMatchNum === 8) {
                                 for (const prev of previousMatchConfigs) {
-                                    if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                    if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7) {
                                         const prevTeamA = prev.teamAIds.split(',');
                                         const prevTeamB = prev.teamBIds.split(',');
                                         
@@ -12534,7 +12536,7 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         shouldCheck = true;
                                     } else if (targetMatchNum === 7 && (prev.matchNum === 3 || prev.matchNum === 4)) {
                                         shouldCheck = true;
-                                    } else if (targetMatchNum === 8 && (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7)) {
+                                    } else if (targetMatchNum === 8 && (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7)) {
                                         shouldCheck = true;
                                     }
                                     
@@ -13713,11 +13715,11 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     }
                                 }
                                 
-                                // 8경기일 때: 3,4,7경기에서 같은 팀이었던 조합 방지 (완전 제외)
+                                // 8경기일 때: 1,2,3,4,5,6,7경기에서 같은 팀이었던 조합 방지 (완전 제외)
                                 if (matchNum === 8) {
                                     let hasSameTeammateCombo = false;
                                     for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                        if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7) {
                                             const prevTeamA = prev.teamAIds.split(',');
                                             const prevTeamB = prev.teamBIds.split(',');
                                             const currentTeamA = config.teamA;
@@ -14093,20 +14095,20 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                     matchNum: 7 
                                 });
                             } else if (matchNum === 8) {
-                                // 8경기: 3,4,7경기에서 같은 팀이었던 조합 방지
-                                // 3,4,7경기에서 같은 팀원 조합 확인
+                                // 8경기: 1,2,3,4,5,6,7경기에서 같은 팀이었던 조합 방지
+                                // 1,2,3,4,5,6,7경기에서 같은 팀원 조합 확인
                                 let hasSameTeammateCombo = false;
                                 const currentTeamAIds = [];
                                 const currentTeamBIds = [];
                                 
                                 if (courtCount >= 2) {
                                     // 하위 4명 기준: sorted[0], sorted[1] = 하위 1,2위, sorted[2], sorted[3] = 하위 3,4위
-                                    // 3,4,7경기와 같은 팀원 조합이 나오지 않도록 체크
+                                    // 1,2,3,4,5,6,7경기와 같은 팀원 조합이 나오지 않도록 체크
                                     const candidateTeamA1 = [sorted[2], sorted[3]].map(p => p.userId).sort();
                                     const candidateTeamB1 = [sorted[0], sorted[1]].map(p => p.userId).sort();
                                     
                                     for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                        if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7) {
                                             const prevTeamA = prev.teamAIds.split(',').sort();
                                             const prevTeamB = prev.teamBIds.split(',').sort();
                                             
@@ -14139,12 +14141,12 @@ function buildMatchSchedule(players, courtCount, rounds, playerCourtMap = {}, te
                                         selectedTeamB = [sorted[0], sorted[1]]; // 못하는 사람들 (하위 1위+하위 2위)
                                     }
                                 } else {
-                                    // 코트 1개일 때: 3,4,7경기와 같은 팀원 조합 방지
+                                    // 코트 1개일 때: 1,2,3,4,5,6,7경기와 같은 팀원 조합 방지
                                     const candidateTeamA = [sorted[0], sorted[3]].map(p => p.userId).sort();
                                     const candidateTeamB = [sorted[1], sorted[2]].map(p => p.userId).sort();
                                     
                                     for (const prev of previousMatchConfigs) {
-                                        if (prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 7) {
+                                        if (prev.matchNum === 1 || prev.matchNum === 2 || prev.matchNum === 3 || prev.matchNum === 4 || prev.matchNum === 5 || prev.matchNum === 6 || prev.matchNum === 7) {
                                             const prevTeamA = prev.teamAIds.split(',').sort();
                                             const prevTeamB = prev.teamBIds.split(',').sort();
                                             
