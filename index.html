@@ -79,6 +79,10 @@
                 <i class="fas fa-history"></i>
                 <span>기록</span>
             </button>
+            <button class="mobile-tab-btn" data-tab="tournament">
+                <i class="fas fa-trophy"></i>
+                <span>토너먼트</span>
+            </button>
         </div>
         <!-- Fixed tabs spacer to reserve vertical space under fixed tabs -->
         <div class="mobile-nav-tabs-spacer"></div>
@@ -104,6 +108,10 @@
             <button class="desktop-tab-btn" data-tab="records">
                 <i class="fas fa-history"></i>
                 <span>기록 보기</span>
+            </button>
+            <button class="desktop-tab-btn" data-tab="tournament">
+                <i class="fas fa-trophy"></i>
+                <span>토너먼트</span>
             </button>
         </div>
 
@@ -459,6 +467,69 @@
                         </div>
                     </div>
                     
+                </div>
+            </div>
+
+            <!-- 6. 토너먼트 탭 -->
+            <div class="tab-content" id="tournament-tab">
+                <div class="tournament-container">
+                    <!-- CI Banner -->
+                    <div class="ci-banner">
+                        <img src="CI1.png" alt="CI Banner" class="ci-banner-img">
+                    </div>
+                    
+                    <!-- 토너먼트 예약 섹션 -->
+                    <div class="tournament-reservation-section">
+                        <div class="section-header">
+                            <h2>토너먼트 예약</h2>
+                        </div>
+                        <div class="tournament-reservation-form">
+                            <div class="form-group">
+                                <label for="tournament-date">토너먼트 날짜</label>
+                                <input type="date" id="tournament-date" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="tournament-time">토너먼트 시간</label>
+                                <input type="time" id="tournament-time" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="tournament-name">토너먼트 이름 (선택사항)</label>
+                                <input type="text" id="tournament-name" class="form-control" placeholder="예: 2024 봄 토너먼트">
+                            </div>
+                            <button class="btn btn-primary" id="tournament-reserve-btn">
+                                <i class="fas fa-calendar-plus"></i> 토너먼트 예약하기
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 진행 중인 토너먼트 섹션 -->
+                    <div class="tournament-active-section">
+                        <div class="section-header">
+                            <h2>진행 중인 토너먼트</h2>
+                            <button class="btn btn-outline" id="refresh-tournaments" title="새로고침">
+                                <i class="fas fa-rotate-right"></i>
+                            </button>
+                        </div>
+                        <div id="active-tournaments-list" class="tournaments-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>토너먼트를 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 토너먼트 기록 섹션 -->
+                    <div class="tournament-history-section">
+                        <div class="section-header">
+                            <h2>토너먼트 기록</h2>
+                        </div>
+                        <div id="tournament-history-list" class="tournaments-list">
+                            <div class="loading-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>기록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -917,6 +988,41 @@
             <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px;">
                 <button class="btn btn-outline" id="cancel-manual-match-btn">취소</button>
                 <button class="btn btn-primary" id="save-manual-match-btn">대진표 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토너먼트 대진표 모달 -->
+    <div id="tournament-bracket-modal" class="modal" style="display: none;">
+        <div class="modal-content tournament-modal-content">
+            <div class="modal-header">
+                <h2 id="tournament-modal-title">토너먼트 대진표</h2>
+                <span class="close" id="close-tournament-modal">&times;</span>
+            </div>
+            <div class="modal-body tournament-modal-body">
+                <div id="tournament-bracket-container" class="tournament-bracket-container">
+                    <!-- 대진표가 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토너먼트 우승 축하 모달 -->
+    <div id="tournament-winner-modal" class="modal" style="display: none;">
+        <div class="modal-content tournament-winner-modal-content">
+            <div class="modal-header">
+                <h2>🏆 우승 축하합니다! 🏆</h2>
+            </div>
+            <div class="modal-body tournament-winner-body">
+                <div class="winner-celebration">
+                    <div class="winner-trophy">🏆</div>
+                    <h3 id="winner-team-name" class="winner-team-name"></h3>
+                    <p class="winner-message">축하합니다! 토너먼트에서 우승하셨습니다!</p>
+                    <div class="winner-details" id="winner-details"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="close-winner-modal-btn">확인</button>
             </div>
         </div>
     </div>

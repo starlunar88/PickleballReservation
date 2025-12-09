@@ -1916,6 +1916,9 @@ async function loadTabData(tabName) {
         case 'records':
             await loadRecordsData();
             break;
+        case 'tournament':
+            await loadTournamentData();
+            break;
         case 'admin':
             await loadAdminData();
             break;
@@ -18049,6 +18052,902 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 closePlayerHeadToHeadModal();
+            }
+        });
+    }
+});
+
+// ==================== 토너먼트 관련 함수들 ====================
+
+// 토너먼트 데이터 로드
+async function loadTournamentData() {
+    try {
+        await loadActiveTournaments();
+        await loadTournamentHistory();
+    } catch (error) {
+        console.error('토너먼트 데이터 로드 오류:', error);
+        showToast('토너먼트 데이터를 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 진행 중인 토너먼트 로드
+async function loadActiveTournaments() {
+    const container = document.getElementById('active-tournaments-list');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>토너먼트를 불러오는 중...</p></div>';
+    
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            container.innerHTML = '<div class="empty-state"><p>로그인이 필요합니다.</p></div>';
+            return;
+        }
+        
+        const tournamentsSnapshot = await db.collection('tournaments')
+            .where('status', 'in', ['pending', 'in_progress'])
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        if (tournamentsSnapshot.empty) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-trophy"></i><p>진행 중인 토너먼트가 없습니다.</p></div>';
+            return;
+        }
+        
+        const tournamentsHTML = [];
+        tournamentsSnapshot.forEach(doc => {
+            const tournament = { id: doc.id, ...doc.data() };
+            tournamentsHTML.push(createTournamentCard(tournament, true));
+        });
+        
+        container.innerHTML = tournamentsHTML.join('');
+    } catch (error) {
+        console.error('진행 중인 토너먼트 로드 오류:', error);
+        container.innerHTML = '<div class="empty-state"><p>토너먼트를 불러오는 중 오류가 발생했습니다.</p></div>';
+    }
+}
+
+// 토너먼트 기록 로드
+async function loadTournamentHistory() {
+    const container = document.getElementById('tournament-history-list');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>기록을 불러오는 중...</p></div>';
+    
+    try {
+        const user = auth.currentUser;
+        if (!user) {
+            container.innerHTML = '<div class="empty-state"><p>로그인이 필요합니다.</p></div>';
+            return;
+        }
+        
+        const tournamentsSnapshot = await db.collection('tournaments')
+            .where('status', '==', 'completed')
+            .orderBy('createdAt', 'desc')
+            .limit(20)
+            .get();
+        
+        if (tournamentsSnapshot.empty) {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>완료된 토너먼트가 없습니다.</p></div>';
+            return;
+        }
+        
+        const tournamentsHTML = [];
+        tournamentsSnapshot.forEach(doc => {
+            const tournament = { id: doc.id, ...doc.data() };
+            tournamentsHTML.push(createTournamentCard(tournament, false));
+        });
+        
+        container.innerHTML = tournamentsHTML.join('');
+    } catch (error) {
+        console.error('토너먼트 기록 로드 오류:', error);
+        container.innerHTML = '<div class="empty-state"><p>기록을 불러오는 중 오류가 발생했습니다.</p></div>';
+    }
+}
+
+// 토너먼트 카드 생성
+function createTournamentCard(tournament, isActive) {
+    // 날짜 형식 처리 (문자열 또는 Timestamp)
+    let dateStr = '날짜 미정';
+    if (tournament.date) {
+        if (typeof tournament.date === 'string') {
+            // 문자열 형식인 경우
+            const dateObj = new Date(tournament.date);
+            dateStr = dateObj.toLocaleDateString('ko-KR');
+        } else if (tournament.date.seconds) {
+            // Timestamp 형식인 경우
+            dateStr = new Date(tournament.date.seconds * 1000).toLocaleDateString('ko-KR');
+        } else if (tournament.dateTime && tournament.dateTime.seconds) {
+            // dateTime 필드가 있는 경우
+            dateStr = new Date(tournament.dateTime.seconds * 1000).toLocaleDateString('ko-KR');
+        }
+    }
+    
+    const time = tournament.time || '시간 미정';
+    const name = tournament.name || '토너먼트';
+    const status = tournament.status || 'pending';
+    const statusText = {
+        'pending': '대기 중',
+        'in_progress': '진행 중',
+        'completed': '완료'
+    }[status] || '알 수 없음';
+    
+    const winnerInfo = tournament.winner ? 
+        `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${tournament.winner}</div>` : '';
+    
+    return `
+        <div class="tournament-card ${isActive ? 'active' : ''}">
+            <div class="tournament-card-header">
+                <h3>${name}</h3>
+                <span class="tournament-status ${status}">${statusText}</span>
+            </div>
+            <div class="tournament-card-body">
+                <div class="tournament-info">
+                    <div><i class="fas fa-calendar"></i> ${dateStr}</div>
+                    <div><i class="fas fa-clock"></i> ${time}</div>
+                    ${tournament.participants ? `<div><i class="fas fa-users"></i> 참가자: ${tournament.participants.length}팀</div>` : ''}
+                    ${winnerInfo}
+                </div>
+                ${isActive && status !== 'completed' ? `
+                    <div class="tournament-card-actions">
+                        <button class="btn btn-primary" onclick="openTournamentBracket('${tournament.id}')">
+                            <i class="fas fa-sitemap"></i> 대진표 보기
+                        </button>
+                        ${status === 'pending' ? `
+                            <button class="btn btn-success" onclick="generateTournamentBracket('${tournament.id}')">
+                                <i class="fas fa-magic"></i> 대진표 생성
+                            </button>
+                        ` : ''}
+                    </div>
+                ` : `
+                    <div class="tournament-card-actions">
+                        <button class="btn btn-outline" onclick="viewTournamentDetails('${tournament.id}')">
+                            <i class="fas fa-eye"></i> 상세 보기
+                        </button>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+// 토너먼트 예약 처리
+async function handleTournamentReservation() {
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        const date = document.getElementById('tournament-date').value;
+        const time = document.getElementById('tournament-time').value;
+        const name = document.getElementById('tournament-name').value || `토너먼트 ${new Date().toLocaleDateString('ko-KR')}`;
+        
+        if (!date || !time) {
+            showToast('날짜와 시간을 입력해주세요.', 'error');
+            return;
+        }
+        
+        // 토너먼트 생성 (날짜는 문자열로 저장하여 예약과 일치시킴)
+        const tournamentData = {
+            name: name,
+            date: date, // 문자열 형식으로 저장 (예: "2024-01-01")
+            dateTime: firebase.firestore.Timestamp.fromDate(new Date(`${date}T${time}`)), // 날짜 비교용
+            time: time,
+            status: 'pending',
+            participants: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: user.uid,
+            createdByName: user.displayName || user.email
+        };
+        
+        const docRef = await db.collection('tournaments').add(tournamentData);
+        showToast('토너먼트가 예약되었습니다!', 'success');
+        
+        // 폼 초기화
+        document.getElementById('tournament-date').value = '';
+        document.getElementById('tournament-time').value = '';
+        document.getElementById('tournament-name').value = '';
+        
+        // 토너먼트 목록 새로고침
+        await loadActiveTournaments();
+        
+    } catch (error) {
+        console.error('토너먼트 예약 오류:', error);
+        showToast('토너먼트 예약 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 토너먼트 대진표 생성
+async function generateTournamentBracket(tournamentId) {
+    try {
+        showLoading();
+        
+        const tournamentDoc = await db.collection('tournaments').doc(tournamentId).get();
+        if (!tournamentDoc.exists) {
+            showToast('토너먼트를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const tournament = tournamentDoc.data();
+        
+        // 예약된 플레이어 가져오기
+        // 날짜 형식 처리 (문자열 또는 Timestamp)
+        let dateStr = '';
+        if (typeof tournament.date === 'string') {
+            dateStr = tournament.date;
+        } else if (tournament.date && tournament.date.toDate) {
+            dateStr = tournament.date.toDate().toISOString().split('T')[0];
+        } else if (tournament.dateTime && tournament.dateTime.toDate) {
+            dateStr = tournament.dateTime.toDate().toISOString().split('T')[0];
+        } else {
+            showToast('토너먼트 날짜 정보가 올바르지 않습니다.', 'error');
+            return;
+        }
+        
+        const timeSlot = tournament.time;
+        
+        const reservationsSnapshot = await db.collection('reservations')
+            .where('date', '==', dateStr)
+            .where('timeSlot', '==', timeSlot)
+            .where('status', '==', 'confirmed')
+            .get();
+        
+        if (reservationsSnapshot.empty) {
+            showToast('해당 시간대에 예약된 플레이어가 없습니다.', 'warning');
+            return;
+        }
+        
+        // 플레이어 정보 수집
+        const players = [];
+        const playerMap = new Map();
+        
+        for (const doc of reservationsSnapshot.docs) {
+            const reservation = doc.data();
+            const userId = reservation.userId;
+            
+            if (!playerMap.has(userId)) {
+                // 사용자 정보 가져오기
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userData = userDoc.exists ? userDoc.data() : {};
+                
+                players.push({
+                    userId: userId,
+                    userName: reservation.userName || userData.displayName || reservation.userEmail || '알 수 없음',
+                    dupr: reservation.userDupr || userData.dupr || null
+                });
+                
+                playerMap.set(userId, true);
+            }
+        }
+        
+        if (players.length < 4) {
+            showToast('토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 팀 생성 (밸런스 유지하면서 랜덤하게)
+        const teams = createBalancedTeams(players);
+        
+        // 대진표 생성
+        const bracket = createTournamentBracket(teams);
+        
+        // Firestore에 저장
+        await db.collection('tournaments').doc(tournamentId).update({
+            status: 'in_progress',
+            participants: teams.map(team => ({
+                players: team.players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr })),
+                teamName: team.teamName
+            })),
+            bracket: bracket,
+            bracketGeneratedAt: new Date()
+        });
+        
+        showToast('대진표가 생성되었습니다!', 'success');
+        await loadActiveTournaments();
+        await openTournamentBracket(tournamentId);
+        
+    } catch (error) {
+        console.error('대진표 생성 오류:', error);
+        showToast('대진표 생성 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 밸런스 유지하면서 랜덤하게 팀 생성
+function createBalancedTeams(players) {
+    // DUPR이 있는 경우 밸런스 모드, 없으면 랜덤 모드
+    const hasDupr = players.some(p => p.dupr !== null && p.dupr !== undefined);
+    
+    let sortedPlayers = [...players];
+    
+    if (hasDupr) {
+        // DUPR 기준으로 정렬 (높은 순)
+        sortedPlayers.sort((a, b) => {
+            const duprA = a.dupr || 0;
+            const duprB = b.dupr || 0;
+            return duprB - duprA;
+        });
+        
+        // 밸런스 유지하면서 랜덤하게 섞기
+        const teams = [];
+        const teamCount = Math.ceil(sortedPlayers.length / 2);
+        
+        // 강한 선수와 약한 선수를 번갈아가며 배치하되, 약간의 랜덤 요소 추가
+        for (let i = 0; i < teamCount; i++) {
+            const team = [];
+            
+            // 첫 번째 선수 선택 (상위권에서 랜덤하게)
+            const topHalf = sortedPlayers.slice(0, Math.ceil(sortedPlayers.length / 2));
+            const bottomHalf = sortedPlayers.slice(Math.ceil(sortedPlayers.length / 2));
+            
+            if (topHalf.length > 0) {
+                const randomTop = topHalf[Math.floor(Math.random() * topHalf.length)];
+                team.push(randomTop);
+                sortedPlayers = sortedPlayers.filter(p => p.userId !== randomTop.userId);
+            }
+            
+            // 두 번째 선수 선택 (하위권에서 랜덤하게)
+            if (sortedPlayers.length > 0) {
+                const randomBottom = sortedPlayers[Math.floor(Math.random() * sortedPlayers.length)];
+                team.push(randomBottom);
+                sortedPlayers = sortedPlayers.filter(p => p.userId !== randomBottom.userId);
+            }
+            
+            if (team.length > 0) {
+                teams.push({
+                    teamName: `팀 ${i + 1}`,
+                    players: team
+                });
+            }
+        }
+        
+        // 남은 선수들 랜덤 배치
+        while (sortedPlayers.length > 0) {
+            const randomPlayer = sortedPlayers[Math.floor(Math.random() * sortedPlayers.length)];
+            const randomTeam = teams[Math.floor(Math.random() * teams.length)];
+            randomTeam.players.push(randomPlayer);
+            sortedPlayers = sortedPlayers.filter(p => p.userId !== randomPlayer.userId);
+        }
+        
+        return teams;
+    } else {
+        // DUPR이 없으면 완전 랜덤
+        const shuffled = sortedPlayers.sort(() => Math.random() - 0.5);
+        const teams = [];
+        const teamCount = Math.ceil(shuffled.length / 2);
+        
+        for (let i = 0; i < teamCount; i++) {
+            const team = [];
+            if (shuffled.length > 0) {
+                team.push(shuffled.shift());
+            }
+            if (shuffled.length > 0) {
+                team.push(shuffled.shift());
+            }
+            if (team.length > 0) {
+                teams.push({
+                    teamName: `팀 ${i + 1}`,
+                    players: team
+                });
+            }
+        }
+        
+        return teams;
+    }
+}
+
+// 토너먼트 대진표 생성 (싱글 엘리미네이션)
+function createTournamentBracket(teams) {
+    const bracket = {
+        rounds: [],
+        currentRound: 0
+    };
+    
+    // 라운드 수 계산
+    let teamCount = teams.length;
+    let roundNumber = 0;
+    
+    // 첫 라운드 생성
+    const firstRound = {
+        roundNumber: roundNumber,
+        matches: []
+    };
+    
+    // 부전승 처리: 팀 수가 홀수이거나 2의 거듭제곱이 아닌 경우
+    let actualTeamCount = teamCount;
+    let byeCount = 0;
+    
+    // 2의 거듭제곱으로 맞추기
+    let nextPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(teamCount)));
+    if (teamCount < nextPowerOfTwo) {
+        byeCount = nextPowerOfTwo - teamCount;
+    }
+    
+    // 팀을 매치에 배정
+    let teamIndex = 0;
+    for (let i = 0; i < Math.ceil(teamCount / 2); i++) {
+        const match = {
+            matchId: `r${roundNumber}-m${i}`,
+            team1: teamIndex < teams.length ? {
+                teamName: teams[teamIndex].teamName,
+                players: teams[teamIndex].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
+            } : null,
+            team2: teamIndex + 1 < teams.length ? {
+                teamName: teams[teamIndex + 1].teamName,
+                players: teams[teamIndex + 1].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
+            } : null,
+            score1: null,
+            score2: null,
+            winner: null,
+            isBye: false
+        };
+        
+        // 부전승 처리
+        if (!match.team1 || !match.team2) {
+            match.isBye = true;
+            match.winner = match.team1 || match.team2;
+            match.score1 = match.team1 ? 11 : 0;
+            match.score2 = match.team2 ? 11 : 0;
+        }
+        
+        firstRound.matches.push(match);
+        teamIndex += 2;
+    }
+    
+    bracket.rounds.push(firstRound);
+    
+    // 다음 라운드들 생성 (빈 구조만)
+    let remainingMatches = Math.ceil(teamCount / 2);
+    roundNumber = 1;
+    
+    while (remainingMatches > 1) {
+        const round = {
+            roundNumber: roundNumber,
+            matches: []
+        };
+        
+        for (let i = 0; i < Math.ceil(remainingMatches / 2); i++) {
+            round.matches.push({
+                matchId: `r${roundNumber}-m${i}`,
+                team1: null,
+                team2: null,
+                score1: null,
+                score2: null,
+                winner: null,
+                isBye: false
+            });
+        }
+        
+        bracket.rounds.push(round);
+        remainingMatches = Math.ceil(remainingMatches / 2);
+        roundNumber++;
+    }
+    
+    return bracket;
+}
+
+// 토너먼트 대진표 열기
+async function openTournamentBracket(tournamentId) {
+    try {
+        const tournamentDoc = await db.collection('tournaments').doc(tournamentId).get();
+        if (!tournamentDoc.exists) {
+            showToast('토너먼트를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const tournament = tournamentDoc.data();
+        const bracket = tournament.bracket;
+        
+        if (!bracket) {
+            showToast('대진표가 아직 생성되지 않았습니다.', 'warning');
+            return;
+        }
+        
+        // 모달 제목 설정
+        const modalTitle = document.getElementById('tournament-modal-title');
+        if (modalTitle) {
+            modalTitle.textContent = tournament.name || '토너먼트 대진표';
+        }
+        
+        // 대진표 렌더링
+        renderTournamentBracket(bracket, tournamentId);
+        
+        // 모달 열기
+        const modal = document.getElementById('tournament-bracket-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        
+    } catch (error) {
+        console.error('대진표 열기 오류:', error);
+        showToast('대진표를 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+// 토너먼트 대진표 렌더링
+function renderTournamentBracket(bracket, tournamentId) {
+    const container = document.getElementById('tournament-bracket-container');
+    if (!container) return;
+    
+    if (!bracket || !bracket.rounds || bracket.rounds.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>대진표가 없습니다.</p></div>';
+        return;
+    }
+    
+    // 대진표 HTML 생성
+    let bracketHTML = '<div class="tournament-bracket">';
+    
+    bracket.rounds.forEach((round, roundIndex) => {
+        bracketHTML += `<div class="bracket-round round-${roundIndex}">`;
+        bracketHTML += `<div class="round-header"><h3>${roundIndex === bracket.rounds.length - 1 ? '결승' : roundIndex === bracket.rounds.length - 2 ? '준결승' : `${roundIndex + 1}라운드`}</h3></div>`;
+        bracketHTML += '<div class="round-matches">';
+        
+        round.matches.forEach((match, matchIndex) => {
+            const team1Name = match.team1 ? match.team1.teamName : '대기 중';
+            const team2Name = match.team2 ? match.team2.teamName : '대기 중';
+            const team1Players = match.team1 ? match.team1.players.map(p => p.userName).join(', ') : '';
+            const team2Players = match.team2 ? match.team2.players.map(p => p.userName).join(', ') : '';
+            
+            const isCompleted = match.winner !== null;
+            const isBye = match.isBye;
+            const winnerTeam = match.winner;
+            
+            bracketHTML += `
+                <div class="bracket-match ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+                    <div class="match-teams">
+                        <div class="match-team team1 ${winnerTeam && winnerTeam.teamName === team1Name ? 'winner' : ''}">
+                            <div class="team-name">${team1Name}</div>
+                            <div class="team-players">${team1Players}</div>
+                            ${isCompleted && !isBye ? `<div class="team-score">${match.score1 || 0}</div>` : ''}
+                        </div>
+                        ${!isBye ? `
+                            <div class="match-vs">VS</div>
+                        ` : '<div class="match-bye">부전승</div>'}
+                        <div class="match-team team2 ${winnerTeam && winnerTeam.teamName === team2Name ? 'winner' : ''}">
+                            <div class="team-name">${team2Name}</div>
+                            <div class="team-players">${team2Players}</div>
+                            ${isCompleted && !isBye ? `<div class="team-score">${match.score2 || 0}</div>` : ''}
+                        </div>
+                    </div>
+                    ${!isCompleted && !isBye && match.team1 && match.team2 ? `
+                        <div class="match-actions">
+                            <button class="btn btn-primary btn-small" onclick="openScoreInputModal('${tournamentId}', '${match.matchId}', ${roundIndex})">
+                                <i class="fas fa-edit"></i> 점수 입력
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        bracketHTML += '</div></div>';
+    });
+    
+    bracketHTML += '</div>';
+    
+    container.innerHTML = bracketHTML;
+}
+
+// 점수 입력 모달 열기
+function openScoreInputModal(tournamentId, matchId, roundIndex) {
+    // 토너먼트 정보 가져오기
+    db.collection('tournaments').doc(tournamentId).get().then(tournamentDoc => {
+        if (!tournamentDoc.exists) {
+            showToast('토너먼트를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const tournament = tournamentDoc.data();
+        const bracket = tournament.bracket;
+        const match = bracket.rounds[roundIndex].matches.find(m => m.matchId === matchId);
+        
+        if (!match) {
+            showToast('경기를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const team1Name = match.team1 ? match.team1.teamName : '팀 1';
+        const team2Name = match.team2 ? match.team2.teamName : '팀 2';
+        
+        // 점수 입력 모달 생성
+        const modalHTML = `
+            <div id="score-input-modal" class="modal" style="display: flex;">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3>점수 입력</h3>
+                        <span class="close" onclick="closeScoreInputModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>${team1Name} 점수</label>
+                            <input type="number" id="score-input-1" class="form-control" min="0" max="30" value="${match.score1 || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>${team2Name} 점수</label>
+                            <input type="number" id="score-input-2" class="form-control" min="0" max="30" value="${match.score2 || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <small class="form-text">승리하려면 11점 이상을 획득하고 상대보다 2점 이상 앞서야 합니다.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline" onclick="closeScoreInputModal()">취소</button>
+                        <button class="btn btn-primary" onclick="submitScoreFromModal('${tournamentId}', '${matchId}', ${roundIndex})">확인</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // 기존 모달 제거
+        const existingModal = document.getElementById('score-input-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // 새 모달 추가
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // 모달 외부 클릭 시 닫기
+        const modal = document.getElementById('score-input-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeScoreInputModal();
+                }
+            });
+        }
+        
+        // 엔터키로 제출
+        document.getElementById('score-input-1').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('score-input-2').focus();
+            }
+        });
+        
+        document.getElementById('score-input-2').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitScoreFromModal(tournamentId, matchId, roundIndex);
+            }
+        });
+        
+        // 첫 번째 입력 필드에 포커스
+        setTimeout(() => {
+            document.getElementById('score-input-1').focus();
+        }, 100);
+    }).catch(error => {
+        console.error('토너먼트 정보 가져오기 오류:', error);
+        showToast('토너먼트 정보를 불러오는 중 오류가 발생했습니다.', 'error');
+    });
+}
+
+// 점수 입력 모달 닫기
+function closeScoreInputModal() {
+    const modal = document.getElementById('score-input-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 모달에서 점수 제출
+function submitScoreFromModal(tournamentId, matchId, roundIndex) {
+    const score1 = parseInt(document.getElementById('score-input-1').value);
+    const score2 = parseInt(document.getElementById('score-input-2').value);
+    
+    if (isNaN(score1) || isNaN(score2)) {
+        showToast('올바른 점수를 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (score1 === score2) {
+        showToast('무승부는 불가능합니다. 다시 입력해주세요.', 'error');
+        return;
+    }
+    
+    // 피클볼 규칙: 11점 이상 획득하고 상대보다 2점 이상 앞서야 승리
+    const winnerScore = Math.max(score1, score2);
+    const loserScore = Math.min(score1, score2);
+    
+    if (winnerScore < 11) {
+        showToast('승리하려면 최소 11점을 획득해야 합니다.', 'error');
+        return;
+    }
+    
+    if (winnerScore === 11 && loserScore >= 10) {
+        showToast('11점으로 승리하려면 상대가 10점 이하여야 합니다.', 'error');
+        return;
+    }
+    
+    if (winnerScore > 11 && winnerScore - loserScore < 2) {
+        showToast('11점 이상으로 승리하려면 상대보다 2점 이상 앞서야 합니다.', 'error');
+        return;
+    }
+    
+    closeScoreInputModal();
+    submitMatchScore(tournamentId, matchId, roundIndex, score1, score2);
+}
+
+// 경기 점수 제출
+async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score2) {
+    try {
+        showLoading();
+        
+        const tournamentDoc = await db.collection('tournaments').doc(tournamentId).get();
+        if (!tournamentDoc.exists) {
+            showToast('토너먼트를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const tournament = tournamentDoc.data();
+        const bracket = tournament.bracket;
+        
+        // 해당 매치 찾기
+        const match = bracket.rounds[roundIndex].matches.find(m => m.matchId === matchId);
+        if (!match) {
+            showToast('경기를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        // 승자 결정
+        let winner;
+        if (score1 > score2) {
+            winner = match.team1;
+        } else if (score2 > score1) {
+            winner = match.team2;
+        } else {
+            showToast('무승부는 불가능합니다. 다시 입력해주세요.', 'error');
+            return;
+        }
+        
+        // 매치 업데이트
+        match.score1 = score1;
+        match.score2 = score2;
+        match.winner = winner;
+        
+        // 다음 라운드로 승자 진출
+        if (roundIndex < bracket.rounds.length - 1) {
+            const nextRound = bracket.rounds[roundIndex + 1];
+            const nextMatchIndex = Math.floor(bracket.rounds[roundIndex].matches.indexOf(match) / 2);
+            const nextMatch = nextRound.matches[nextMatchIndex];
+            
+            if (nextMatch) {
+                const isTeam1Position = bracket.rounds[roundIndex].matches.indexOf(match) % 2 === 0;
+                if (isTeam1Position) {
+                    nextMatch.team1 = winner;
+                } else {
+                    nextMatch.team2 = winner;
+                }
+            }
+        }
+        
+        // Firestore 업데이트
+        await db.collection('tournaments').doc(tournamentId).update({
+            bracket: bracket,
+            currentRound: Math.max(bracket.currentRound || 0, roundIndex)
+        });
+        
+        // 결승전 완료 시 토너먼트 완료 처리
+        if (roundIndex === bracket.rounds.length - 1) {
+            await db.collection('tournaments').doc(tournamentId).update({
+                status: 'completed',
+                winner: winner.teamName,
+                completedAt: new Date()
+            });
+            
+            // 우승 축하 모달 표시
+            setTimeout(() => {
+                showWinnerModal(winner);
+            }, 500);
+        }
+        
+        showToast('점수가 입력되었습니다!', 'success');
+        
+        // 대진표 다시 렌더링
+        await openTournamentBracket(tournamentId);
+        
+    } catch (error) {
+        console.error('점수 제출 오류:', error);
+        showToast('점수 제출 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 우승자 모달 표시
+function showWinnerModal(winner) {
+    const modal = document.getElementById('tournament-winner-modal');
+    const winnerNameEl = document.getElementById('winner-team-name');
+    const winnerDetailsEl = document.getElementById('winner-details');
+    
+    if (modal && winnerNameEl && winnerDetailsEl) {
+        winnerNameEl.textContent = winner.teamName;
+        winnerDetailsEl.innerHTML = `
+            <div class="winner-players">
+                ${winner.players.map(p => `<div class="winner-player"><i class="fas fa-user"></i> ${p.userName}</div>`).join('')}
+            </div>
+        `;
+        
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// 토너먼트 상세 보기
+async function viewTournamentDetails(tournamentId) {
+    await openTournamentBracket(tournamentId);
+}
+
+// 토너먼트 모달 닫기
+function closeTournamentModal() {
+    const modal = document.getElementById('tournament-bracket-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 우승자 모달 닫기
+function closeWinnerModal() {
+    const modal = document.getElementById('tournament-winner-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// 토너먼트 이벤트 리스너 등록
+document.addEventListener('DOMContentLoaded', function() {
+    // 토너먼트 예약 버튼
+    const tournamentReserveBtn = document.getElementById('tournament-reserve-btn');
+    if (tournamentReserveBtn) {
+        tournamentReserveBtn.addEventListener('click', handleTournamentReservation);
+    }
+    
+    // 토너먼트 새로고침 버튼
+    const refreshTournamentsBtn = document.getElementById('refresh-tournaments');
+    if (refreshTournamentsBtn) {
+        refreshTournamentsBtn.addEventListener('click', async () => {
+            await loadActiveTournaments();
+            await loadTournamentHistory();
+        });
+    }
+    
+    // 토너먼트 모달 닫기
+    const closeTournamentModalBtn = document.getElementById('close-tournament-modal');
+    if (closeTournamentModalBtn) {
+        closeTournamentModalBtn.addEventListener('click', closeTournamentModal);
+    }
+    
+    // 토너먼트 모달 외부 클릭 시 닫기
+    const tournamentModal = document.getElementById('tournament-bracket-modal');
+    if (tournamentModal) {
+        tournamentModal.addEventListener('click', (e) => {
+            if (e.target === tournamentModal) {
+                closeTournamentModal();
+            }
+        });
+    }
+    
+    // 우승자 모달 닫기
+    const closeWinnerModalBtn = document.getElementById('close-winner-modal-btn');
+    if (closeWinnerModalBtn) {
+        closeWinnerModalBtn.addEventListener('click', closeWinnerModal);
+    }
+    
+    // 우승자 모달 외부 클릭 시 닫기
+    const winnerModal = document.getElementById('tournament-winner-modal');
+    if (winnerModal) {
+        winnerModal.addEventListener('click', (e) => {
+            if (e.target === winnerModal) {
+                closeWinnerModal();
             }
         });
     }
