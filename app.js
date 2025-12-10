@@ -18778,19 +18778,35 @@ function createTournamentBracket(teams) {
     let roundNumber = 1;
     let prevRound = firstRound;
     
-    while (prevRound.matches.length > 1) {
+    // 첫 라운드의 승자 수 계산 (부전승 승자 포함)
+    let expectedWinners = 0;
+    firstRound.matches.forEach(match => {
+        if (match.winner || match.isBye) {
+            expectedWinners++;
+        }
+    });
+    
+    console.log(`[대진표 생성] 첫 라운드: ${firstRound.matches.length}경기, 예상 승자 수=${expectedWinners}`);
+    
+    // 다음 라운드가 필요할 때까지 생성
+    while (expectedWinners > 1) {
         const round = {
             roundNumber: roundNumber,
             matches: []
         };
         
-        // 이전 라운드의 승자들 수집
+        // 이전 라운드의 승자들 수집 (부전승 승자 포함)
         const winners = [];
         prevRound.matches.forEach(match => {
             if (match.winner) {
                 winners.push(match.winner);
+            } else if (match.isBye && (match.team1 || match.team2)) {
+                // 부전승인 경우 승자 추가
+                winners.push(match.team1 || match.team2);
             }
         });
+        
+        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 승자 수=${winners.length}`);
         
         // 승자들을 두 팀씩 매칭 (부전승 없음)
         for (let i = 0; i < Math.ceil(winners.length / 2); i++) {
@@ -18808,9 +18824,14 @@ function createTournamentBracket(teams) {
         }
         
         bracket.rounds.push(round);
+        expectedWinners = round.matches.length;
         prevRound = round;
         roundNumber++;
+        
+        console.log(`[대진표 생성] 라운드 ${roundNumber - 1} 생성 완료: ${round.matches.length}경기, 다음 라운드 예상 승자 수=${expectedWinners}`);
     }
+    
+    console.log(`[대진표 생성] 완료: 총 ${bracket.rounds.length}라운드`);
     
     return bracket;
 }
