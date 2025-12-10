@@ -8584,7 +8584,7 @@ span#matches-current-date-display,
     flex: 1;
     min-width: 140px;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .bracket-center {
@@ -8727,7 +8727,7 @@ span#matches-current-date-display,
     flex-direction: column;
     gap: 12px;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     padding: 3px 0;
 }
 
