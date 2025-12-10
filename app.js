@@ -18885,15 +18885,20 @@ function renderTournamentBracket(bracket, tournamentId) {
     });
     
     // 각 라운드의 라벨 생성 (첫 라운드부터 역순으로)
-    // 실제 팀 수를 기준으로 계산
+    // 매치 수를 기준으로 계산 (매치 수 * 2 = 팀 수)
+    console.log(`[라벨 생성] 첫 라운드: 매치 수=${firstRoundMatchCount}, 실제 팀 수=${actualFirstRoundTeams}, 전체 라운드 수=${totalRounds}`);
+    
     for (let i = 0; i < totalRounds; i++) {
         if (i === totalRounds - 1) {
             roundLabels.push('결승');
         } else if (i === totalRounds - 2) {
             roundLabels.push('준결승');
         } else {
-            // 각 라운드의 팀 수 계산
-            const teamsInRound = actualFirstRoundTeams / Math.pow(2, i);
+            // 각 라운드의 매치 수 계산
+            const matchesInRound = firstRoundMatchCount / Math.pow(2, i);
+            const teamsInRound = matchesInRound * 2;
+            
+            console.log(`[라벨 생성] 라운드 ${i}: 매치 수=${matchesInRound}, 팀 수=${teamsInRound}`);
             
             // 가장 가까운 2의 거듭제곱으로 라벨 결정
             if (teamsInRound >= 64) {
@@ -18912,28 +18917,36 @@ function renderTournamentBracket(bracket, tournamentId) {
         }
     }
     
+    console.log(`[라벨 생성] 생성된 라벨:`, roundLabels);
+    
     // 왼쪽 브래킷: 첫 라운드의 왼쪽 절반부터 시작
     bracketHTML += '<div class="bracket-side bracket-left">';
     
     // 왼쪽 브래킷의 모든 라운드 렌더링 (결승 제외)
     for (let roundIndex = 0; roundIndex < totalRounds - 1; roundIndex++) {
         const round = bracket.rounds[roundIndex];
-        if (!round || !round.matches) continue;
+        if (!round || !round.matches) {
+            console.log(`[렌더링] 라운드 ${roundIndex} 건너뜀: round=${round}, matches=${round?.matches}`);
+            continue;
+        }
         
         // 각 라운드를 양쪽으로 분할
         let leftRoundMatches;
         if (roundIndex === 0) {
             // 첫 라운드: 왼쪽 절반
             leftRoundMatches = round.matches.slice(0, halfPoint);
+            console.log(`[렌더링] 첫 라운드: 전체 ${round.matches.length}경기, halfPoint=${halfPoint}, 왼쪽 ${leftRoundMatches.length}경기`);
         } else {
             // 중간 라운드: 왼쪽 브래킷에 속하는 매치들
             // 현재 라운드의 전체 매치 수를 기준으로 절반으로 나눔
             const totalMatchesInRound = round.matches.length;
             const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
             leftRoundMatches = round.matches.slice(0, leftMatchesInThisRound);
+            console.log(`[렌더링] 라운드 ${roundIndex}: 전체 ${totalMatchesInRound}경기, 왼쪽 ${leftMatchesInThisRound}경기`);
         }
         
         if (leftRoundMatches && leftRoundMatches.length > 0) {
+            console.log(`[렌더링] 라운드 ${roundIndex} 렌더링: 라벨=${roundLabels[roundIndex]}, 매치 수=${leftRoundMatches.length}`);
             bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
@@ -19028,22 +19041,28 @@ function renderTournamentBracket(bracket, tournamentId) {
     // 오른쪽 브래킷의 모든 라운드 렌더링 (결승 제외)
     for (let roundIndex = 0; roundIndex < totalRounds - 1; roundIndex++) {
         const round = bracket.rounds[roundIndex];
-        if (!round || !round.matches) continue;
+        if (!round || !round.matches) {
+            console.log(`[렌더링] 오른쪽 라운드 ${roundIndex} 건너뜀: round=${round}, matches=${round?.matches}`);
+            continue;
+        }
         
         // 각 라운드를 양쪽으로 분할
         let rightRoundMatches;
         if (roundIndex === 0) {
             // 첫 라운드: 오른쪽 절반
             rightRoundMatches = round.matches.slice(halfPoint);
+            console.log(`[렌더링] 오른쪽 첫 라운드: 전체 ${round.matches.length}경기, halfPoint=${halfPoint}, 오른쪽 ${rightRoundMatches.length}경기`);
         } else {
             // 중간 라운드: 오른쪽 브래킷에 속하는 매치들
             // 현재 라운드의 전체 매치 수를 기준으로 절반으로 나눔
             const totalMatchesInRound = round.matches.length;
             const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
             rightRoundMatches = round.matches.slice(leftMatchesInThisRound);
+            console.log(`[렌더링] 오른쪽 라운드 ${roundIndex}: 전체 ${totalMatchesInRound}경기, 왼쪽 ${leftMatchesInThisRound}경기, 오른쪽 ${rightRoundMatches.length}경기`);
         }
         
         if (rightRoundMatches && rightRoundMatches.length > 0) {
+            console.log(`[렌더링] 오른쪽 라운드 ${roundIndex} 렌더링: 라벨=${roundLabels[roundIndex]}, 매치 수=${rightRoundMatches.length}`);
             bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
