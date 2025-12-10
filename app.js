@@ -18243,7 +18243,8 @@ async function loadTournamentHistory() {
 // 토너먼트 카드 생성
 function createTournamentCard(tournament, isActive) {
     // 날짜 형식 처리 (문자열 또는 Timestamp)
-    let dateStr = '날짜 미정';
+    // 날짜가 없으면 표시하지 않음 (시간만 표시)
+    let dateStr = '';
     if (tournament.date) {
         if (typeof tournament.date === 'string') {
             // 문자열 형식인 경우
@@ -18293,7 +18294,7 @@ function createTournamentCard(tournament, isActive) {
             </div>
             <div class="tournament-card-body">
                 <div class="tournament-info">
-                    <div><i class="fas fa-calendar"></i> ${dateStr}</div>
+                    ${dateStr ? `<div><i class="fas fa-calendar"></i> ${dateStr}</div>` : ''}
                     <div><i class="fas fa-clock"></i> ${timeDisplay}</div>
                     ${tournament.registeredCount !== undefined ? `<div><i class="fas fa-users"></i> 예약자: ${tournament.registeredCount}명</div>` : ''}
                     ${winnerInfo}
@@ -18364,12 +18365,11 @@ async function handleTournamentCreate() {
             return;
         }
         
-        const date = document.getElementById('tournament-date').value;
         const timeInput = document.getElementById('tournament-time').value; // "HH:MM" 형식 (예: "12:00")
         const name = document.getElementById('tournament-name').value || `토너먼트 ${new Date().toLocaleDateString('ko-KR')}`;
         
-        if (!date || !timeInput) {
-            showToast('날짜와 시간을 선택해주세요.', 'error');
+        if (!timeInput) {
+            showToast('시간을 선택해주세요.', 'error');
             return;
         }
         
@@ -18380,26 +18380,24 @@ async function handleTournamentCreate() {
         const endHour = hour + 1;
         const timeSlot = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}-${String(endHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
         
-        // 중복 생성 방지: 같은 날짜와 시간에 이미 토너먼트가 있는지 확인
+        // 중복 생성 방지: 같은 시간에 이미 토너먼트가 있는지 확인 (날짜 제외)
         const existingTournaments = await db.collection('tournaments')
-            .where('date', '==', date)
             .where('time', '==', timeSlot)
             .where('status', 'in', ['pending', 'in_progress'])
             .get();
         
         if (!existingTournaments.empty) {
-            showToast('해당 날짜와 시간에 이미 토너먼트가 존재합니다.', 'error');
+            showToast('해당 시간에 이미 토너먼트가 존재합니다.', 'error');
             return;
         }
         
         // 시작 시간은 timeInput 그대로 사용
         const startTime = timeInput;
         
-        // 토너먼트 생성 (날짜는 문자열로 저장하여 예약과 일치시킴)
+        // 토너먼트 생성 (날짜 없이 시간만 저장)
         const tournamentData = {
             name: name,
-            date: date, // 문자열 형식으로 저장 (예: "2024-01-01")
-            dateTime: firebase.firestore.Timestamp.fromDate(new Date(`${date}T${startTime}:00`)), // 날짜 비교용
+            date: null, // 날짜 없음
             time: timeSlot, // "09:00-10:00" 형식으로 저장
             status: 'pending',
             registeredUsers: [], // 예약한 사용자 목록 (레거시 호환용)
@@ -18413,7 +18411,6 @@ async function handleTournamentCreate() {
         showToast('토너먼트가 생성되었습니다!', 'success');
         
         // 폼 초기화
-        document.getElementById('tournament-date').value = '';
         document.getElementById('tournament-time').value = '';
         document.getElementById('tournament-name').value = '';
         
@@ -19702,6 +19699,12 @@ function showTestPersonModal(tournamentId, users) {
                     <span class="close" onclick="closeTestPersonModal()">&times;</span>
                 </div>
                 <div class="modal-body">
+                    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <button class="btn btn-primary btn-small" onclick="selectAllTestUsers('${tournamentId}')">
+                            <i class="fas fa-check-double"></i> 전체 선택 및 추가
+                        </button>
+                        <span style="font-size: 0.9em; color: #666;">총 ${users.length}명</span>
+                    </div>
                     <div style="max-height: 400px; overflow-y: auto;">
                         ${users.map(user => `
                             <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center;" 
@@ -19788,6 +19791,97 @@ function closeTestPersonModal() {
     if (modal) {
         modal.remove();
         document.body.style.overflow = 'auto';
+    }
+}
+
+// 전체 사용자 선택 및 추가
+async function selectAllTestUsers(tournamentId) {
+    try {
+        showLoading();
+        
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('로그인이 필요합니다.', 'warning');
+            return;
+        }
+        
+        // 관리자 확인
+        const isUserAdmin = await isAdmin(user);
+        if (!isUserAdmin) {
+            showToast('테스트 기능은 관리자만 사용할 수 있습니다.', 'error');
+            return;
+        }
+        
+        // 테스트 사용자 목록 가져오기
+        const usersSnapshot = await db.collection('users').limit(200).get();
+        
+        if (usersSnapshot.empty) {
+            showToast('사용자가 없습니다.', 'warning');
+            return;
+        }
+        
+        const users = [];
+        usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            users.push({
+                userId: doc.id,
+                userName: userData.displayName || userData.name || '알 수 없음',
+                email: userData.email || ''
+            });
+        });
+        
+        // 이미 예약된 사용자 확인
+        const existingRegistrations = await db.collection('tournamentRegistrations')
+            .where('tournamentId', '==', tournamentId)
+            .get();
+        
+        const existingUserIds = new Set();
+        existingRegistrations.forEach(doc => {
+            existingUserIds.add(doc.data().userId);
+        });
+        
+        // 예약되지 않은 사용자만 추가
+        const usersToAdd = users.filter(u => !existingUserIds.has(u.userId));
+        
+        if (usersToAdd.length === 0) {
+            showToast('추가할 사용자가 없습니다. (이미 모두 예약됨)', 'info');
+            return;
+        }
+        
+        // 배치로 추가 (Firestore 배치 제한: 500개)
+        const batchSize = 500;
+        let addedCount = 0;
+        
+        for (let i = 0; i < usersToAdd.length; i += batchSize) {
+            const batch = db.batch();
+            const batchUsers = usersToAdd.slice(i, i + batchSize);
+            
+            for (const user of batchUsers) {
+                const registrationRef = db.collection('tournamentRegistrations').doc();
+                batch.set(registrationRef, {
+                    tournamentId: tournamentId,
+                    userId: user.userId,
+                    userName: user.userName,
+                    registeredAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            
+            await batch.commit();
+            addedCount += batchUsers.length;
+        }
+        
+        showToast(`${addedCount}명이 추가되었습니다.`, 'success');
+        
+        // 토너먼트 목록 새로고침
+        await loadActiveTournaments();
+        
+        // 모달은 열어둠 (추가 작업 가능)
+        
+    } catch (error) {
+        console.error('전체 사용자 추가 오류:', error);
+        showToast('전체 사용자 추가 중 오류가 발생했습니다.', 'error');
+    } finally {
+        hideLoading();
     }
 }
 
