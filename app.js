@@ -18927,8 +18927,9 @@ function renderTournamentBracket(bracket, tournamentId) {
             leftRoundMatches = round.matches.slice(0, halfPoint);
         } else {
             // 중간 라운드: 왼쪽 브래킷에 속하는 매치들
-            // 왼쪽 브래킷의 첫 라운드 매치 수를 기준으로 계산
-            const leftMatchesInThisRound = Math.ceil(halfPoint / Math.pow(2, roundIndex));
+            // 현재 라운드의 전체 매치 수를 기준으로 절반으로 나눔
+            const totalMatchesInRound = round.matches.length;
+            const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
             leftRoundMatches = round.matches.slice(0, leftMatchesInThisRound);
         }
         
@@ -19036,7 +19037,9 @@ function renderTournamentBracket(bracket, tournamentId) {
             rightRoundMatches = round.matches.slice(halfPoint);
         } else {
             // 중간 라운드: 오른쪽 브래킷에 속하는 매치들
-            const leftMatchesInThisRound = Math.ceil(halfPoint / Math.pow(2, roundIndex));
+            // 현재 라운드의 전체 매치 수를 기준으로 절반으로 나눔
+            const totalMatchesInRound = round.matches.length;
+            const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
             rightRoundMatches = round.matches.slice(leftMatchesInThisRound);
         }
         
@@ -19054,7 +19057,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 const isBye = match.isBye && roundIndex === 0; // 부전승은 첫 라운드에서만
                 const winnerTeam = match.winner;
                 
-                const leftMatchesInThisRound = Math.ceil(halfPoint / Math.pow(2, roundIndex));
+                const totalMatchesInRound = round.matches.length;
+                const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
                 const actualMatchIndex = roundIndex === 0 
                     ? matchIndex + halfPoint 
                     : leftMatchesInThisRound + matchIndex;
