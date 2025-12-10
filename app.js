@@ -19032,6 +19032,12 @@ function renderTournamentBracket(bracket, tournamentId) {
                 rightRoundMatchesCount = totalMatchesInRound - leftMatchesInThisRound;
             }
             
+            // 준결승의 경우 왼쪽과 오른쪽 모두 1경기씩 있어야 함
+            if (roundIndex === totalRounds - 2) {
+                // 준결승: 왼쪽과 오른쪽 모두 1경기로 통일
+                rightRoundMatchesCount = 1;
+            }
+            
             // 대칭을 맞추기 위해 빈 공간 계산 (부전승으로 채움)
             const emptyMatches = Math.max(0, rightRoundMatchesCount - leftRoundMatches.length);
             
@@ -19205,6 +19211,12 @@ function renderTournamentBracket(bracket, tournamentId) {
             } else {
                 const totalMatchesInRound = bracket.rounds[roundIndex].matches.length;
                 leftRoundMatchesCount = Math.ceil(totalMatchesInRound / 2);
+            }
+            
+            // 준결승의 경우 왼쪽과 오른쪽 모두 1경기씩 있어야 함
+            if (roundIndex === totalRounds - 2) {
+                // 준결승: 왼쪽과 오른쪽 모두 1경기로 통일
+                leftRoundMatchesCount = 1;
             }
             
             // 대칭을 맞추기 위해 빈 공간 계산
