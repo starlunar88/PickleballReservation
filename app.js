@@ -19019,6 +19019,12 @@ function renderTournamentBracket(bracket, tournamentId) {
             console.log(`[렌더링] 라운드 ${roundIndex}: 전체 ${totalMatchesInRound}경기, 왼쪽 ${leftMatchesInThisRound}경기`);
         }
         
+        // 준결승의 경우 왼쪽과 오른쪽 모두 1경기씩 있어야 함
+        if (roundIndex === totalRounds - 2) {
+            // 준결승: 왼쪽도 정확히 1경기로 제한
+            leftRoundMatches = leftRoundMatches.slice(0, 1);
+        }
+        
         if (leftRoundMatches && leftRoundMatches.length > 0) {
             console.log(`[렌더링] 라운드 ${roundIndex} 렌더링: 라벨=${roundLabels[roundIndex]}, 매치 수=${leftRoundMatches.length}`);
             
@@ -19038,8 +19044,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 rightRoundMatchesCount = 1;
             }
             
-            // 대칭을 맞추기 위해 빈 공간 계산 (부전승으로 채움)
-            const emptyMatches = Math.max(0, rightRoundMatchesCount - leftRoundMatches.length);
+            // 준결승의 경우 빈 공간을 채우지 않음 (정확히 1경기만)
+            const emptyMatches = (roundIndex === totalRounds - 2) ? 0 : Math.max(0, rightRoundMatchesCount - leftRoundMatches.length);
             
             bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
@@ -19227,8 +19233,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 leftRoundMatchesCount = 1;
             }
             
-            // 대칭을 맞추기 위해 빈 공간 계산
-            const emptyMatches = Math.max(0, leftRoundMatchesCount - rightRoundMatches.length);
+            // 준결승의 경우 빈 공간을 채우지 않음 (정확히 1경기만)
+            const emptyMatches = (roundIndex === totalRounds - 2) ? 0 : Math.max(0, leftRoundMatchesCount - rightRoundMatches.length);
             
             bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
@@ -19503,6 +19509,9 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
         
         const tournament = tournamentDoc.data();
         const bracket = tournament.bracket;
+        
+        // 전체 라운드 수 계산
+        const totalRounds = bracket.rounds.length;
         
         // 해당 매치 찾기
         const match = bracket.rounds[roundIndex].matches.find(m => m.matchId === matchId);

@@ -8821,6 +8821,7 @@ span#matches-current-date-display,
     background: #f0f0f0;
     border-color: #d0d0d0;
     opacity: 0.6;
+    min-height: 35px;
 }
 
 .match-team-split .team-name-split.empty-team {
@@ -8828,7 +8829,11 @@ span#matches-current-date-display,
     font-style: italic;
     font-size: 0.7em;
     text-align: center;
-    padding: 8px 0;
+    padding: 0;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .match-team-split.winner {
@@ -8864,6 +8869,10 @@ span#matches-current-date-display,
     color: #999;
     font-style: italic;
     font-size: 0.7em;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .match-team-split .team-players-split {
