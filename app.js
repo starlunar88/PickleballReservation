@@ -18871,18 +18871,21 @@ function renderTournamentBracket(bracket, tournamentId) {
     const totalRounds = bracket.rounds.length;
     const roundLabels = [];
     
-    // 첫 라운드의 실제 팀 수 계산
+    // 첫 라운드 정보
     const firstRound = bracket.rounds[0];
-    let firstRoundTeamCount = 0;
+    const firstRoundMatches = firstRound.matches;
+    const firstRoundMatchCount = firstRoundMatches.length;
+    const halfPoint = Math.ceil(firstRoundMatchCount / 2);
     
-    if (firstRound) {
-        firstRound.matches.forEach(match => {
-            if (match.team1) firstRoundTeamCount++;
-            if (match.team2) firstRoundTeamCount++;
-        });
-    }
+    // 첫 라운드의 실제 팀 수 계산 (부전승 포함)
+    let actualFirstRoundTeams = 0;
+    firstRoundMatches.forEach(match => {
+        if (match.team1) actualFirstRoundTeams++;
+        if (match.team2) actualFirstRoundTeams++;
+    });
     
     // 각 라운드의 라벨 생성 (첫 라운드부터 역순으로)
+    // 실제 팀 수를 기준으로 계산
     for (let i = 0; i < totalRounds; i++) {
         if (i === totalRounds - 1) {
             roundLabels.push('결승');
@@ -18890,7 +18893,8 @@ function renderTournamentBracket(bracket, tournamentId) {
             roundLabels.push('준결승');
         } else {
             // 각 라운드의 팀 수 계산
-            const teamsInRound = firstRoundTeamCount / Math.pow(2, i);
+            const teamsInRound = actualFirstRoundTeams / Math.pow(2, i);
+            
             // 가장 가까운 2의 거듭제곱으로 라벨 결정
             if (teamsInRound >= 64) {
                 roundLabels.push('64강');
@@ -18907,10 +18911,6 @@ function renderTournamentBracket(bracket, tournamentId) {
             }
         }
     }
-    
-    // 첫 라운드를 양쪽으로 분할
-    const firstRoundMatches = bracket.rounds[0].matches;
-    const halfPoint = Math.ceil(firstRoundMatches.length / 2);
     
     // 왼쪽 브래킷: 첫 라운드의 왼쪽 절반부터 시작
     bracketHTML += '<div class="bracket-side bracket-left">';
