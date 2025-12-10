@@ -8593,9 +8593,11 @@ span#matches-current-date-display,
     gap: 10px;
     align-items: center;
     flex-shrink: 0;
-    min-width: 150px;
-    margin: 0 5px;
+    min-width: 140px;
+    width: 140px;
+    margin: 0 auto;
     justify-content: center;
+    align-self: center;
 }
 
 /* 가로형 대진표 (기존 호환성 유지) */
@@ -8619,12 +8621,16 @@ span#matches-current-date-display,
     gap: 10px;
     position: relative;
     flex-shrink: 0;
-    width: auto;
+    width: 140px;
     min-width: 140px;
+    max-width: 140px;
 }
 
 .bracket-round-split.round-final {
     align-items: center;
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
 }
 
 /* 라운드가 진행될수록 가운데로 수렴 */
@@ -8991,7 +8997,8 @@ span#matches-current-date-display,
     flex-direction: column;
     gap: 8px;
     min-width: 140px;
-    width: 100%;
+    width: 140px;
+    max-width: 140px;
     margin-top: 8px;
 }
 
@@ -9377,9 +9384,10 @@ span#matches-current-date-display,
     }
     
     .bracket-center {
-        width: auto;
+        width: 140px;
         min-width: 140px;
-        margin: 0 5px;
+        max-width: 140px;
+        margin: 0 auto;
         flex-shrink: 0;
     }
     
