@@ -8620,7 +8620,7 @@ span#matches-current-date-display,
 .bracket-round-split {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     position: relative;
     flex-shrink: 0;
     width: 140px;
@@ -8684,7 +8684,7 @@ span#matches-current-date-display,
 
 .round-header-split {
     text-align: center;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -8695,9 +8695,9 @@ span#matches-current-date-display,
 .round-header-split h3 {
     margin: 0;
     color: #fff;
-    font-size: 0.85em;
+    font-size: 0.8em;
     font-weight: 700;
-    padding: 6px 10px;
+    padding: 4px 10px;
     background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
     border-radius: 6px;
     border: none;
@@ -8733,10 +8733,10 @@ span#matches-current-date-display,
 .round-matches-split {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
     align-items: center;
     justify-content: center;
-    padding: 3px 0;
+    padding: 2px 0;
 }
 
 .round-matches-horizontal {
@@ -8753,10 +8753,10 @@ span#matches-current-date-display,
     background: white;
     border: 1.5px solid #e0e0e0;
     border-radius: 6px;
-    padding: 8px;
+    padding: 6px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
-    min-width: 120px;
+    min-width: 140px;
     max-width: 140px;
     position: relative;
     z-index: 2;
@@ -8802,12 +8802,12 @@ span#matches-current-date-display,
 .match-team-split {
     display: flex;
     flex-direction: column;
-    padding: 5px 6px;
+    padding: 4px 6px;
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border-radius: 5px;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     transition: all 0.3s ease;
-    min-height: 40px;
+    min-height: 35px;
     justify-content: center;
     border: 1px solid #e9ecef;
     position: relative;
@@ -8999,25 +8999,18 @@ span#matches-current-date-display,
     text-align: center;
 }
 
-.bracket-final-split {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 140px;
-    width: 140px;
-    max-width: 140px;
-    margin-top: 8px;
-}
-
 .final-winner-split,
 .final-runnerup-split {
     background: white;
     border: 1.5px solid #e0e0e0;
     border-radius: 8px;
-    padding: 10px;
+    padding: 8px;
     text-align: center;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
+    width: 100%;
+    min-width: 140px;
+    max-width: 140px;
 }
 
 .final-winner-split {

@@ -19111,10 +19111,30 @@ function renderTournamentBracket(bracket, tournamentId) {
     // 가운데 (결승 → 우승/준우승)
     bracketHTML += '<div class="bracket-center">';
     
-    // 결승 (왼쪽 최종 승자 vs 오른쪽 최종 승자)
+    // 우승 영역 (결승 위쪽)
     const finalRound = bracket.rounds[totalRounds - 1];
     const finalMatch = finalRound ? finalRound.matches[0] : null;
     
+    let winnerName = '';
+    let runnerupName = '';
+    
+    if (finalMatch && finalMatch.winner) {
+        winnerName = finalMatch.winner.teamName || '';
+        if (finalMatch.team1 && finalMatch.team1.teamName === winnerName) {
+            runnerupName = finalMatch.team2?.teamName || '';
+        } else if (finalMatch.team2 && finalMatch.team2.teamName === winnerName) {
+            runnerupName = finalMatch.team1?.teamName || '';
+        }
+    }
+    
+    bracketHTML += `
+        <div class="final-winner-split">
+            <div class="final-label-split">우승 (Winner)</div>
+            <div class="final-team-split">${winnerName || ''}</div>
+        </div>
+    `;
+    
+    // 결승 (왼쪽 최종 승자 vs 오른쪽 최종 승자) - 준결승 가운데에 위치
     bracketHTML += `<div class="bracket-round-split round-final">`;
     bracketHTML += `<div class="round-header-split"><h3>결승</h3></div>`;
     bracketHTML += '<div class="round-matches-split">';
@@ -19146,29 +19166,11 @@ function renderTournamentBracket(bracket, tournamentId) {
     
     bracketHTML += '</div></div>';
     
-    // 우승/준우승 영역
-    let winnerName = '';
-    let runnerupName = '';
-    
-    if (finalMatch && finalMatch.winner) {
-        winnerName = finalMatch.winner.teamName || '';
-        if (finalMatch.team1 && finalMatch.team1.teamName === winnerName) {
-            runnerupName = finalMatch.team2?.teamName || '';
-        } else if (finalMatch.team2 && finalMatch.team2.teamName === winnerName) {
-            runnerupName = finalMatch.team1?.teamName || '';
-        }
-    }
-    
+    // 준우승 영역 (결승 아래쪽)
     bracketHTML += `
-        <div class="bracket-final-split">
-            <div class="final-winner-split">
-                <div class="final-label-split">우승 (Winner)</div>
-                <div class="final-team-split">${winnerName || ''}</div>
-            </div>
-            <div class="final-runnerup-split">
-                <div class="final-label-split">준우승 (Runner-up)</div>
-                <div class="final-team-split">${runnerupName || ''}</div>
-            </div>
+        <div class="final-runnerup-split">
+            <div class="final-label-split">준우승 (Runner-up)</div>
+            <div class="final-team-split">${runnerupName || ''}</div>
         </div>
     `;
     
@@ -19199,6 +19201,12 @@ function renderTournamentBracket(bracket, tournamentId) {
             const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
             rightRoundMatches = round.matches.slice(leftMatchesInThisRound);
             console.log(`[렌더링] 오른쪽 라운드 ${roundIndex}: 전체 ${totalMatchesInRound}경기, 왼쪽 ${leftMatchesInThisRound}경기, 오른쪽 ${rightRoundMatches.length}경기`);
+        }
+        
+        // 준결승의 경우 왼쪽과 오른쪽 모두 1경기씩 있어야 함
+        if (roundIndex === totalRounds - 2) {
+            // 준결승: 오른쪽도 정확히 1경기로 제한
+            rightRoundMatches = rightRoundMatches.slice(0, 1);
         }
         
         if (rightRoundMatches && rightRoundMatches.length > 0) {
