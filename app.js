@@ -18563,14 +18563,9 @@ async function generateTournamentBracket(tournamentId) {
             return;
         }
         
-        if (registrationsSnapshot.size < 4) {
-            showToast(`토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다. (현재: ${registrationsSnapshot.size}명)`, 'warning');
-            return;
-        }
-        
-        // 참여자 수가 짝수인지 확인 (팀을 짝수로 만들기 위해)
-        if (registrationsSnapshot.size % 2 !== 0) {
-            showToast(`토너먼트를 진행하려면 참여자 수가 짝수여야 합니다. (현재: ${registrationsSnapshot.size}명)`, 'warning');
+        // 최소 16명(4강) 필요
+        if (registrationsSnapshot.size < 16) {
+            showToast(`토너먼트를 진행하려면 최소 16명(4강)의 플레이어가 필요합니다. (현재: ${registrationsSnapshot.size}명)`, 'warning');
             return;
         }
         
@@ -18606,14 +18601,8 @@ async function generateTournamentBracket(tournamentId) {
         }
         
         // 플레이어 수 재확인 (사용자 정보 가져오기 실패 시를 대비)
-        if (players.length < 4) {
-            showToast(`토너먼트를 진행하려면 최소 4명의 플레이어가 필요합니다. (현재: ${players.length}명)`, 'warning');
-            return;
-        }
-        
-        // 참여자 수가 짝수인지 재확인
-        if (players.length % 2 !== 0) {
-            showToast(`토너먼트를 진행하려면 참여자 수가 짝수여야 합니다. (현재: ${players.length}명)`, 'warning');
+        if (players.length < 16) {
+            showToast(`토너먼트를 진행하려면 최소 16명(4강)의 플레이어가 필요합니다. (현재: ${players.length}명)`, 'warning');
             return;
         }
         
@@ -18729,7 +18718,7 @@ function createBalancedTeams(players) {
     }
 }
 
-// 토너먼트 대진표 생성 (MLB 포스트시즌 스타일: 양쪽 브래킷이 독립적으로 진행)
+// 토너먼트 대진표 생성 (MLB 포스트시즌 스타일: 최소 4강부터 진행)
 function createTournamentBracket(teams) {
     const bracket = {
         rounds: [],
@@ -18738,15 +18727,22 @@ function createTournamentBracket(teams) {
     
     const teamCount = teams.length;
     
+    // 최소 16명(4강) 필요
+    if (teamCount < 16) {
+        throw new Error('최소 16명(4강) 이상의 참가자가 필요합니다.');
+    }
+    
     // 첫 라운드 생성 (부전승은 첫 라운드에서만 허용)
     const firstRound = {
         roundNumber: 0,
         matches: []
     };
     
-    // 팀을 매치에 배정
+    // 팀을 매치에 배정 (랜덤하게 부전승 가능)
     let teamIndex = 0;
-    for (let i = 0; i < Math.ceil(teamCount / 2); i++) {
+    const totalMatches = Math.ceil(teamCount / 2);
+    
+    for (let i = 0; i < totalMatches; i++) {
         const match = {
             matchId: `r0-m${i}`,
             team1: teamIndex < teams.length ? {
@@ -18763,7 +18759,7 @@ function createTournamentBracket(teams) {
             isBye: false
         };
         
-        // 부전승 처리 (첫 라운드에서만)
+        // 부전승 처리 (첫 라운드에서만, 랜덤하게)
         if (!match.team1 || !match.team2) {
             match.isBye = true;
             match.winner = match.team1 || match.team2;
@@ -18885,19 +18881,29 @@ function renderTournamentBracket(bracket, tournamentId) {
         });
     }
     
-    // 각 라운드의 라벨 생성 (2의 거듭제곱 단위: 8강, 16강, 32강)
-    // 실제 팀 수를 2의 거듭제곱으로 올림하여 표시
-    const nextPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(firstRoundTeamCount)));
-    
+    // 각 라운드의 라벨 생성 (첫 라운드부터 역순으로)
     for (let i = 0; i < totalRounds; i++) {
         if (i === totalRounds - 1) {
             roundLabels.push('결승');
         } else if (i === totalRounds - 2) {
             roundLabels.push('준결승');
         } else {
-            // 2의 거듭제곱 단위로 계산 (8강, 16강, 32강 등)
-            const teamsInRound = nextPowerOfTwo / Math.pow(2, i);
-            roundLabels.push(`${teamsInRound}강`);
+            // 각 라운드의 팀 수 계산
+            const teamsInRound = firstRoundTeamCount / Math.pow(2, i);
+            // 가장 가까운 2의 거듭제곱으로 라벨 결정
+            if (teamsInRound >= 64) {
+                roundLabels.push('64강');
+            } else if (teamsInRound >= 32) {
+                roundLabels.push('32강');
+            } else if (teamsInRound >= 16) {
+                roundLabels.push('16강');
+            } else if (teamsInRound >= 8) {
+                roundLabels.push('8강');
+            } else if (teamsInRound >= 4) {
+                roundLabels.push('4강');
+            } else {
+                roundLabels.push(`${Math.ceil(teamsInRound)}강`);
+            }
         }
     }
     
