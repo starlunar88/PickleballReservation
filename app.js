@@ -18778,13 +18778,9 @@ function createTournamentBracket(teams) {
     let roundNumber = 1;
     let prevRound = firstRound;
     
-    // 첫 라운드의 승자 수 계산 (부전승 승자 포함)
-    let expectedWinners = 0;
-    firstRound.matches.forEach(match => {
-        if (match.winner || match.isBye) {
-            expectedWinners++;
-        }
-    });
+    // 첫 라운드의 승자 수는 매치 수와 같음 (각 경기마다 승자 1명)
+    // 부전승인 경우 이미 winner가 설정되어 있고, 일반 경기는 나중에 승자가 결정됨
+    let expectedWinners = firstRound.matches.length;
     
     console.log(`[대진표 생성] 첫 라운드: ${firstRound.matches.length}경기, 예상 승자 수=${expectedWinners}`);
     
@@ -18795,25 +18791,38 @@ function createTournamentBracket(teams) {
             matches: []
         };
         
-        // 이전 라운드의 승자들 수집 (부전승 승자 포함)
+        // 이전 라운드의 승자들 수집
+        // 일반 경기는 아직 winner가 null이지만, 다음 라운드 생성 시에는 모든 경기에서 승자가 나온다고 가정
+        // 실제로는 각 매치마다 승자 1명이 나오므로, 매치 수 = 승자 수
         const winners = [];
         prevRound.matches.forEach(match => {
             if (match.winner) {
+                // 이미 승자가 결정된 경우 (부전승 또는 완료된 경기)
                 winners.push(match.winner);
             } else if (match.isBye && (match.team1 || match.team2)) {
                 // 부전승인 경우 승자 추가
                 winners.push(match.team1 || match.team2);
+            } else {
+                // 일반 경기는 아직 승자가 없지만, 다음 라운드 생성 시 승자가 나온다고 가정
+                // 임시로 team1을 승자로 가정 (실제로는 점수 입력 후 결정됨)
+                // 하지만 대진표 생성 시점에는 모든 경기가 아직 진행되지 않았으므로
+                // 매치 수를 기준으로 다음 라운드를 생성해야 함
             }
         });
         
-        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 승자 수=${winners.length}`);
+        // 실제로는 각 매치마다 승자 1명이 나오므로, 매치 수 = 승자 수
+        // winner가 없는 매치는 아직 진행되지 않은 경기이지만, 대진표 구조상 다음 라운드를 미리 생성해야 함
+        // 따라서 이전 라운드의 매치 수를 승자 수로 사용
+        const actualWinners = prevRound.matches.length;
+        
+        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}`);
         
         // 승자들을 두 팀씩 매칭 (부전승 없음)
-        for (let i = 0; i < Math.ceil(winners.length / 2); i++) {
+        for (let i = 0; i < Math.ceil(actualWinners / 2); i++) {
             const match = {
                 matchId: `r${roundNumber}-m${i}`,
-                team1: winners[i * 2] || null,
-                team2: winners[i * 2 + 1] || null,
+                team1: null, // 아직 승자가 결정되지 않았으므로 null
+                team2: null, // 아직 승자가 결정되지 않았으므로 null
                 score1: null,
                 score2: null,
                 winner: null,
