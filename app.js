@@ -18739,37 +18739,81 @@ function createTournamentBracket(teams) {
         matches: []
     };
     
-    // 팀을 매치에 배정 (랜덤하게 부전승 가능)
+    // 팀을 매치에 배정 (부전승을 고르게 분배)
+    // 2의 거듭제곱으로 올림하여 필요한 매치 수 계산
+    const nextPowerOfTwo = Math.pow(2, Math.ceil(Math.log2(teamCount)));
+    const totalMatches = nextPowerOfTwo / 2;
+    const byeCount = totalMatches - Math.ceil(teamCount / 2);
+    
+    // 팀을 랜덤하게 섞기
+    const shuffledTeams = [...teams].sort(() => 0.5 - Math.random());
+    
+    // 부전승 위치를 고르게 분배 (간격을 두고 배치)
+    const byePositions = [];
+    if (byeCount > 0) {
+        const interval = Math.floor(totalMatches / (byeCount + 1));
+        for (let i = 0; i < byeCount; i++) {
+            const pos = (i + 1) * interval;
+            if (pos < totalMatches) {
+                byePositions.push(pos);
+            }
+        }
+    }
+    
     let teamIndex = 0;
-    const totalMatches = Math.ceil(teamCount / 2);
+    let byeIndex = 0;
     
     for (let i = 0; i < totalMatches; i++) {
+        const isByePosition = byePositions.includes(i);
         const match = {
             matchId: `r0-m${i}`,
-            team1: teamIndex < teams.length ? {
-                teamName: teams[teamIndex].teamName,
-                players: teams[teamIndex].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
-            } : null,
-            team2: teamIndex + 1 < teams.length ? {
-                teamName: teams[teamIndex + 1].teamName,
-                players: teams[teamIndex + 1].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
-            } : null,
+            team1: null,
+            team2: null,
             score1: null,
             score2: null,
             winner: null,
             isBye: false
         };
         
-        // 부전승 처리 (첫 라운드에서만, 랜덤하게)
-        if (!match.team1 || !match.team2) {
+        if (isByePosition && teamIndex < shuffledTeams.length) {
+            // 부전승: 한 팀만 배정
+            match.team1 = {
+                teamName: shuffledTeams[teamIndex].teamName,
+                players: shuffledTeams[teamIndex].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
+            };
+            match.team2 = null;
             match.isBye = true;
-            match.winner = match.team1 || match.team2;
-            match.score1 = match.team1 ? 11 : 0;
-            match.score2 = match.team2 ? 11 : 0;
+            match.winner = match.team1;
+            match.score1 = 11;
+            match.score2 = 0;
+            teamIndex++;
+        } else if (teamIndex < shuffledTeams.length) {
+            // 일반 매치: 두 팀 배정
+            match.team1 = {
+                teamName: shuffledTeams[teamIndex].teamName,
+                players: shuffledTeams[teamIndex].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
+            };
+            teamIndex++;
+            
+            if (teamIndex < shuffledTeams.length) {
+                match.team2 = {
+                    teamName: shuffledTeams[teamIndex].teamName,
+                    players: shuffledTeams[teamIndex].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
+                };
+                teamIndex++;
+            } else {
+                // 마지막 팀이 홀수인 경우 부전승
+                match.isBye = true;
+                match.winner = match.team1;
+                match.score1 = 11;
+                match.score2 = 0;
+            }
+        } else {
+            // 더 이상 팀이 없는 경우 빈 매치 (이론상 발생하지 않아야 함)
+            match.isBye = true;
         }
         
         firstRound.matches.push(match);
-        teamIndex += 2;
     }
     
     bracket.rounds.push(firstRound);
@@ -19170,22 +19214,55 @@ function renderTournamentBracket(bracket, tournamentId) {
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
             
-            // 빈 공간을 부전승으로 채우기 (대칭 맞추기)
-            for (let j = 0; j < emptyMatches; j++) {
-                // 부전승 매치 생성
-                const byeMatch = {
-                    matchId: `bye-right-${roundIndex}-${j}`,
-                    team1: null,
-                    team2: null,
-                    score1: null,
-                    score2: null,
-                    winner: null,
-                    isBye: true
-                };
-                bracketHTML += createMatchHTML(byeMatch, roundIndex, j, '부전승', '부전승', '', '', false, true, null, tournamentId);
-            }
-            
-            rightRoundMatches.forEach((match, matchIndex) => {
+            // 4강 첫 경기는 8강 팀1234의 중간에 위치하도록 조정 (오른쪽도 동일하게)
+            if (roundIndex === 1 && rightRoundMatches.length === 2) {
+                // 첫 번째 매치를 먼저 렌더링
+                const firstMatch = rightRoundMatches[0];
+                const team1Name = firstMatch.team1 ? firstMatch.team1.teamName : '대기 중';
+                const team2Name = firstMatch.team2 ? firstMatch.team2.teamName : '대기 중';
+                const team1Players = firstMatch.team1 ? firstMatch.team1.players.map(p => p.userName).join(', ') : '';
+                const team2Players = firstMatch.team2 ? firstMatch.team2.players.map(p => p.userName).join(', ') : '';
+                const isCompleted = firstMatch.winner !== null;
+                const isBye = firstMatch.isBye && roundIndex === 0;
+                const winnerTeam = firstMatch.winner;
+                const totalMatchesInRound = round.matches.length;
+                const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
+                const actualMatchIndex1 = leftMatchesInThisRound + 0;
+                bracketHTML += createMatchHTML(firstMatch, roundIndex, actualMatchIndex1, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+                
+                // 빈 공간 추가 (8강 4경기 중간 위치)
+                for (let j = 0; j < 2; j++) {
+                    bracketHTML += '<div class="bracket-match-split empty-spacer" style="visibility: hidden; min-height: 60px;"></div>';
+                }
+                
+                // 두 번째 매치 렌더링
+                const secondMatch = rightRoundMatches[1];
+                const team1Name2 = secondMatch.team1 ? secondMatch.team1.teamName : '대기 중';
+                const team2Name2 = secondMatch.team2 ? secondMatch.team2.teamName : '대기 중';
+                const team1Players2 = secondMatch.team1 ? secondMatch.team1.players.map(p => p.userName).join(', ') : '';
+                const team2Players2 = secondMatch.team2 ? secondMatch.team2.players.map(p => p.userName).join(', ') : '';
+                const isCompleted2 = secondMatch.winner !== null;
+                const isBye2 = secondMatch.isBye && roundIndex === 0;
+                const winnerTeam2 = secondMatch.winner;
+                const actualMatchIndex2 = leftMatchesInThisRound + 1;
+                bracketHTML += createMatchHTML(secondMatch, roundIndex, actualMatchIndex2, team1Name2, team2Name2, team1Players2, team2Players2, isCompleted2, isBye2, winnerTeam2, tournamentId);
+            } else {
+                // 빈 공간을 부전승으로 채우기 (대칭 맞추기)
+                for (let j = 0; j < emptyMatches; j++) {
+                    // 부전승 매치 생성
+                    const byeMatch = {
+                        matchId: `bye-right-${roundIndex}-${j}`,
+                        team1: null,
+                        team2: null,
+                        score1: null,
+                        score2: null,
+                        winner: null,
+                        isBye: true
+                    };
+                    bracketHTML += createMatchHTML(byeMatch, roundIndex, j, '부전승', '부전승', '', '', false, true, null, tournamentId);
+                }
+                
+                rightRoundMatches.forEach((match, matchIndex) => {
                 const team1Name = match.team1 ? match.team1.teamName : '대기 중';
                 const team2Name = match.team2 ? match.team2.teamName : '대기 중';
                 const team1Players = match.team1 ? match.team1.players.map(p => p.userName).join(', ') : '';
@@ -19200,8 +19277,9 @@ function renderTournamentBracket(bracket, tournamentId) {
                     ? matchIndex + halfPoint 
                     : leftMatchesInThisRound + matchIndex;
                 
-                bracketHTML += createMatchHTML(match, roundIndex, actualMatchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
-            });
+                    bracketHTML += createMatchHTML(match, roundIndex, actualMatchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+                });
+            }
             
             bracketHTML += '</div></div>';
         }
@@ -19229,8 +19307,7 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
         <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
             <div class="match-team-split team1 ${(winnerTeam && winnerTeam.teamName === team1Name) || isByeWinner1 ? 'winner' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
-                    <div class="team-name-split">${team1Name}</div>
-                    <div class="team-players-split">${team1Players}</div>
+                    <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
                     ${(isCompleted || (isBye && isFirstRound)) ? `<div class="team-score-split">${match.score1 || (isByeWinner1 ? 11 : 0)}</div>` : ''}
                 ` : `<div class="team-name-split empty-team">${team1Display}</div>`}
             </div>
@@ -19239,8 +19316,7 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
             ` : '<div class="match-bye-split">부전승</div>'}
             <div class="match-team-split team2 ${(winnerTeam && winnerTeam.teamName === team2Name) || isByeWinner2 ? 'winner' : ''} ${!match.team2 ? 'empty' : ''}">
                 ${match.team2 ? `
-                    <div class="team-name-split">${team2Name}</div>
-                    <div class="team-players-split">${team2Players}</div>
+                    <div class="team-name-split">${team2Name}${team2Players ? ' : ' + team2Players : ''}</div>
                     ${(isCompleted || (isBye && isFirstRound)) ? `<div class="team-score-split">${match.score2 || (isByeWinner2 ? 11 : 0)}</div>` : ''}
                 ` : `<div class="team-name-split empty-team">${team2Display}</div>`}
             </div>
