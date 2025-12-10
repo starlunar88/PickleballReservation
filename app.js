@@ -18791,7 +18791,7 @@ function createTournamentBracket(teams) {
     
     bracket.rounds.push(firstRound);
     
-    // 다음 라운드들 생성 및 부전승 승자 자동 진출 처리
+    // 다음 라운드들 생성 (부전승은 첫 라운드에서만, 이후 라운드는 항상 두 팀이 경기)
     let remainingMatches = Math.ceil(teamCount / 2);
     roundNumber = 1;
     
@@ -18804,49 +18804,33 @@ function createTournamentBracket(teams) {
         const prevRound = bracket.rounds[roundNumber - 1];
         let matchIndex = 0;
         
-        for (let i = 0; i < Math.ceil(remainingMatches / 2); i++) {
+        // 이전 라운드의 승자들만 수집 (부전승 승자 포함)
+        const winners = [];
+        prevRound.matches.forEach(match => {
+            if (match.winner) {
+                winners.push(match.winner);
+            }
+        });
+        
+        // 승자들을 두 팀씩 매칭하여 다음 라운드 생성
+        for (let i = 0; i < Math.ceil(winners.length / 2); i++) {
             const match = {
                 matchId: `r${roundNumber}-m${i}`,
-                team1: null,
-                team2: null,
+                team1: winners[i * 2] || null,
+                team2: winners[i * 2 + 1] || null,
                 score1: null,
                 score2: null,
                 winner: null,
-                isBye: false
+                isBye: false  // 중간 라운드에는 부전승 없음
             };
             
-            // 이전 라운드의 승자들을 자동으로 배정
-            // 부전승 승자도 자동으로 다음 라운드로 진출
-            if (matchIndex < prevRound.matches.length && prevRound.matches[matchIndex].winner) {
-                match.team1 = prevRound.matches[matchIndex].winner;
-            }
-            if (matchIndex + 1 < prevRound.matches.length && prevRound.matches[matchIndex + 1].winner) {
-                match.team2 = prevRound.matches[matchIndex + 1].winner;
-            }
-            
-            // 한 팀만 있거나 둘 다 없는 경우 부전승 처리
-            if (match.team1 && !match.team2) {
-                match.isBye = true;
-                match.winner = match.team1;
-                match.score1 = 11;
-                match.score2 = 0;
-            } else if (!match.team1 && match.team2) {
-                match.isBye = true;
-                match.winner = match.team2;
-                match.score1 = 0;
-                match.score2 = 11;
-            } else if (!match.team1 && !match.team2) {
-                // 둘 다 없는 경우 (빈칸) 부전승으로 처리
-                match.isBye = true;
-                match.winner = null;
-            }
-            
+            // 중간 라운드는 항상 두 팀이 있어야 함 (부전승 없음)
+            // 만약 한 팀만 있으면 대기 상태로 둠
             round.matches.push(match);
-            matchIndex += 2;
         }
         
         bracket.rounds.push(round);
-        remainingMatches = Math.ceil(remainingMatches / 2);
+        remainingMatches = round.matches.length;
         roundNumber++;
     }
     
@@ -19111,30 +19095,35 @@ function renderTournamentBracket(bracket, tournamentId) {
 
 // 매치 HTML 생성 헬퍼 함수
 function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId) {
-    // 부전승인 경우 승리한 팀을 강조 표시
+    // 부전승은 첫 라운드에서만 표시
+    const isFirstRound = roundIndex === 0;
     const isByeWinner1 = isBye && match.team1 && match.winner && match.winner.teamName === team1Name;
     const isByeWinner2 = isBye && match.team2 && match.winner && match.winner.teamName === team2Name;
     
+    // 중간 라운드에서는 부전승 없음 - 팀이 없으면 "대기 중"
+    const team1Display = match.team1 ? team1Name : (isFirstRound ? '부전승' : '대기 중');
+    const team2Display = match.team2 ? team2Name : (isFirstRound ? '부전승' : '대기 중');
+    
     return `
-        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
-            <div class="match-team-split team1 ${(winnerTeam && winnerTeam.teamName === team1Name) || isByeWinner1 ? 'winner' : ''} ${isBye && !match.team1 ? 'empty' : ''}">
+        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+            <div class="match-team-split team1 ${(winnerTeam && winnerTeam.teamName === team1Name) || isByeWinner1 ? 'winner' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}</div>
                     <div class="team-players-split">${team1Players}</div>
-                    ${(isCompleted || isBye) ? `<div class="team-score-split">${match.score1 || (isByeWinner1 ? 11 : 0)}</div>` : ''}
-                ` : '<div class="team-name-split empty-team">부전승</div>'}
+                    ${(isCompleted || (isBye && isFirstRound)) ? `<div class="team-score-split">${match.score1 || (isByeWinner1 ? 11 : 0)}</div>` : ''}
+                ` : `<div class="team-name-split empty-team">${team1Display}</div>`}
             </div>
-            ${!isBye ? `
+            ${!(isBye && isFirstRound) ? `
                 <div class="match-vs-split">VS</div>
             ` : '<div class="match-bye-split">부전승</div>'}
-            <div class="match-team-split team2 ${(winnerTeam && winnerTeam.teamName === team2Name) || isByeWinner2 ? 'winner' : ''} ${isBye && !match.team2 ? 'empty' : ''}">
+            <div class="match-team-split team2 ${(winnerTeam && winnerTeam.teamName === team2Name) || isByeWinner2 ? 'winner' : ''} ${!match.team2 ? 'empty' : ''}">
                 ${match.team2 ? `
                     <div class="team-name-split">${team2Name}</div>
                     <div class="team-players-split">${team2Players}</div>
-                    ${(isCompleted || isBye) ? `<div class="team-score-split">${match.score2 || (isByeWinner2 ? 11 : 0)}</div>` : ''}
-                ` : '<div class="team-name-split empty-team">부전승</div>'}
+                    ${(isCompleted || (isBye && isFirstRound)) ? `<div class="team-score-split">${match.score2 || (isByeWinner2 ? 11 : 0)}</div>` : ''}
+                ` : `<div class="team-name-split empty-team">${team2Display}</div>`}
             </div>
-            ${!isCompleted && !isBye && match.team1 && match.team2 ? `
+            ${!isCompleted && !(isBye && isFirstRound) && match.team1 && match.team2 ? `
                 <div class="match-actions-split">
                     <button class="btn btn-primary btn-small" onclick="openScoreInputModal('${tournamentId}', '${match.matchId}', ${roundIndex})">
                         <i class="fas fa-edit"></i> 점수 입력
@@ -19408,18 +19397,7 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
                         nextMatch.team2 = winner;
                     }
                     
-                    // 다음 라운드 매치에 한 팀만 있는 경우 부전승 처리
-                    if (nextMatch.team1 && !nextMatch.team2) {
-                        nextMatch.isBye = true;
-                        nextMatch.winner = nextMatch.team1;
-                        nextMatch.score1 = 11;
-                        nextMatch.score2 = 0;
-                    } else if (!nextMatch.team1 && nextMatch.team2) {
-                        nextMatch.isBye = true;
-                        nextMatch.winner = nextMatch.team2;
-                        nextMatch.score1 = 0;
-                        nextMatch.score2 = 11;
-                    }
+                    // 중간 라운드는 부전승 없음 - 두 팀이 모두 있어야 경기 진행 가능
                 }
             }
         }
