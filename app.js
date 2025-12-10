@@ -18727,9 +18727,10 @@ function createTournamentBracket(teams) {
     
     const teamCount = teams.length;
     
-    // 최소 16명(4강) 필요
-    if (teamCount < 16) {
-        throw new Error('최소 16명(4강) 이상의 참가자가 필요합니다.');
+    // 최소 8팀(4강, 16명) 필요
+    // 4강 = 8팀 (16명), 8강 = 9-16팀 (18-32명), 16강 = 17-32팀 (34-64명), 64강 = 33-64팀 (66-128명)
+    if (teamCount < 8) {
+        throw new Error('최소 8팀(16명, 4강) 이상이 필요합니다.');
     }
     
     // 첫 라운드 생성 (부전승은 첫 라운드에서만 허용)
