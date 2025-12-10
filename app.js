@@ -18365,39 +18365,41 @@ async function handleTournamentCreate() {
             return;
         }
         
-        const timeInput = document.getElementById('tournament-time').value; // "HH:MM" 형식 (예: "12:00")
+        const date = document.getElementById('tournament-date').value;
+        const timeInput = document.getElementById('tournament-time').value; // "HH:00" 형식 (예: "12:00")
         const name = document.getElementById('tournament-name').value || `토너먼트 ${new Date().toLocaleDateString('ko-KR')}`;
         
-        if (!timeInput) {
-            showToast('시간을 선택해주세요.', 'error');
+        if (!date || !timeInput) {
+            showToast('날짜와 시간을 선택해주세요.', 'error');
             return;
         }
         
-        // 시간 입력값을 "HH:MM" 형식으로 변환 (time input은 이미 "HH:MM" 형식)
-        // 저장 시에는 "HH:MM" 형식으로 저장하거나, 기존 형식과 호환을 위해 "HH:MM-HH:MM" 형식으로 변환
-        // 1시간 단위로 저장 (예: 12:00 -> 12:00-13:00)
+        // 시간 입력값은 이미 "HH:00" 형식 (시간 단위만)
+        // 저장 시에는 "HH:00-HH:00" 형식으로 변환 (1시간 단위)
         const [hour, minute] = timeInput.split(':').map(Number);
         const endHour = hour + 1;
         const timeSlot = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}-${String(endHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
         
-        // 중복 생성 방지: 같은 시간에 이미 토너먼트가 있는지 확인 (날짜 제외)
+        // 중복 생성 방지: 같은 날짜와 시간에 이미 토너먼트가 있는지 확인
         const existingTournaments = await db.collection('tournaments')
+            .where('date', '==', date)
             .where('time', '==', timeSlot)
             .where('status', 'in', ['pending', 'in_progress'])
             .get();
         
         if (!existingTournaments.empty) {
-            showToast('해당 시간에 이미 토너먼트가 존재합니다.', 'error');
+            showToast('해당 날짜와 시간에 이미 토너먼트가 존재합니다.', 'error');
             return;
         }
         
         // 시작 시간은 timeInput 그대로 사용
         const startTime = timeInput;
         
-        // 토너먼트 생성 (날짜 없이 시간만 저장)
+        // 토너먼트 생성
         const tournamentData = {
             name: name,
-            date: null, // 날짜 없음
+            date: date, // 문자열 형식으로 저장 (예: "2024-01-01")
+            dateTime: firebase.firestore.Timestamp.fromDate(new Date(`${date}T${startTime}:00`)), // 날짜 비교용
             time: timeSlot, // "09:00-10:00" 형식으로 저장
             status: 'pending',
             registeredUsers: [], // 예약한 사용자 목록 (레거시 호환용)
@@ -18411,6 +18413,7 @@ async function handleTournamentCreate() {
         showToast('토너먼트가 생성되었습니다!', 'success');
         
         // 폼 초기화
+        document.getElementById('tournament-date').value = '';
         document.getElementById('tournament-time').value = '';
         document.getElementById('tournament-name').value = '';
         
