@@ -18977,6 +18977,20 @@ function renderTournamentBracket(bracket, tournamentId) {
         
         if (leftRoundMatches && leftRoundMatches.length > 0) {
             console.log(`[렌더링] 라운드 ${roundIndex} 렌더링: 라벨=${roundLabels[roundIndex]}, 매치 수=${leftRoundMatches.length}`);
+            
+            // 오른쪽 브래킷의 같은 라운드 매치 수를 가져와서 대칭 맞추기
+            let rightRoundMatchesCount = 0;
+            if (roundIndex === 0) {
+                rightRoundMatchesCount = round.matches.length - halfPoint;
+            } else {
+                const totalMatchesInRound = bracket.rounds[roundIndex].matches.length;
+                const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
+                rightRoundMatchesCount = totalMatchesInRound - leftMatchesInThisRound;
+            }
+            
+            // 대칭을 맞추기 위해 빈 공간 계산
+            const emptyMatches = Math.max(0, rightRoundMatchesCount - leftRoundMatches.length);
+            
             bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
@@ -18992,6 +19006,11 @@ function renderTournamentBracket(bracket, tournamentId) {
                 
                 bracketHTML += createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
             });
+            
+            // 빈 공간 추가 (대칭 맞추기)
+            for (let j = 0; j < emptyMatches; j++) {
+                bracketHTML += '<div class="bracket-match-split empty-spacer" style="visibility: hidden; min-height: 60px;"></div>';
+            }
             
             bracketHTML += '</div></div>';
         }
@@ -19065,11 +19084,12 @@ function renderTournamentBracket(bracket, tournamentId) {
     
     bracketHTML += '</div>'; // 가운데 끝
     
-    // 오른쪽 브래킷: 첫 라운드의 오른쪽 절반부터 시작
+    // 오른쪽 브래킷: 역순으로 렌더링 (준결승 → 4강 → 8강)
     bracketHTML += '<div class="bracket-side bracket-right">';
     
-    // 오른쪽 브래킷의 모든 라운드 렌더링 (결승 제외)
-    for (let roundIndex = 0; roundIndex < totalRounds - 1; roundIndex++) {
+    // 오른쪽 브래킷의 모든 라운드를 역순으로 렌더링 (결승 제외)
+    for (let i = totalRounds - 2; i >= 0; i--) {
+        const roundIndex = i;
         const round = bracket.rounds[roundIndex];
         if (!round || !round.matches) {
             console.log(`[렌더링] 오른쪽 라운드 ${roundIndex} 건너뜀: round=${round}, matches=${round?.matches}`);
@@ -19093,9 +19113,27 @@ function renderTournamentBracket(bracket, tournamentId) {
         
         if (rightRoundMatches && rightRoundMatches.length > 0) {
             console.log(`[렌더링] 오른쪽 라운드 ${roundIndex} 렌더링: 라벨=${roundLabels[roundIndex]}, 매치 수=${rightRoundMatches.length}`);
+            
+            // 왼쪽 브래킷의 같은 라운드 매치 수를 가져와서 대칭 맞추기
+            let leftRoundMatchesCount = 0;
+            if (roundIndex === 0) {
+                leftRoundMatchesCount = halfPoint;
+            } else {
+                const totalMatchesInRound = bracket.rounds[roundIndex].matches.length;
+                leftRoundMatchesCount = Math.ceil(totalMatchesInRound / 2);
+            }
+            
+            // 대칭을 맞추기 위해 빈 공간 계산
+            const emptyMatches = Math.max(0, leftRoundMatchesCount - rightRoundMatches.length);
+            
             bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
+            
+            // 빈 공간 추가 (대칭 맞추기)
+            for (let j = 0; j < emptyMatches; j++) {
+                bracketHTML += '<div class="bracket-match-split empty-spacer" style="visibility: hidden; min-height: 60px;"></div>';
+            }
             
             rightRoundMatches.forEach((match, matchIndex) => {
                 const team1Name = match.team1 ? match.team1.teamName : '대기 중';
