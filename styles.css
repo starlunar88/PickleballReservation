@@ -8569,7 +8569,7 @@ span#matches-current-date-display,
     background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 50%, #fff9e6 100%);
     border-radius: 6px;
     border: 2px solid #ffd700;
-    box-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
+    box-shadow: 0 2px 4px rgba(192, 192, 192, 0.2);
     min-width: 0;
     position: relative;
     overflow: hidden;
@@ -8579,16 +8579,7 @@ span#matches-current-date-display,
 }
 
 .tournament-winner-info::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
-    animation: shimmer 3s infinite;
-    pointer-events: none;
-    z-index: 0;
+    display: none;
 }
 
 @keyframes shimmer {
