@@ -19602,9 +19602,12 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     const isByeWinner1 = isBye && match.team1 && match.winner && match.winner.teamName === team1Name;
     const isByeWinner2 = isBye && match.team2 && match.winner && match.winner.teamName === team2Name;
     
+    // 부전승 매치인지 확인 (한 팀만 있고 다른 팀은 없음)
+    const isByeMatch = isBye && isFirstRound && ((match.team1 && !match.team2) || (!match.team1 && match.team2));
+    
     // 중간 라운드에서는 부전승 없음 - 팀이 없으면 "대기 중"
-    const team1Display = match.team1 ? team1Name : (isFirstRound ? '부전승' : '대기 중');
-    const team2Display = match.team2 ? team2Name : (isFirstRound ? '부전승' : '대기 중');
+    const team1Display = match.team1 ? team1Name : (isFirstRound && !match.team2 ? '부전승' : '대기 중');
+    const team2Display = match.team2 ? team2Name : (isFirstRound && !match.team1 ? '부전승' : '대기 중');
     
     // 부전승인 경우 점수 표시하지 않음
     const showScore1 = isCompleted && !(isBye && isFirstRound);
@@ -19621,28 +19624,46 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     
     return `
         <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''} ${isChampionPath ? 'champion-path' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
-            <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${!match.team1 ? 'empty' : ''}">
-                ${match.team1 ? `
+            ${match.team1 ? `
+                <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''}">
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
                     ${showScore1 ? `<div class="team-score-wrapper-split">
                         ${isTeam1Winner ? '<span class="trophy-icon-split">🏆</span>' : ''}
                         <div class="team-score-split">${match.score1 || 0}</div>
                     </div>` : ''}
-                ` : `<div class="team-name-split empty-team">${team1Display}</div>`}
-            </div>
-            ${!(isBye && isFirstRound) ? `
+                </div>
+            ` : isByeMatch ? `
+                <div class="match-team-split team1 empty" style="visibility: hidden;">
+                    <div class="team-name-split empty-team"></div>
+                </div>
+            ` : `
+                <div class="match-team-split team1 empty">
+                    <div class="team-name-split empty-team">${team1Display}</div>
+                </div>
+            `}
+            ${isByeMatch ? `
+                <div class="match-bye-split">부전승</div>
+            ` : `
                 <div class="match-vs-split">VS</div>
-            ` : '<div class="match-bye-split">부전승</div>'}
-            <div class="match-team-split team2 ${isTeam2Winner ? 'winner' : ''} ${isTeam2Loser ? 'loser' : ''} ${!match.team2 ? 'empty' : ''}">
-                ${match.team2 ? `
+            `}
+            ${match.team2 ? `
+                <div class="match-team-split team2 ${isTeam2Winner ? 'winner' : ''} ${isTeam2Loser ? 'loser' : ''}">
                     <div class="team-name-split">${team2Name}${team2Players ? ' : ' + team2Players : ''}</div>
                     ${showScore2 ? `<div class="team-score-wrapper-split">
                         ${isTeam2Winner ? '<span class="trophy-icon-split">🏆</span>' : ''}
                         <div class="team-score-split">${match.score2 || 0}</div>
                     </div>` : ''}
-                ` : `<div class="team-name-split empty-team">${team2Display}</div>`}
-            </div>
-            ${!isCompleted && !(isBye && isFirstRound) && match.team1 && match.team2 ? `
+                </div>
+            ` : isByeMatch ? `
+                <div class="match-team-split team2 empty" style="visibility: hidden;">
+                    <div class="team-name-split empty-team"></div>
+                </div>
+            ` : `
+                <div class="match-team-split team2 empty">
+                    <div class="team-name-split empty-team">${team2Display}</div>
+                </div>
+            `}
+            ${!isCompleted && !isByeMatch && match.team1 && match.team2 ? `
                 <div class="match-actions-split">
                     <button class="btn btn-primary btn-small" onclick="openScoreInputModal('${tournamentId}', '${match.matchId}', ${roundIndex})">
                         <i class="fas fa-edit"></i> 점수 입력
