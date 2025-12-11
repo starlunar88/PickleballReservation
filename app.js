@@ -19680,6 +19680,37 @@ function drawConnectorLinesForSide(currentMatches, nextMatches, roundIndex, cham
                 
                 svg.appendChild(line);
                 container.appendChild(svg);
+                
+                // 다음 라운드 매치로 들어가는 가로선 그리기
+                const nextHorizontalStartX = side === 'left' 
+                    ? nextMatchRect.left - containerRect.left - 20
+                    : nextMatchRect.right - containerRect.left + 20;
+                const nextHorizontalY = nextMatchRect.top + nextMatchRect.height / 2 - containerRect.top;
+                
+                const horizontalSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                horizontalSvg.className = 'mlb-connector-line';
+                horizontalSvg.style.position = 'absolute';
+                horizontalSvg.style.left = nextHorizontalStartX + 'px';
+                horizontalSvg.style.top = nextHorizontalY + 'px';
+                horizontalSvg.style.width = '20px';
+                horizontalSvg.style.height = lineWidth + 'px';
+                horizontalSvg.style.pointerEvents = 'none';
+                horizontalSvg.style.zIndex = isChampionPath ? '4' : '1';
+                horizontalSvg.style.transform = 'translateY(-50%)';
+                
+                const horizontalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                horizontalLine.setAttribute('x1', '0');
+                horizontalLine.setAttribute('y1', '0');
+                horizontalLine.setAttribute('x2', '20px');
+                horizontalLine.setAttribute('y2', '0');
+                horizontalLine.setAttribute('stroke', lineColor);
+                horizontalLine.setAttribute('stroke-width', lineWidth);
+                if (isChampionPath) {
+                    horizontalLine.setAttribute('stroke-opacity', '1');
+                }
+                
+                horizontalSvg.appendChild(horizontalLine);
+                container.appendChild(horizontalSvg);
             }
         } else if (i < currentMatches.length) {
             // 홀수 개의 매치가 남은 경우 (마지막 매치)
@@ -19728,7 +19759,6 @@ function drawConnectorLinesForSide(currentMatches, nextMatches, roundIndex, cham
                 container.appendChild(svg);
                 
                 // 다음 라운드 매치로 들어가는 가로선 그리기
-                const nextMatchRect = nextMatch.getBoundingClientRect();
                 const nextHorizontalStartX = side === 'left' 
                     ? nextMatchRect.left - containerRect.left - 20
                     : nextMatchRect.right - containerRect.left + 20;
