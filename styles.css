@@ -8520,6 +8520,40 @@ span#matches-current-date-display,
     color: #ff9800;
     font-weight: 600;
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+    border-radius: 8px;
+    border-left: 3px solid #ff9800;
+    min-width: 0; /* flexbox에서 텍스트 잘림 방지 */
+}
+
+.tournament-winner-info i {
+    color: #ff9800;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.tournament-winner-info .winner-team-name {
+    font-weight: 700;
+    color: #e65100;
+    font-size: 1.05em;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.tournament-winner-info .winner-players {
+    color: #f57c00;
+    font-weight: 500;
+    font-size: 0.95em;
+    margin-left: 4px;
+    white-space: normal;
+    word-break: break-word;
+    flex: 1;
+    min-width: 0;
 }
 
 .tournament-registered-badge {

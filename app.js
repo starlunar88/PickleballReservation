@@ -18278,8 +18278,36 @@ function createTournamentCard(tournament, isActive) {
         'completed': '완료'
     }[status] || '알 수 없음';
     
-    const winnerInfo = tournament.winner ? 
-        `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${tournament.winner}</div>` : '';
+    // 우승자 정보 추출 (대진표에서 결승전 승자 정보 가져오기)
+    let winnerInfo = '';
+    if (tournament.winner) {
+        let winnerDisplay = tournament.winner;
+        let winnerPlayers = '';
+        
+        // 대진표에서 결승전 승자 정보 가져오기
+        if (tournament.bracket && tournament.bracket.rounds && tournament.bracket.rounds.length > 0) {
+            const finalRound = tournament.bracket.rounds[tournament.bracket.rounds.length - 1];
+            if (finalRound && finalRound.matches && finalRound.matches.length > 0) {
+                const finalMatch = finalRound.matches[0];
+                if (finalMatch && finalMatch.winner) {
+                    winnerDisplay = finalMatch.winner.teamName || tournament.winner;
+                    if (finalMatch.winner.players && finalMatch.winner.players.length > 0) {
+                        winnerPlayers = finalMatch.winner.players.map(p => p.userName).join(', ');
+                    }
+                }
+            }
+        }
+        
+        if (winnerPlayers) {
+            winnerInfo = `<div class="tournament-winner-info">
+                <i class="fas fa-trophy"></i> 
+                <span class="winner-team-name">${winnerDisplay}</span>
+                <span class="winner-players">${winnerPlayers}</span>
+            </div>`;
+        } else {
+            winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${winnerDisplay}</div>`;
+        }
+    }
     
     // 현재 사용자가 이미 예약했는지 확인 (tournament 객체에서 가져옴)
     const user = auth.currentUser;
@@ -18300,8 +18328,8 @@ function createTournamentCard(tournament, isActive) {
                     ${winnerInfo}
                     ${isRegistered ? '<div class="tournament-registered-badge"><i class="fas fa-check-circle"></i> 예약 완료</div>' : ''}
                 </div>
-                ${isActive && status !== 'completed' ? `
-                    <div class="tournament-card-actions">
+                <div class="tournament-card-actions">
+                    ${isActive && status !== 'completed' ? `
                         <button class="btn btn-primary" onclick="openTournamentBracket('${tournament.id}')">
                             <i class="fas fa-sitemap"></i> 대진표 보기
                         </button>
@@ -18334,14 +18362,11 @@ function createTournamentCard(tournament, isActive) {
                                 <i class="fas fa-times"></i> 예약 취소
                             </button>
                         ` : ''}
-                    </div>
-                ` : `
-                    <div class="tournament-card-actions">
-                        <button class="btn btn-outline" onclick="viewTournamentDetails('${tournament.id}')">
-                            <i class="fas fa-eye"></i> 상세 보기
-                        </button>
-                    </div>
-                `}
+                    ` : ''}
+                    <button class="btn btn-outline" onclick="viewTournamentDetails('${tournament.id}')">
+                        <i class="fas fa-eye"></i> 상세 보기
+                    </button>
+                </div>
             </div>
         </div>
     `;
