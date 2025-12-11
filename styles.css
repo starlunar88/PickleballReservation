@@ -8858,6 +8858,21 @@ span#matches-current-date-display,
     font-size: 0.8em;
 }
 
+.match-team-split.loser {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border: 1px solid #d0d0d0;
+    opacity: 0.7;
+}
+
+.match-team-split.loser .team-name-split {
+    color: #666;
+    font-weight: 500;
+}
+
+.match-team-split.loser .team-score-split {
+    color: #888;
+}
+
 .match-team-split .team-name-split {
     font-weight: 600;
     color: #212529;

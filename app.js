@@ -19355,9 +19355,15 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     const showScore1 = isCompleted && !(isBye && isFirstRound);
     const showScore2 = isCompleted && !(isBye && isFirstRound);
     
+    // 승자/패자 판단
+    const isTeam1Winner = (winnerTeam && winnerTeam.teamName === team1Name) || isByeWinner1;
+    const isTeam2Winner = (winnerTeam && winnerTeam.teamName === team2Name) || isByeWinner2;
+    const isTeam1Loser = isCompleted && match.team1 && !isTeam1Winner;
+    const isTeam2Loser = isCompleted && match.team2 && !isTeam2Winner;
+    
     return `
         <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
-            <div class="match-team-split team1 ${(winnerTeam && winnerTeam.teamName === team1Name) || isByeWinner1 ? 'winner' : ''} ${!match.team1 ? 'empty' : ''}">
+            <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
                     ${showScore1 ? `<div class="team-score-split">${match.score1 || 0}</div>` : ''}
@@ -19366,7 +19372,7 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
             ${!(isBye && isFirstRound) ? `
                 <div class="match-vs-split">VS</div>
             ` : '<div class="match-bye-split">부전승</div>'}
-            <div class="match-team-split team2 ${(winnerTeam && winnerTeam.teamName === team2Name) || isByeWinner2 ? 'winner' : ''} ${!match.team2 ? 'empty' : ''}">
+            <div class="match-team-split team2 ${isTeam2Winner ? 'winner' : ''} ${isTeam2Loser ? 'loser' : ''} ${!match.team2 ? 'empty' : ''}">
                 ${match.team2 ? `
                     <div class="team-name-split">${team2Name}${team2Players ? ' : ' + team2Players : ''}</div>
                     ${showScore2 ? `<div class="team-score-split">${match.score2 || 0}</div>` : ''}
@@ -19568,21 +19574,27 @@ async function submitMatchScore(tournamentId, matchId, roundIndex, score1, score
             const currentMatchIndex = bracket.rounds[roundIndex].matches.indexOf(match);
             const firstRoundMatches = bracket.rounds[0].matches;
             const halfPoint = Math.ceil(firstRoundMatches.length / 2);
-            const isLeftSide = currentMatchIndex < halfPoint;
             
             // 마지막 라운드 전(준결승)인 경우: 결승으로
             if (roundIndex === totalRounds - 2) {
+                // 준결승 라운드에서는 매치가 2개만 있음 (왼쪽 1개, 오른쪽 1개)
+                // currentMatchIndex가 0이면 왼쪽, 1 이상이면 오른쪽
+                const isLeftSemifinal = currentMatchIndex === 0;
                 const nextMatch = nextRound.matches[0];
                 if (nextMatch) {
-                    if (isLeftSide) {
+                    if (isLeftSemifinal) {
                         // 왼쪽 브래킷 준결승 승자 → 결승 team1
+                        console.log(`[점수 제출] 왼쪽 준결승 승자 ${winner.teamName} → 결승 team1`);
                         nextMatch.team1 = winner;
                     } else {
                         // 오른쪽 브래킷 준결승 승자 → 결승 team2
+                        console.log(`[점수 제출] 오른쪽 준결승 승자 ${winner.teamName} → 결승 team2`);
                         nextMatch.team2 = winner;
                     }
                 }
             } else {
+                // 중간 라운드: 각 브래킷 내부에서만 진행
+                const isLeftSide = currentMatchIndex < halfPoint;
                 // 중간 라운드: 각 브래킷 내부에서만 진행
                 let nextMatchIndex;
                 
