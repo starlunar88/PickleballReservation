@@ -19392,7 +19392,8 @@ function renderTournamentBracket(bracket, tournamentId) {
     `;
     
     // 결승 (왼쪽 최종 승자 vs 오른쪽 최종 승자) - 준결승 가운데에 위치
-    bracketHTML += `<div class="bracket-round-split round-final">`;
+    const isChampionPathFinalRound = finalMatch && finalMatch.winner && championPath.has(`${totalRounds - 1}-${finalMatch.matchId}`);
+    bracketHTML += `<div class="bracket-round-split round-final ${isChampionPathFinalRound ? 'has-champion-path' : ''}">`;
     bracketHTML += `<div class="round-header-split"><h3>결승</h3></div>`;
     bracketHTML += '<div class="round-matches-split">';
     
