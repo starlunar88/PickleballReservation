@@ -8575,7 +8575,8 @@ span#matches-current-date-display,
     overflow: hidden;
     width: 100%;
     box-sizing: border-box;
-    min-height: fit-content;
+    min-height: auto;
+    height: auto;
 }
 
 .tournament-winner-info::before {
@@ -8594,12 +8595,13 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
     z-index: 1;
-    line-height: 1.2rem;
-    display: flex;
+    line-height: 1;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 0.95rem;
     height: 1.2rem;
+    vertical-align: middle;
 }
 
 .tournament-winner-info .winner-team-name {
@@ -8649,7 +8651,8 @@ span#matches-current-date-display,
     overflow: hidden;
     width: 100%;
     box-sizing: border-box;
-    min-height: fit-content;
+    min-height: auto;
+    height: auto;
 }
 
 .tournament-runnerup-info i {
@@ -8659,12 +8662,13 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
     z-index: 1;
-    line-height: 1.2rem;
-    display: flex;
+    line-height: 1;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 0.95rem;
     height: 1.2rem;
+    vertical-align: middle;
 }
 
 .tournament-runnerup-info .runnerup-team-name {
