@@ -19241,7 +19241,11 @@ function renderTournamentBracket(bracket, tournamentId) {
             // 준결승의 경우 빈 공간을 채우지 않음 (정확히 1경기만)
             const emptyMatches = (roundIndex === totalRounds - 2) ? 0 : Math.max(0, rightRoundMatchesCount - leftRoundMatches.length);
             
-            bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
+            // 라운드에 승자가 있는 매치가 있는지 확인
+            const hasWinnerInRound = leftRoundMatches.some(match => match.winner !== null);
+            const roundClass = `bracket-round-split round-${roundIndex}${hasWinnerInRound ? ' has-winner-path' : ''}`;
+            
+            bracketHTML += `<div class="${roundClass}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
             
@@ -19435,7 +19439,11 @@ function renderTournamentBracket(bracket, tournamentId) {
             // 준결승의 경우 빈 공간을 채우지 않음 (정확히 1경기만)
             const emptyMatches = (roundIndex === totalRounds - 2) ? 0 : Math.max(0, leftRoundMatchesCount - rightRoundMatches.length);
             
-            bracketHTML += `<div class="bracket-round-split round-${roundIndex}">`;
+            // 라운드에 승자가 있는 매치가 있는지 확인
+            const hasWinnerInRound = rightRoundMatches.some(match => match.winner !== null);
+            const roundClass = `bracket-round-split round-${roundIndex}${hasWinnerInRound ? ' has-winner-path' : ''}`;
+            
+            bracketHTML += `<div class="${roundClass}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
             bracketHTML += '<div class="round-matches-split">';
             
@@ -19538,8 +19546,11 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     const isTeam1Loser = isCompleted && match.team1 && !isTeam1Winner;
     const isTeam2Loser = isCompleted && match.team2 && !isTeam2Winner;
     
+    // 승자가 있으면 has-winner 클래스 추가
+    const hasWinner = isCompleted && (isTeam1Winner || isTeam2Winner);
+    
     return `
-        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
             <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
