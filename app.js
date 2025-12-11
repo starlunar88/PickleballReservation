@@ -19122,9 +19122,54 @@ async function openTournamentBracket(tournamentId) {
     }
 }
 
+// 최종 우승자 경로 추적 함수
+function getChampionPath(bracket) {
+    const path = new Set(); // matchId와 roundIndex를 저장
+    const finalRound = bracket.rounds[bracket.rounds.length - 1];
+    if (!finalRound || !finalRound.matches || finalRound.matches.length === 0) {
+        return path;
+    }
+    
+    const finalMatch = finalRound.matches[0];
+    if (!finalMatch || !finalMatch.winner) {
+        return path;
+    }
+    
+    // 결승전부터 역추적
+    let currentMatch = finalMatch;
+    let currentRoundIndex = bracket.rounds.length - 1;
+    
+    // 결승전 추가
+    path.add(`${currentRoundIndex}-${currentMatch.matchId}`);
+    
+    // 역순으로 추적
+    for (let roundIndex = currentRoundIndex - 1; roundIndex >= 0; roundIndex--) {
+        const round = bracket.rounds[roundIndex];
+        if (!round || !round.matches) continue;
+        
+        // 현재 매치의 승자가 어느 매치에서 왔는지 찾기
+        const winnerTeamName = currentMatch.winner.teamName;
+        
+        // 이전 라운드에서 승자를 찾기
+        for (let matchIndex = 0; matchIndex < round.matches.length; matchIndex++) {
+            const match = round.matches[matchIndex];
+            if (match.winner && match.winner.teamName === winnerTeamName) {
+                path.add(`${roundIndex}-${match.matchId}`);
+                currentMatch = match;
+                break;
+            }
+        }
+    }
+    
+    return path;
+}
+
 // 토너먼트 대진표 렌더링 (가로형)
 function renderTournamentBracket(bracket, tournamentId) {
     const container = document.getElementById('tournament-bracket-container');
+    
+    // 최종 우승자 경로 추적
+    const championPath = getChampionPath(bracket);
     if (!container) return;
     
     if (!bracket || !bracket.rounds || bracket.rounds.length === 0) {
@@ -19241,9 +19286,9 @@ function renderTournamentBracket(bracket, tournamentId) {
             // 준결승의 경우 빈 공간을 채우지 않음 (정확히 1경기만)
             const emptyMatches = (roundIndex === totalRounds - 2) ? 0 : Math.max(0, rightRoundMatchesCount - leftRoundMatches.length);
             
-            // 라운드에 승자가 있는 매치가 있는지 확인
-            const hasWinnerInRound = leftRoundMatches.some(match => match.winner !== null);
-            const roundClass = `bracket-round-split round-${roundIndex}${hasWinnerInRound ? ' has-winner-path' : ''}`;
+            // 최종 우승자 경로에 속하는지 확인
+            const isChampionPathRound = leftRoundMatches.some(match => championPath.has(`${roundIndex}-${match.matchId}`));
+            const roundClass = `bracket-round-split round-${roundIndex}${isChampionPathRound ? ' has-champion-path' : ''}`;
             
             bracketHTML += `<div class="${roundClass}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
@@ -19260,7 +19305,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 const isCompleted = firstMatch.winner !== null;
                 const isBye = firstMatch.isBye && roundIndex === 0;
                 const winnerTeam = firstMatch.winner;
-                bracketHTML += createMatchHTML(firstMatch, roundIndex, 0, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+                const isChampionPath1 = championPath.has(`${roundIndex}-${firstMatch.matchId}`);
+                bracketHTML += createMatchHTML(firstMatch, roundIndex, 0, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPath1);
                 
                 // 빈 공간 추가 (8강 4경기 중간 위치)
                 for (let j = 0; j < 2; j++) {
@@ -19276,7 +19322,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 const isCompleted2 = secondMatch.winner !== null;
                 const isBye2 = secondMatch.isBye && roundIndex === 0;
                 const winnerTeam2 = secondMatch.winner;
-                bracketHTML += createMatchHTML(secondMatch, roundIndex, 1, team1Name2, team2Name2, team1Players2, team2Players2, isCompleted2, isBye2, winnerTeam2, tournamentId);
+                const isChampionPath2 = championPath.has(`${roundIndex}-${secondMatch.matchId}`);
+                bracketHTML += createMatchHTML(secondMatch, roundIndex, 1, team1Name2, team2Name2, team1Players2, team2Players2, isCompleted2, isBye2, winnerTeam2, tournamentId, isChampionPath2);
             } else {
                 leftRoundMatches.forEach((match, matchIndex) => {
                 const team1Name = match.team1 ? match.team1.teamName : '대기 중';
@@ -19286,8 +19333,9 @@ function renderTournamentBracket(bracket, tournamentId) {
                 const isCompleted = match.winner !== null;
                 const isBye = match.isBye && roundIndex === 0; // 부전승은 첫 라운드에서만
                 const winnerTeam = match.winner;
+                const isChampionPath = championPath.has(`${roundIndex}-${match.matchId}`);
                 
-                    bracketHTML += createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+                    bracketHTML += createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPath);
                 });
             }
             
@@ -19303,7 +19351,7 @@ function renderTournamentBracket(bracket, tournamentId) {
                     winner: null,
                     isBye: true
                 };
-                bracketHTML += createMatchHTML(byeMatch, roundIndex, leftRoundMatches.length + j, '부전승', '부전승', '', '', false, true, null, tournamentId);
+                bracketHTML += createMatchHTML(byeMatch, roundIndex, leftRoundMatches.length + j, '부전승', '부전승', '', '', false, true, null, tournamentId, false);
             }
             
             bracketHTML += '</div></div>';
@@ -19357,7 +19405,8 @@ function renderTournamentBracket(bracket, tournamentId) {
         const isBye = finalMatch.isBye;
         const winnerTeam = finalMatch.winner;
         
-        bracketHTML += createMatchHTML(finalMatch, totalRounds - 1, 0, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+        const isChampionPathFinal = championPath.has(`${totalRounds - 1}-${finalMatch.matchId}`);
+        bracketHTML += createMatchHTML(finalMatch, totalRounds - 1, 0, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPathFinal);
     } else {
         // 결승 매치가 아직 생성되지 않은 경우
         bracketHTML += `
@@ -19439,9 +19488,9 @@ function renderTournamentBracket(bracket, tournamentId) {
             // 준결승의 경우 빈 공간을 채우지 않음 (정확히 1경기만)
             const emptyMatches = (roundIndex === totalRounds - 2) ? 0 : Math.max(0, leftRoundMatchesCount - rightRoundMatches.length);
             
-            // 라운드에 승자가 있는 매치가 있는지 확인
-            const hasWinnerInRound = rightRoundMatches.some(match => match.winner !== null);
-            const roundClass = `bracket-round-split round-${roundIndex}${hasWinnerInRound ? ' has-winner-path' : ''}`;
+            // 최종 우승자 경로에 속하는지 확인
+            const isChampionPathRound = rightRoundMatches.some(match => championPath.has(`${roundIndex}-${match.matchId}`));
+            const roundClass = `bracket-round-split round-${roundIndex}${isChampionPathRound ? ' has-champion-path' : ''}`;
             
             bracketHTML += `<div class="${roundClass}">`;
             bracketHTML += `<div class="round-header-split"><h3>${roundLabels[roundIndex]}</h3></div>`;
@@ -19461,7 +19510,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 const totalMatchesInRound = round.matches.length;
                 const leftMatchesInThisRound = Math.ceil(totalMatchesInRound / 2);
                 const actualMatchIndex1 = leftMatchesInThisRound + 0;
-                bracketHTML += createMatchHTML(firstMatch, roundIndex, actualMatchIndex1, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+                const isChampionPath1 = championPath.has(`${roundIndex}-${firstMatch.matchId}`);
+                bracketHTML += createMatchHTML(firstMatch, roundIndex, actualMatchIndex1, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPath1);
                 
                 // 빈 공간 추가 (8강 4경기 중간 위치)
                 for (let j = 0; j < 2; j++) {
@@ -19478,7 +19528,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                 const isBye2 = secondMatch.isBye && roundIndex === 0;
                 const winnerTeam2 = secondMatch.winner;
                 const actualMatchIndex2 = leftMatchesInThisRound + 1;
-                bracketHTML += createMatchHTML(secondMatch, roundIndex, actualMatchIndex2, team1Name2, team2Name2, team1Players2, team2Players2, isCompleted2, isBye2, winnerTeam2, tournamentId);
+                const isChampionPath2 = championPath.has(`${roundIndex}-${secondMatch.matchId}`);
+                bracketHTML += createMatchHTML(secondMatch, roundIndex, actualMatchIndex2, team1Name2, team2Name2, team1Players2, team2Players2, isCompleted2, isBye2, winnerTeam2, tournamentId, isChampionPath2);
             } else {
                 // 빈 공간을 부전승으로 채우기 (대칭 맞추기)
                 for (let j = 0; j < emptyMatches; j++) {
@@ -19492,7 +19543,7 @@ function renderTournamentBracket(bracket, tournamentId) {
                         winner: null,
                         isBye: true
                     };
-                    bracketHTML += createMatchHTML(byeMatch, roundIndex, j, '부전승', '부전승', '', '', false, true, null, tournamentId);
+                    bracketHTML += createMatchHTML(byeMatch, roundIndex, j, '부전승', '부전승', '', '', false, true, null, tournamentId, false);
                 }
                 
                 rightRoundMatches.forEach((match, matchIndex) => {
@@ -19510,7 +19561,8 @@ function renderTournamentBracket(bracket, tournamentId) {
                     ? matchIndex + halfPoint 
                     : leftMatchesInThisRound + matchIndex;
                 
-                    bracketHTML += createMatchHTML(match, roundIndex, actualMatchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId);
+                const isChampionPath = championPath.has(`${roundIndex}-${match.matchId}`);
+                    bracketHTML += createMatchHTML(match, roundIndex, actualMatchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPath);
                 });
             }
             
@@ -19526,7 +19578,7 @@ function renderTournamentBracket(bracket, tournamentId) {
 }
 
 // 매치 HTML 생성 헬퍼 함수
-function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId) {
+function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPath = false) {
     // 부전승은 첫 라운드에서만 표시
     const isFirstRound = roundIndex === 0;
     const isByeWinner1 = isBye && match.team1 && match.winner && match.winner.teamName === team1Name;
@@ -19550,7 +19602,7 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     const hasWinner = isCompleted && (isTeam1Winner || isTeam2Winner);
     
     return `
-        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''} ${isChampionPath ? 'champion-path' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
             <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>

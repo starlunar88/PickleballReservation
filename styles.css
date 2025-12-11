@@ -8816,45 +8816,45 @@ span#matches-current-date-display,
 }
 
 /* 라운드 간 연결선 - 세로선 (왼쪽 브래킷, 기본 회색) */
-.bracket-left .bracket-round-split:not(:last-child)::after {
+.bracket-left .bracket-round-split:not(:last-child) .round-matches-split::after {
     content: '';
     position: absolute;
     right: -12px;
-    top: 50%;
-    bottom: -50%;
+    top: 0;
+    bottom: 0;
     width: 1px;
     background: #b0b0b0;
     z-index: 1;
-    transform: translateY(-50%);
     opacity: 0.5;
 }
 
 /* 라운드 간 연결선 - 세로선 (오른쪽 브래킷, 기본 회색) */
-.bracket-right .bracket-round-split:not(:last-child)::before {
+.bracket-right .bracket-round-split:not(:last-child) .round-matches-split::before {
     content: '';
     position: absolute;
     left: -12px;
-    top: 50%;
-    bottom: -50%;
+    top: 0;
+    bottom: 0;
     width: 1px;
     background: #b0b0b0;
     z-index: 1;
-    transform: translateY(-50%);
     opacity: 0.5;
 }
 
-/* 승자 경로 연결선 - 세로선 (왼쪽 브래킷, 승자만) */
-.bracket-left .bracket-round-split:not(:last-child).has-winner-path::after {
-    background: linear-gradient(180deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
+/* 최종 우승자 경로 연결선 - 세로선 (왼쪽 브래킷, 우승자만) */
+.bracket-left .bracket-round-split:not(:last-child).has-champion-path .round-matches-split::after {
+    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
     width: 3px;
-    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+    opacity: 1;
 }
 
-/* 승자 경로 연결선 - 세로선 (오른쪽 브래킷, 승자만) */
-.bracket-right .bracket-round-split:not(:last-child).has-winner-path::before {
-    background: linear-gradient(180deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
+/* 최종 우승자 경로 연결선 - 세로선 (오른쪽 브래킷, 우승자만) */
+.bracket-right .bracket-round-split:not(:last-child).has-champion-path .round-matches-split::before {
+    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
     width: 3px;
-    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+    opacity: 1;
 }
 
 .bracket-round-split.round-final {
@@ -8972,6 +8972,7 @@ span#matches-current-date-display,
     align-items: center;
     justify-content: center;
     padding: 5px 0;
+    position: relative;
 }
 
 .round-matches-horizontal {
@@ -8998,61 +8999,52 @@ span#matches-current-date-display,
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* 매치에서 다음 라운드로 가는 연결선 - 가로선 (왼쪽 브래킷) */
+/* 매치에서 다음 라운드로 가는 연결선 - 가로선 (왼쪽 브래킷, 기본 회색) */
 .bracket-left .bracket-match-split.completed:not(.empty-spacer)::after {
     content: '';
     position: absolute;
     right: -12px;
     top: 50%;
     width: 12px;
-    height: 2px;
-    background: #d0d0d0;
+    height: 1px;
+    background: #b0b0b0;
     z-index: 3;
     transform: translateY(-50%);
+    opacity: 0.5;
 }
 
-/* 매치에서 다음 라운드로 가는 연결선 - 가로선 (오른쪽 브래킷) */
+/* 매치에서 다음 라운드로 가는 연결선 - 가로선 (오른쪽 브래킷, 기본 회색) */
 .bracket-right .bracket-match-split.completed:not(.empty-spacer)::before {
     content: '';
     position: absolute;
     left: -12px;
     top: 50%;
     width: 12px;
-    height: 2px;
-    background: #d0d0d0;
+    height: 1px;
+    background: #b0b0b0;
     z-index: 3;
     transform: translateY(-50%);
-}
-
-/* 승자 경로 연결선 - 가로선 (왼쪽 브래킷, 승자만) */
-.bracket-left .bracket-match-split.has-winner:not(.empty-spacer)::after {
-    background: linear-gradient(90deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
-    height: 3px;
-    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
-    width: 12px;
-    z-index: 4;
-}
-
-/* 승자 경로 연결선 - 가로선 (오른쪽 브래킷, 승자만) */
-.bracket-right .bracket-match-split.has-winner:not(.empty-spacer)::before {
-    background: linear-gradient(90deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
-    height: 3px;
-    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
-    width: 12px;
-    z-index: 4;
-}
-
-/* 패자 경로 연결선 - 가로선 (회색, 얇게) */
-.bracket-left .bracket-match-split.completed:not(.has-winner):not(.empty-spacer)::after {
-    background: #b0b0b0;
-    height: 1px;
     opacity: 0.5;
 }
 
-.bracket-right .bracket-match-split.completed:not(.has-winner):not(.empty-spacer)::before {
-    background: #b0b0b0;
-    height: 1px;
-    opacity: 0.5;
+/* 최종 우승자 경로 연결선 - 가로선 (왼쪽 브래킷, 우승자만) */
+.bracket-left .bracket-match-split.champion-path:not(.empty-spacer)::after {
+    background: linear-gradient(90deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    height: 3px;
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+    width: 12px;
+    z-index: 4;
+    opacity: 1;
+}
+
+/* 최종 우승자 경로 연결선 - 가로선 (오른쪽 브래킷, 우승자만) */
+.bracket-right .bracket-match-split.champion-path:not(.empty-spacer)::before {
+    background: linear-gradient(90deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    height: 3px;
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+    width: 12px;
+    z-index: 4;
+    opacity: 1;
 }
 
 .bracket-match-split.bye {
@@ -9362,6 +9354,36 @@ span#matches-current-date-display,
     background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%);
     box-shadow: 0 3px 10px rgba(255, 215, 0, 0.3);
     transform: scale(1.03);
+    position: relative;
+    overflow: visible;
+}
+
+/* 결승전에서 우승컵으로 가는 연결선 */
+.bracket-center .bracket-round-split.round-final .bracket-match-split.champion-path::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    width: 3px;
+    height: 50px;
+    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    transform: translateX(-50%);
+    z-index: 4;
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
+}
+
+/* 결승전에서 우승컵으로 가는 연결선 (기본 회색) */
+.bracket-center .bracket-round-split.round-final .bracket-match-split.completed:not(.champion-path)::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    width: 1px;
+    height: 50px;
+    background: #b0b0b0;
+    transform: translateX(-50%);
+    z-index: 3;
+    opacity: 0.5;
 }
 
 .final-winner-split::before {
@@ -9369,6 +9391,20 @@ span#matches-current-date-display,
     display: block;
     font-size: 1.2em;
     margin-bottom: 4px;
+}
+
+/* 우승컵에서 결승전으로 가는 연결선 (우승자 경로) */
+.final-winner-split::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    width: 3px;
+    height: 10px;
+    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    transform: translateX(-50%);
+    z-index: 4;
+    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
 }
 
 .final-runnerup-split {
