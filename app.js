@@ -1887,23 +1887,22 @@ async function switchMainTab(tabName) {
         if (tabName === 'tournament') {
             console.log('토너먼트 탭 전환 - 기록 강제 로드');
             
-            // DOM 준비 대기 후 로드
-            setTimeout(async () => {
+            // DOM 준비 대기 후 로드 (여러 번 시도)
+            const tryLoadHistory = async (retryCount = 0) => {
                 try {
-                    await loadTournamentHistory();
+                    // DOM이 준비될 때까지 대기
+                    await new Promise(resolve => setTimeout(resolve, 100 + (retryCount * 50)));
+                    await loadTournamentHistory(0);
                     console.log('탭 전환 시 토너먼트 기록 로드 완료');
                 } catch (error) {
                     console.error('탭 전환 시 토너먼트 기록 로드 실패:', error);
-                    // 재시도
-                    setTimeout(async () => {
-                        try {
-                            await loadTournamentHistory();
-                        } catch (retryError) {
-                            console.error('토너먼트 기록 재시도 실패:', retryError);
-                        }
-                    }, 300);
+                    if (retryCount < 3) {
+                        setTimeout(() => tryLoadHistory(retryCount + 1), 300 * (retryCount + 1));
+                    }
                 }
-            }, 150);
+            };
+            
+            setTimeout(() => tryLoadHistory(), 150);
         }
     }
     
@@ -1942,13 +1941,18 @@ async function loadTabData(tabName) {
         case 'tournament':
             await loadTournamentData();
             // 탭 전환 시 기록이 확실히 로드되도록 추가 로드 (DOM 준비 대기)
-            setTimeout(async () => {
+            const tryLoadHistoryInTabData = async (retryCount = 0) => {
                 try {
-                    await loadTournamentHistory();
+                    await new Promise(resolve => setTimeout(resolve, 200 + (retryCount * 100)));
+                    await loadTournamentHistory(0);
                 } catch (error) {
-                    console.error('탭 전환 시 토너먼트 기록 로드 오류:', error);
+                    console.error('탭 데이터 로드 시 토너먼트 기록 로드 오류:', error);
+                    if (retryCount < 2) {
+                        setTimeout(() => tryLoadHistoryInTabData(retryCount + 1), 500);
+                    }
                 }
-            }, 200);
+            };
+            setTimeout(() => tryLoadHistoryInTabData(), 200);
             break;
         case 'admin':
             await loadAdminData();
@@ -18216,36 +18220,68 @@ async function loadActiveTournaments() {
 }
 
 // 토너먼트 기록 로드
-async function loadTournamentHistory() {
-    // 컨테이너가 없으면 재시도 (탭 전환 시 DOM이 아직 준비되지 않았을 수 있음)
+async function loadTournamentHistory(attempt = 0) {
+    console.log(`[토너먼트 기록 로드] 시도 ${attempt + 1}`);
+    
+    // 컨테이너 찾기 (재시도 포함)
     let container = document.getElementById('tournament-history-list');
     if (!container) {
-        // 최대 5번 재시도 (각 100ms 간격)
-        for (let i = 0; i < 5; i++) {
+        // 최대 10번 재시도 (각 100ms 간격)
+        for (let i = 0; i < 10; i++) {
             await new Promise(resolve => setTimeout(resolve, 100));
             container = document.getElementById('tournament-history-list');
-            if (container) break;
+            if (container) {
+                console.log(`[토너먼트 기록 로드] 컨테이너 찾음 (시도 ${i + 1})`);
+                break;
+            }
         }
     }
     
     if (!container) {
-        console.warn('토너먼트 기록 컨테이너를 찾을 수 없습니다.');
+        console.warn('[토너먼트 기록 로드] 컨테이너를 찾을 수 없습니다.');
+        // 재시도 (최대 3번)
+        if (attempt < 3) {
+            setTimeout(() => loadTournamentHistory(attempt + 1), 500 * (attempt + 1));
+        }
         return;
     }
     
+    // 로딩 상태 표시
     container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>기록을 불러오는 중...</p></div>';
     
     try {
+        // 네트워크 상태 확인
+        if (!navigator.onLine) {
+            container.innerHTML = '<div class="empty-state"><p>인터넷 연결을 확인해주세요.</p></div>';
+            return;
+        }
+        
+        // Firebase 상태 확인
+        if (!db) {
+            console.error('[토너먼트 기록 로드] Firebase DB가 초기화되지 않았습니다.');
+            container.innerHTML = '<div class="empty-state"><p>데이터베이스 연결 오류가 발생했습니다.</p></div>';
+            if (attempt < 3) {
+                setTimeout(() => loadTournamentHistory(attempt + 1), 1000 * (attempt + 1));
+            }
+            return;
+        }
+        
+        // 인증 상태 확인
         const user = auth.currentUser;
         if (!user) {
+            console.log('[토너먼트 기록 로드] 로그인되지 않음');
             container.innerHTML = '<div class="empty-state"><p>로그인이 필요합니다.</p></div>';
             return;
         }
+        
+        console.log('[토너먼트 기록 로드] 사용자 인증됨:', user.uid);
         
         // 인덱스 없이 쿼리하기 위해 orderBy 제거하고 클라이언트 측에서 정렬
         const tournamentsSnapshot = await db.collection('tournaments')
             .where('status', '==', 'completed')
             .get();
+        
+        console.log('[토너먼트 기록 로드] 쿼리 결과:', tournamentsSnapshot.size, '개');
         
         if (tournamentsSnapshot.empty) {
             container.innerHTML = '<div class="empty-state"><i class="fas fa-history"></i><p>완료된 토너먼트가 없습니다.</p></div>';
@@ -18272,15 +18308,31 @@ async function loadTournamentHistory() {
         
         const limitedTournaments = tournaments.slice(0, 20);
         
+        console.log('[토너먼트 기록 로드] 표시할 토너먼트:', limitedTournaments.length, '개');
+        
         const tournamentsHTML = [];
         limitedTournaments.forEach(tournament => {
             tournamentsHTML.push(createTournamentCard(tournament, false));
         });
         
         container.innerHTML = tournamentsHTML.join('');
+        console.log('[토너먼트 기록 로드] 완료');
     } catch (error) {
-        console.error('토너먼트 기록 로드 오류:', error);
+        console.error('[토너먼트 기록 로드] 오류:', error);
+        console.error('[토너먼트 기록 로드] 오류 상세:', error.message);
+        console.error('[토너먼트 기록 로드] 오류 스택:', error.stack);
+        
         container.innerHTML = '<div class="empty-state"><p>기록을 불러오는 중 오류가 발생했습니다.</p></div>';
+        
+        // 재시도 (최대 3번)
+        if (attempt < 3) {
+            const delay = Math.min(1000 * Math.pow(2, attempt), 5000); // 지수 백오프
+            console.log(`[토너먼트 기록 로드] ${delay}ms 후 재시도...`);
+            setTimeout(() => loadTournamentHistory(attempt + 1), delay);
+        } else {
+            console.error('[토너먼트 기록 로드] 최대 재시도 횟수 초과');
+            showToast('토너먼트 기록을 불러올 수 없습니다. 새로고침해주세요.', 'error');
+        }
     }
 }
 
