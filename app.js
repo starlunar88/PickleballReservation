@@ -18836,8 +18836,7 @@ function createTournamentBracket(teams) {
         };
         
         // 이전 라운드의 승자들 수집
-        // 일반 경기는 아직 winner가 null이지만, 다음 라운드 생성 시에는 모든 경기에서 승자가 나온다고 가정
-        // 실제로는 각 매치마다 승자 1명이 나오므로, 매치 수 = 승자 수
+        // 부전승인 경우 승자가 이미 결정되어 있으므로 다음 라운드로 자동 진출
         const winners = [];
         prevRound.matches.forEach(match => {
             if (match.winner) {
@@ -18845,13 +18844,11 @@ function createTournamentBracket(teams) {
                 winners.push(match.winner);
             } else if (match.isBye && (match.team1 || match.team2)) {
                 // 부전승인 경우 승자 추가
-                winners.push(match.team1 || match.team2);
-            } else {
-                // 일반 경기는 아직 승자가 없지만, 다음 라운드 생성 시 승자가 나온다고 가정
-                // 임시로 team1을 승자로 가정 (실제로는 점수 입력 후 결정됨)
-                // 하지만 대진표 생성 시점에는 모든 경기가 아직 진행되지 않았으므로
-                // 매치 수를 기준으로 다음 라운드를 생성해야 함
+                const byeWinner = match.team1 || match.team2;
+                winners.push(byeWinner);
             }
+            // 일반 경기는 아직 승자가 없으므로 winners에 추가하지 않음
+            // 다음 라운드 생성 시 매치 수를 기준으로 생성하되, 부전승 승자는 자동 배정
         });
         
         // 실제로는 각 매치마다 승자 1명이 나오므로, 매치 수 = 승자 수
@@ -18859,9 +18856,10 @@ function createTournamentBracket(teams) {
         // 따라서 이전 라운드의 매치 수를 승자 수로 사용
         const actualWinners = prevRound.matches.length;
         
-        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}`);
+        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}, 부전승 승자 수=${winners.length}`);
         
         // 승자들을 두 팀씩 매칭 (부전승 없음)
+        let winnerIndex = 0;
         for (let i = 0; i < Math.ceil(actualWinners / 2); i++) {
             const match = {
                 matchId: `r${roundNumber}-m${i}`,
@@ -18872,6 +18870,16 @@ function createTournamentBracket(teams) {
                 winner: null,
                 isBye: false  // 중간 라운드에는 부전승 없음
             };
+            
+            // 부전승 승자가 있으면 자동으로 배정
+            if (winnerIndex < winners.length) {
+                match.team1 = winners[winnerIndex];
+                winnerIndex++;
+            }
+            if (winnerIndex < winners.length) {
+                match.team2 = winners[winnerIndex];
+                winnerIndex++;
+            }
             
             round.matches.push(match);
         }
