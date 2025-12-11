@@ -2651,6 +2651,17 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     overflow-y: visible !important; /* 세로 스크롤 허용 */
 }
 
+/* CI 배너 제거 후 상단 여백 추가 */
+.reservations-container > .reservations-board:first-child,
+.matches-container > .section-header:first-child,
+.rankings-container > .medal-ceremony-section:first-child,
+.stats-container > .game-stats-section:first-child,
+.records-container > .stats-section-header:first-child,
+.tournament-container > .tournament-reservation-section:first-child,
+.tournament-container > .tournament-active-section:first-child {
+    margin-top: 20px;
+}
+
 /* 기간 선택 버튼 (기록탭 - 통계탭 스타일로 변경) */
 .period-filter-buttons {
     display: flex;
