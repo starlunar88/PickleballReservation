@@ -19144,21 +19144,26 @@ function renderTournamentBracket(bracket, tournamentId) {
     const finalMatch = finalRound ? finalRound.matches[0] : null;
     
     let winnerName = '';
+    let winnerPlayers = '';
     let runnerupName = '';
+    let runnerupPlayers = '';
     
     if (finalMatch && finalMatch.winner) {
         winnerName = finalMatch.winner.teamName || '';
+        winnerPlayers = finalMatch.winner.players ? finalMatch.winner.players.map(p => p.userName).join(', ') : '';
         if (finalMatch.team1 && finalMatch.team1.teamName === winnerName) {
             runnerupName = finalMatch.team2?.teamName || '';
+            runnerupPlayers = finalMatch.team2?.players ? finalMatch.team2.players.map(p => p.userName).join(', ') : '';
         } else if (finalMatch.team2 && finalMatch.team2.teamName === winnerName) {
             runnerupName = finalMatch.team1?.teamName || '';
+            runnerupPlayers = finalMatch.team1?.players ? finalMatch.team1.players.map(p => p.userName).join(', ') : '';
         }
     }
     
     bracketHTML += `
         <div class="final-winner-split">
             <div class="final-label-split">우승 (Winner)</div>
-            <div class="final-team-split">${winnerName || ''}</div>
+            <div class="final-team-split">${winnerName || ''}${winnerPlayers ? ' : ' + winnerPlayers : ''}</div>
         </div>
     `;
     
@@ -19198,7 +19203,7 @@ function renderTournamentBracket(bracket, tournamentId) {
     bracketHTML += `
         <div class="final-runnerup-split">
             <div class="final-label-split">준우승 (Runner-up)</div>
-            <div class="final-team-split">${runnerupName || ''}</div>
+            <div class="final-team-split">${runnerupName || ''}${runnerupPlayers ? ' : ' + runnerupPlayers : ''}</div>
         </div>
     `;
     
