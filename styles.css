@@ -8612,7 +8612,7 @@ span#matches-current-date-display,
 .tournament-winner-info .winner-team-name {
     font-weight: 700;
     color: #212529;
-    font-size: 0.9em;
+    font-size: 0.85em;
     white-space: nowrap;
     flex-shrink: 0;
     position: relative;
@@ -8626,7 +8626,7 @@ span#matches-current-date-display,
 .tournament-winner-info .winner-players {
     color: #212529;
     font-weight: 600;
-    font-size: 0.85em;
+    font-size: 0.8em;
     margin-left: 3px;
     white-space: normal;
     word-break: break-word;
