@@ -9003,49 +9003,37 @@ span#matches-current-date-display,
     z-index: 4;
 }
 
-/* MLB 월드시리즈 스타일: 각 매치에서 다음 라운드로 가는 세로 연결선 (왼쪽 브래킷, 기본 검은색) */
-.bracket-left .bracket-match-split.completed:not(.empty-spacer) {
-    position: relative;
-}
-
-.bracket-left .bracket-match-split.completed:not(.empty-spacer) .match-connector-line {
+/* MLB 월드시리즈 스타일: 라운드 간 세로 연결선 (각 매치 쌍이 공유하는 세로선) */
+.bracket-left .bracket-round-split:not(:last-child) .round-matches-split::after {
     content: '';
     position: absolute;
     right: -20px;
-    top: 50%;
-    height: 400px;
+    top: 0;
+    bottom: 0;
     width: 2px;
     background: #000000;
-    z-index: 2;
-    pointer-events: none;
+    z-index: 1;
 }
 
-/* MLB 월드시리즈 스타일: 각 매치에서 다음 라운드로 가는 세로 연결선 (오른쪽 브래킷, 기본 검은색) */
-.bracket-right .bracket-match-split.completed:not(.empty-spacer) {
-    position: relative;
-}
-
-.bracket-right .bracket-match-split.completed:not(.empty-spacer) .match-connector-line {
+.bracket-right .bracket-round-split:not(:last-child) .round-matches-split::before {
     content: '';
     position: absolute;
     left: -20px;
-    top: 50%;
-    height: 400px;
+    top: 0;
+    bottom: 0;
     width: 2px;
     background: #000000;
-    z-index: 2;
-    pointer-events: none;
+    z-index: 1;
 }
 
-/* 최종 우승자 경로 연결선 - 세로선 (왼쪽 브래킷, 우승자만 빨간색) */
-.bracket-left .bracket-match-split.champion-path:not(.empty-spacer) .match-connector-line {
+/* 최종 우승자 경로 연결선 - 세로선 (우승자만 빨간색) */
+.bracket-left .bracket-round-split.has-champion-path:not(:last-child) .round-matches-split::after {
     background: #dc3545;
     width: 3px;
     box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
 }
 
-/* 최종 우승자 경로 연결선 - 세로선 (오른쪽 브래킷, 우승자만 빨간색) */
-.bracket-right .bracket-match-split.champion-path:not(.empty-spacer) .match-connector-line {
+.bracket-right .bracket-round-split.has-champion-path:not(:last-child) .round-matches-split::before {
     background: #dc3545;
     width: 3px;
     box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);

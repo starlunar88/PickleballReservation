@@ -19604,7 +19604,6 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     
     return `
         <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''} ${isChampionPath ? 'champion-path' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
-            ${isCompleted && !(isBye && isFirstRound) ? '<div class="match-connector-line"></div>' : ''}
             <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
