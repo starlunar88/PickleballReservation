@@ -18322,34 +18322,77 @@ function createTournamentCard(tournament, isActive) {
         'completed': '완료'
     }[status] || '알 수 없음';
     
-    // 우승자 정보 추출 (대진표에서 결승전 승자 정보 가져오기)
+    // 우승자 및 준우승자 정보 추출 (대진표에서 결승전 승자 정보 가져오기)
     let winnerInfo = '';
-    if (tournament.winner) {
-        let winnerDisplay = tournament.winner;
-        let winnerPlayers = '';
-        
-        // 대진표에서 결승전 승자 정보 가져오기
-        if (tournament.bracket && tournament.bracket.rounds && tournament.bracket.rounds.length > 0) {
-            const finalRound = tournament.bracket.rounds[tournament.bracket.rounds.length - 1];
-            if (finalRound && finalRound.matches && finalRound.matches.length > 0) {
-                const finalMatch = finalRound.matches[0];
-                if (finalMatch && finalMatch.winner) {
-                    winnerDisplay = finalMatch.winner.teamName || tournament.winner;
-                    if (finalMatch.winner.players && finalMatch.winner.players.length > 0) {
-                        winnerPlayers = finalMatch.winner.players.map(p => p.userName).join(', ');
+    let runnerupInfo = '';
+    
+    if (tournament.bracket && tournament.bracket.rounds && tournament.bracket.rounds.length > 0) {
+        const finalRound = tournament.bracket.rounds[tournament.bracket.rounds.length - 1];
+        if (finalRound && finalRound.matches && finalRound.matches.length > 0) {
+            const finalMatch = finalRound.matches[0];
+            
+            if (finalMatch && finalMatch.winner) {
+                // 우승팀 정보
+                const winnerName = finalMatch.winner.teamName || '';
+                const winnerPlayers = finalMatch.winner.players ? finalMatch.winner.players.map(p => p.userName).join(', ') : '';
+                
+                // 준우승팀 정보
+                let runnerupName = '';
+                let runnerupPlayers = '';
+                if (finalMatch.team1 && finalMatch.team1.teamName === winnerName) {
+                    runnerupName = finalMatch.team2?.teamName || '';
+                    runnerupPlayers = finalMatch.team2?.players ? finalMatch.team2.players.map(p => p.userName).join(', ') : '';
+                } else if (finalMatch.team2 && finalMatch.team2.teamName === winnerName) {
+                    runnerupName = finalMatch.team1?.teamName || '';
+                    runnerupPlayers = finalMatch.team1?.players ? finalMatch.team1.players.map(p => p.userName).join(', ') : '';
+                }
+                
+                // 기록 카드(isActive === false)일 때는 팀 이름 제거하고 플레이어 이름만 표시
+                if (isActive) {
+                    // 진행 중인 토너먼트: 팀 이름과 플레이어 이름 모두 표시
+                    if (winnerPlayers) {
+                        winnerInfo = `<div class="tournament-winner-info">
+                            <i class="fas fa-trophy"></i> 
+                            <span class="winner-team-name">${winnerName}</span>
+                            <span class="winner-players">${winnerPlayers}</span>
+                        </div>`;
+                    } else {
+                        winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${winnerName}</div>`;
+                    }
+                    
+                    if (runnerupPlayers) {
+                        runnerupInfo = `<div class="tournament-runnerup-info">
+                            <i class="fas fa-medal"></i> 
+                            <span class="runnerup-team-name">${runnerupName}</span>
+                            <span class="runnerup-players">${runnerupPlayers}</span>
+                        </div>`;
+                    } else if (runnerupName) {
+                        runnerupInfo = `<div class="tournament-runnerup-info"><i class="fas fa-medal"></i> 준우승: ${runnerupName}</div>`;
+                    }
+                } else {
+                    // 기록 카드: 플레이어 이름만 표시
+                    if (winnerPlayers) {
+                        winnerInfo = `<div class="tournament-winner-info">
+                            <i class="fas fa-trophy"></i> 
+                            <span class="winner-players">${winnerPlayers}</span>
+                        </div>`;
+                    }
+                    
+                    if (runnerupPlayers) {
+                        runnerupInfo = `<div class="tournament-runnerup-info">
+                            <i class="fas fa-medal"></i> 
+                            <span class="runnerup-players">${runnerupPlayers}</span>
+                        </div>`;
                     }
                 }
             }
         }
-        
-        if (winnerPlayers) {
-            winnerInfo = `<div class="tournament-winner-info">
-                <i class="fas fa-trophy"></i> 
-                <span class="winner-team-name">${winnerDisplay}</span>
-                <span class="winner-players">${winnerPlayers}</span>
-            </div>`;
-        } else {
-            winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${winnerDisplay}</div>`;
+    }
+    
+    // 대진표 정보가 없는 경우 기존 winner 필드 사용 (하위 호환성)
+    if (!winnerInfo && tournament.winner) {
+        if (isActive) {
+            winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${tournament.winner}</div>`;
         }
     }
     
@@ -18370,6 +18413,7 @@ function createTournamentCard(tournament, isActive) {
                     <div><i class="fas fa-clock"></i> ${timeDisplay}</div>
                     ${tournament.registeredCount !== undefined ? `<div><i class="fas fa-users"></i> 예약자: ${tournament.registeredCount}명</div>` : ''}
                     ${winnerInfo}
+                    ${runnerupInfo}
                     ${isRegistered ? '<div class="tournament-registered-badge"><i class="fas fa-check-circle"></i> 예약 완료</div>' : ''}
                 </div>
                 <div class="tournament-card-actions">
@@ -18411,6 +18455,11 @@ function createTournamentCard(tournament, isActive) {
                         <button class="btn btn-outline" onclick="viewTournamentDetails('${tournament.id}')">
                             <i class="fas fa-eye"></i> 상세 보기
                         </button>
+                        ${isAdmin ? `
+                            <button class="btn btn-danger" onclick="deleteTournament('${tournament.id}')">
+                                <i class="fas fa-trash"></i> 삭제
+                            </button>
+                        ` : ''}
                     ` : ''}
                 </div>
             </div>
