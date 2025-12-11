@@ -8437,16 +8437,36 @@ span#matches-current-date-display,
 }
 
 .tournament-card {
-    background: white;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 24px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.tournament-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2196F3 0%, #21CBF3 50%, #2196F3 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .tournament-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    border-color: #2196F3;
+}
+
+.tournament-card:hover::before {
+    opacity: 1;
 }
 
 .tournament-card.active {
@@ -8500,7 +8520,7 @@ span#matches-current-date-display,
 .tournament-info {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     color: #666;
     font-size: 0.95em;
 }
@@ -8508,7 +8528,8 @@ span#matches-current-date-display,
 .tournament-info div {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    line-height: 1.5;
 }
 
 .tournament-info i {
@@ -8517,43 +8538,69 @@ span#matches-current-date-display,
 }
 
 .tournament-winner-info {
-    color: #ff9800;
+    color: #333;
     font-weight: 600;
-    margin-top: 8px;
+    margin-top: 12px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
-    padding: 10px 14px;
-    background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
-    border-radius: 8px;
-    border-left: 3px solid #ff9800;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 50%, #fff9e6 100%);
+    border-radius: 12px;
+    border: 2px solid #ffd700;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
     min-width: 0; /* flexbox에서 텍스트 잘림 방지 */
+    position: relative;
+    overflow: hidden;
+}
+
+.tournament-winner-info::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
 .tournament-winner-info i {
     color: #ff9800;
-    font-size: 1.2em;
+    font-size: 1.4em;
     flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(255, 152, 0, 0.3));
+    position: relative;
+    z-index: 1;
 }
 
 .tournament-winner-info .winner-team-name {
     font-weight: 700;
-    color: #e65100;
-    font-size: 1.05em;
+    color: #212529;
+    font-size: 1.1em;
     white-space: nowrap;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .tournament-winner-info .winner-players {
-    color: #f57c00;
-    font-weight: 500;
-    font-size: 0.95em;
-    margin-left: 4px;
+    color: #212529;
+    font-weight: 600;
+    font-size: 1em;
+    margin-left: 6px;
     white-space: normal;
     word-break: break-word;
     flex: 1;
     min-width: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .tournament-registered-badge {
@@ -8573,6 +8620,27 @@ span#matches-current-date-display,
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.tournament-card .btn-outline {
+    background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+    color: white;
+    border: 2px solid #2196F3;
+    padding: 10px 20px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    transition: all 0.3s ease;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline-flex !important;
+}
+
+.tournament-card .btn-outline:hover {
+    background: linear-gradient(135deg, #1976D2 0%, #1BA8D4 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 }
 
 /* 토너먼트 대진표 모달 */

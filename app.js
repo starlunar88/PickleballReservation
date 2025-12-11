@@ -1882,6 +1882,29 @@ async function switchMainTab(tabName) {
             
             setTimeout(() => tryLoadOnTabSwitch(), 100);
         }
+        
+        // 토너먼트 탭으로 전환 시 기록 강제 로드
+        if (tabName === 'tournament') {
+            console.log('토너먼트 탭 전환 - 기록 강제 로드');
+            
+            // DOM 준비 대기 후 로드
+            setTimeout(async () => {
+                try {
+                    await loadTournamentHistory();
+                    console.log('탭 전환 시 토너먼트 기록 로드 완료');
+                } catch (error) {
+                    console.error('탭 전환 시 토너먼트 기록 로드 실패:', error);
+                    // 재시도
+                    setTimeout(async () => {
+                        try {
+                            await loadTournamentHistory();
+                        } catch (retryError) {
+                            console.error('토너먼트 기록 재시도 실패:', retryError);
+                        }
+                    }, 300);
+                }
+            }, 150);
+        }
     }
     
     // 탭별 데이터 로드
@@ -1918,6 +1941,14 @@ async function loadTabData(tabName) {
             break;
         case 'tournament':
             await loadTournamentData();
+            // 탭 전환 시 기록이 확실히 로드되도록 추가 로드 (DOM 준비 대기)
+            setTimeout(async () => {
+                try {
+                    await loadTournamentHistory();
+                } catch (error) {
+                    console.error('탭 전환 시 토너먼트 기록 로드 오류:', error);
+                }
+            }, 200);
             break;
         case 'admin':
             await loadAdminData();
@@ -18186,8 +18217,21 @@ async function loadActiveTournaments() {
 
 // 토너먼트 기록 로드
 async function loadTournamentHistory() {
-    const container = document.getElementById('tournament-history-list');
-    if (!container) return;
+    // 컨테이너가 없으면 재시도 (탭 전환 시 DOM이 아직 준비되지 않았을 수 있음)
+    let container = document.getElementById('tournament-history-list');
+    if (!container) {
+        // 최대 5번 재시도 (각 100ms 간격)
+        for (let i = 0; i < 5; i++) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            container = document.getElementById('tournament-history-list');
+            if (container) break;
+        }
+    }
+    
+    if (!container) {
+        console.warn('토너먼트 기록 컨테이너를 찾을 수 없습니다.');
+        return;
+    }
     
     container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>기록을 불러오는 중...</p></div>';
     
