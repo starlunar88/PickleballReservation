@@ -162,6 +162,7 @@ body {
 
 /* PC (데스크톱) - 큰 화면 */
 @media (min-width: 1201px) {
+    .ci-banner,
     .reservations-container > .ci-banner,
     .matches-container > .ci-banner,
     .rankings-container > .ci-banner,
@@ -172,6 +173,7 @@ body {
     .rankings-container .ci-banner,
     .stats-container .ci-banner,
     .records-container .ci-banner {
+        display: flex !important; /* PC에서도 표시되도록 명시 */
         padding: 12px 30px;
         position: relative !important;
         z-index: 100 !important; /* PC에서 겹침 방지 - 높은 z-index */
@@ -179,10 +181,12 @@ body {
     }
     
     .ci-banner-img {
+        display: block !important; /* PC에서 이미지가 보이도록 명시 */
+        visibility: visible !important;
+        opacity: 1 !important;
         max-width: 50%; /* PC에서 더 작게 (60% -> 50%) */
         width: 50%;
         height: auto;
-        display: block !important;
         position: relative !important;
         z-index: 100 !important; /* 다른 요소들 위에 표시 */
     }
@@ -4993,6 +4997,22 @@ span#matches-current-date-display,
     .records-container > .ci-banner {
         display: flex !important; /* PC에서도 표시되도록 명시 */
         margin-top: 0px !important; /* PC에서 70px -> 10px로 줄임 */
+        padding: 10px 15px !important;
+        position: relative !important;
+        z-index: 100 !important;
+        overflow: visible !important; /* 이미지가 잘리지 않도록 */
+    }
+    
+    /* PC에서 CI 배너 이미지가 보이도록 설정 */
+    .ci-banner-img {
+        display: block !important; /* PC에서 이미지가 보이도록 명시 */
+        visibility: visible !important;
+        opacity: 1 !important;
+        max-width: 50% !important;
+        width: 50% !important;
+        height: auto !important;
+        position: relative !important;
+        z-index: 100 !important;
     }
     
     /* PC에서 메달 시상식 크기 조정 (2/3 크기 유지하되 gap과 padding 줄임) */
@@ -8959,72 +8979,7 @@ span#matches-current-date-display,
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* MLB 월드시리즈 스타일: 매치에서 세로선으로 가는 가로 연결선 (왼쪽 브래킷, 기본 검은색) */
-.bracket-left .bracket-match-split.completed:not(.empty-spacer)::after {
-    content: '';
-    position: absolute;
-    right: -20px;
-    top: 50%;
-    width: 20px;
-    height: 2px;
-    background: #000000;
-    z-index: 3;
-    transform: translateY(-50%);
-}
-
-/* MLB 월드시리즈 스타일: 매치에서 세로선으로 가는 가로 연결선 (오른쪽 브래킷, 기본 검은색) */
-.bracket-right .bracket-match-split.completed:not(.empty-spacer)::after {
-    content: '';
-    position: absolute;
-    left: -20px;
-    top: 50%;
-    width: 20px;
-    height: 2px;
-    background: #000000;
-    z-index: 3;
-    transform: translateY(-50%);
-}
-
-/* 최종 우승자 경로 연결선 - 가로선 (왼쪽 브래킷, 우승자만 빨간색) */
-.bracket-left .bracket-match-split.champion-path:not(.empty-spacer)::after {
-    background: #dc3545;
-    height: 3px;
-    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
-    width: 20px;
-    z-index: 4;
-}
-
-/* 최종 우승자 경로 연결선 - 가로선 (오른쪽 브래킷, 우승자만 빨간색) */
-.bracket-right .bracket-match-split.champion-path:not(.empty-spacer)::after {
-    background: #dc3545;
-    height: 3px;
-    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
-    width: 20px;
-    z-index: 4;
-}
-
-/* MLB 월드시리즈 스타일: 세로 연결선은 JavaScript로 동적으로 그림 */
-
-/* 결승전에서 우승팀 루트 연결선 (가운데) */
-.bracket-center .bracket-round-split.has-champion-path .round-matches-split::before,
-.bracket-center .bracket-round-split.has-champion-path .round-matches-split::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: #dc3545;
-    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
-    z-index: 1;
-}
-
-.bracket-center .bracket-round-split.has-champion-path .round-matches-split::before {
-    left: -20px;
-}
-
-.bracket-center .bracket-round-split.has-champion-path .round-matches-split::after {
-    right: -20px;
-}
+/* 연결선 기능 제거됨 */
 
 .bracket-match-split.bye {
     border-color: #ff9800;

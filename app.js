@@ -18809,6 +18809,19 @@ async function generateTournamentBracket(tournamentId) {
 
 // 밸런스 유지하면서 랜덤하게 팀 생성
 function createBalancedTeams(players) {
+    // 팀 이름 리스트
+    const teamNames = [
+        'AOP', 'ASPEN', 'DVI', 'HERMES', 'HUBBLE', 'JESI', 'LMS', 'ORCA', 'PALM', 'PBI',
+        'PUTTER', 'SGM', 'STORM', 'SWING', 'SPC', 'TRITON', 'VEGA', 'VINE', 'WBI', 'IVY',
+        'RADS', 'VRS', 'ASM', 'MAPLE', 'NEXUS', 'TSVI', 'WIND1', 'WIND2', 'WIND3', 'WIND4',
+        'SUN1', 'SUN2', 'PINE1', 'PINE2', 'JEDI1', 'JEDI2', 'OAK1', 'OAK2', 'CAMELLIA1',
+        'CAMELLIA2', 'CAMELLIA3', 'CYPRESS1', 'CYPRESS2'
+    ];
+    
+    // 사용 가능한 팀 이름을 랜덤하게 섞기
+    const availableTeamNames = [...teamNames].sort(() => Math.random() - 0.5);
+    let teamNameIndex = 0;
+    
     // DUPR이 있는 경우 밸런스 모드, 없으면 랜덤 모드
     const hasDupr = players.some(p => p.dupr !== null && p.dupr !== undefined);
     
@@ -18849,9 +18862,10 @@ function createBalancedTeams(players) {
             
             if (team.length > 0) {
                 teams.push({
-                    teamName: `팀 ${i + 1}`,
+                    teamName: availableTeamNames[teamNameIndex % availableTeamNames.length],
                     players: team
                 });
+                teamNameIndex++;
             }
         }
         
@@ -18880,9 +18894,10 @@ function createBalancedTeams(players) {
             }
             if (team.length > 0) {
                 teams.push({
-                    teamName: `팀 ${i + 1}`,
+                    teamName: availableTeamNames[teamNameIndex % availableTeamNames.length],
                     players: team
                 });
+                teamNameIndex++;
             }
         }
         
@@ -19576,222 +19591,9 @@ function renderTournamentBracket(bracket, tournamentId) {
     bracketHTML += '</div>'; // 전체 브래킷 끝
     
     container.innerHTML = bracketHTML;
-    
-    // MLB 스타일 연결선을 동적으로 그리기
-    setTimeout(() => {
-        drawMLBConnectingLines(bracket, championPath);
-    }, 100);
 }
 
-// MLB 스타일 연결선 그리기 함수
-function drawMLBConnectingLines(bracket, championPath) {
-    const totalRounds = bracket.rounds.length;
-    const container = document.querySelector('.tournament-bracket-split');
-    
-    if (!container) return;
-    
-    // 기존 연결선 제거
-    container.querySelectorAll('.mlb-connector-line').forEach(el => el.remove());
-    
-    // 각 라운드의 매치 요소 찾기
-    for (let roundIndex = 0; roundIndex < totalRounds - 1; roundIndex++) {
-        const currentRound = bracket.rounds[roundIndex];
-        const nextRound = bracket.rounds[roundIndex + 1];
-        
-        if (!currentRound || !nextRound) continue;
-        
-        // 왼쪽 브래킷과 오른쪽 브래킷 구분
-        const leftMatches = Array.from(document.querySelectorAll(`.bracket-left .bracket-match-split[data-round="${roundIndex}"]`))
-            .filter(el => !el.classList.contains('empty-spacer') && el.closest('.bracket-left'));
-        const rightMatches = Array.from(document.querySelectorAll(`.bracket-right .bracket-match-split[data-round="${roundIndex}"]`))
-            .filter(el => !el.classList.contains('empty-spacer') && el.closest('.bracket-right'));
-        
-        const leftNextMatches = Array.from(document.querySelectorAll(`.bracket-left .bracket-match-split[data-round="${roundIndex + 1}"]`))
-            .filter(el => !el.classList.contains('empty-spacer') && el.closest('.bracket-left'));
-        const rightNextMatches = Array.from(document.querySelectorAll(`.bracket-right .bracket-match-split[data-round="${roundIndex + 1}"]`))
-            .filter(el => !el.classList.contains('empty-spacer') && el.closest('.bracket-right'));
-        
-        // 왼쪽 브래킷 연결선 그리기
-        drawConnectorLinesForSide(leftMatches, leftNextMatches, roundIndex, championPath, container, 'left');
-        
-        // 오른쪽 브래킷 연결선 그리기
-        drawConnectorLinesForSide(rightMatches, rightNextMatches, roundIndex, championPath, container, 'right');
-    }
-}
-
-// 한쪽 브래킷의 연결선 그리기
-function drawConnectorLinesForSide(currentMatches, nextMatches, roundIndex, championPath, container, side) {
-    const containerRect = container.getBoundingClientRect();
-    
-    // 각 매치 쌍(예: 매치 1,2)이 다음 라운드의 하나의 매치로 연결
-    for (let i = 0; i < currentMatches.length; i += 2) {
-        if (i + 1 < currentMatches.length) {
-            const match1 = currentMatches[i];
-            const match2 = currentMatches[i + 1];
-            const nextMatchIndex = Math.floor(i / 2);
-            
-            if (nextMatchIndex < nextMatches.length) {
-                const nextMatch = nextMatches[nextMatchIndex];
-                
-                // 매치 1, 2의 위치 계산
-                const match1Rect = match1.getBoundingClientRect();
-                const match2Rect = match2.getBoundingClientRect();
-                const nextMatchRect = nextMatch.getBoundingClientRect();
-                
-                // 가로선 끝 위치 (가로선이 right: -20px에서 시작해서 20px 길이이므로, 끝은 right: 0px)
-                const horizontalEndX = side === 'left' 
-                    ? match1Rect.right - containerRect.left
-                    : match1Rect.left - containerRect.left;
-                
-                // 세로선의 시작 위치 (매치 1, 2의 중간 - 가로선 끝 위치)
-                const startY = (match1Rect.top + match2Rect.bottom) / 2 - containerRect.top;
-                // 세로선의 끝 위치 (다음 라운드 매치의 중간)
-                const endY = nextMatchRect.top + nextMatchRect.height / 2 - containerRect.top;
-                
-                // 우승팀 루트 확인
-                const isChampionPath1 = championPath.has(`${roundIndex}-${match1.getAttribute('data-match-id')}`);
-                const isChampionPath2 = championPath.has(`${roundIndex}-${match2.getAttribute('data-match-id')}`);
-                const isChampionPath = isChampionPath1 || isChampionPath2;
-                
-                const lineColor = isChampionPath ? '#dc3545' : '#000000';
-                const lineWidth = isChampionPath ? 3 : 2;
-                
-                // 세로선 SVG 생성
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.className = 'mlb-connector-line';
-                svg.style.position = 'absolute';
-                svg.style.left = horizontalEndX + 'px';
-                svg.style.top = Math.min(startY, endY) + 'px';
-                svg.style.width = lineWidth + 'px';
-                svg.style.height = Math.abs(endY - startY) + 'px';
-                svg.style.pointerEvents = 'none';
-                svg.style.zIndex = isChampionPath ? '4' : '1';
-                
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '0');
-                line.setAttribute('y1', '0');
-                line.setAttribute('x2', '0');
-                line.setAttribute('y2', Math.abs(endY - startY) + 'px');
-                line.setAttribute('stroke', lineColor);
-                line.setAttribute('stroke-width', lineWidth);
-                if (isChampionPath) {
-                    line.setAttribute('stroke-opacity', '1');
-                }
-                
-                svg.appendChild(line);
-                container.appendChild(svg);
-                
-                // 다음 라운드 매치로 들어가는 가로선 그리기
-                const nextHorizontalStartX = side === 'left' 
-                    ? nextMatchRect.left - containerRect.left - 20
-                    : nextMatchRect.right - containerRect.left + 20;
-                const nextHorizontalY = nextMatchRect.top + nextMatchRect.height / 2 - containerRect.top;
-                
-                const horizontalSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                horizontalSvg.className = 'mlb-connector-line';
-                horizontalSvg.style.position = 'absolute';
-                horizontalSvg.style.left = nextHorizontalStartX + 'px';
-                horizontalSvg.style.top = nextHorizontalY + 'px';
-                horizontalSvg.style.width = '20px';
-                horizontalSvg.style.height = lineWidth + 'px';
-                horizontalSvg.style.pointerEvents = 'none';
-                horizontalSvg.style.zIndex = isChampionPath ? '4' : '1';
-                horizontalSvg.style.transform = 'translateY(-50%)';
-                
-                const horizontalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                horizontalLine.setAttribute('x1', '0');
-                horizontalLine.setAttribute('y1', '0');
-                horizontalLine.setAttribute('x2', '20px');
-                horizontalLine.setAttribute('y2', '0');
-                horizontalLine.setAttribute('stroke', lineColor);
-                horizontalLine.setAttribute('stroke-width', lineWidth);
-                if (isChampionPath) {
-                    horizontalLine.setAttribute('stroke-opacity', '1');
-                }
-                
-                horizontalSvg.appendChild(horizontalLine);
-                container.appendChild(horizontalSvg);
-            }
-        } else if (i < currentMatches.length) {
-            // 홀수 개의 매치가 남은 경우 (마지막 매치)
-            const match1 = currentMatches[i];
-            const nextMatchIndex = Math.floor(i / 2);
-            
-            if (nextMatchIndex < nextMatches.length) {
-                const nextMatch = nextMatches[nextMatchIndex];
-                
-                const match1Rect = match1.getBoundingClientRect();
-                const nextMatchRect = nextMatch.getBoundingClientRect();
-                
-                const horizontalEndX = side === 'left' 
-                    ? match1Rect.right - containerRect.left
-                    : match1Rect.left - containerRect.left;
-                
-                const startY = match1Rect.top + match1Rect.height / 2 - containerRect.top;
-                const endY = nextMatchRect.top + nextMatchRect.height / 2 - containerRect.top;
-                
-                const isChampionPath = championPath.has(`${roundIndex}-${match1.getAttribute('data-match-id')}`);
-                const lineColor = isChampionPath ? '#dc3545' : '#000000';
-                const lineWidth = isChampionPath ? 3 : 2;
-                
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.className = 'mlb-connector-line';
-                svg.style.position = 'absolute';
-                svg.style.left = horizontalEndX + 'px';
-                svg.style.top = Math.min(startY, endY) + 'px';
-                svg.style.width = lineWidth + 'px';
-                svg.style.height = Math.abs(endY - startY) + 'px';
-                svg.style.pointerEvents = 'none';
-                svg.style.zIndex = isChampionPath ? '4' : '1';
-                
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '0');
-                line.setAttribute('y1', '0');
-                line.setAttribute('x2', '0');
-                line.setAttribute('y2', Math.abs(endY - startY) + 'px');
-                line.setAttribute('stroke', lineColor);
-                line.setAttribute('stroke-width', lineWidth);
-                if (isChampionPath) {
-                    line.setAttribute('stroke-opacity', '1');
-                }
-                
-                svg.appendChild(line);
-                container.appendChild(svg);
-                
-                // 다음 라운드 매치로 들어가는 가로선 그리기
-                const nextHorizontalStartX = side === 'left' 
-                    ? nextMatchRect.left - containerRect.left - 20
-                    : nextMatchRect.right - containerRect.left + 20;
-                const nextHorizontalY = nextMatchRect.top + nextMatchRect.height / 2 - containerRect.top;
-                
-                const horizontalSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                horizontalSvg.className = 'mlb-connector-line';
-                horizontalSvg.style.position = 'absolute';
-                horizontalSvg.style.left = nextHorizontalStartX + 'px';
-                horizontalSvg.style.top = nextHorizontalY + 'px';
-                horizontalSvg.style.width = '20px';
-                horizontalSvg.style.height = lineWidth + 'px';
-                horizontalSvg.style.pointerEvents = 'none';
-                horizontalSvg.style.zIndex = isChampionPath ? '4' : '1';
-                horizontalSvg.style.transform = 'translateY(-50%)';
-                
-                const horizontalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                horizontalLine.setAttribute('x1', '0');
-                horizontalLine.setAttribute('y1', '0');
-                horizontalLine.setAttribute('x2', '20px');
-                horizontalLine.setAttribute('y2', '0');
-                horizontalLine.setAttribute('stroke', lineColor);
-                horizontalLine.setAttribute('stroke-width', lineWidth);
-                if (isChampionPath) {
-                    horizontalLine.setAttribute('stroke-opacity', '1');
-                }
-                
-                horizontalSvg.appendChild(horizontalLine);
-                container.appendChild(horizontalSvg);
-            }
-        }
-    }
-}
+// 연결선 기능 제거됨
 
 // 매치 HTML 생성 헬퍼 함수
 function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, team1Players, team2Players, isCompleted, isBye, winnerTeam, tournamentId, isChampionPath = false) {
