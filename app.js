@@ -18403,21 +18403,13 @@ function createTournamentCard(tournament, isActive) {
                 if (isActive) {
                     // 진행 중인 토너먼트: 팀 이름과 플레이어 이름 모두 표시
                     if (winnerPlayers) {
-                        winnerInfo = `<div class="tournament-winner-info">
-                            <i class="fas fa-trophy"></i> 
-                            <span class="winner-team-name">${winnerName}</span>
-                            <span class="winner-players">${winnerPlayers}</span>
-                        </div>`;
+                        winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i><span class="winner-team-name">${winnerName}</span><span class="winner-players">${winnerPlayers}</span></div>`;
                     } else {
                         winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${winnerName}</div>`;
                     }
                     
                     if (runnerupPlayers) {
-                        runnerupInfo = `<div class="tournament-runnerup-info">
-                            <i class="fas fa-medal"></i> 
-                            <span class="runnerup-team-name">${runnerupName}</span>
-                            <span class="runnerup-players">${runnerupPlayers}</span>
-                        </div>`;
+                        runnerupInfo = `<div class="tournament-runnerup-info"><i class="fas fa-medal"></i><span class="runnerup-team-name">${runnerupName}</span><span class="runnerup-players">${runnerupPlayers}</span></div>`;
                     } else if (runnerupName) {
                         runnerupInfo = `<div class="tournament-runnerup-info"><i class="fas fa-medal"></i> 준우승: ${runnerupName}</div>`;
                     }

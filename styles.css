@@ -8576,6 +8576,7 @@ span#matches-current-date-display,
     width: 100%;
     box-sizing: border-box;
     min-height: fit-content;
+    font-size: 0; /* 공백 제거 */
 }
 
 .tournament-winner-info::before {
@@ -8657,6 +8658,7 @@ span#matches-current-date-display,
     width: 100%;
     box-sizing: border-box;
     min-height: fit-content;
+    font-size: 0; /* 공백 제거 */
 }
 
 .tournament-runnerup-info i {
