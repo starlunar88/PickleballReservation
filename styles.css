@@ -8690,6 +8690,9 @@ span#matches-current-date-display,
     z-index: 10;
     background: transparent;
     padding: 2px 0;
+    width: 100%;
+    min-width: 140px;
+    max-width: 140px;
 }
 
 .round-header-split h3 {
@@ -8704,6 +8707,9 @@ span#matches-current-date-display,
     box-shadow: 0 1px 6px rgba(33, 150, 243, 0.3);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     letter-spacing: 0.2px;
+    width: 100%;
+    box-sizing: border-box;
+    display: inline-block;
 }
 
 .round-header-horizontal {
@@ -9400,15 +9406,30 @@ span#matches-current-date-display,
         flex-shrink: 0;
     }
     
+    .bracket-round-split {
+        width: 130px;
+        min-width: 130px;
+        max-width: 130px;
+    }
+    
     .bracket-match-split {
         min-width: 130px;
         max-width: 130px;
         padding: 10px;
     }
     
+    .round-header-split {
+        width: 100%;
+        min-width: 130px;
+        max-width: 130px;
+    }
+    
     .round-header-split h3 {
         font-size: 0.85em;
         padding: 6px 10px;
+        width: 100%;
+        box-sizing: border-box;
+        display: inline-block;
     }
     
     .match-team-split {
