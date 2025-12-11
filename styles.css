@@ -8576,7 +8576,6 @@ span#matches-current-date-display,
     width: 100%;
     box-sizing: border-box;
     min-height: fit-content;
-    font-size: 0; /* 공백 제거 */
 }
 
 .tournament-winner-info::before {
@@ -8597,7 +8596,7 @@ span#matches-current-date-display,
 
 .tournament-winner-info i {
     color: #ff9800;
-    font-size: 0.95em;
+    font-size: 0.95rem;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 2px rgba(255, 152, 0, 0.3));
     position: relative;
@@ -8606,14 +8605,14 @@ span#matches-current-date-display,
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 0.95em;
-    height: 1.2em;
+    width: 0.95rem;
+    height: 1.2rem;
 }
 
 .tournament-winner-info .winner-team-name {
     font-weight: 700;
     color: #212529;
-    font-size: 0.85em;
+    font-size: 0.85rem;
     white-space: nowrap;
     flex-shrink: 0;
     position: relative;
@@ -8626,7 +8625,7 @@ span#matches-current-date-display,
 .tournament-winner-info .winner-players {
     color: #212529;
     font-weight: 600;
-    font-size: 0.8em;
+    font-size: 0.8rem;
     margin-left: 3px;
     white-space: normal;
     word-break: break-word;
@@ -8658,12 +8657,11 @@ span#matches-current-date-display,
     width: 100%;
     box-sizing: border-box;
     min-height: fit-content;
-    font-size: 0; /* 공백 제거 */
 }
 
 .tournament-runnerup-info i {
     color: #9e9e9e;
-    font-size: 0.95em;
+    font-size: 0.95rem;
     flex-shrink: 0;
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
@@ -8672,14 +8670,14 @@ span#matches-current-date-display,
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 0.95em;
-    height: 1.2em;
+    width: 0.95rem;
+    height: 1.2rem;
 }
 
 .tournament-runnerup-info .runnerup-team-name {
     font-weight: 700;
     color: #212529;
-    font-size: 0.85em;
+    font-size: 0.85rem;
     white-space: nowrap;
     flex-shrink: 0;
     position: relative;
@@ -8692,7 +8690,7 @@ span#matches-current-date-display,
 .tournament-runnerup-info .runnerup-players {
     color: #212529;
     font-weight: 600;
-    font-size: 0.8em;
+    font-size: 0.8rem;
     margin-left: 3px;
     white-space: normal;
     word-break: break-word;
