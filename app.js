@@ -18835,13 +18835,10 @@ function createTournamentBracket(teams) {
             matches: []
         };
         
-        // 이전 라운드의 승자들 수집
-        // 부전승인 경우 승자가 이미 결정되어 있으므로 다음 라운드로 자동 진출
-        // 왼쪽/오른쪽 브래킷을 구분하여 승자 수집
-        const leftWinners = [];
-        const rightWinners = [];
-        const firstRoundMatches = bracket.rounds[0].matches;
-        const halfPoint = Math.ceil(firstRoundMatches.length / 2);
+        // 이전 라운드의 승자들을 대진표 구조에 맞게 다음 라운드로 배정
+        // 매치 인덱스를 기반으로 정확한 위치에 배정
+        // 예: 16강 매치 0,1 → 8강 매치 0, 16강 매치 2,3 → 8강 매치 1
+        const winnersByNextMatch = {}; // { nextMatchIndex: [team1, team2] }
         
         prevRound.matches.forEach((match, matchIndex) => {
             let winner = null;
@@ -18854,22 +18851,19 @@ function createTournamentBracket(teams) {
             }
             
             if (winner) {
-                // 첫 라운드인 경우 왼쪽/오른쪽 구분
-                if (prevRound.roundNumber === 0) {
-                    if (matchIndex < halfPoint) {
-                        leftWinners.push(winner);
-                    } else {
-                        rightWinners.push(winner);
-                    }
+                // 다음 라운드의 매치 인덱스 계산: 매치 인덱스를 2로 나눈 몫
+                const nextMatchIndex = Math.floor(matchIndex / 2);
+                // 같은 쌍 내에서의 위치: 0이면 team1, 1이면 team2
+                const positionInPair = matchIndex % 2;
+                
+                if (!winnersByNextMatch[nextMatchIndex]) {
+                    winnersByNextMatch[nextMatchIndex] = [null, null];
+                }
+                
+                if (positionInPair === 0) {
+                    winnersByNextMatch[nextMatchIndex][0] = winner; // team1
                 } else {
-                    // 중간 라운드: 이전 라운드의 왼쪽/오른쪽 구분 유지
-                    const totalMatchesInPrevRound = prevRound.matches.length;
-                    const leftMatchesInPrevRound = Math.ceil(totalMatchesInPrevRound / 2);
-                    if (matchIndex < leftMatchesInPrevRound) {
-                        leftWinners.push(winner);
-                    } else {
-                        rightWinners.push(winner);
-                    }
+                    winnersByNextMatch[nextMatchIndex][1] = winner; // team2
                 }
             }
         });
@@ -18878,17 +18872,13 @@ function createTournamentBracket(teams) {
         // winner가 없는 매치는 아직 진행되지 않은 경기이지만, 대진표 구조상 다음 라운드를 미리 생성해야 함
         // 따라서 이전 라운드의 매치 수를 승자 수로 사용
         const actualWinners = prevRound.matches.length;
-        const totalMatchesInPrevRound = prevRound.matches.length;
-        const leftMatchesInPrevRound = Math.ceil(totalMatchesInPrevRound / 2);
+        const nextRoundMatchCount = Math.ceil(actualWinners / 2);
         
-        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}, 왼쪽 부전승 승자 수=${leftWinners.length}, 오른쪽 부전승 승자 수=${rightWinners.length}`);
+        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}, 다음 라운드 매치 수=${nextRoundMatchCount}, 부전승 승자 배정=${Object.keys(winnersByNextMatch).length}개 매치`);
         
         // 승자들을 두 팀씩 매칭 (부전승 없음)
-        // 왼쪽 브래킷과 오른쪽 브래킷을 구분하여 배정
-        let leftWinnerIndex = 0;
-        let rightWinnerIndex = 0;
-        
-        for (let i = 0; i < Math.ceil(actualWinners / 2); i++) {
+        // 대진표 구조에 맞게 정확한 위치에 배정
+        for (let i = 0; i < nextRoundMatchCount; i++) {
             const match = {
                 matchId: `r${roundNumber}-m${i}`,
                 team1: null, // 아직 승자가 결정되지 않았으므로 null
@@ -18899,29 +18889,10 @@ function createTournamentBracket(teams) {
                 isBye: false  // 중간 라운드에는 부전승 없음
             };
             
-            // 왼쪽 브래킷 매치인지 오른쪽 브래킷 매치인지 구분
-            const isLeftMatch = i < Math.ceil(actualWinners / 4);
-            
-            if (isLeftMatch) {
-                // 왼쪽 브래킷: 왼쪽 승자들 배정
-                if (leftWinnerIndex < leftWinners.length) {
-                    match.team1 = leftWinners[leftWinnerIndex];
-                    leftWinnerIndex++;
-                }
-                if (leftWinnerIndex < leftWinners.length) {
-                    match.team2 = leftWinners[leftWinnerIndex];
-                    leftWinnerIndex++;
-                }
-            } else {
-                // 오른쪽 브래킷: 오른쪽 승자들 배정
-                if (rightWinnerIndex < rightWinners.length) {
-                    match.team1 = rightWinners[rightWinnerIndex];
-                    rightWinnerIndex++;
-                }
-                if (rightWinnerIndex < rightWinners.length) {
-                    match.team2 = rightWinners[rightWinnerIndex];
-                    rightWinnerIndex++;
-                }
+            // 부전승 승자가 있으면 정확한 위치에 배정
+            if (winnersByNextMatch[i]) {
+                match.team1 = winnersByNextMatch[i][0];
+                match.team2 = winnersByNextMatch[i][1];
             }
             
             round.matches.push(match);
