@@ -18776,16 +18776,16 @@ function createTournamentBracket(teams) {
         };
         
         if (isByePosition && teamIndex < shuffledTeams.length) {
-            // 부전승: 한 팀만 배정
+            // 부전승: 한 팀만 배정, 자동으로 다음 라운드 진출
             match.team1 = {
                 teamName: shuffledTeams[teamIndex].teamName,
                 players: shuffledTeams[teamIndex].players.map(p => ({ userId: p.userId, userName: p.userName, dupr: p.dupr }))
             };
             match.team2 = null;
             match.isBye = true;
-            match.winner = match.team1;
-            match.score1 = 11;
-            match.score2 = 0;
+            match.winner = match.team1; // 부전승 승자 자동 설정
+            match.score1 = null; // 부전승은 점수 없음
+            match.score2 = null; // 부전승은 점수 없음
             teamIndex++;
         } else if (teamIndex < shuffledTeams.length) {
             // 일반 매치: 두 팀 배정
@@ -18802,11 +18802,11 @@ function createTournamentBracket(teams) {
                 };
                 teamIndex++;
             } else {
-                // 마지막 팀이 홀수인 경우 부전승
+                // 마지막 팀이 홀수인 경우 부전승, 자동으로 다음 라운드 진출
                 match.isBye = true;
-                match.winner = match.team1;
-                match.score1 = 11;
-                match.score2 = 0;
+                match.winner = match.team1; // 부전승 승자 자동 설정
+                match.score1 = null; // 부전승은 점수 없음
+                match.score2 = null; // 부전승은 점수 없음
             }
         } else {
             // 더 이상 팀이 없는 경우 빈 매치 (이론상 발생하지 않아야 함)
@@ -18837,29 +18837,57 @@ function createTournamentBracket(teams) {
         
         // 이전 라운드의 승자들 수집
         // 부전승인 경우 승자가 이미 결정되어 있으므로 다음 라운드로 자동 진출
-        const winners = [];
-        prevRound.matches.forEach(match => {
+        // 왼쪽/오른쪽 브래킷을 구분하여 승자 수집
+        const leftWinners = [];
+        const rightWinners = [];
+        const firstRoundMatches = bracket.rounds[0].matches;
+        const halfPoint = Math.ceil(firstRoundMatches.length / 2);
+        
+        prevRound.matches.forEach((match, matchIndex) => {
+            let winner = null;
             if (match.winner) {
                 // 이미 승자가 결정된 경우 (부전승 또는 완료된 경기)
-                winners.push(match.winner);
+                winner = match.winner;
             } else if (match.isBye && (match.team1 || match.team2)) {
                 // 부전승인 경우 승자 추가
-                const byeWinner = match.team1 || match.team2;
-                winners.push(byeWinner);
+                winner = match.team1 || match.team2;
             }
-            // 일반 경기는 아직 승자가 없으므로 winners에 추가하지 않음
-            // 다음 라운드 생성 시 매치 수를 기준으로 생성하되, 부전승 승자는 자동 배정
+            
+            if (winner) {
+                // 첫 라운드인 경우 왼쪽/오른쪽 구분
+                if (prevRound.roundNumber === 0) {
+                    if (matchIndex < halfPoint) {
+                        leftWinners.push(winner);
+                    } else {
+                        rightWinners.push(winner);
+                    }
+                } else {
+                    // 중간 라운드: 이전 라운드의 왼쪽/오른쪽 구분 유지
+                    const totalMatchesInPrevRound = prevRound.matches.length;
+                    const leftMatchesInPrevRound = Math.ceil(totalMatchesInPrevRound / 2);
+                    if (matchIndex < leftMatchesInPrevRound) {
+                        leftWinners.push(winner);
+                    } else {
+                        rightWinners.push(winner);
+                    }
+                }
+            }
         });
         
         // 실제로는 각 매치마다 승자 1명이 나오므로, 매치 수 = 승자 수
         // winner가 없는 매치는 아직 진행되지 않은 경기이지만, 대진표 구조상 다음 라운드를 미리 생성해야 함
         // 따라서 이전 라운드의 매치 수를 승자 수로 사용
         const actualWinners = prevRound.matches.length;
+        const totalMatchesInPrevRound = prevRound.matches.length;
+        const leftMatchesInPrevRound = Math.ceil(totalMatchesInPrevRound / 2);
         
-        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}, 부전승 승자 수=${winners.length}`);
+        console.log(`[대진표 생성] 라운드 ${roundNumber}: 이전 라운드 매치 수=${prevRound.matches.length}, 승자 수=${actualWinners}, 왼쪽 부전승 승자 수=${leftWinners.length}, 오른쪽 부전승 승자 수=${rightWinners.length}`);
         
         // 승자들을 두 팀씩 매칭 (부전승 없음)
-        let winnerIndex = 0;
+        // 왼쪽 브래킷과 오른쪽 브래킷을 구분하여 배정
+        let leftWinnerIndex = 0;
+        let rightWinnerIndex = 0;
+        
         for (let i = 0; i < Math.ceil(actualWinners / 2); i++) {
             const match = {
                 matchId: `r${roundNumber}-m${i}`,
@@ -18871,14 +18899,29 @@ function createTournamentBracket(teams) {
                 isBye: false  // 중간 라운드에는 부전승 없음
             };
             
-            // 부전승 승자가 있으면 자동으로 배정
-            if (winnerIndex < winners.length) {
-                match.team1 = winners[winnerIndex];
-                winnerIndex++;
-            }
-            if (winnerIndex < winners.length) {
-                match.team2 = winners[winnerIndex];
-                winnerIndex++;
+            // 왼쪽 브래킷 매치인지 오른쪽 브래킷 매치인지 구분
+            const isLeftMatch = i < Math.ceil(actualWinners / 4);
+            
+            if (isLeftMatch) {
+                // 왼쪽 브래킷: 왼쪽 승자들 배정
+                if (leftWinnerIndex < leftWinners.length) {
+                    match.team1 = leftWinners[leftWinnerIndex];
+                    leftWinnerIndex++;
+                }
+                if (leftWinnerIndex < leftWinners.length) {
+                    match.team2 = leftWinners[leftWinnerIndex];
+                    leftWinnerIndex++;
+                }
+            } else {
+                // 오른쪽 브래킷: 오른쪽 승자들 배정
+                if (rightWinnerIndex < rightWinners.length) {
+                    match.team1 = rightWinners[rightWinnerIndex];
+                    rightWinnerIndex++;
+                }
+                if (rightWinnerIndex < rightWinners.length) {
+                    match.team2 = rightWinners[rightWinnerIndex];
+                    rightWinnerIndex++;
+                }
             }
             
             round.matches.push(match);
@@ -19337,12 +19380,16 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     const team1Display = match.team1 ? team1Name : (isFirstRound ? '부전승' : '대기 중');
     const team2Display = match.team2 ? team2Name : (isFirstRound ? '부전승' : '대기 중');
     
+    // 부전승인 경우 점수 표시하지 않음
+    const showScore1 = isCompleted && !(isBye && isFirstRound);
+    const showScore2 = isCompleted && !(isBye && isFirstRound);
+    
     return `
         <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
             <div class="match-team-split team1 ${(winnerTeam && winnerTeam.teamName === team1Name) || isByeWinner1 ? 'winner' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
-                    ${(isCompleted || (isBye && isFirstRound)) ? `<div class="team-score-split">${match.score1 || (isByeWinner1 ? 11 : 0)}</div>` : ''}
+                    ${showScore1 ? `<div class="team-score-split">${match.score1 || 0}</div>` : ''}
                 ` : `<div class="team-name-split empty-team">${team1Display}</div>`}
             </div>
             ${!(isBye && isFirstRound) ? `
@@ -19351,7 +19398,7 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
             <div class="match-team-split team2 ${(winnerTeam && winnerTeam.teamName === team2Name) || isByeWinner2 ? 'winner' : ''} ${!match.team2 ? 'empty' : ''}">
                 ${match.team2 ? `
                     <div class="team-name-split">${team2Name}${team2Players ? ' : ' + team2Players : ''}</div>
-                    ${(isCompleted || (isBye && isFirstRound)) ? `<div class="team-score-split">${match.score2 || (isByeWinner2 ? 11 : 0)}</div>` : ''}
+                    ${showScore2 ? `<div class="team-score-split">${match.score2 || 0}</div>` : ''}
                 ` : `<div class="team-name-split empty-team">${team2Display}</div>`}
             </div>
             ${!isCompleted && !(isBye && isFirstRound) && match.team1 && match.team2 ? `
