@@ -8544,7 +8544,7 @@ span#matches-current-date-display,
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     padding: 6px 10px;
     background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 50%, #fff9e6 100%);
     border-radius: 6px;
@@ -8556,7 +8556,6 @@ span#matches-current-date-display,
     width: 100%;
     box-sizing: border-box;
     min-height: fit-content;
-    align-content: center;
 }
 
 .tournament-winner-info::before {
@@ -8582,11 +8581,12 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(255, 152, 0, 0.3));
     position: relative;
     z-index: 1;
-    display: inline-block;
-    line-height: 1.2;
-    vertical-align: middle;
-    width: auto;
-    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    width: 1em;
+    height: 1em;
 }
 
 .tournament-winner-info .winner-team-name {
@@ -8598,8 +8598,9 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: inline-block;
-    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    height: 1.2em;
 }
 
 .tournament-winner-info .winner-players {
@@ -8614,8 +8615,9 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: inline-block;
-    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    min-height: 1.2em;
 }
 
 .tournament-runnerup-info {
@@ -8625,7 +8627,7 @@ span#matches-current-date-display,
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     padding: 6px 10px;
     background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 50%, #f5f5f5 100%);
     border-radius: 6px;
@@ -8637,7 +8639,6 @@ span#matches-current-date-display,
     width: 100%;
     box-sizing: border-box;
     min-height: fit-content;
-    align-content: center;
 }
 
 .tournament-runnerup-info i {
@@ -8647,11 +8648,12 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
     z-index: 1;
-    display: inline-block;
-    line-height: 1.2;
-    vertical-align: middle;
-    width: auto;
-    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    width: 0.95em;
+    height: 0.95em;
 }
 
 .tournament-runnerup-info .runnerup-team-name {
@@ -8663,8 +8665,9 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: inline-block;
-    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    height: 1.2em;
 }
 
 .tournament-runnerup-info .runnerup-players {
@@ -8679,8 +8682,9 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: inline-block;
-    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    min-height: 1.2em;
 }
 
 .tournament-registered-badge {
@@ -8811,44 +8815,46 @@ span#matches-current-date-display,
     max-width: 160px;
 }
 
-/* 라운드 간 연결선 - 세로선 (왼쪽 브래킷) */
+/* 라운드 간 연결선 - 세로선 (왼쪽 브래킷, 기본 회색) */
 .bracket-left .bracket-round-split:not(:last-child)::after {
     content: '';
     position: absolute;
     right: -12px;
     top: 50%;
     bottom: -50%;
-    width: 2px;
-    background: #d0d0d0;
+    width: 1px;
+    background: #b0b0b0;
     z-index: 1;
     transform: translateY(-50%);
+    opacity: 0.5;
 }
 
-/* 라운드 간 연결선 - 세로선 (오른쪽 브래킷) */
+/* 라운드 간 연결선 - 세로선 (오른쪽 브래킷, 기본 회색) */
 .bracket-right .bracket-round-split:not(:last-child)::before {
     content: '';
     position: absolute;
     left: -12px;
     top: 50%;
     bottom: -50%;
-    width: 2px;
-    background: #d0d0d0;
+    width: 1px;
+    background: #b0b0b0;
     z-index: 1;
     transform: translateY(-50%);
+    opacity: 0.5;
 }
 
 /* 승자 경로 연결선 - 세로선 (왼쪽 브래킷, 승자만) */
 .bracket-left .bracket-round-split:not(:last-child).has-winner-path::after {
-    background: linear-gradient(180deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    background: linear-gradient(180deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
     width: 3px;
-    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
 }
 
 /* 승자 경로 연결선 - 세로선 (오른쪽 브래킷, 승자만) */
 .bracket-right .bracket-round-split:not(:last-child).has-winner-path::before {
-    background: linear-gradient(180deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    background: linear-gradient(180deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
     width: 3px;
-    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
 }
 
 .bracket-round-split.round-final {
@@ -9020,20 +9026,33 @@ span#matches-current-date-display,
 
 /* 승자 경로 연결선 - 가로선 (왼쪽 브래킷, 승자만) */
 .bracket-left .bracket-match-split.has-winner:not(.empty-spacer)::after {
-    background: linear-gradient(90deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    background: linear-gradient(90deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
     height: 3px;
-    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
     width: 12px;
     z-index: 4;
 }
 
 /* 승자 경로 연결선 - 가로선 (오른쪽 브래킷, 승자만) */
 .bracket-right .bracket-match-split.has-winner:not(.empty-spacer)::before {
-    background: linear-gradient(90deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+    background: linear-gradient(90deg, #2196F3 0%, #1976D2 50%, #2196F3 100%);
     height: 3px;
-    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
     width: 12px;
     z-index: 4;
+}
+
+/* 패자 경로 연결선 - 가로선 (회색, 얇게) */
+.bracket-left .bracket-match-split.completed:not(.has-winner):not(.empty-spacer)::after {
+    background: #b0b0b0;
+    height: 1px;
+    opacity: 0.5;
+}
+
+.bracket-right .bracket-match-split.completed:not(.has-winner):not(.empty-spacer)::before {
+    background: #b0b0b0;
+    height: 1px;
+    opacity: 0.5;
 }
 
 .bracket-match-split.bye {
