@@ -8696,9 +8696,9 @@ span#matches-current-date-display,
     align-items: center;
     flex-shrink: 0;
     flex-grow: 0;
-    min-width: 140px;
-    width: 140px;
-    max-width: 140px;
+    min-width: 200px;
+    width: 200px;
+    max-width: 200px;
     margin: 0;
     justify-content: center;
     align-self: center;
@@ -8725,16 +8725,16 @@ span#matches-current-date-display,
     gap: 5px;
     position: relative;
     flex-shrink: 0;
-    width: 140px;
-    min-width: 140px;
-    max-width: 140px;
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
 }
 
 .bracket-round-split.round-final {
     align-items: center;
-    width: 140px;
-    min-width: 140px;
-    max-width: 140px;
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
 }
 
 /* 라운드가 진행될수록 가운데로 수렴 */
@@ -8793,8 +8793,8 @@ span#matches-current-date-display,
     background: transparent;
     padding: 2px 0;
     width: 100%;
-    min-width: 140px;
-    max-width: 140px;
+    min-width: 180px;
+    max-width: 180px;
 }
 
 .round-header-split h3 {
@@ -8864,8 +8864,8 @@ span#matches-current-date-display,
     padding: 6px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
-    min-width: 140px;
-    max-width: 140px;
+    min-width: 180px;
+    max-width: 180px;
     position: relative;
     z-index: 2;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -8986,11 +8986,11 @@ span#matches-current-date-display,
     font-size: 0.7em;
     margin-bottom: 0;
     letter-spacing: 0.05px;
-    line-height: 1.3;
-    word-break: keep-all;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.4;
+    word-break: break-word;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 .match-team-split .team-name-split.empty-team {
@@ -9141,13 +9141,13 @@ span#matches-current-date-display,
     background: white;
     border: 1.5px solid #e0e0e0;
     border-radius: 8px;
-    padding: 8px;
+    padding: 12px;
     text-align: center;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
     width: 100%;
-    min-width: 140px;
-    max-width: 140px;
+    min-width: 200px;
+    max-width: 200px;
 }
 
 .final-winner-split {
@@ -9190,18 +9190,19 @@ span#matches-current-date-display,
 }
 
 .final-team-split {
-    font-size: 0.85em;
+    font-size: 0.9em;
     font-weight: 800;
     color: #212529;
-    min-height: 25px;
+    min-height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    padding: 6px 10px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.5;
+    word-break: break-word;
 }
 
 .final-winner-split .final-team-split {
@@ -9525,29 +9526,29 @@ span#matches-current-date-display,
     }
     
     .bracket-center {
-        width: 140px;
-        min-width: 140px;
-        max-width: 140px;
+        width: 180px;
+        min-width: 180px;
+        max-width: 180px;
         margin: 0 auto;
         flex-shrink: 0;
     }
     
     .bracket-round-split {
-        width: 130px;
-        min-width: 130px;
-        max-width: 130px;
+        width: 160px;
+        min-width: 160px;
+        max-width: 160px;
     }
     
     .bracket-match-split {
-        min-width: 130px;
-        max-width: 130px;
+        min-width: 160px;
+        max-width: 160px;
         padding: 10px;
     }
     
     .round-header-split {
         width: 100%;
-        min-width: 130px;
-        max-width: 130px;
+        min-width: 160px;
+        max-width: 160px;
     }
     
     .round-header-split h3 {
@@ -9577,11 +9578,15 @@ span#matches-current-date-display,
     
     .final-winner-split,
     .final-runnerup-split {
-        padding: 10px;
+        padding: 12px;
+        min-width: 180px;
+        max-width: 180px;
     }
     
     .final-team-split {
-        font-size: 0.95em;
+        font-size: 0.9em;
+        white-space: normal;
+        word-break: break-word;
     }
     
     .tournament-bracket-horizontal {

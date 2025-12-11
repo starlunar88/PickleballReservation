@@ -18407,9 +18407,11 @@ function createTournamentCard(tournament, isActive) {
                             </button>
                         ` : ''}
                     ` : ''}
-                    <button class="btn btn-outline" onclick="viewTournamentDetails('${tournament.id}')">
-                        <i class="fas fa-eye"></i> 상세 보기
-                    </button>
+                    ${status === 'completed' ? `
+                        <button class="btn btn-outline" onclick="viewTournamentDetails('${tournament.id}')">
+                            <i class="fas fa-eye"></i> 상세 보기
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         </div>
