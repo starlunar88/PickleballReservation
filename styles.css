@@ -307,6 +307,8 @@ body {
 }
 
 .nav-user-info {
+    display: none !important; /* 초기에는 숨김, JavaScript에서 표시할 때만 보임 */
+    visibility: hidden !important; /* 추가로 숨김 보장 */
     color: white;
     white-space: nowrap !important; /* 강제 한 줄 */
     overflow: hidden; /* 넘치는 내용 숨김 */
@@ -316,6 +318,18 @@ body {
     font-size: 0.85rem;
     opacity: 0.9;
     max-width: 150px; /* 최대 너비 제한으로 한 줄 유지 */
+    width: 0 !important; /* 초기 너비 0으로 설정 */
+    height: 0 !important; /* 초기 높이 0으로 설정 */
+}
+
+/* nav-user-info가 명시적으로 표시될 때만 보이도록 */
+.nav-user-info[style*="display: block"],
+.nav-user-info[style*="display:flex"],
+.nav-user-info[style*="display: inline"] {
+    display: flex !important;
+    visibility: visible !important;
+    width: auto !important;
+    height: auto !important;
 }
 
 .nav-menu {
@@ -8599,20 +8613,18 @@ span#matches-current-date-display,
     100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
-.tournament-winner-info i {
-    color: #ff9800;
-    font-size: 0.95rem;
-    flex-shrink: 0;
-    filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
-    position: relative;
-    z-index: 1;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 0.95rem;
-    height: 1.2rem;
-    vertical-align: middle;
+.tournament-winner-info .trophy-emoji {
+    font-size: 0.95rem !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    line-height: 1.2rem !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
 }
 
 .tournament-winner-info .winner-team-name {
@@ -8666,22 +8678,18 @@ span#matches-current-date-display,
     height: auto !important;
 }
 
-.tournament-runnerup-info i {
-    color: #9e9e9e !important;
+.tournament-runnerup-info .medal-emoji {
     font-size: 0.95rem !important;
     flex-shrink: 0 !important;
-    filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3)) !important;
     position: relative !important;
     z-index: 1 !important;
-    line-height: 1 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 0.95rem !important;
-    height: 1.2rem !important;
+    line-height: 1.2rem !important;
+    display: inline-block !important;
     vertical-align: middle !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
 }
 
 .tournament-runnerup-info .runnerup-team-name {

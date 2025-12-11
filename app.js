@@ -18403,28 +18403,28 @@ function createTournamentCard(tournament, isActive) {
                 if (isActive) {
                     // 진행 중인 토너먼트: 팀 이름과 플레이어 이름 모두 표시
                     if (winnerPlayers) {
-                        winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i><span class="winner-team-name">${winnerName}</span><span class="winner-players">${winnerPlayers}</span></div>`;
+                        winnerInfo = `<div class="tournament-winner-info"><span class="trophy-emoji">🏆</span><span class="winner-team-name">${winnerName}</span><span class="winner-players">${winnerPlayers}</span></div>`;
                     } else {
-                        winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${winnerName}</div>`;
+                        winnerInfo = `<div class="tournament-winner-info"><span class="trophy-emoji">🏆</span> 우승: ${winnerName}</div>`;
                     }
                     
                     if (runnerupPlayers) {
-                        runnerupInfo = `<div class="tournament-runnerup-info"><i class="fas fa-medal"></i><span class="runnerup-team-name">${runnerupName}</span><span class="runnerup-players">${runnerupPlayers}</span></div>`;
+                        runnerupInfo = `<div class="tournament-runnerup-info"><span class="medal-emoji">🥈</span><span class="runnerup-team-name">${runnerupName}</span><span class="runnerup-players">${runnerupPlayers}</span></div>`;
                     } else if (runnerupName) {
-                        runnerupInfo = `<div class="tournament-runnerup-info"><i class="fas fa-medal"></i> 준우승: ${runnerupName}</div>`;
+                        runnerupInfo = `<div class="tournament-runnerup-info"><span class="medal-emoji">🥈</span> 준우승: ${runnerupName}</div>`;
                     }
                 } else {
                     // 기록 카드: 플레이어 이름만 표시
                     if (winnerPlayers) {
                         winnerInfo = `<div class="tournament-winner-info">
-                            <i class="fas fa-trophy"></i> 
+                            <span class="trophy-emoji">🏆</span> 
                             <span class="winner-players">${winnerPlayers}</span>
                         </div>`;
                     }
                     
                     if (runnerupPlayers) {
                         runnerupInfo = `<div class="tournament-runnerup-info">
-                            <i class="fas fa-medal"></i> 
+                            <span class="medal-emoji">🥈</span> 
                             <span class="runnerup-players">${runnerupPlayers}</span>
                         </div>`;
                     }
@@ -18436,7 +18436,7 @@ function createTournamentCard(tournament, isActive) {
     // 대진표 정보가 없는 경우 기존 winner 필드 사용 (하위 호환성)
     if (!winnerInfo && tournament.winner) {
         if (isActive) {
-            winnerInfo = `<div class="tournament-winner-info"><i class="fas fa-trophy"></i> 우승: ${tournament.winner}</div>`;
+            winnerInfo = `<div class="tournament-winner-info"><span class="trophy-emoji">🏆</span> 우승: ${tournament.winner}</div>`;
         }
     }
     
