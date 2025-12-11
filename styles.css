@@ -8766,7 +8766,7 @@ span#matches-current-date-display,
 .bracket-side {
     display: flex;
     flex-direction: row;
-    gap: 25px;
+    gap: 30px;
     flex: 0 0 auto;
     min-width: 140px;
     justify-content: center;
@@ -8815,46 +8815,42 @@ span#matches-current-date-display,
     max-width: 160px;
 }
 
-/* 라운드 간 연결선 - 세로선 (왼쪽 브래킷, 기본 회색) */
+/* MLB 월드시리즈 스타일: 라운드 간 세로 연결선 (왼쪽 브래킷, 기본 검은색) */
 .bracket-left .bracket-round-split:not(:last-child) .round-matches-split::after {
     content: '';
     position: absolute;
-    right: -12px;
+    right: -20px;
     top: 0;
     bottom: 0;
-    width: 1px;
-    background: #b0b0b0;
+    width: 2px;
+    background: #000000;
     z-index: 1;
-    opacity: 0.5;
 }
 
-/* 라운드 간 연결선 - 세로선 (오른쪽 브래킷, 기본 회색) */
+/* MLB 월드시리즈 스타일: 라운드 간 세로 연결선 (오른쪽 브래킷, 기본 검은색) */
 .bracket-right .bracket-round-split:not(:last-child) .round-matches-split::before {
     content: '';
     position: absolute;
-    left: -12px;
+    left: -20px;
     top: 0;
     bottom: 0;
-    width: 1px;
-    background: #b0b0b0;
+    width: 2px;
+    background: #000000;
     z-index: 1;
-    opacity: 0.5;
 }
 
-/* 최종 우승자 경로 연결선 - 세로선 (왼쪽 브래킷, 우승자만) */
+/* 최종 우승자 경로 연결선 - 세로선 (왼쪽 브래킷, 우승자만 빨간색) */
 .bracket-left .bracket-round-split:not(:last-child).has-champion-path .round-matches-split::after {
-    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    background: #dc3545;
     width: 3px;
-    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
-    opacity: 1;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
 }
 
-/* 최종 우승자 경로 연결선 - 세로선 (오른쪽 브래킷, 우승자만) */
+/* 최종 우승자 경로 연결선 - 세로선 (오른쪽 브래킷, 우승자만 빨간색) */
 .bracket-right .bracket-round-split:not(:last-child).has-champion-path .round-matches-split::before {
-    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    background: #dc3545;
     width: 3px;
-    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
-    opacity: 1;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
 }
 
 .bracket-round-split.round-final {
@@ -8999,52 +8995,48 @@ span#matches-current-date-display,
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* 매치에서 다음 라운드로 가는 연결선 - 가로선 (왼쪽 브래킷, 기본 회색) */
+/* MLB 월드시리즈 스타일: 매치에서 세로선으로 가는 가로 연결선 (왼쪽 브래킷, 기본 검은색) */
 .bracket-left .bracket-match-split.completed:not(.empty-spacer)::after {
     content: '';
     position: absolute;
-    right: -12px;
+    right: -20px;
     top: 50%;
-    width: 12px;
-    height: 1px;
-    background: #b0b0b0;
+    width: 20px;
+    height: 2px;
+    background: #000000;
     z-index: 3;
     transform: translateY(-50%);
-    opacity: 0.5;
 }
 
-/* 매치에서 다음 라운드로 가는 연결선 - 가로선 (오른쪽 브래킷, 기본 회색) */
+/* MLB 월드시리즈 스타일: 매치에서 세로선으로 가는 가로 연결선 (오른쪽 브래킷, 기본 검은색) */
 .bracket-right .bracket-match-split.completed:not(.empty-spacer)::before {
     content: '';
     position: absolute;
-    left: -12px;
+    left: -20px;
     top: 50%;
-    width: 12px;
-    height: 1px;
-    background: #b0b0b0;
+    width: 20px;
+    height: 2px;
+    background: #000000;
     z-index: 3;
     transform: translateY(-50%);
-    opacity: 0.5;
 }
 
-/* 최종 우승자 경로 연결선 - 가로선 (왼쪽 브래킷, 우승자만) */
+/* 최종 우승자 경로 연결선 - 가로선 (왼쪽 브래킷, 우승자만 빨간색) */
 .bracket-left .bracket-match-split.champion-path:not(.empty-spacer)::after {
-    background: linear-gradient(90deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    background: #dc3545;
     height: 3px;
-    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
-    width: 12px;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
+    width: 20px;
     z-index: 4;
-    opacity: 1;
 }
 
-/* 최종 우승자 경로 연결선 - 가로선 (오른쪽 브래킷, 우승자만) */
+/* 최종 우승자 경로 연결선 - 가로선 (오른쪽 브래킷, 우승자만 빨간색) */
 .bracket-right .bracket-match-split.champion-path:not(.empty-spacer)::before {
-    background: linear-gradient(90deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
+    background: #dc3545;
     height: 3px;
-    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
-    width: 12px;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
+    width: 20px;
     z-index: 4;
-    opacity: 1;
 }
 
 .bracket-match-split.bye {
@@ -9358,33 +9350,7 @@ span#matches-current-date-display,
     overflow: visible;
 }
 
-/* 결승전에서 우승컵으로 가는 연결선 */
-.bracket-center .bracket-round-split.round-final .bracket-match-split.champion-path::before {
-    content: '';
-    position: absolute;
-    top: -50px;
-    left: 50%;
-    width: 3px;
-    height: 50px;
-    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
-    transform: translateX(-50%);
-    z-index: 4;
-    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
-}
-
-/* 결승전에서 우승컵으로 가는 연결선 (기본 회색) */
-.bracket-center .bracket-round-split.round-final .bracket-match-split.completed:not(.champion-path)::before {
-    content: '';
-    position: absolute;
-    top: -50px;
-    left: 50%;
-    width: 1px;
-    height: 50px;
-    background: #b0b0b0;
-    transform: translateX(-50%);
-    z-index: 3;
-    opacity: 0.5;
-}
+/* 우승컵 연결선 제거 (MLB 스타일) */
 
 .final-winner-split::before {
     content: '👑';
@@ -9393,19 +9359,7 @@ span#matches-current-date-display,
     margin-bottom: 4px;
 }
 
-/* 우승컵에서 결승전으로 가는 연결선 (우승자 경로) */
-.final-winner-split::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    width: 3px;
-    height: 10px;
-    background: linear-gradient(180deg, #4caf50 0%, #2e7d32 50%, #4caf50 100%);
-    transform: translateX(-50%);
-    z-index: 4;
-    box-shadow: 0 0 6px rgba(76, 175, 80, 0.6);
-}
+/* 우승컵 연결선 제거 (MLB 스타일) */
 
 .final-runnerup-split {
     border-color: #c0c0c0;
