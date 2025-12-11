@@ -8601,12 +8601,12 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(255, 152, 0, 0.3));
     position: relative;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-block;
+    vertical-align: middle;
     line-height: 1;
     width: 0.95em;
     height: 0.95em;
+    text-align: center;
 }
 
 .tournament-winner-info .winner-team-name {
@@ -8618,9 +8618,8 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
-    height: 1.2em;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .tournament-winner-info .winner-players {
@@ -8635,9 +8634,8 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
-    min-height: 1.2em;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .tournament-runnerup-info {
@@ -8668,12 +8666,12 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: inline-block;
+    vertical-align: middle;
     line-height: 1;
     width: 0.95em;
     height: 0.95em;
+    text-align: center;
 }
 
 .tournament-runnerup-info .runnerup-team-name {
@@ -8685,9 +8683,8 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
-    height: 1.2em;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .tournament-runnerup-info .runnerup-players {
@@ -8702,9 +8699,8 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
-    min-height: 1.2em;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .tournament-registered-badge {
