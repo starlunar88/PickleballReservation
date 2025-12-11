@@ -8580,6 +8580,11 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(255, 152, 0, 0.3));
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    height: 1.1em;
 }
 
 .tournament-winner-info .winner-team-name {
@@ -8590,6 +8595,9 @@ span#matches-current-date-display,
     flex-shrink: 0;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
 }
 
 .tournament-winner-info .winner-players {
@@ -8603,7 +8611,9 @@ span#matches-current-date-display,
     min-width: 0;
     position: relative;
     z-index: 1;
-    line-height: 1.4;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
 }
 
 .tournament-runnerup-info {
@@ -8633,6 +8643,11 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    height: 1em;
 }
 
 .tournament-runnerup-info .runnerup-team-name {
@@ -8643,6 +8658,9 @@ span#matches-current-date-display,
     flex-shrink: 0;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    line-height: 1.3;
 }
 
 .tournament-runnerup-info .runnerup-players {
@@ -8656,7 +8674,9 @@ span#matches-current-date-display,
     min-width: 0;
     position: relative;
     z-index: 1;
-    line-height: 1.4;
+    line-height: 1.3;
+    display: flex;
+    align-items: center;
 }
 
 .tournament-registered-badge {
@@ -8724,11 +8744,11 @@ span#matches-current-date-display,
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 15px;
-    padding: 10px;
+    gap: 8px;
+    padding: 6px;
     background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-    border-radius: 8px;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
     position: relative;
     overflow-x: auto;
     max-width: 100%;
@@ -8748,7 +8768,7 @@ span#matches-current-date-display,
 .bracket-center {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     align-items: center;
     flex-shrink: 0;
     flex-grow: 0;
@@ -8778,7 +8798,7 @@ span#matches-current-date-display,
 .bracket-round-split {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 3px;
     position: relative;
     flex-shrink: 0;
     width: 180px;
@@ -8842,12 +8862,12 @@ span#matches-current-date-display,
 
 .round-header-split {
     text-align: center;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     position: sticky;
     top: 0;
     z-index: 10;
     background: transparent;
-    padding: 2px 0;
+    padding: 1px 0;
     width: 100%;
     min-width: 180px;
     max-width: 180px;
@@ -8856,13 +8876,13 @@ span#matches-current-date-display,
 .round-header-split h3 {
     margin: 0;
     color: #fff;
-    font-size: 0.8em;
+    font-size: 0.75em;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 3px 8px;
     background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-    border-radius: 6px;
+    border-radius: 4px;
     border: none;
-    box-shadow: 0 1px 6px rgba(33, 150, 243, 0.3);
+    box-shadow: 0 1px 4px rgba(33, 150, 243, 0.3);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     letter-spacing: 0.2px;
     width: 100%;
@@ -8897,10 +8917,10 @@ span#matches-current-date-display,
 .round-matches-split {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 3px;
     align-items: center;
     justify-content: center;
-    padding: 2px 0;
+    padding: 1px 0;
 }
 
 .round-matches-horizontal {
@@ -8916,15 +8936,15 @@ span#matches-current-date-display,
 .bracket-match-split {
     background: white;
     border: 1.5px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 6px;
+    border-radius: 4px;
+    padding: 4px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     min-width: 180px;
     max-width: 180px;
     position: relative;
     z-index: 2;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .bracket-match-split.bye {
@@ -8966,12 +8986,12 @@ span#matches-current-date-display,
 .match-team-split {
     display: flex;
     flex-direction: column;
-    padding: 4px 6px;
+    padding: 3px 5px;
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-radius: 5px;
-    margin-bottom: 3px;
+    border-radius: 4px;
+    margin-bottom: 2px;
     transition: all 0.3s ease;
-    min-height: 35px;
+    min-height: 32px;
     justify-content: center;
     border: 1px solid #e9ecef;
     position: relative;
@@ -8985,7 +9005,7 @@ span#matches-current-date-display,
     background: #f0f0f0;
     border-color: #d0d0d0;
     opacity: 0.6;
-    min-height: 35px;
+    min-height: 32px;
 }
 
 .match-team-split .team-name-split.empty-team {
@@ -9039,10 +9059,10 @@ span#matches-current-date-display,
 .match-team-split .team-name-split {
     font-weight: 600;
     color: #212529;
-    font-size: 0.7em;
+    font-size: 0.72em;
     margin-bottom: 0;
     letter-spacing: 0.05px;
-    line-height: 1.4;
+    line-height: 1.3;
     word-break: break-word;
     white-space: normal;
     overflow: visible;
@@ -9053,7 +9073,7 @@ span#matches-current-date-display,
     color: #999;
     font-style: italic;
     font-size: 0.7em;
-    min-height: 35px;
+    min-height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -9079,8 +9099,8 @@ span#matches-current-date-display,
     text-align: center;
     font-weight: 700;
     color: #6c757d;
-    padding: 3px 0;
-    font-size: 0.7em;
+    padding: 1px 0;
+    font-size: 0.65em;
     letter-spacing: 0.5px;
     text-transform: uppercase;
     opacity: 0.7;
@@ -9090,15 +9110,15 @@ span#matches-current-date-display,
     text-align: center;
     font-weight: 700;
     color: #ff9800;
-    padding: 3px 6px;
+    padding: 2px 4px;
     background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    border-radius: 5px;
-    font-size: 0.65em;
+    border-radius: 4px;
+    font-size: 0.6em;
     border: 1px solid #ffb74d;
 }
 
 .match-actions-split {
-    margin-top: 6px;
+    margin-top: 3px;
     text-align: center;
 }
 
