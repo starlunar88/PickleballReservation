@@ -8766,7 +8766,7 @@ span#matches-current-date-display,
 .bracket-side {
     display: flex;
     flex-direction: row;
-    gap: 40px;
+    gap: 60px;
     flex: 0 0 auto;
     min-width: 140px;
     justify-content: center;
@@ -8959,7 +8959,7 @@ span#matches-current-date-display,
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* MLB 월드시리즈 스타일: 매치에서 다음 라운드로 가는 가로 연결선 (왼쪽 브래킷, 기본 검은색) */
+/* MLB 월드시리즈 스타일: 매치에서 세로선으로 가는 가로 연결선 (왼쪽 브래킷, 기본 검은색) */
 .bracket-left .bracket-match-split.completed:not(.empty-spacer)::after {
     content: '';
     position: absolute;
@@ -8972,7 +8972,7 @@ span#matches-current-date-display,
     transform: translateY(-50%);
 }
 
-/* MLB 월드시리즈 스타일: 매치에서 다음 라운드로 가는 가로 연결선 (오른쪽 브래킷, 기본 검은색) */
+/* MLB 월드시리즈 스타일: 매치에서 세로선으로 가는 가로 연결선 (오른쪽 브래킷, 기본 검은색) */
 .bracket-right .bracket-match-split.completed:not(.empty-spacer)::after {
     content: '';
     position: absolute;
@@ -9003,7 +9003,56 @@ span#matches-current-date-display,
     z-index: 4;
 }
 
-/* MLB 월드시리즈 스타일: 라운드 간 세로 연결선 (각 매치 쌍이 공유하는 세로선) */
+/* 다음 라운드 매치로 들어가는 가로 연결선 (왼쪽 브래킷, 기본 검은색) */
+.bracket-left .bracket-match-split.completed:not(.empty-spacer)::before {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background: #000000;
+    z-index: 3;
+    transform: translateY(-50%);
+}
+
+/* 다음 라운드 매치로 들어가는 가로 연결선 (오른쪽 브래킷, 기본 검은색) */
+.bracket-right .bracket-match-split.completed:not(.empty-spacer)::before {
+    content: '';
+    position: absolute;
+    left: -40px;
+    top: 50%;
+    width: 20px;
+    height: 2px;
+    background: #000000;
+    z-index: 3;
+    transform: translateY(-50%);
+}
+
+/* 최종 우승자 경로 - 다음 라운드로 들어가는 가로선 (왼쪽 브래킷, 우승자만 빨간색) */
+.bracket-left .bracket-match-split.champion-path:not(.empty-spacer)::before {
+    background: #dc3545;
+    height: 3px;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
+    width: 20px;
+    z-index: 4;
+}
+
+/* 최종 우승자 경로 - 다음 라운드로 들어가는 가로선 (오른쪽 브래킷, 우승자만 빨간색) */
+.bracket-right .bracket-match-split.champion-path:not(.empty-spacer)::before {
+    background: #dc3545;
+    height: 3px;
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
+    width: 20px;
+    z-index: 4;
+}
+
+/* MLB 월드시리즈 스타일: 각 매치 쌍이 공유하는 세로 연결선 */
+/* 매치 쌍(예: 매치 1,2)이 다음 라운드의 하나의 매치로 수렴 */
+.bracket-left .bracket-round-split:not(:last-child) .round-matches-split {
+    position: relative;
+}
+
 .bracket-left .bracket-round-split:not(:last-child) .round-matches-split::after {
     content: '';
     position: absolute;
@@ -9013,6 +9062,10 @@ span#matches-current-date-display,
     width: 2px;
     background: #000000;
     z-index: 1;
+}
+
+.bracket-right .bracket-round-split:not(:last-child) .round-matches-split {
+    position: relative;
 }
 
 .bracket-right .bracket-round-split:not(:last-child) .round-matches-split::before {
