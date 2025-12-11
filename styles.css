@@ -8988,13 +8988,14 @@ span#matches-current-date-display,
 .match-team-split {
     display: flex;
     flex-direction: column;
-    padding: 3px 5px;
+    padding: 3px 4px;
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border-radius: 4px;
     margin-bottom: 2px;
     transition: all 0.3s ease;
     min-height: 32px;
     justify-content: center;
+    align-items: center;
     border: 1px solid #e9ecef;
     position: relative;
 }
@@ -9031,16 +9032,11 @@ span#matches-current-date-display,
 }
 
 .match-team-split.winner::before {
-    content: '🏆';
-    position: absolute;
-    right: 4px;
-    top: 4px;
-    font-size: 0.8em;
-    z-index: 1;
+    display: none; /* 트로피를 HTML로 직접 추가하므로 제거 */
 }
 
 .match-team-split.winner .team-name-split {
-    padding-right: 20px; /* 트로피 아이콘 공간 확보 */
+    padding-right: 0; /* 트로피가 점수 앞에 있으므로 제거 */
 }
 
 .match-team-split.loser {
@@ -9069,6 +9065,10 @@ span#matches-current-date-display,
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+    text-align: center;
+    width: 100%;
+    display: block;
+    align-self: center;
 }
 
 .match-team-split .team-name-split.empty-team {
@@ -9088,13 +9088,36 @@ span#matches-current-date-display,
     line-height: 1.2;
 }
 
+.team-score-wrapper-split {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 2px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.trophy-icon-split {
+    font-size: 0.9em;
+    line-height: 1;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .match-team-split .team-score-split {
     font-size: 1em;
     font-weight: 800;
     color: #2196F3;
     text-align: center;
-    margin-top: 2px;
     text-shadow: 0 1px 2px rgba(33, 150, 243, 0.2);
+    flex-shrink: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .match-vs-split {

@@ -19543,7 +19543,10 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
             <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${!match.team1 ? 'empty' : ''}">
                 ${match.team1 ? `
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
-                    ${showScore1 ? `<div class="team-score-split">${match.score1 || 0}</div>` : ''}
+                    ${showScore1 ? `<div class="team-score-wrapper-split">
+                        ${isTeam1Winner ? '<span class="trophy-icon-split">🏆</span>' : ''}
+                        <div class="team-score-split">${match.score1 || 0}</div>
+                    </div>` : ''}
                 ` : `<div class="team-name-split empty-team">${team1Display}</div>`}
             </div>
             ${!(isBye && isFirstRound) ? `
@@ -19552,7 +19555,10 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
             <div class="match-team-split team2 ${isTeam2Winner ? 'winner' : ''} ${isTeam2Loser ? 'loser' : ''} ${!match.team2 ? 'empty' : ''}">
                 ${match.team2 ? `
                     <div class="team-name-split">${team2Name}${team2Players ? ' : ' + team2Players : ''}</div>
-                    ${showScore2 ? `<div class="team-score-split">${match.score2 || 0}</div>` : ''}
+                    ${showScore2 ? `<div class="team-score-wrapper-split">
+                        ${isTeam2Winner ? '<span class="trophy-icon-split">🏆</span>' : ''}
+                        <div class="team-score-split">${match.score2 || 0}</div>
+                    </div>` : ''}
                 ` : `<div class="team-name-split empty-team">${team2Display}</div>`}
             </div>
             ${!isCompleted && !(isBye && isFirstRound) && match.team1 && match.team2 ? `
