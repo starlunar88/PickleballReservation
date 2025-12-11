@@ -8986,23 +8986,24 @@ span#matches-current-date-display,
     background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
 }
 
-/* 우승팀 경로 강조 스타일 */
-.bracket-match-split.champion-path {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    border: 2px solid #ff9800;
-    box-shadow: 0 3px 12px rgba(255, 152, 0, 0.4);
-    transform: scale(1.02);
+/* 우승팀 경로 강조 스타일 - 팀 박스만 강조 */
+.match-team-split.champion-path {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+    border: 2px solid #ff9800 !important;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.5) !important;
+    transform: scale(1.03);
+    font-weight: 700;
 }
 
-.bracket-match-split.champion-path .match-team-split {
-    background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%);
-    border-color: #ffd700;
+.match-team-split.champion-path .team-name-split {
+    color: #856404;
+    font-weight: 800;
+    text-shadow: 0 1px 2px rgba(133, 100, 4, 0.2);
 }
 
-.bracket-match-split.champion-path .match-team-split.winner {
-    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-    border: 2px solid #ff9800;
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.5);
+.match-team-split.champion-path .team-score-split {
+    color: #ff6f00;
+    font-weight: 900;
 }
 
 .bracket-match-horizontal {

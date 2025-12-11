@@ -19622,10 +19622,14 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
     // 승자가 있으면 has-winner 클래스 추가
     const hasWinner = isCompleted && (isTeam1Winner || isTeam2Winner);
     
+    // 우승팀 경로에 속하는 팀인지 확인
+    const isTeam1Champion = isChampionPath && isTeam1Winner;
+    const isTeam2Champion = isChampionPath && isTeam2Winner;
+    
     return `
-        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''} ${isChampionPath ? 'champion-path' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
+        <div class="bracket-match-split ${isCompleted ? 'completed' : ''} ${isBye && isFirstRound ? 'bye' : ''} ${hasWinner ? 'has-winner' : ''}" data-match-id="${match.matchId}" data-round="${roundIndex}">
             ${match.team1 ? `
-                <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''}">
+                <div class="match-team-split team1 ${isTeam1Winner ? 'winner' : ''} ${isTeam1Loser ? 'loser' : ''} ${isTeam1Champion ? 'champion-path' : ''}">
                     <div class="team-name-split">${team1Name}${team1Players ? ' : ' + team1Players : ''}</div>
                     ${showScore1 ? `<div class="team-score-wrapper-split">
                         ${isTeam1Winner ? '<span class="trophy-icon-split">🏆</span>' : ''}
@@ -19647,7 +19651,7 @@ function createMatchHTML(match, roundIndex, matchIndex, team1Name, team2Name, te
                 <div class="match-vs-split">VS</div>
             `}
             ${match.team2 ? `
-                <div class="match-team-split team2 ${isTeam2Winner ? 'winner' : ''} ${isTeam2Loser ? 'loser' : ''}">
+                <div class="match-team-split team2 ${isTeam2Winner ? 'winner' : ''} ${isTeam2Loser ? 'loser' : ''} ${isTeam2Champion ? 'champion-path' : ''}">
                     <div class="team-name-split">${team2Name}${team2Players ? ' : ' + team2Players : ''}</div>
                     ${showScore2 ? `<div class="team-score-wrapper-split">
                         ${isTeam2Winner ? '<span class="trophy-icon-split">🏆</span>' : ''}
