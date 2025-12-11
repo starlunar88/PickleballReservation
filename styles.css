@@ -8544,7 +8544,7 @@ span#matches-current-date-display,
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     padding: 6px 10px;
     background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 50%, #fff9e6 100%);
     border-radius: 6px;
@@ -8581,11 +8581,9 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(255, 152, 0, 0.3));
     position: relative;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    height: 1em;
+    display: inline-block;
+    line-height: 1.2;
+    vertical-align: middle;
 }
 
 .tournament-winner-info .winner-team-name {
@@ -8597,8 +8595,6 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
 }
 
 .tournament-winner-info .winner-players {
@@ -8613,8 +8609,6 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
 }
 
 .tournament-runnerup-info {
@@ -8624,7 +8618,7 @@ span#matches-current-date-display,
     display: flex;
     align-items: center;
     gap: 5px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     padding: 6px 10px;
     background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 50%, #f5f5f5 100%);
     border-radius: 6px;
@@ -8645,11 +8639,9 @@ span#matches-current-date-display,
     filter: drop-shadow(0 1px 2px rgba(158, 158, 158, 0.3));
     position: relative;
     z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    height: 0.95em;
+    display: inline-block;
+    line-height: 1.2;
+    vertical-align: middle;
 }
 
 .tournament-runnerup-info .runnerup-team-name {
@@ -8661,8 +8653,6 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
 }
 
 .tournament-runnerup-info .runnerup-players {
@@ -8677,8 +8667,6 @@ span#matches-current-date-display,
     position: relative;
     z-index: 1;
     line-height: 1.2;
-    display: flex;
-    align-items: center;
 }
 
 .tournament-registered-badge {
@@ -8803,9 +8791,9 @@ span#matches-current-date-display,
     gap: 3px;
     position: relative;
     flex-shrink: 0;
-    width: 170px;
-    min-width: 170px;
-    max-width: 170px;
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
 }
 
 .bracket-round-split.round-final {
@@ -8871,8 +8859,8 @@ span#matches-current-date-display,
     background: transparent;
     padding: 1px 0;
     width: 100%;
-    min-width: 170px;
-    max-width: 170px;
+    min-width: 160px;
+    max-width: 160px;
 }
 
 .round-header-split h3 {
@@ -8919,10 +8907,10 @@ span#matches-current-date-display,
 .round-matches-split {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 8px;
     align-items: center;
     justify-content: center;
-    padding: 1px 0;
+    padding: 2px 0;
 }
 
 .round-matches-horizontal {
@@ -8942,8 +8930,8 @@ span#matches-current-date-display,
     padding: 3px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
-    min-width: 170px;
-    max-width: 170px;
+    min-width: 160px;
+    max-width: 160px;
     position: relative;
     z-index: 2;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -9635,21 +9623,21 @@ span#matches-current-date-display,
     }
     
     .bracket-round-split {
-        width: 150px;
-        min-width: 150px;
-        max-width: 150px;
+        width: 145px;
+        min-width: 145px;
+        max-width: 145px;
     }
     
     .bracket-match-split {
-        min-width: 150px;
-        max-width: 150px;
+        min-width: 145px;
+        max-width: 145px;
         padding: 3px;
     }
     
     .round-header-split {
         width: 100%;
-        min-width: 150px;
-        max-width: 150px;
+        min-width: 145px;
+        max-width: 145px;
     }
     
     .round-header-split h3 {
