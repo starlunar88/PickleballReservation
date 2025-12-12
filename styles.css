@@ -2685,7 +2685,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .records-container > .stats-section-header:first-child,
     .tournament-container > .tournament-reservation-section:first-child,
     .tournament-container > .tournament-active-section:first-child {
-        margin-top: 50px !important; /* 모바일에서 여백 추가 증가 (40px -> 50px) */
+        margin-top: 70px !important; /* 모바일에서 여백 추가 증가 (50px -> 70px) */
     }
 }
 
@@ -4451,7 +4451,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 50px 4px 60px 4px !important; /* 모바일에서 여백 추가 증가 (40px -> 50px) */
+        padding: 70px 4px 60px 4px !important; /* 모바일에서 여백 추가 증가 (50px -> 70px) */
     }
     .reservations-container,
     .records-container {
@@ -5407,7 +5407,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 50px 10px 100px 10px; /* 모바일에서 여백 추가 증가 (40px -> 50px) */
+        padding: 70px 10px 100px 10px; /* 모바일에서 여백 추가 증가 (50px -> 70px) */
     }
     
     .timeline-item {
@@ -8667,6 +8667,8 @@ span#matches-current-date-display,
     line-height: 1.2rem !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     padding: 0 !important;
