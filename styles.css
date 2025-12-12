@@ -2629,7 +2629,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 탭 컨텐츠 */
 .tab-contents {
-    padding: 8px 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
+    padding: 40px 4px 140px 4px; /* 상단 여백 증가 (8px -> 40px) */
     margin-top: 0;
     width: 100%;
     box-sizing: border-box;
@@ -2639,7 +2639,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .tab-contents {
     max-width: 100%;
     margin: 0;
-    padding: 8px 4px 140px 4px; /* 예약, 대진표 탭 수준의 여백 */
+    padding: 40px 4px 140px 4px; /* 상단 여백 증가 (8px -> 40px) */
     width: 100%;
     box-sizing: border-box;
 }
@@ -2673,7 +2673,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 .records-container > .stats-section-header:first-child,
 .tournament-container > .tournament-reservation-section:first-child,
 .tournament-container > .tournament-active-section:first-child {
-    margin-top: 20px;
+    margin-top: 40px; /* 여백 증가 (20px -> 40px) */
 }
 
 /* 기간 선택 버튼 (기록탭 - 통계탭 스타일로 변경) */
@@ -4438,7 +4438,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 0 4px 60px 4px !important; /* 예약, 대진표 탭 수준의 여백 */
+        padding: 40px 4px 60px 4px !important; /* 상단 여백 40px 추가 */
     }
     .reservations-container,
     .records-container {
@@ -4517,7 +4517,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 20px 15px 120px 15px !important; /* 하단 탭바를 위한 여백 확보 */
+        padding: 40px 15px 120px 15px !important; /* 상단 여백 증가 (20px -> 40px) */
         max-width: 1200px !important;
         margin: 0 auto !important;
         box-sizing: border-box !important;
@@ -4967,7 +4967,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 8px 4px 140px 4px !important; /* 모바일과 동일한 여백 */
+        padding: 40px 4px 140px 4px !important; /* 상단 여백 증가 (8px -> 40px) */
     }
     
     .reservations-container,
@@ -5394,7 +5394,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 0 10px 100px 10px;
+        padding: 40px 10px 100px 10px; /* 상단 여백 40px 추가 */
     }
     
     .timeline-item {
