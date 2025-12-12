@@ -18799,7 +18799,7 @@ async function generateTournamentBracket(tournamentId) {
     }
 }
 
-// 밸런스 유지하면서 랜덤하게 팀 생성
+// 밸런스 유지하면서 랜덤하게 팀 생성 (스네이크 드래프트 방식)
 function createBalancedTeams(players) {
     // 팀 이름 리스트
     const teamNames = [
@@ -18820,53 +18820,58 @@ function createBalancedTeams(players) {
     let sortedPlayers = [...players];
     
     if (hasDupr) {
-        // DUPR 기준으로 정렬 (높은 순)
+        // DUPR 기준으로 정렬 (높은 순), 같은 점수 범위 내에서는 랜덤하게 섞기
         sortedPlayers.sort((a, b) => {
             const duprA = a.dupr || 0;
             const duprB = b.dupr || 0;
-            return duprB - duprA;
+            const diff = duprB - duprA;
+            // 0.1 이내 차이는 같은 점수 범위로 간주하고 랜덤하게 섞기
+            if (Math.abs(diff) < 0.1) {
+                return Math.random() - 0.5;
+            }
+            return diff;
         });
         
-        // 밸런스 유지하면서 랜덤하게 섞기
-        const teams = [];
-        const teamCount = Math.ceil(sortedPlayers.length / 2);
-        
-        // 강한 선수와 약한 선수를 번갈아가며 배치하되, 약간의 랜덤 요소 추가
-        for (let i = 0; i < teamCount; i++) {
-            const team = [];
-            
-            // 첫 번째 선수 선택 (상위권에서 랜덤하게)
-            const topHalf = sortedPlayers.slice(0, Math.ceil(sortedPlayers.length / 2));
-            const bottomHalf = sortedPlayers.slice(Math.ceil(sortedPlayers.length / 2));
-            
-            if (topHalf.length > 0) {
-                const randomTop = topHalf[Math.floor(Math.random() * topHalf.length)];
-                team.push(randomTop);
-                sortedPlayers = sortedPlayers.filter(p => p.userId !== randomTop.userId);
-            }
-            
-            // 두 번째 선수 선택 (하위권에서 랜덤하게)
-            if (sortedPlayers.length > 0) {
-                const randomBottom = sortedPlayers[Math.floor(Math.random() * sortedPlayers.length)];
-                team.push(randomBottom);
-                sortedPlayers = sortedPlayers.filter(p => p.userId !== randomBottom.userId);
-            }
-            
-            if (team.length > 0) {
-                teams.push({
-                    teamName: availableTeamNames[teamNameIndex % availableTeamNames.length],
-                    players: team
-                });
-                teamNameIndex++;
+        // 약간의 랜덤 요소 추가: 인접한 2-3명씩 그룹 내에서 약간의 위치 교환
+        // 밸런스는 유지하면서 약간의 변동성 추가
+        for (let i = 0; i < sortedPlayers.length - 1; i += 2) {
+            // 30% 확률로 인접한 두 플레이어의 위치 교환 (약간의 랜덤 요소)
+            if (Math.random() < 0.3 && i + 1 < sortedPlayers.length) {
+                const duprA = sortedPlayers[i].dupr || 0;
+                const duprB = sortedPlayers[i + 1].dupr || 0;
+                // DUPR 차이가 0.2 이내일 때만 교환 (밸런스 유지)
+                if (Math.abs(duprA - duprB) < 0.2) {
+                    [sortedPlayers[i], sortedPlayers[i + 1]] = [sortedPlayers[i + 1], sortedPlayers[i]];
+                }
             }
         }
         
-        // 남은 선수들 랜덤 배치
-        while (sortedPlayers.length > 0) {
-            const randomPlayer = sortedPlayers[Math.floor(Math.random() * sortedPlayers.length)];
-            const randomTeam = teams[Math.floor(Math.random() * teams.length)];
-            randomTeam.players.push(randomPlayer);
-            sortedPlayers = sortedPlayers.filter(p => p.userId !== randomPlayer.userId);
+        // 스네이크 드래프트 방식으로 팀 생성
+        // 예: 16명이면 팀1(1,16), 팀2(2,15), 팀3(3,14), 팀4(4,13)...
+        const teams = [];
+        const teamCount = Math.ceil(sortedPlayers.length / 2);
+        
+        // 팀 초기화
+        for (let i = 0; i < teamCount; i++) {
+            teams.push({
+                teamName: availableTeamNames[teamNameIndex % availableTeamNames.length],
+                players: []
+            });
+            teamNameIndex++;
+        }
+        
+        // 스네이크 드래프트: 2라운드로 나누어 배정
+        // 라운드 0: 순방향 (1,2,3,4...)
+        // 라운드 1: 역방향 (...,4,3,2,1)
+        for (let round = 0; round < 2; round++) {
+            for (let i = 0; i < teamCount; i++) {
+                const playerIndex = round * teamCount + i;
+                if (playerIndex < sortedPlayers.length) {
+                    // 짝수 라운드는 순방향, 홀수 라운드는 역방향
+                    const teamIndex = round % 2 === 0 ? i : teamCount - 1 - i;
+                    teams[teamIndex].players.push(sortedPlayers[playerIndex]);
+                }
+            }
         }
         
         return teams;

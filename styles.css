@@ -2692,13 +2692,13 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     /* 모바일에서 컨테이너 상단 여백만 사용 */
     .reservations-container,
     .records-container {
-        padding: 20px 4px 140px 4px !important; /* 모바일 상단 여백 20px로 감소 */
+        padding: 25px 4px 140px 4px !important; /* 모바일 상단 여백 25px */
     }
     
     .stats-container,
     .rankings-container,
     .matches-container {
-        padding: 20px 8px 140px 8px !important; /* 모바일 상단 여백 20px로 감소 */
+        padding: 25px 8px 140px 8px !important; /* 모바일 상단 여백 25px */
     }
 }
 
@@ -4464,7 +4464,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 20px 4px 60px 4px !important; /* 모바일에서 여백 20px로 감소 */
+        padding: 25px 4px 60px 4px !important; /* 모바일에서 여백 25px */
     }
     .reservations-container,
     .records-container {
@@ -5420,7 +5420,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 20px 10px 100px 10px; /* 모바일에서 여백 20px로 감소 */
+        padding: 25px 10px 100px 10px; /* 모바일에서 여백 25px */
     }
     
     .timeline-item {
@@ -5474,12 +5474,12 @@ span#matches-current-date-display,
     .records-container,
     .stats-container,
     .rankings-container {
-        padding: 20px 6px 160px 6px !important; /* 작은 모바일 상단 여백 20px로 감소 */
+        padding: 25px 6px 160px 6px !important; /* 작은 모바일 상단 여백 25px */
     }
     
     /* 대진표 컨테이너 모바일 여백 확보 */
     .matches-container {
-        padding: 20px 6px 160px 6px !important; /* 작은 모바일 상단 여백 20px로 감소 */
+        padding: 25px 6px 160px 6px !important; /* 작은 모바일 상단 여백 25px */
     }
     .reservations-timeline { 
         padding: 8px !important; /* 패딩 최소화 */
