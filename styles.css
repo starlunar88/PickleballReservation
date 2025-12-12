@@ -2678,6 +2678,7 @@ label.team-mode-option:has(input[type="radio"]:checked) {
 
 /* 모바일에서 여백 추가 증가 */
 @media (max-width: 768px) {
+    /* 모바일에서 첫 번째 섹션의 margin-top 제거 (padding-top만 사용) */
     .reservations-container > .reservations-board:first-child,
     .matches-container > .section-header:first-child,
     .rankings-container > .medal-ceremony-section:first-child,
@@ -2685,19 +2686,19 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .records-container > .stats-section-header:first-child,
     .tournament-container > .tournament-reservation-section:first-child,
     .tournament-container > .tournament-active-section:first-child {
-        margin-top: 30px !important; /* 모바일에서 여백 조정 (70px -> 30px) */
+        margin-top: 0 !important; /* padding-top만 사용하도록 margin 제거 */
     }
     
-    /* 모바일에서 컨테이너 상단 여백 추가 */
+    /* 모바일에서 컨테이너 상단 여백만 사용 */
     .reservations-container,
     .records-container {
-        padding: 30px 4px 140px 4px !important; /* 모바일 상단 여백 30px */
+        padding: 20px 4px 140px 4px !important; /* 모바일 상단 여백 20px로 감소 */
     }
     
     .stats-container,
     .rankings-container,
     .matches-container {
-        padding: 30px 8px 140px 8px !important; /* 모바일 상단 여백 30px */
+        padding: 20px 8px 140px 8px !important; /* 모바일 상단 여백 20px로 감소 */
     }
 }
 
@@ -4463,7 +4464,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 30px 4px 60px 4px !important; /* 모바일에서 여백 조정 (70px -> 30px) */
+        padding: 20px 4px 60px 4px !important; /* 모바일에서 여백 20px로 감소 */
     }
     .reservations-container,
     .records-container {
@@ -5419,7 +5420,7 @@ span#matches-current-date-display,
     }
     
     .tab-contents {
-        padding: 30px 10px 100px 10px; /* 모바일에서 여백 조정 (70px -> 30px) */
+        padding: 20px 10px 100px 10px; /* 모바일에서 여백 20px로 감소 */
     }
     
     .timeline-item {
@@ -5473,12 +5474,12 @@ span#matches-current-date-display,
     .records-container,
     .stats-container,
     .rankings-container {
-        padding: 30px 6px 160px 6px !important; /* 모바일 상단 여백 30px */
+        padding: 20px 6px 160px 6px !important; /* 작은 모바일 상단 여백 20px로 감소 */
     }
     
     /* 대진표 컨테이너 모바일 여백 확보 */
     .matches-container {
-        padding: 30px 6px 160px 6px !important; /* 모바일 상단 여백 30px */
+        padding: 20px 6px 160px 6px !important; /* 작은 모바일 상단 여백 20px로 감소 */
     }
     .reservations-timeline { 
         padding: 8px !important; /* 패딩 최소화 */
@@ -9408,7 +9409,7 @@ span#matches-current-date-display,
 }
 
 .final-team-split {
-    font-size: 0.9em;
+    font-size: 0.8em;
     font-weight: 800;
     color: #212529;
     min-height: 30px;
@@ -9489,7 +9490,7 @@ span#matches-current-date-display,
 }
 
 .final-team {
-    font-size: 1.4em;
+    font-size: 1.2em;
     font-weight: 800;
     color: #212529;
     min-height: 40px;
