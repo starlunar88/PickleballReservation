@@ -2687,6 +2687,18 @@ label.team-mode-option:has(input[type="radio"]:checked) {
     .tournament-container > .tournament-active-section:first-child {
         margin-top: 70px !important; /* 모바일에서 여백 추가 증가 (50px -> 70px) */
     }
+    
+    /* 모바일에서 컨테이너 상단 여백 추가 */
+    .reservations-container,
+    .records-container {
+        padding: 70px 4px 140px 4px !important; /* 모바일 상단 여백 70px 추가 */
+    }
+    
+    .stats-container,
+    .rankings-container,
+    .matches-container {
+        padding: 70px 8px 140px 8px !important; /* 모바일 상단 여백 70px 추가 */
+    }
 }
 
 /* 기간 선택 버튼 (기록탭 - 통계탭 스타일로 변경) */
@@ -5461,12 +5473,12 @@ span#matches-current-date-display,
     .records-container,
     .stats-container,
     .rankings-container {
-        padding: 0 6px 160px 6px !important; /* 모바일 하단 탭바를 위한 여백 증가 (140px -> 160px) */
+        padding: 70px 6px 160px 6px !important; /* 모바일 상단 여백 70px 추가 */
     }
     
     /* 대진표 컨테이너 모바일 여백 확보 */
     .matches-container {
-        padding: 0 6px 160px 6px !important; /* 모바일 하단 탭바를 위한 여백 증가 */
+        padding: 70px 6px 160px 6px !important; /* 모바일 상단 여백 70px 추가 */
     }
     .reservations-timeline { 
         padding: 8px !important; /* 패딩 최소화 */
@@ -8601,6 +8613,7 @@ span#matches-current-date-display,
     margin-top: 4px !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: flex-start !important;
     gap: 5px !important;
     flex-wrap: nowrap !important;
     padding: 6px 10px !important;
@@ -8657,17 +8670,15 @@ span#matches-current-date-display,
     color: #212529 !important;
     font-weight: 600 !important;
     font-size: 0.8rem !important;
-    margin-left: 3px !important;
+    margin-left: 0 !important;
     white-space: normal !important;
     word-break: break-word !important;
-    flex: 1 !important;
+    flex: 0 1 auto !important;
     min-width: 0 !important;
     position: relative !important;
     z-index: 1 !important;
     line-height: 1.2rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
+    display: inline-block !important;
     text-align: left !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
@@ -8680,6 +8691,7 @@ span#matches-current-date-display,
     margin-top: 4px !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: flex-start !important;
     gap: 5px !important;
     flex-wrap: nowrap !important;
     padding: 6px 10px !important;
