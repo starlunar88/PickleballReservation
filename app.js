@@ -4444,9 +4444,17 @@ function drawTeamBarChart(data, canvasId, color) {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
-    // 차트 영역이 너무 작으면 경고
+    // 차트 영역이 너무 작으면 차트를 그리지 않음
     if (chartWidth < 100 || chartHeight < 50) {
-        console.warn('차트 영역이 너무 작습니다');
+        // 배경을 흰색으로 설정
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.fillStyle = '#999';
+        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('차트 영역이 너무 작습니다', width / 2, height / 2);
+        return;
     }
     
     // 승률이므로 항상 0-100% 범위 표시
