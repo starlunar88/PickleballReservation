@@ -1908,6 +1908,10 @@ async function loadTabData(tabName) {
             break;
         case 'stats':
             await loadStatsData();
+            // 탭 전환 시 팀 분석도 로드 (이미 loadStatsData에서 호출되지만, 확실하게)
+            setTimeout(async () => {
+                await loadTeamAnalysis();
+            }, 500);
             break;
         case 'records':
             await loadRecordsData();
@@ -2942,9 +2946,8 @@ async function loadStatsData() {
         setTimeout(async () => {
             const activePeriodBtn = document.querySelector('.stats-period-btn.active');
             const period = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
+            await loadTeamAnalysis(period);
             await loadIndividualPerformance(); // 개인별 성과 로드
-            await loadTimeActivityStats(period); // 시간대별 활동 통계 로드
-            await loadDayWinRateStats(period); // 요일별 승률 통계 로드
         }, 300);
         
         await setupStatsEventListeners();
@@ -2956,12 +2959,9 @@ async function loadStatsData() {
                 setTimeout(() => {
                     const statsTab = document.getElementById('stats-tab');
                     if (statsTab && statsTab.classList.contains('active')) {
-                        const activePeriodBtn = document.querySelector('.stats-period-btn.active');
-                        const period = activePeriodBtn ? activePeriodBtn.getAttribute('data-period') : 'today';
                         loadWinRateChart();
+                        loadTeamAnalysis();
                         loadIndividualPerformance(); // 개인별 성과 재그리기
-                        loadTimeActivityStats(period); // 시간대별 활동 통계 재그리기
-                        loadDayWinRateStats(period); // 요일별 승률 통계 재그리기
                     }
                 }, 200);
             });
@@ -2981,8 +2981,7 @@ function setupStatsEventListeners() {
             const period = e.target.getAttribute('data-period');
             await loadGameStats(period);
             await loadWinRateChart(); // 개인 성장 분석 업데이트
-            await loadTimeActivityStats(period); // 시간대별 활동 통계 업데이트
-            await loadDayWinRateStats(period); // 요일별 승률 통계 업데이트
+            await loadTeamAnalysis(period); // 팀별 분석 업데이트
         });
     });
     
@@ -4097,465 +4096,18 @@ function drawParticipationBarChart(data) {
     ctx.restore();
 }
 
-// 시간대별 활동 통계 로드
-async function loadTimeActivityStats(period = 'all') {
+// 팀별 분석 로드
+async function loadTeamAnalysis(period = null) {
     try {
-        const db = window.db || firebase.firestore();
-        if (!db) return;
-
-        // 기간 계산
-        const now = new Date();
-        let startDate = new Date();
-        
-        switch (period) {
-            case 'today':
-                startDate.setHours(0, 0, 0, 0);
-                break;
-            case 'week1':
-                startDate.setDate(now.getDate() - 7);
-                break;
-            case 'week2':
-                startDate.setDate(now.getDate() - 14);
-                break;
-            case 'month':
-                startDate.setMonth(now.getMonth() - 1);
-                break;
-            case 'all':
-                startDate = new Date(0);
-                break;
-        }
-
-        // 시간대별 활동 통계 (0-23시)
-        const timeStats = Array(24).fill(0);
-        
-        // matches 컬렉션에서 데이터 가져오기
-        const matchesSnapshot = await db.collection('matches')
-            .where('status', '==', 'completed')
-            .get();
-        
-        matchesSnapshot.forEach(doc => {
-            const match = doc.data();
-            if (!match.completedAt) return;
-            
-            const completedDate = match.completedAt.toDate ? match.completedAt.toDate() : new Date(match.completedAt);
-            if (period !== 'all' && completedDate < startDate) return;
-            
-            const hour = completedDate.getHours();
-            timeStats[hour]++;
-        });
-        
-        // gameResults 컬렉션에서 데이터 가져오기
-        const gameResultsSnapshot = await db.collection('gameResults').get();
-        const matchesDocIds = new Set();
-        matchesSnapshot.forEach(doc => matchesDocIds.add(doc.id));
-        
-        gameResultsSnapshot.forEach(doc => {
-            const game = doc.data();
-            if (!game.recordedAt) return;
-            
-            // matches에서 이미 처리한 경기인지 확인
-            let matchIdFromTeamId = null;
-            if (game.teamId) {
-                const parts = game.teamId.split('_');
-                if (parts.length >= 2) {
-                    matchIdFromTeamId = parts.slice(0, -1).join('_');
-                }
-            }
-            if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) return;
-            
-            const gameDate = game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt);
-            if (period !== 'all' && gameDate < startDate) return;
-            
-            const hour = gameDate.getHours();
-            timeStats[hour]++;
-        });
-        
-        // 차트 그리기
-        drawTimeActivityChart(timeStats);
-        
-    } catch (error) {
-        console.error('시간대별 활동 통계 로드 오류:', error);
-    }
-}
-
-// 시간대별 활동 차트 그리기
-function drawTimeActivityChart(timeStats) {
-    const canvas = document.getElementById('time-activity-chart');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    const container = canvas.parentElement;
-    const cardElement = container?.closest('.time-activity-section');
-    
-    const isMobile = window.innerWidth <= 768;
-    let containerWidth = 500;
-    if (cardElement) {
-        const cardStyle = window.getComputedStyle(cardElement);
-        const cardPadding = parseFloat(cardStyle.paddingLeft) + parseFloat(cardStyle.paddingRight);
-        containerWidth = cardElement.clientWidth - cardPadding;
-    } else if (container) {
-        containerWidth = container.clientWidth || container.offsetWidth;
-    }
-    
-    const containerHeight = isMobile ? 250 : 220;
-    const dpr = window.devicePixelRatio || 1;
-    
-    canvas.width = containerWidth * dpr;
-    canvas.height = containerHeight * dpr;
-    canvas.style.width = containerWidth + 'px';
-    canvas.style.height = containerHeight + 'px';
-    ctx.scale(dpr, dpr);
-    
-    const width = containerWidth;
-    const height = containerHeight;
-    
-    ctx.clearRect(0, 0, width, height);
-    
-    const maxValue = Math.max(...timeStats, 1);
-    if (maxValue === 0) {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#999';
-        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('데이터가 없습니다', width / 2, height / 2);
-        return;
-    }
-    
-    const padding = { top: 20, right: 15, bottom: 40, left: 40 };
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-    
-    const barWidth = chartWidth / 24;
-    const barSpacing = barWidth * 0.1;
-    
-    // 그리드 그리기
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 1;
-    const gridLines = 5;
-    for (let i = 0; i <= gridLines; i++) {
-        const y = padding.top + (i / gridLines) * chartHeight;
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(padding.left + chartWidth, y);
-        ctx.stroke();
-        
-        // Y축 레이블
-        const value = Math.round(maxValue - (i / gridLines) * maxValue);
-        ctx.fillStyle = '#666';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(value.toString(), padding.left - 6, y + 3);
-    }
-    
-    // 바 차트 그리기
-    timeStats.forEach((count, hour) => {
-        const barHeight = (count / maxValue) * chartHeight;
-        const x = padding.left + hour * barWidth + barSpacing;
-        const y = padding.top + chartHeight - barHeight;
-        const actualBarWidth = barWidth - barSpacing * 2;
-        
-        // 시간대에 따라 색상 변경 (활동이 많은 시간대는 더 진한 색)
-        const intensity = count / maxValue;
-        ctx.fillStyle = `rgba(220, 38, 38, ${0.5 + intensity * 0.5})`;
-        ctx.fillRect(x, y, actualBarWidth, barHeight);
-        
-        // 시간 레이블 (X축)
-        if (hour % 3 === 0) { // 3시간마다 표시
-            ctx.fillStyle = '#333';
-            ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${hour}시`, x + actualBarWidth / 2, height - padding.bottom + 15);
-        }
-    });
-    
-    // Y축 레이블
-    ctx.fillStyle = '#666';
-    ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.save();
-    ctx.translate(12, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('경기 수', 0, 0);
-    ctx.restore();
-}
-
-// 요일별 승률 통계 로드
-async function loadDayWinRateStats(period = 'all') {
-    try {
-        const db = window.db || firebase.firestore();
-        if (!db) return;
-
-        // 기간 계산
-        const now = new Date();
-        let startDate = new Date();
-        
-        switch (period) {
-            case 'today':
-                startDate.setHours(0, 0, 0, 0);
-                break;
-            case 'week1':
-                startDate.setDate(now.getDate() - 7);
-                break;
-            case 'week2':
-                startDate.setDate(now.getDate() - 14);
-                break;
-            case 'month':
-                startDate.setMonth(now.getMonth() - 1);
-                break;
-            case 'all':
-                startDate = new Date(0);
-                break;
-        }
-
-        // 요일별 통계 (0=일요일, 1=월요일, ..., 6=토요일)
-        const dayStats = Array(7).fill(null).map(() => ({ wins: 0, total: 0 }));
-        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-        
-        // matches 컬렉션에서 데이터 가져오기
-        const matchesSnapshot = await db.collection('matches')
-            .where('status', '==', 'completed')
-            .get();
-        
-        matchesSnapshot.forEach(doc => {
-            const match = doc.data();
-            if (!match.completedAt) return;
-            
-            const completedDate = match.completedAt.toDate ? match.completedAt.toDate() : new Date(match.completedAt);
-            if (period !== 'all' && completedDate < startDate) return;
-            
-            const dayOfWeek = completedDate.getDay();
-            dayStats[dayOfWeek].total++;
-            
-            if (match.teamA && match.teamB && match.scoreA !== undefined && match.scoreB !== undefined) {
-                if (match.scoreA > match.scoreB) {
-                    dayStats[dayOfWeek].wins += match.teamA.length;
-                } else {
-                    dayStats[dayOfWeek].wins += match.teamB.length;
-                }
-            }
-        });
-        
-        // gameResults 컬렉션에서 데이터 가져오기
-        const gameResultsSnapshot = await db.collection('gameResults').get();
-        const matchesDocIds = new Set();
-        matchesSnapshot.forEach(doc => matchesDocIds.add(doc.id));
-        
-        gameResultsSnapshot.forEach(doc => {
-            const game = doc.data();
-            if (!game.recordedAt || !game.winners || !game.losers) return;
-            
-            // matches에서 이미 처리한 경기인지 확인
-            let matchIdFromTeamId = null;
-            if (game.teamId) {
-                const parts = game.teamId.split('_');
-                if (parts.length >= 2) {
-                    matchIdFromTeamId = parts.slice(0, -1).join('_');
-                }
-            }
-            if (matchIdFromTeamId && matchesDocIds.has(matchIdFromTeamId)) return;
-            
-            const gameDate = game.recordedAt.toDate ? game.recordedAt.toDate() : new Date(game.recordedAt);
-            if (period !== 'all' && gameDate < startDate) return;
-            
-            const dayOfWeek = gameDate.getDay();
-            dayStats[dayOfWeek].total += game.winners.length + game.losers.length;
-            dayStats[dayOfWeek].wins += game.winners.length;
-        });
-        
-        // 승률 계산
-        const dayWinRates = dayStats.map((stat, index) => ({
-            day: dayNames[index],
-            winRate: stat.total > 0 ? (stat.wins / stat.total) * 100 : 0,
-            total: stat.total
-        }));
-        
-        // 차트 그리기
-        drawDayWinRateChart(dayWinRates);
-        
-    } catch (error) {
-        console.error('요일별 승률 통계 로드 오류:', error);
-    }
-}
-
-// 요일별 승률 차트 그리기
-function drawDayWinRateChart(dayWinRates) {
-    const canvas = document.getElementById('day-winrate-chart');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    const container = canvas.parentElement;
-    const cardElement = container?.closest('.day-winrate-section');
-    
-    const isMobile = window.innerWidth <= 768;
-    let containerWidth = 500;
-    if (cardElement) {
-        const cardStyle = window.getComputedStyle(cardElement);
-        const cardPadding = parseFloat(cardStyle.paddingLeft) + parseFloat(cardStyle.paddingRight);
-        containerWidth = cardElement.clientWidth - cardPadding;
-    } else if (container) {
-        containerWidth = container.clientWidth || container.offsetWidth;
-    }
-    
-    const containerHeight = isMobile ? 250 : 220;
-    const dpr = window.devicePixelRatio || 1;
-    
-    canvas.width = containerWidth * dpr;
-    canvas.height = containerHeight * dpr;
-    canvas.style.width = containerWidth + 'px';
-    canvas.style.height = containerHeight + 'px';
-    ctx.scale(dpr, dpr);
-    
-    const width = containerWidth;
-    const height = containerHeight;
-    
-    ctx.clearRect(0, 0, width, height);
-    
-    const maxWinRate = Math.max(...dayWinRates.map(d => d.winRate), 1);
-    if (maxWinRate === 0 && dayWinRates.every(d => d.total === 0)) {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#999';
-        ctx.font = '14px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('데이터가 없습니다', width / 2, height / 2);
-        return;
-    }
-    
-    const padding = { top: 20, right: 15, bottom: 40, left: 40 };
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-    
-    const barWidth = chartWidth / 7;
-    const barSpacing = barWidth * 0.15;
-    
-    // 그리드 그리기 (0-100%)
-    ctx.strokeStyle = '#e0e0e0';
-    ctx.lineWidth = 1;
-    const gridLines = 5;
-    for (let i = 0; i <= gridLines; i++) {
-        const y = padding.top + (i / gridLines) * chartHeight;
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(padding.left + chartWidth, y);
-        ctx.stroke();
-        
-        // Y축 레이블 (0-100%)
-        const value = 100 - (i / gridLines) * 100;
-        ctx.fillStyle = '#666';
-        ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(`${value}%`, padding.left - 6, y + 3);
-    }
-    
-    // 바 차트 그리기
-    dayWinRates.forEach((dayData, index) => {
-        const barHeight = (dayData.winRate / 100) * chartHeight;
-        const x = padding.left + index * barWidth + barSpacing;
-        const y = padding.top + chartHeight - barHeight;
-        const actualBarWidth = barWidth - barSpacing * 2;
-        
-        // 승률에 따라 색상 변경
-        const winRate = dayData.winRate;
-        let color;
-        if (winRate >= 60) {
-            color = '#43e97b'; // 초록색 (높은 승률)
-        } else if (winRate >= 40) {
-            color = '#fbbf24'; // 노란색 (중간 승률)
-        } else {
-            color = '#ff6b6b'; // 빨간색 (낮은 승률)
-        }
-        
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, actualBarWidth, barHeight);
-        
-        // 승률 레이블 (막대 위)
-        if (dayData.total > 0) {
-            ctx.fillStyle = '#333';
-            ctx.font = '10px "Malgun Gothic", Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${dayData.winRate.toFixed(1)}%`, x + actualBarWidth / 2, y - 5);
-        }
-        
-        // 요일 레이블 (X축)
-        ctx.fillStyle = '#333';
-        ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(dayData.day, x + actualBarWidth / 2, height - padding.bottom + 15);
-    });
-    
-    // Y축 레이블
-    ctx.fillStyle = '#666';
-    ctx.font = '11px "Malgun Gothic", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.save();
-    ctx.translate(12, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('승률 (%)', 0, 0);
-    ctx.restore();
-}
-
-// 기록 데이터 로드
-async function loadRecordsData() {
-    try {
-        console.log('📝 기록 데이터 로드 시작');
-        const recordsList = document.getElementById('records-list');
-        if (!recordsList) {
-            console.error('records-list 컨테이너를 찾을 수 없습니다');
-            return;
-        }
-        
-        // 오늘 날짜로 기본 설정 (로컬 시간대 사용)
-        const todayDate = new Date();
-        const formatLocalDate = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-        const today = formatLocalDate(todayDate);
-        document.getElementById('record-start-date').value = today;
-        document.getElementById('record-end-date').value = today;
-        
-        // "오늘" 버튼 활성화
-        document.querySelectorAll('.records-container .stats-period-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-period') === 'today') {
-                btn.classList.add('active');
-            }
-        });
-        
-        // 기본적으로 오늘 기록 로드
-        await loadRecordsForPeriod('today');
-        
-    } catch (error) {
-        console.error('기록 데이터 로드 오류:', error);
-        const recordsList = document.getElementById('records-list');
-        if (recordsList) {
-            recordsList.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>기록을 불러올 수 없습니다</p></div>';
-        }
-    }
-}
-
-// 기간별 기록 로드
-async function loadRecordsForPeriod(period) {
-    try {
-        const recordsList = document.getElementById('records-list');
-        if (!recordsList) return;
-        
-        recordsList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>기록을 불러오는 중...</p></div>';
-        
         const db = window.db || firebase.firestore();
         if (!db) {
-            console.error('db 객체를 찾을 수 없습니다');
+            console.warn('팀별 분석: 데이터베이스가 없습니다');
             return;
         }
         
-        let startDate = new Date();
-        let endDate = new Date();
-        
         // 기간 계산
-        switch (period) {
+        let startDate = null;
+        if (period) {
             const now = new Date();
             startDate = new Date();
             
@@ -4779,13 +4331,22 @@ async function loadRecordsForPeriod(period) {
             .sort((a, b) => a.winRate - b.winRate) // 승률 오름차순 정렬
             .slice(0, 5); // 상위 5개 (승률이 가장 낮은 팀들)
         
-// 기록 데이터 로드
-async function loadRecordsData() {
-    try {
-        console.log('📝 기록 데이터 로드 시작');
-        const recordsList = document.getElementById('records-list');
-        if (!recordsList) {
-            console.error('records-list 컨테이너를 찾을 수 없습니다');
+        drawTeamBarChart(strongestTeams, 'strongest-teams-chart', '#43e97b');
+        drawTeamBarChart(weakestTeams, 'weakest-teams-chart', '#ff6b6b');
+        
+    } catch (error) {
+        console.error('팀별 분석 로드 오류:', error);
+        // 오류 발생 시에도 빈 차트는 표시
+        drawTeamBarChart([], 'strongest-teams-chart', '#43e97b');
+        drawTeamBarChart([], 'weakest-teams-chart', '#ff6b6b');
+    }
+}
+
+// 팀별 바 차트 그리기
+function drawTeamBarChart(data, canvasId, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        console.warn(`팀별 차트: ${canvasId} 요소를 찾을 수 없습니다`);
         return;
     }
     
@@ -6815,6 +6376,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         showToast('대진표 로드에 실패했습니다.', 'error');
                     }
                 }, 50);
+            }
+            
+            // 통계 탭으로 전환 시 팀별 분석 확실히 로드
+            if (tabName === 'stats') {
+                setTimeout(async () => {
+                    try {
+                        console.log('📊 통계 탭으로 전환, 팀별 분석 로드');
+                        await loadTeamAnalysis();
+                    } catch (error) {
+                        console.error('통계 탭 전환 시 팀별 분석 로드 오류:', error);
+                    }
+                }, 600);
             }
         });
     });

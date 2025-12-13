@@ -357,6 +357,30 @@
                         </div>
                     </div>
                     
+                    <!-- 팀별 분석 섹션 -->
+                    <div class="team-analysis-section">
+                        <div class="team-analysis-header">
+                            <i class="fas fa-users"></i>
+                            <h2>팀별 분석</h2>
+                        </div>
+                        <div class="team-charts">
+                            <div class="team-chart-card">
+                                <div class="team-chart-header">
+                                    <i class="fas fa-trophy"></i>
+                                    <h3>최강 팀 조합</h3>
+                                </div>
+                                <canvas id="strongest-teams-chart"></canvas>
+                            </div>
+                            <div class="team-chart-card">
+                                <div class="team-chart-header">
+                                    <i class="fas fa-sad-cry"></i>
+                                    <h3>최약 팀 조합</h3>
+                                </div>
+                                <canvas id="weakest-teams-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- 플레이어 전적 섹션 -->
                     <div class="player-h2h-section">
                         <div class="stats-section-header">
@@ -379,28 +403,6 @@
                         </div>
                         <div id="h2h-stats-display" class="h2h-stats-display" style="display: none;">
                             <!-- 전적 통계가 여기에 표시됨 -->
-                        </div>
-                    </div>
-                    
-                    <!-- 시간대별 활동 통계 섹션 -->
-                    <div class="time-activity-section">
-                        <div class="stats-section-header">
-                            <i class="fas fa-clock"></i>
-                            <h2>시간대별 활동 통계</h2>
-                        </div>
-                        <div class="time-activity-chart-container">
-                            <canvas id="time-activity-chart"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- 요일별 승률 통계 섹션 -->
-                    <div class="day-winrate-section">
-                        <div class="stats-section-header">
-                            <i class="fas fa-calendar-week"></i>
-                            <h2>요일별 승률 통계</h2>
-                        </div>
-                        <div class="day-winrate-chart-container">
-                            <canvas id="day-winrate-chart"></canvas>
                         </div>
                     </div>
                 </div>
