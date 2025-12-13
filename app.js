@@ -100,7 +100,6 @@ async function createReservation(reservationData) {
     
     try {
         const docRef = await db.collection('reservations').add(reservation);
-        console.log('Firestore에 예약 저장 완료:', docRef.id);
         return docRef.id;
     } catch (error) {
         console.error('예약 저장 오류:', error);
@@ -448,9 +447,6 @@ async function handleSignup() {
                     }
                 });
                 
-                console.log(`회원가입 요청: ${name}(${email})`);
-                console.log(`관리자 ${adminEmails.length}명에게 알림 필요:`, adminEmails);
-                
                 // 관리자 알림 저장 (실제 이메일 발송은 Cloud Functions에서 처리)
                 // 관리자 페이지에서 이 알림을 확인하여 승인/거부 처리
                 await db.collection('adminNotifications').add({
@@ -462,8 +458,6 @@ async function handleSignup() {
                     status: 'pending',
                     createdAt: new Date()
                 });
-                
-                console.log(`관리자 알림이 저장되었습니다. (관리자 ${adminEmails.length}명)`);
                 
                 // 참고: 실제 이메일 발송은 Firebase Cloud Functions에서 처리해야 합니다.
                 // 현재는 관리자 페이지에서 실시간으로 확인하여 승인/거부 처리할 수 있습니다.
@@ -663,7 +657,6 @@ async function updateUserDUPR(userId, dupr, duprId, duprName) {
         
         // merge: true로 기존 데이터는 유지되고 전달된 필드만 업데이트
         await db.collection('users').doc(userId).set(updateData, { merge: true });
-        console.log('DUPR 정보 업데이트 성공:', updateData);
     } catch (error) {
         console.error('DUPR 업데이트 오류:', error);
         throw error;
@@ -887,7 +880,6 @@ function handleEmailLinkSignIn() {
                                         createdAt: new Date(),
                                         dupr: null
                                     }, { merge: true });
-                                    console.log('users 컬렉션에 사용자 문서 생성 완료 (로그인 시)');
                                 }
                             } catch (error) {
                                 console.error('users 컬렉션 문서 확인/생성 오류:', error);
@@ -1280,7 +1272,6 @@ async function openAdminSettingsModal() {
             console.log('로드할 시간 슬롯:', settings.timeSlots);
             if (settings.timeSlots && settings.timeSlots.length > 0) {
                 settings.timeSlots.forEach((slot, index) => {
-                    console.log(`시간 슬롯 ${index + 1} 추가:`, slot);
                     addTimeSlotItem(slot.start, slot.end, true); // isFromData = true
                 });
             } else {
@@ -1313,7 +1304,6 @@ async function openAdminSettingsModal() {
         const unsubscribeSignupRequests = db.collection('signupRequests')
             .where('status', '==', 'pending')
             .onSnapshot((snapshot) => {
-                console.log('승인 요청 실시간 업데이트:', snapshot.size, '개');
                 if (snapshot.empty) {
                     const requestsList = document.getElementById('signup-requests-list');
                     if (requestsList) {
@@ -1351,7 +1341,6 @@ function closeAdminSettingsModal() {
         if (window.unsubscribeSignupRequests) {
             window.unsubscribeSignupRequests();
             window.unsubscribeSignupRequests = null;
-            console.log('승인 요청 실시간 구독 해제됨');
         }
     }
 }
@@ -1360,15 +1349,12 @@ function closeAdminSettingsModal() {
 function addTimeSlotItem(start = '09:00', end = '10:00', isFromData = false) {
     const container = document.getElementById('time-slots-container');
     
-    console.log(`addTimeSlotItem 호출: start=${start}, end=${end}, isFromData=${isFromData}`);
-    
     // 데이터에서 로드하는 경우가 아니고, 컨테이너가 비어있지 않은 경우에만 자동 연속 설정
     if (!isFromData && container.children.length > 0) {
         const lastItem = container.lastElementChild;
         if (lastItem && lastItem.classList.contains('time-slot-item')) {
             const lastEndTime = lastItem.querySelector('.time-end').value;
             if (lastEndTime) {
-                console.log(`자동 연속 설정: 마지막 종료시간=${lastEndTime}`);
                 start = lastEndTime;
                 // 1시간 후로 종료 시간 설정
                 const [hours, minutes] = lastEndTime.split(':').map(Number);
@@ -1376,12 +1362,9 @@ function addTimeSlotItem(start = '09:00', end = '10:00', isFromData = false) {
                 endTime.setHours(hours, minutes);
                 endTime.setHours(endTime.getHours() + 1);
                 end = endTime.toTimeString().slice(0, 5);
-                console.log(`자동 연속 설정 결과: start=${start}, end=${end}`);
             }
         }
     }
-    
-    console.log(`최종 시간 슬롯 생성: start=${start}, end=${end}`);
     
     const item = document.createElement('div');
     item.className = 'time-slot-item';
@@ -1865,13 +1848,10 @@ async function switchMainTab(tabName) {
         
         // 예약 탭으로 전환 시 강제로 예약 현황 로드
         if (tabName === 'reservations') {
-            console.log('예약 탭 전환 - 예약 현황 강제 로드');
-            
             // 모바일에서 여러 번 시도
             const tryLoadOnTabSwitch = async (attempt = 1) => {
                 try {
                     await loadReservationsTimeline();
-                    console.log(`탭 전환 시 예약 현황 로드 완료 (시도 ${attempt})`);
                 } catch (error) {
                     console.error(`탭 전환 시 예약 현황 로드 실패 (시도 ${attempt}):`, error);
                     if (attempt < 3) {
@@ -1914,11 +1894,9 @@ async function switchMainTab(tabName) {
 async function loadTabData(tabName) {
     switch(tabName) {
         case 'reservations':
-            console.log('📱 예약 탭 데이터 로드 시작');
             await loadReservationsData();
             // 추가로 타임라인 강제 로드
             setTimeout(async () => {
-                console.log('📱 예약 탭 추가 로드');
                 await loadReservationsTimeline();
             }, 500);
             break;
@@ -2031,7 +2009,6 @@ async function loadMatchesForDate(date) {
         
         const settings = await getSystemSettings();
         if (!settings || !settings.timeSlots) {
-            console.log('⚠️ 설정 또는 시간 슬롯이 없습니다');
             return;
         }
         
@@ -2715,8 +2692,6 @@ async function loadMatchesForDate(date) {
                             newBtn.classList.remove('completed');
                         } else {
                             // 저장 모드
-                            console.log('💾 저장 버튼 클릭됨:', newBtn.id);
-                            
                             const scoreA = Number(scoreAInput.value || 0);
                             const scoreB = Number(scoreBInput.value || 0);
                             
@@ -2754,8 +2729,6 @@ async function loadMatchesForDate(date) {
                                 showToast('매치를 찾을 수 없습니다.', 'error');
                                 return;
                             }
-                            
-                            console.log('매치 발견:', matchId);
                             
                             await saveMatchScore({ id: matchId, ...matchDoc.data() }, scoreA, scoreB);
                             
@@ -2883,7 +2856,6 @@ async function deleteTimeSlotMatches(date, timeSlot) {
             .get();
         
         if (matchesSnapshot.empty) {
-            console.log('삭제할 대진표가 없습니다.');
             return;
         }
         
@@ -2896,8 +2868,6 @@ async function deleteTimeSlotMatches(date, timeSlot) {
             matchIds.push(matchId);
             batch.delete(doc.ref);
         });
-        
-        console.log(`삭제할 matches 수: ${matchIds.length}개`);
         
         // 해당 matches와 연결된 gameResults 찾아서 삭제
         // teamId 형식: matchId_A 또는 matchId_B
@@ -2932,14 +2902,9 @@ async function deleteTimeSlotMatches(date, timeSlot) {
         });
         
         const deletedGameResultsCount = deletedGameResultRefs.size;
-        console.log(`삭제할 gameResults 수: ${deletedGameResultsCount}개`);
         
         // 배치 커밋
         await batch.commit();
-        
-        console.log(`✅ 시간대 ${timeSlot}의 대진표와 기록 삭제 완료`);
-        console.log(`   - 삭제된 matches: ${matchIds.length}개`);
-        console.log(`   - 삭제된 gameResults: ${deletedGameResultsCount}개`);
         
     } catch (error) {
         console.error('시간대 삭제 오류:', error);
@@ -4134,7 +4099,6 @@ function drawParticipationBarChart(data) {
 // 팀별 분석 로드
 async function loadTeamAnalysis(period = null) {
     try {
-        console.log('팀별 분석 로드 시작', period ? `(기간: ${period})` : '');
         const db = window.db || firebase.firestore();
         if (!db) {
             console.warn('팀별 분석: 데이터베이스가 없습니다');
@@ -4367,7 +4331,6 @@ async function loadTeamAnalysis(period = null) {
             .sort((a, b) => a.winRate - b.winRate) // 승률 오름차순 정렬
             .slice(0, 5); // 상위 5개 (승률이 가장 낮은 팀들)
         
-        console.log(`팀별 분석 완료 - 최강 팀: ${strongestTeams.length}개, 최약 팀: ${weakestTeams.length}개`);
         drawTeamBarChart(strongestTeams, 'strongest-teams-chart', '#43e97b');
         drawTeamBarChart(weakestTeams, 'weakest-teams-chart', '#ff6b6b');
         
@@ -5019,13 +4982,8 @@ async function renderRecords(matches) {
             }
             
             if (confirm('이 기록을 삭제하시겠습니까? (점수만 초기화되고 대진표는 유지됩니다)')) {
-                console.log(`✅ 확인 버튼 클릭, deleteRecord 호출 예정: ${matchId}`);
-                console.log(`⏰ deleteRecord 호출 전 시간:`, new Date().toISOString());
-                console.log(`📋 호출 전 스택 트레이스:`, new Error().stack);
-                
                 try {
                     await deleteRecord(matchId);
-                    console.log(`✅ deleteRecord 호출 완료: ${matchId}`);
                 } catch (error) {
                     console.error(`❌ deleteRecord 호출 중 에러 발생:`, error);
                     console.error(`❌ 에러 상세:`, error.message);
@@ -5044,11 +5002,6 @@ async function renderRecords(matches) {
 // 기록 삭제 (점수만 초기화, 대진표는 유지)
 async function deleteRecord(matchId) {
     try {
-        console.log(`🗑️ deleteRecord 호출됨: ${matchId}`);
-        console.log(`⏰ 호출 시간:`, new Date().toISOString());
-        console.log(`📋 window.db 존재 여부:`, !!window.db);
-        console.log(`📋 firebase.firestore 존재 여부:`, typeof firebase !== 'undefined' && typeof firebase.firestore !== 'undefined');
-        
         const db = window.db || firebase.firestore();
         if (!db) {
             console.error(`❌ db 객체를 찾을 수 없습니다!`);
@@ -5057,7 +5010,6 @@ async function deleteRecord(matchId) {
             showToast('데이터베이스 연결 오류', 'error');
             return;
         }
-        console.log(`✅ db 객체 확인됨`);
         
         // match 점수 초기화 (삭제가 아닌 초기화)
         const matchRef = db.collection('matches').doc(matchId);
@@ -5097,88 +5049,49 @@ async function deleteRecord(matchId) {
             recordedBy: FieldValue.delete()  // recordedBy 필드도 삭제
         };
         
-        console.log(`🔄 업데이트할 데이터:`, updateData);
-        console.log(`⚠️ 주의: matchRef.delete()를 호출하는지 확인 - 절대 호출하면 안됨!`);
-        
         // 중요한 부분: update를 사용하여 문서를 유지하면서 필드만 업데이트
         // 절대 delete()나 set()을 사용하지 않음! update()만 사용!
-        console.log(`📤 matchRef.update() 호출 시작...`);
         await matchRef.update(updateData);
-        console.log(`✅ matchRef.update() 호출 완료 - 문서는 유지되어야 함`);
-        console.log(`✅ 매치 점수 초기화 완료 (문서 유지): ${matchId}`);
-        console.log(`📋 업데이트된 필드:`, updateData);
         
         // 즉시 확인: 문서가 여전히 존재하는지
-        console.log(`🔍 즉시 확인: matchRef.get() 호출...`);
         const immediateCheck = await matchRef.get();
-        console.log(`📋 즉시 확인 결과: exists=${immediateCheck.exists}`);
         
         if (!immediateCheck.exists) {
             console.error(`❌ 치명적 오류: 업데이트 후 매치 문서가 없어짐! ${matchId}`);
             console.error(`❌ 이것은 matchRef.delete()가 호출되었거나, 다른 곳에서 삭제된 것입니다!`);
             showToast('오류가 발생했습니다. 관리자에게 문의하세요.', 'error');
             return;
-        } else {
-            const immediateData = immediateCheck.data();
-            console.log(`✅ 즉시 확인 성공: 매치 문서 존재함`, {
-                id: matchId,
-                status: immediateData.status,
-                scoreA: immediateData.scoreA,
-                scoreB: immediateData.scoreB,
-                date: immediateData.date,
-                timeSlot: immediateData.timeSlot
-            });
         }
         
         // 관련 gameResults 삭제
-        console.log(`🔄 gameResults 삭제 시작: ${matchId}`);
         const gameResultsA = await db.collection('gameResults')
             .where('teamId', '==', `${matchId}_A`)
             .get();
-        
-        console.log(`📊 gameResultsA 조회 완료: ${gameResultsA.size}개`);
         
         const gameResultsB = await db.collection('gameResults')
             .where('teamId', '==', `${matchId}_B`)
             .get();
         
-        console.log(`📊 gameResultsB 조회 완료: ${gameResultsB.size}개`);
-        
         const batch = db.batch();
         gameResultsA.forEach(doc => {
-            console.log(`🗑️ gameResultsA 삭제 예정: ${doc.id}`);
             batch.delete(doc.ref);
         });
         gameResultsB.forEach(doc => {
-            console.log(`🗑️ gameResultsB 삭제 예정: ${doc.id}`);
             batch.delete(doc.ref);
         });
         
         if (!gameResultsA.empty || !gameResultsB.empty) {
-            console.log(`📤 gameResults batch.commit() 호출 시작...`);
             await batch.commit();
-            const totalGameResults = gameResultsA.size + gameResultsB.size;
-            console.log(`✅ gameResults batch.commit() 완료`);
-            console.log(`🔄 gameResults 삭제 및 점수 초기화: ${matchId} (${totalGameResults}개)`);
-            console.log(`📊 gameResults 삭제 상세: A팀 ${gameResultsA.size}개, B팀 ${gameResultsB.size}개`);
-        } else {
-            console.log(`ℹ️ gameResults 없음: ${matchId} - 삭제할 gameResults가 없습니다`);
         }
         
-        // 삭제 후 매치 문서가 여전히 존재하는지 확인 (디버깅)
+        // 삭제 후 매치 문서가 여전히 존재하는지 확인
         const verifyDoc = await matchRef.get();
         if (!verifyDoc.exists) {
             console.error(`❌ 치명적 오류: 매치 문서가 삭제되었습니다! ${matchId}`);
             showToast('오류: 매치가 삭제되었습니다. 다시 확인해주세요.', 'error');
             return;
-        } else {
-            console.log(`✅ 매치 문서 확인: ${matchId} 존재함`);
-            const verifyData = verifyDoc.data();
-            console.log(`📋 매치 상태: ${verifyData.status}, scoreA: ${verifyData.scoreA}, scoreB: ${verifyData.scoreB}`);
-            console.log(`📋 매치 날짜: ${verifyData.date}, 시간대: ${verifyData.timeSlot}`);
         }
         
-        console.log(`✅ deleteRecord 완료: ${matchId} - 매치 문서는 유지되고 점수만 초기화됨`);
         showToast('기록이 초기화되었습니다.', 'success');
         
         // 기록 목록 새로고침
@@ -5189,17 +5102,14 @@ async function deleteRecord(matchId) {
         // matchesTab이 active이든 아니든, 대진표 탭이 열려있다면 새로고침
         const matchesTab = document.getElementById('matches-tab');
         const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
-        console.log(`🔍 대진표 탭 상태 확인: active=${isMatchesTabActive}, matchDate=${matchDate}`);
         
         if (matchDate) {
             // 현재 대진표에 표시된 날짜 확인
             const currentDateDisplay = document.getElementById('matches-current-date-display');
             const currentDate = currentDateDisplay ? currentDateDisplay.getAttribute('data-date') : window.currentDate || null;
-            console.log(`🔍 현재 대진표 날짜: ${currentDate}, 삭제된 매치 날짜: ${matchDate}`);
             
             // 현재 표시된 날짜와 삭제된 매치 날짜가 같으면 새로고침
             if (currentDate === matchDate) {
-                console.log(`🔄 대진표 새로고침: ${matchDate} (날짜 일치)`);
                 await loadMatchesForDate(matchDate);
                 
                 // 새로고침 후 매치가 실제로 대진표에 표시되는지 확인
@@ -5268,16 +5178,10 @@ async function deleteRecord(matchId) {
 // 모든 기록 삭제
 async function deleteAllRecords() {
     try {
-        console.log(`🔍 deleteAllRecords 함수 호출됨`);
-        console.log(`⏰ 호출 시간:`, new Date().toISOString());
-        console.log(`📋 호출 스택:`, new Error().stack);
-        
         if (!confirm('모든 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            console.log(`❌ deleteAllRecords: 사용자가 취소함`);
             return;
         }
         
-        console.log(`✅ deleteAllRecords: 사용자가 확인함`);
         showLoading();
         
         const db = window.db || firebase.firestore();
@@ -5287,15 +5191,11 @@ async function deleteAllRecords() {
             return;
         }
         
-        console.log(`🔍 deleteAllRecords: 완료된 매치 조회 시작...`);
         const matchesSnapshot = await db.collection('matches')
             .where('status', '==', 'completed')
             .get();
         
-        console.log(`📊 deleteAllRecords: 완료된 매치 ${matchesSnapshot.size}개 발견`);
-        
         if (matchesSnapshot.empty) {
-            console.log(`ℹ️ deleteAllRecords: 삭제할 기록이 없습니다`);
             showToast('삭제할 기록이 없습니다.', 'info');
             hideLoading();
             return;
@@ -5303,8 +5203,6 @@ async function deleteAllRecords() {
         
         // matches 점수 초기화 (매치 삭제가 아닌 점수만 초기화)
         // 주의: 매치 문서를 삭제하지 않고 점수만 초기화하여 대진표는 유지합니다!
-        console.log(`⚠️ deleteAllRecords: 완료된 매치의 점수를 초기화합니다 (매치는 유지됨)!`);
-        
         const FieldValue = firebase.firestore.FieldValue;
         const updateData = {
             scoreA: null,
@@ -5318,41 +5216,22 @@ async function deleteAllRecords() {
         
         const batch = db.batch();
         matchesSnapshot.forEach(doc => {
-            const matchData = doc.data();
-            console.log(`🔄 deleteAllRecords: 매치 점수 초기화 예정: ${doc.id}`, {
-                status: matchData.status,
-                date: matchData.date,
-                timeSlot: matchData.timeSlot,
-                scoreA: matchData.scoreA,
-                scoreB: matchData.scoreB
-            });
             // 매치 삭제가 아닌 점수 초기화
             batch.update(doc.ref, updateData);
         });
         
-        console.log(`📤 deleteAllRecords: matches batch.commit() 호출 시작...`);
         await batch.commit();
-        console.log(`✅ deleteAllRecords: matches batch.commit() 완료`);
-        console.log(`🔄 deleteAllRecords: 완료된 매치 ${matchesSnapshot.size}개의 점수 초기화 완료 (매치는 유지됨)`);
         
         // 모든 gameResults 삭제
-        console.log(`🔍 deleteAllRecords: 모든 gameResults 조회 시작...`);
         const gameResultsSnapshot = await db.collection('gameResults').get();
-        console.log(`📊 deleteAllRecords: gameResults 총 ${gameResultsSnapshot.size}개 발견`);
         
         const gameResultsBatch = db.batch();
         gameResultsSnapshot.forEach(doc => {
-            console.log(`🗑️ deleteAllRecords: gameResults 삭제 예정: ${doc.id}`);
             gameResultsBatch.delete(doc.ref);
         });
         
         if (!gameResultsSnapshot.empty) {
-            console.log(`📤 deleteAllRecords: gameResults batch.commit() 호출 시작...`);
             await gameResultsBatch.commit();
-            console.log(`✅ deleteAllRecords: gameResults batch.commit() 완료`);
-            console.log(`🗑️ deleteAllRecords: 모든 gameResults 삭제 완료 (${gameResultsSnapshot.size}개)`);
-        } else {
-            console.log(`ℹ️ deleteAllRecords: 삭제할 gameResults가 없습니다`);
         }
         
         showToast('모든 기록이 초기화되었습니다. (대진표는 유지됨)', 'success');
@@ -5364,7 +5243,6 @@ async function deleteAllRecords() {
         const matchesTab = document.getElementById('matches-tab');
         const isMatchesTabActive = matchesTab && matchesTab.classList.contains('active');
         if (isMatchesTabActive) {
-            console.log(`🔄 deleteAllRecords: 대진표 탭이 활성화되어 있어 새로고침...`);
             // 로컬 시간대 기준으로 날짜 계산
             let currentDate = window.currentDate;
             if (!currentDate) {
@@ -5376,7 +5254,6 @@ async function deleteAllRecords() {
                 window.currentDate = currentDate;
             }
             await loadMatchesForDate(currentDate);
-            console.log(`✅ deleteAllRecords: 대진표 새로고침 완료`);
         }
         
         hideLoading();
@@ -9328,12 +9205,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const tryLoadReservations = async () => {
         try {
-            console.log(`=== 재시도 ${retryCount + 1}/${maxRetries} ===`);
-            console.log('네트워크 상태:', navigator.onLine ? '온라인' : '오프라인');
-            console.log('Firebase 상태:', typeof firebase !== 'undefined' ? '로드됨' : '로드 안됨');
-            console.log('DB 상태:', db ? '초기화됨' : '초기화 안됨');
-            console.log('Auth 상태:', auth ? '초기화됨' : '초기화 안됨');
-            
             // 네트워크 상태 확인
             if (!navigator.onLine) {
                 throw new Error('인터넷 연결을 확인해주세요');
@@ -9348,7 +9219,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             await loadReservationsTimeline();
-            console.log(`✅ 예약 현황 로드 성공 (시도 ${retryCount + 1})`);
         } catch (error) {
             console.error(`❌ 예약 현황 로드 실패 (시도 ${retryCount + 1}):`, error);
             console.error('오류 상세:', error.message);
@@ -9357,7 +9227,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (retryCount < maxRetries) {
                 const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // 지수 백오프, 최대 5초
-                console.log(`⏳ ${delay}ms 후 재시도...`);
                 setTimeout(tryLoadReservations, delay);
             } else {
                 console.error('❌ 최대 재시도 횟수 초과');
@@ -9377,13 +9246,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // 네트워크 상태 변화 감지
 window.addEventListener('online', () => {
-    console.log('네트워크 연결됨 - 예약 현황 재로드');
     showToast('인터넷 연결이 복구되었습니다.', 'success');
     loadReservationsTimeline();
 });
 
 window.addEventListener('offline', () => {
-    console.log('네트워크 연결 끊김');
     showToast('인터넷 연결이 끊어졌습니다.', 'warning');
 });
 
