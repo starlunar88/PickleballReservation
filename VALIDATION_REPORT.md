@@ -142,3 +142,4 @@
 
 **즉시 조치 필요**: Firebase Cloud Functions 배포하여 서버 측 자동 실행 구현
 
+

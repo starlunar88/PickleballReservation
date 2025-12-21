@@ -8697,8 +8697,10 @@ function createTeamModeSelector() {
 }
 
 // 예약 마감 및 자동 팀 배정 시스템
+// 주의: 서버 측 Firebase Cloud Functions에서 자동으로 처리하므로
+// 이 함수는 수동 호출 시에만 사용됩니다.
 
-// 마감 시간 확인 및 자동 팀 배정
+// 마감 시간 확인 및 자동 팀 배정 (수동 호출용)
 async function checkAndProcessReservations() {
     try {
         const settings = await getSystemSettings();
@@ -8738,7 +8740,7 @@ async function checkAndProcessReservations() {
     }
 }
 
-// 특정 시간 슬롯의 예약 처리
+// 특정 시간 슬롯의 예약 처리 (수동 호출용 - 서버 측에서 자동 처리됨)
 async function processTimeSlotReservations(date, timeSlot) {
     try {
         // 처리 중인 시간 슬롯 추적 (중복 실행 방지)
@@ -9318,25 +9320,16 @@ document.addEventListener('wheel', function (e) {
     if (e.ctrlKey) e.preventDefault();
 }, { passive: false });
 
-// 자동 예약 처리 시작 (수동 갱신으로 변경)
+// 자동 예약 처리 시작 (서버 측에서 처리하므로 클라이언트 측 자동 실행 비활성화)
 function startAutoProcessing() {
-    // 페이지 로드 시 즉시 한 번 실행
-    checkAndProcessReservations();
+    // 서버 측 Firebase Cloud Functions에서 자동으로 처리하므로
+    // 클라이언트 측 주기적 실행은 제거됨
+    // 필요시 수동으로 호출 가능: checkAndProcessReservations()
+    
+    // 예약 상태만 업데이트 (대진표 생성은 서버 측에서 처리)
     updateReservationStatus();
     
-    // 주기적으로 실행 (1분마다)
-    // 기존 interval이 있으면 해제
-    if (window.reservationCheckInterval) {
-        clearInterval(window.reservationCheckInterval);
-    }
-    
-    // 1분마다 마감 시간 확인 및 대진표 자동 생성
-    window.reservationCheckInterval = setInterval(() => {
-        console.log('⏰ 주기적 예약 마감 시간 확인 중...');
-        checkAndProcessReservations();
-    }, 60000); // 1분 = 60000ms
-    
-    console.log('✅ 자동 예약 처리 시작 (1분마다 실행)');
+    console.log('✅ 예약 상태 업데이트 완료 (대진표 자동 생성은 서버 측에서 처리)');
 }
 
 // 관리자용 팀 배정 관리 함수들
