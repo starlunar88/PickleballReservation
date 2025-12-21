@@ -8706,7 +8706,11 @@ async function checkAndProcessReservations() {
         
         const now = new Date();
         const currentTime = now.toTimeString().slice(0, 5); // HH:MM 형식
-        const currentDate = now.toISOString().slice(0, 10); // YYYY-MM-DD 형식
+        // 로컬 시간대 기준 날짜 사용 (UTC 변환으로 인한 날짜 오류 방지)
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const currentDate = `${year}-${month}-${day}`; // YYYY-MM-DD 형식 (로컬 시간대)
         
         // 오늘의 모든 시간 슬롯 확인
         for (const timeSlot of settings.timeSlots) {
